@@ -294,7 +294,7 @@ func TestSASLContinueErrors(t *testing.T) {
 		err = res.Replace("payload", wirebson.Binary{})
 		require.NoError(t, err)
 
-		fixCluster(t, res)
+		FixCluster(t, res)
 
 		expected := must.NotFail(wirebson.NewDocument(
 			"conversationId", int32(1),
@@ -320,7 +320,7 @@ func TestSASLContinueErrors(t *testing.T) {
 		res, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
 		require.NoError(t, err)
 
-		fixCluster(t, res)
+		FixCluster(t, res)
 
 		expected = must.NotFail(wirebson.NewDocument(
 			"ok", float64(0),
@@ -344,7 +344,7 @@ func TestSASLContinueErrors(t *testing.T) {
 		res, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
 		require.NoError(t, err)
 
-		fixCluster(t, res)
+		FixCluster(t, res)
 
 		expected = must.NotFail(wirebson.NewDocument(
 			"ok", float64(0),
@@ -370,7 +370,7 @@ func TestSASLContinueErrors(t *testing.T) {
 		res, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
 		require.NoError(t, err)
 
-		fixCluster(t, res)
+		FixCluster(t, res)
 
 		expected := must.NotFail(wirebson.NewDocument(
 			"authInfo", must.NotFail(wirebson.NewDocument(
@@ -398,7 +398,7 @@ func TestSASLContinueErrors(t *testing.T) {
 		res, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
 		require.NoError(t, err)
 
-		fixCluster(t, res)
+		FixCluster(t, res)
 
 		expected := must.NotFail(wirebson.NewDocument(
 			"ok", float64(0),
@@ -433,7 +433,7 @@ func TestSASLContinueNoConversation(t *testing.T) {
 	res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
 	require.NoError(t, err)
 
-	fixCluster(t, res)
+	FixCluster(t, res)
 
 	expected := must.NotFail(wirebson.NewDocument(
 		"ok", float64(0),
@@ -549,7 +549,7 @@ func TestHelloIsMasterOpQuerySpeculative(t *testing.T) {
 				serverPayload, ok := res.Get("payload").(wirebson.Binary)
 				require.True(t, ok)
 
-				fixCluster(t, res)
+				FixCluster(t, res)
 
 				expectedComparable := must.NotFail(wirebson.NewDocument(
 					"conversationId", int32(1),
@@ -583,7 +583,7 @@ func TestHelloIsMasterOpQuerySpeculative(t *testing.T) {
 				res, err = resBody.(*wire.OpReply).RawDocument().Decode()
 				require.NoError(t, err)
 
-				fixCluster(t, res)
+				FixCluster(t, res)
 
 				expected := must.NotFail(wirebson.NewDocument(
 					"ok", float64(0),
@@ -792,7 +792,7 @@ func TestHelloSpeculative(t *testing.T) {
 		res.Remove("electionId")
 		res.Remove("lastWrite")
 
-		fixCluster(t, res)
+		FixCluster(t, res)
 
 		expectedComparable := must.NotFail(wirebson.NewDocument(
 			"isWritablePrimary", true,
@@ -839,7 +839,7 @@ func TestHelloSpeculative(t *testing.T) {
 		serverPayload, ok := res.Get("payload").(wirebson.Binary)
 		require.True(t, ok, "got: "+res.LogMessageIndent())
 
-		fixCluster(t, res)
+		FixCluster(t, res)
 
 		expectedComparable := must.NotFail(wirebson.NewDocument(
 			"conversationId", int32(1),
@@ -875,7 +875,7 @@ func TestHelloSpeculative(t *testing.T) {
 		serverPayload, ok := res.Get("payload").(wirebson.Binary)
 		require.True(t, ok, "got: "+res.LogMessageIndent())
 
-		fixCluster(t, res)
+		FixCluster(t, res)
 
 		expectedComparable := must.NotFail(wirebson.NewDocument(
 			"conversationId", int32(1),
@@ -903,7 +903,7 @@ func TestHelloSpeculative(t *testing.T) {
 		res, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
 		require.NoError(t, err)
 
-		fixCluster(t, res)
+		FixCluster(t, res)
 
 		expected := must.NotFail(wirebson.NewDocument(
 			"ok", float64(0),
@@ -998,7 +998,7 @@ func TestHelloOpQuerySASLSupportedMechs(t *testing.T) {
 	res.Remove("electionId")
 	res.Remove("lastWrite")
 
-	fixCluster(t, res)
+	FixCluster(t, res)
 
 	expectedComparable := must.NotFail(wirebson.NewDocument(
 		"isWritablePrimary", true,
@@ -1124,7 +1124,7 @@ func TestSASLStartOpQueryErrors(t *testing.T) {
 			res, err = resBody.(*wire.OpReply).RawDocument().Decode()
 			require.NoError(t, err)
 
-			fixCluster(t, res)
+			FixCluster(t, res)
 
 			testutil.AssertEqual(t, tc.reply, res)
 		})
@@ -1197,7 +1197,7 @@ func TestSASLStartErrors(t *testing.T) {
 			res, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
 			require.NoError(t, err)
 
-			fixCluster(t, res)
+			FixCluster(t, res)
 
 			testutil.AssertEqual(t, tc.res, res)
 		})
@@ -1275,7 +1275,7 @@ func TestSASLContinueOpQueryErrors(t *testing.T) {
 			res, err := resBody.(*wire.OpReply).RawDocument().Decode()
 			require.NoError(t, err)
 
-			fixCluster(t, res)
+			FixCluster(t, res)
 
 			err = res.Replace("payload", wirebson.Binary{})
 			require.NoError(t, err)
@@ -1299,7 +1299,7 @@ func TestSASLContinueOpQueryErrors(t *testing.T) {
 			res, err = resBody.(*wire.OpReply).RawDocument().Decode()
 			require.NoError(t, err)
 
-			fixCluster(t, res)
+			FixCluster(t, res)
 
 			testutil.AssertEqual(t, tc.reply, res)
 		})

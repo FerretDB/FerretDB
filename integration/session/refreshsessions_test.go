@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package integration
+package session
 
 import (
 	"context"
@@ -27,6 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 
+	"github.com/FerretDB/FerretDB/v2/integration"
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
 )
 
@@ -198,7 +199,7 @@ func refreshSessions(t testing.TB, ctx context.Context, conn *wireclient.Conn, d
 	res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
 	require.NoError(t, err)
 
-	fixCluster(t, res)
+	integration.FixCluster(t, res)
 
 	if expectedErr != nil {
 		testutil.AssertEqual(t, expectedErr, res)
