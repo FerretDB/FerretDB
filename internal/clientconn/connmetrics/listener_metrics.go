@@ -35,7 +35,7 @@ type ListenerMetrics struct {
 
 // NewListenerMetrics creates new listener metrics.
 func NewListenerMetrics() *ListenerMetrics {
-	return &ListenerMetrics{
+	lm := &ListenerMetrics{
 		Accepts: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: namespace,
@@ -67,6 +67,11 @@ func NewListenerMetrics() *ListenerMetrics {
 
 		ConnMetrics: newConnMetrics(),
 	}
+
+	lm.Accepts.WithLabelValues("0")
+	lm.Durations.WithLabelValues("0")
+
+	return lm
 }
 
 // Describe implements [prometheus.Collector].

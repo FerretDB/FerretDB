@@ -27,6 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
 )
 
+// TODO https://github.com/FerretDB/FerretDB/issues/4879
 func TestDiffCollectionName(t *testing.T) {
 	t.Parallel()
 

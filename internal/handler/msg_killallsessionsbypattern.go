@@ -30,18 +30,19 @@ import (
 // MsgKillAllSessionsByPattern implements `killAllSessionsByPattern` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgKillAllSessionsByPattern(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) { //nolint:lll // for readability
-	spec, err := req.RawDocument()
+func (h *Handler) MsgKillAllSessionsByPattern(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) { //nolint:lll // for readability
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
 	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	_, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec)
+	_, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +144,7 @@ func (h *Handler) MsgKillAllSessionsByPattern(connCtx context.Context, req *midd
 		_ = h.Pool.KillCursor(connCtx, cursorID)
 	}
 
-	return middleware.Response(wirebson.MustDocument(
+	return middleware.MakeResponse(wirebson.MustDocument(
 		"ok", float64(1),
 	))
 }

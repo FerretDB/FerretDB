@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"reflect"
 	"runtime"
-	"runtime/debug"
+	runtimedebug "runtime/debug"
 	"runtime/pprof"
 	"sync"
 	"unsafe"
@@ -78,7 +78,7 @@ func Track(obj any, token *Token) {
 
 	var stack string
 	if devbuild.Enabled {
-		stack = string(debug.Stack())
+		stack = string(runtimedebug.Stack())
 	}
 
 	// set finalizer on obj, not token

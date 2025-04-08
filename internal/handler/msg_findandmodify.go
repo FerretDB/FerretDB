@@ -25,20 +25,20 @@ import (
 // MsgFindAndModify implements `findAndModify` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgFindAndModify(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
-	spec, err := req.RawDocument()
+func (h *Handler) MsgFindAndModify(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
-	}
-
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
-		return nil, err
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
 	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+		return nil, err
 	}
 
 	dbName, err := getRequiredParam[string](doc, "$db")
@@ -57,5 +57,5 @@ func (h *Handler) MsgFindAndModify(connCtx context.Context, req *middleware.MsgR
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.Response(res)
+	return middleware.MakeResponse(res)
 }

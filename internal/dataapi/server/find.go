@@ -61,7 +61,7 @@ func (s *Server) Find(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resRaw := must.NotFail(resMsg.RawDocument())
+	resRaw := must.NotFail(resMsg.OpMsg.RawDocument())
 	cursor := must.NotFail(resRaw.Decode()).Get("cursor").(wirebson.AnyDocument)
 
 	res := must.NotFail(wirebson.NewDocument(

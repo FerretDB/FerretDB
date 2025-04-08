@@ -15,16 +15,24 @@
 package version
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGet(t *testing.T) {
-	v := Get()
+func TestCase1(t *testing.T) {
+	assert.Regexp(t, semVerTag, info.Version)
+	assert.Regexp(t, `^[0-9a-f]{40}$`, info.Commit)
+	assert.NotEmpty(t, info.Branch)
+	assert.NotEqual(t, unknown, info.Branch)
+	assert.NotEmpty(t, info.Package)
+	// package is unknown on CI for short tests where package.txt is not created
 
-	assert.NotEmpty(t, v.Version)
+	assert.Equal(t, "7.0.77", info.MongoDBVersion)
+	assert.Equal(t, [...]int32{int32(7), int32(0), int32(77), int32(0)}, info.MongoDBVersionArray)
 
-	assert.Equal(t, "7.0.77", v.MongoDBVersion)
-	assert.Equal(t, [...]int32{int32(7), int32(0), int32(77), int32(0)}, v.MongoDBVersionArray)
+	assert.Equal(t, runtime.Version(), info.BuildEnvironment["go.version"])
+	assert.Equal(t, runtime.Version(), info.BuildEnvironment["go.runtime"])
+	assert.Empty(t, info.BuildEnvironment["vcs.revision"]) // not set for unit tests
 }

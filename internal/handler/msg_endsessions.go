@@ -26,18 +26,19 @@ import (
 // MsgEndSessions implements `endSessions` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgEndSessions(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
-	spec, err := req.RawDocument()
+func (h *Handler) MsgEndSessions(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
 	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
@@ -48,7 +49,7 @@ func (h *Handler) MsgEndSessions(connCtx context.Context, req *middleware.MsgReq
 
 	h.s.EndSessions(connCtx, ids)
 
-	return middleware.Response(wirebson.MustDocument(
+	return middleware.MakeResponse(wirebson.MustDocument(
 		"ok", float64(1),
 	))
 }

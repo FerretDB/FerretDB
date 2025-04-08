@@ -30,37 +30,38 @@ import (
 // MsgKillCursors implements `killCursors` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgKillCursors(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
-	spec, err := req.RawDocument()
+func (h *Handler) MsgKillCursors(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	document, err := spec.Decode()
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
+	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	command := document.Command()
+	command := doc.Command()
 
-	db, err := getRequiredParam[string](document, "$db")
+	db, err := getRequiredParam[string](doc, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	collection, err := getRequiredParam[string](document, command)
+	collection, err := getRequiredParam[string](doc, command)
 	if err != nil {
 		return nil, err
 	}
 
 	username := conninfo.Get(connCtx).Conv().Username()
 
-	userID, _, err := h.s.CreateOrUpdateByLSID(connCtx, spec)
+	userID, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc)
 	if err != nil {
 		return nil, err
 	}
 
-	cursorsV, err := getRequiredParamAny(document, "cursors")
+	cursorsV, err := getRequiredParamAny(doc, "cursors")
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +119,7 @@ func (h *Handler) MsgKillCursors(connCtx context.Context, req *middleware.MsgReq
 		must.NoError(cursorsKilled.Add(id))
 	}
 
-	return middleware.Response(wirebson.MustDocument(
+	return middleware.MakeResponse(wirebson.MustDocument(
 		"cursorsKilled", cursorsKilled,
 		"cursorsNotFound", cursorsNotFound,
 		"cursorsAlive", cursorsAlive,

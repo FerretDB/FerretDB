@@ -16,4 +16,4 @@ scan:
     - .envrc
     - build/certs/*.pem
     - internal/dataapi/api/openapi.json
-    - internal/dataapi/api/openapi-minimal.json
+    - internal/dataapi/api/openapi-patched.json

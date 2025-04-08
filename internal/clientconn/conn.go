@@ -84,7 +84,7 @@ type conn struct {
 	l              *slog.Logger
 	h              *handler.Handler
 	m              *connmetrics.ConnMetrics
-	proxy          *proxy.Router
+	proxy          *proxy.Handler
 	lastRequestID  atomic.Int32
 	testRecordsDir string // if empty, no records are created
 }
@@ -114,7 +114,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 		panic("handler required")
 	}
 
-	var p *proxy.Router
+	var p *proxy.Handler
 	if opts.mode != NormalMode {
 		var err error
 		if p, err = proxy.New(opts.proxyAddr, opts.proxyTLSCertFile, opts.proxyTLSKeyFile, opts.proxyTLSCAFile); err != nil {
@@ -258,7 +258,7 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 		}
 
 		// TODO https://github.com/FerretDB/FerretDB/issues/1997
-		proxyHeader, proxyBody = c.proxy.Route(ctx, reqHeader, reqBody)
+		proxyHeader, proxyBody = c.proxy.Handle(ctx, reqHeader, reqBody)
 	}
 
 	// handle request unless we are in proxy mode
@@ -359,6 +359,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	}()
 
 	resHeader = new(wire.MsgHeader)
+
 	var err error
 	switch reqHeader.OpCode {
 	case wire.OpCodeMsg:
@@ -387,33 +388,39 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
 		if err == nil {
-			resMsg := c.handleOpMsg(connCtx, &middleware.MsgRequest{OpMsg: msg}, command)
-			resBody = resMsg.OpMsg
+			var cmdHandler middleware.HandleFunc
+
+			cmd, ok := c.h.Commands()[command]
+			if ok && cmd.Handler != nil {
+				cmdHandler = cmd.Handler
+			} else {
+				cmdHandler = notFound(command)
+			}
+
+			var res *middleware.Response
+			res, err = cmdHandler(connCtx, &middleware.Request{OpMsg: msg})
+
+			if res != nil {
+				resBody = res.OpMsg
+			}
 		}
 
 	case wire.OpCodeQuery:
-		connCtx, span = otel.Tracer("").Start(connCtx, "")
-
 		query := reqBody.(*wire.OpQuery)
+
 		resHeader.OpCode = wire.OpCodeReply
 
-		obsMW := &middleware.Observability{
-			L: logging.WithName(c.l, "observability"),
-		}
+		command = query.Query().Command()
 
-		errMW := middleware.NewError("", logging.WithName(c.l, "error"))
+		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
-		replyHandler := c.h.CmdQuery
-		replyHandler = errMW.HandleOpReply(replyHandler)
-		replyHandler = obsMW.HandleOpReply(replyHandler)
+		cmdHandler := c.h.CmdQuery
 
-		// error is handled by middleware.Error
-		reply := must.NotFail(replyHandler(connCtx, &middleware.QueryRequest{OpQuery: query}))
-		resBody = reply.OpReply
+		var res *middleware.Response
+		res, err = cmdHandler(connCtx, &middleware.Request{OpQuery: query})
 
-		if replyErr := reply.CommandError(); replyErr != nil {
-			result = replyErr.Name
-			argument = replyErr.Argument
+		if res != nil {
+			resBody = res.OpReply
 		}
 
 	case wire.OpCodeReply:
@@ -455,6 +462,11 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 			argument = protoErr.Argument
 
 		case wire.OpCodeReply:
+			protoErr := mongoerrors.Make(connCtx, err, "", c.l)
+			resBody = protoErr.Reply()
+			result = protoErr.Name
+			argument = protoErr.Argument
+
 		case wire.OpCodeQuery:
 			fallthrough
 		case wire.OpCodeUpdate:
@@ -516,35 +528,9 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	return
 }
 
-// handleOpMsg processes OP_MSG requests.
-//
-// The passed context is canceled when the client disconnects.
-func (c *conn) handleOpMsg(connCtx context.Context, msg *middleware.MsgRequest, command string) *middleware.MsgResponse {
-	var cmdHandler middleware.MsgHandlerFunc
-
-	cmd, ok := c.h.Commands()[command]
-	if !ok || cmd.Handler == nil {
-		cmdHandler = notFound(command)
-	} else {
-		cmdHandler = cmd.Handler
-	}
-
-	obsMW := &middleware.Observability{
-		L: logging.WithName(c.l, "observability"),
-	}
-
-	errMW := middleware.NewError("", logging.WithName(c.l, "error"))
-
-	cmdHandler = errMW.HandleOpMsg(cmdHandler)
-	cmdHandler = obsMW.HandleOpMsg(cmdHandler)
-
-	// error is handled by middleware.Error
-	return must.NotFail(cmdHandler(connCtx, msg))
-}
-
 // notFound returns a handler that returns an error indicating that the command is not found.
-func notFound(command string) middleware.MsgHandlerFunc {
-	return func(context.Context, *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+func notFound(command string) middleware.HandleFunc {
+	return func(context.Context, *middleware.Request) (*middleware.Response, error) {
 		return nil, mongoerrors.New(
 			mongoerrors.ErrCommandNotFound,
 			fmt.Sprintf("no such command: '%s'", command),
