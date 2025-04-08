@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package integration
+package session
 
 import (
 	"context"
@@ -31,6 +31,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 
+	"github.com/FerretDB/FerretDB/v2/integration"
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
 )
 
@@ -237,7 +238,7 @@ func TestFindLsidErrors(t *testing.T) {
 		res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
 		require.NoError(t, err)
 
-		fixCluster(t, res)
+		integration.FixCluster(t, res)
 
 		expected := wirebson.MustDocument(
 			"ok", float64(0),
@@ -262,7 +263,7 @@ func TestFindLsidErrors(t *testing.T) {
 		res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
 		require.NoError(t, err)
 
-		fixCluster(t, res)
+		integration.FixCluster(t, res)
 
 		expected := wirebson.MustDocument(
 			"ok", float64(0),
@@ -287,7 +288,7 @@ func TestFindLsidErrors(t *testing.T) {
 		res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
 		require.NoError(t, err)
 
-		fixCluster(t, res)
+		integration.FixCluster(t, res)
 
 		expected := wirebson.MustDocument(
 			"ok", float64(0),
@@ -312,7 +313,7 @@ func TestFindLsidErrors(t *testing.T) {
 		res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
 		require.NoError(t, err)
 
-		fixCluster(t, res)
+		integration.FixCluster(t, res)
 
 		expected := wirebson.MustDocument(
 			"ok", float64(0),
@@ -337,7 +338,7 @@ func TestFindLsidErrors(t *testing.T) {
 		res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
 		require.NoError(t, err)
 
-		fixCluster(t, res)
+		integration.FixCluster(t, res)
 
 		expected := wirebson.MustDocument(
 			"ok", float64(0),
@@ -512,7 +513,7 @@ func startSession(t testing.TB, ctx context.Context, conn *wireclient.Conn) wire
 	res, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
 	require.NoError(t, err)
 
-	fixCluster(t, res)
+	integration.FixCluster(t, res)
 
 	sessionIDDoc := res.Get("id")
 	require.NotNil(t, sessionIDDoc, wirebson.LogMessage(res))
@@ -555,7 +556,7 @@ func killCursors(t testing.TB, ctx context.Context, conn *wireclient.Conn, dbNam
 	res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
 	require.NoError(t, err)
 
-	fixCluster(t, res)
+	integration.FixCluster(t, res)
 
 	if expectedErr != nil {
 		if expectedErr.Get("errmsg") == nil {
@@ -604,7 +605,7 @@ func find(t testing.TB, ctx context.Context, conn *wireclient.Conn, db, coll str
 	res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
 	require.NoError(t, err)
 
-	fixCluster(t, res)
+	integration.FixCluster(t, res)
 
 	cursor := res.Get("cursor")
 	require.NotNil(t, cursor, wirebson.LogMessage(res))
@@ -667,7 +668,7 @@ func getMore(t testing.TB, ctx context.Context, conn *wireclient.Conn, db, coll 
 	res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
 	require.NoError(t, err)
 
-	fixCluster(t, res)
+	integration.FixCluster(t, res)
 
 	if expectedErr != nil {
 		testutil.AssertEqual(t, expectedErr, res)
