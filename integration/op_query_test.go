@@ -93,7 +93,7 @@ func TestOpQuery(t *testing.T) {
 		res, err := resBody.(*wire.OpReply).RawDocument().Decode()
 		require.NoError(t, err)
 
-		fixCluster(t, res)
+		FixCluster(t, res)
 
 		expected := must.NotFail(wirebson.NewDocument(
 			"ok", float64(0),
@@ -154,7 +154,7 @@ func TestOpQueryIsMaster(t *testing.T) {
 			res.Remove("electionId")
 			res.Remove("lastWrite")
 
-			fixCluster(t, res)
+			FixCluster(t, res)
 
 			expectedComparable := must.NotFail(wirebson.NewDocument(
 				"ismaster", true,
@@ -223,7 +223,7 @@ func TestOpQueryIsMasterHelloOk(t *testing.T) {
 			res.Remove("electionId")
 			res.Remove("lastWrite")
 
-			fixCluster(t, res)
+			FixCluster(t, res)
 
 			expectedComparable := must.NotFail(wirebson.NewDocument(
 				"helloOk", true,
@@ -284,7 +284,7 @@ func TestOpQueryHello(tt *testing.T) {
 	res.Remove("electionId")
 	res.Remove("lastWrite")
 
-	fixCluster(t, res)
+	FixCluster(t, res)
 
 	expectedComparable := must.NotFail(wirebson.NewDocument(
 		"isWritablePrimary", true,

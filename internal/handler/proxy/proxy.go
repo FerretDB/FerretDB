@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package proxy sends requests to another wire protocol compatible service.
+// Package proxy handles messages by sending them to another wire protocol compatible service.
 package proxy
 
 import (
@@ -27,15 +27,15 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/tlsutil"
 )
 
-// Router "handles" messages by sending them to another wire protocol compatible service.
-type Router struct {
+// Handler handles messages by sending them to another wire protocol compatible service.
+type Handler struct {
 	conn net.Conn
 	bufr *bufio.Reader
 	bufw *bufio.Writer
 }
 
-// New creates a new Router for a service with given address.
-func New(addr, certFile, keyFile, caFile string) (*Router, error) {
+// New creates a new Handler for a service with given address.
+func New(addr, certFile, keyFile, caFile string) (*Handler, error) {
 	var conn net.Conn
 	var err error
 
@@ -49,7 +49,7 @@ func New(addr, certFile, keyFile, caFile string) (*Router, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &Router{
+	return &Handler{
 		conn: conn,
 		bufr: bufio.NewReader(conn),
 		bufw: bufio.NewWriter(conn),
@@ -76,12 +76,12 @@ func dialTLS(addr, certFile, keyFile, caFile string) (net.Conn, error) {
 }
 
 // Close stops the handler.
-func (r *Router) Close() {
+func (r *Handler) Close() {
 	r.conn.Close()
 }
 
-// Route routes the message by sending it to another wire protocol compatible service.
-func (r *Router) Route(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody) (*wire.MsgHeader, wire.MsgBody) {
+// Handle handles the message by sending it to another wire protocol compatible service.
+func (r *Handler) Handle(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody) (*wire.MsgHeader, wire.MsgBody) {
 	deadline, _ := ctx.Deadline()
 	r.conn.SetDeadline(deadline)
 

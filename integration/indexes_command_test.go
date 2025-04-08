@@ -626,7 +626,7 @@ func TestListIndexesCommandIndexFieldOrder(t *testing.T) {
 	doc, err := convert(t, res).(wirebson.AnyDocument).Decode()
 	require.NoError(t, err)
 
-	fixCluster(t, doc)
+	FixCluster(t, doc)
 
 	expected := wirebson.MustDocument(
 		"cursor", wirebson.MustDocument(
