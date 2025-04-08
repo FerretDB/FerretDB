@@ -31,8 +31,8 @@ import (
 // MsgBuildInfo implements `buildInfo` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgBuildInfo(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
-	spec, err := req.RawDocument()
+func (h *Handler) MsgBuildInfo(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -53,7 +53,7 @@ func (h *Handler) MsgBuildInfo(connCtx context.Context, req *middleware.MsgReque
 		must.NoError(versionArray.Add(v))
 	}
 
-	return middleware.Response(wirebson.MustDocument(
+	return middleware.MakeResponse(wirebson.MustDocument(
 		"version", info.MongoDBVersion,
 		"gitVersion", info.Commit,
 		"modules", wirebson.MakeArray(0),

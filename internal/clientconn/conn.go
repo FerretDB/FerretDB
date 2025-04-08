@@ -388,7 +388,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
 		if err == nil {
-			var cmdHandler middleware.MsgHandlerFunc
+			var cmdHandler middleware.HandleFunc
 
 			cmd, ok := c.h.Commands()[command]
 			if ok && cmd.Handler != nil {
@@ -397,8 +397,8 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 				cmdHandler = notFound(command)
 			}
 
-			var res *middleware.MsgResponse
-			res, err = cmdHandler(connCtx, &middleware.MsgRequest{OpMsg: msg})
+			var res *middleware.Response
+			res, err = cmdHandler(connCtx, &middleware.Request{OpMsg: msg})
 
 			if res != nil {
 				resBody = res.OpMsg
@@ -416,8 +416,8 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 		cmdHandler := c.h.CmdQuery
 
-		var res *middleware.ReplyResponse
-		res, err = cmdHandler(connCtx, &middleware.QueryRequest{OpQuery: query})
+		var res *middleware.Response
+		res, err = cmdHandler(connCtx, &middleware.Request{OpQuery: query})
 
 		if res != nil {
 			resBody = res.OpReply
@@ -529,8 +529,8 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 }
 
 // notFound returns a handler that returns an error indicating that the command is not found.
-func notFound(command string) middleware.MsgHandlerFunc {
-	return func(context.Context, *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+func notFound(command string) middleware.HandleFunc {
+	return func(context.Context, *middleware.Request) (*middleware.Response, error) {
 		return nil, mongoerrors.New(
 			mongoerrors.ErrCommandNotFound,
 			fmt.Sprintf("no such command: '%s'", command),
