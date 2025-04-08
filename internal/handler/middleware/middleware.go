@@ -32,7 +32,7 @@ type Request struct {
 
 // Response represent outgoing response to the client.
 type Response struct {
-	*wire.OpMsg
+	OpMsg   *wire.OpMsg
 	OpReply *wire.OpReply
 }
 
