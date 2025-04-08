@@ -30,7 +30,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgDelete(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, seq := req.RawSections()
+	spec, seq := req.OpMsg.RawSections()
 
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
 	doc, err := spec.Decode()

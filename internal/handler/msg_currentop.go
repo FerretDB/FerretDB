@@ -31,7 +31,7 @@ import (
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/3974
 func (h *Handler) MsgCurrentOp(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.RawDocument()
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

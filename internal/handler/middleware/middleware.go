@@ -26,7 +26,7 @@ import (
 
 // Request represents incoming request from the client.
 type Request struct {
-	*wire.OpMsg
+	OpMsg   *wire.OpMsg
 	OpQuery *wire.OpQuery
 }
 

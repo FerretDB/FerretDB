@@ -36,7 +36,7 @@ var collectionNameRe = regexp.MustCompile("^[^\\.$\x00][^$\x00]{0,234}$")
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgCreate(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.RawDocument()
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
