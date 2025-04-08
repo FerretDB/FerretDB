@@ -4,7 +4,7 @@ response = {
     ns: 'new.books',
     firstBatch: [
       {
-        id: 'moby_dick_1851',
+        _id: 'moby_dick_1851',
         title: 'Moby Dick',
         author: 'Herman Melville',
         summary:
@@ -13,5 +13,5 @@ response = {
       }
     ]
   },
-  '  ok': Int32(1)
+  ok: Int32(1)
 }
