@@ -115,8 +115,8 @@ func convert(t testing.TB, v any) any {
 	}
 }
 
-// fixCluster removes document fields that are specific for MongoDB running in a cluster.
-func fixCluster(t testing.TB, doc *wirebson.Document) {
+// FixCluster removes document fields that are specific for MongoDB running in a cluster.
+func FixCluster(t testing.TB, doc *wirebson.Document) {
 	t.Helper()
 
 	doc.Remove("$clusterTime")
@@ -194,7 +194,7 @@ func fixActualUpdateN(t testing.TB, actual *wirebson.Document) {
 func fixExpected(t testing.TB, expected *wirebson.Document) {
 	t.Helper()
 
-	fixCluster(t, expected)
+	FixCluster(t, expected)
 	fixOrder(t, expected)
 }
 
@@ -202,7 +202,7 @@ func fixExpected(t testing.TB, expected *wirebson.Document) {
 func fixActual(t testing.TB, actual *wirebson.Document) {
 	t.Helper()
 
-	fixCluster(t, actual)
+	FixCluster(t, actual)
 	fixOrder(t, actual)
 	fixActualUpdateN(t, actual)
 }
