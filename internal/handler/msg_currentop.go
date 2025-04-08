@@ -30,7 +30,7 @@ import (
 // The passed context is canceled when the client connection is closed.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/3974
-func (h *Handler) MsgCurrentOp(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+func (h *Handler) MsgCurrentOp(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -50,5 +50,5 @@ func (h *Handler) MsgCurrentOp(connCtx context.Context, req *middleware.MsgReque
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.Response(res)
+	return middleware.MakeResponse(res)
 }

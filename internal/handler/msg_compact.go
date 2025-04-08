@@ -26,7 +26,7 @@ import (
 // MsgCompact implements `compact` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgCompact(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+func (h *Handler) MsgCompact(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -71,7 +71,7 @@ func (h *Handler) MsgCompact(connCtx context.Context, req *middleware.MsgRequest
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.Response(wirebson.MustDocument(
+	return middleware.MakeResponse(wirebson.MustDocument(
 		"bytesFreed", int32(0),
 		"ok", float64(1),
 	))

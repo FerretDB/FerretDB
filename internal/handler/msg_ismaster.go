@@ -28,7 +28,7 @@ import (
 // MsgIsMaster implements `isMaster` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgIsMaster(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+func (h *Handler) MsgIsMaster(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -49,7 +49,7 @@ func (h *Handler) MsgIsMaster(connCtx context.Context, req *middleware.MsgReques
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.Response(res)
+	return middleware.MakeResponse(res)
 }
 
 // checkClientMetadata checks if the message does not contain client metadata after it was received already.

@@ -28,7 +28,7 @@ import (
 // MsgUsersInfo implements `usersInfo` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgUsersInfo(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+func (h *Handler) MsgUsersInfo(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -48,5 +48,5 @@ func (h *Handler) MsgUsersInfo(connCtx context.Context, req *middleware.MsgReque
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.Response(res)
+	return middleware.MakeResponse(res)
 }

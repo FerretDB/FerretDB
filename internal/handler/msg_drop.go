@@ -31,7 +31,7 @@ import (
 // MsgDrop implements `drop` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgDrop(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+func (h *Handler) MsgDrop(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -86,5 +86,5 @@ func (h *Handler) MsgDrop(connCtx context.Context, req *middleware.MsgRequest) (
 
 	must.NoError(res.Add("ok", float64(1)))
 
-	return middleware.Response(res)
+	return middleware.MakeResponse(res)
 }

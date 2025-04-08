@@ -30,7 +30,7 @@ import (
 // MsgFerretDebugError implements `ferretDebugError` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgFerretDebugError(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+func (h *Handler) MsgFerretDebugError(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -57,7 +57,7 @@ func (h *Handler) MsgFerretDebugError(connCtx context.Context, req *middleware.M
 
 	switch {
 	case arg == "ok":
-		return middleware.Response(wirebson.MustDocument(
+		return middleware.MakeResponse(wirebson.MustDocument(
 			"ok", float64(1),
 		))
 

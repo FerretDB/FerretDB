@@ -29,7 +29,7 @@ import (
 // MsgInsert implements `insert` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgInsert(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+func (h *Handler) MsgInsert(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	spec, seq := req.RawSections()
 
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
@@ -57,5 +57,5 @@ func (h *Handler) MsgInsert(connCtx context.Context, req *middleware.MsgRequest)
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.Response(mongoerrors.MapWriteErrors(connCtx, res))
+	return middleware.MakeResponse(mongoerrors.MapWriteErrors(connCtx, res))
 }

@@ -24,7 +24,7 @@ import (
 // MsgAggregate implements `aggregate` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgAggregate(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+func (h *Handler) MsgAggregate(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -53,5 +53,5 @@ func (h *Handler) MsgAggregate(connCtx context.Context, req *middleware.MsgReque
 
 	h.s.AddCursor(connCtx, userID, sessionID, cursorID)
 
-	return middleware.Response(page)
+	return middleware.MakeResponse(page)
 }

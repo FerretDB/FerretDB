@@ -25,7 +25,7 @@ import (
 // MsgValidate implements `validate` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgValidate(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+func (h *Handler) MsgValidate(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -57,5 +57,5 @@ func (h *Handler) MsgValidate(connCtx context.Context, req *middleware.MsgReques
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.Response(page)
+	return middleware.MakeResponse(page)
 }

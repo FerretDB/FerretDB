@@ -26,7 +26,7 @@ import (
 // MsgGetFreeMonitoringStatus implements `getFreeMonitoringStatus` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgGetFreeMonitoringStatus(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) { //nolint:lll // for readability
+func (h *Handler) MsgGetFreeMonitoringStatus(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) { //nolint:lll // for readability
 	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -39,7 +39,7 @@ func (h *Handler) MsgGetFreeMonitoringStatus(connCtx context.Context, req *middl
 	state := h.StateProvider.Get().TelemetryString()
 	message := "monitoring is " + state
 
-	return middleware.Response(wirebson.MustDocument(
+	return middleware.MakeResponse(wirebson.MustDocument(
 		"state", state,
 		"message", message,
 		"ok", float64(1),

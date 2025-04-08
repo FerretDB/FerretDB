@@ -26,7 +26,7 @@ import (
 // MsgRefreshSessions implements `refreshSessions` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgRefreshSessions(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+func (h *Handler) MsgRefreshSessions(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -50,7 +50,7 @@ func (h *Handler) MsgRefreshSessions(connCtx context.Context, req *middleware.Ms
 
 	h.s.CreateOrUpdateSessions(connCtx, ids)
 
-	return middleware.Response(wirebson.MustDocument(
+	return middleware.MakeResponse(wirebson.MustDocument(
 		"ok", float64(1),
 	))
 }

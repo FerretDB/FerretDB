@@ -33,7 +33,7 @@ import (
 // MsgServerStatus implements `serverStatus` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgServerStatus(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+func (h *Handler) MsgServerStatus(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	spec, err := req.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -120,5 +120,5 @@ func (h *Handler) MsgServerStatus(connCtx context.Context, req *middleware.MsgRe
 		"ok", float64(1),
 	))
 
-	return middleware.Response(res)
+	return middleware.MakeResponse(res)
 }
