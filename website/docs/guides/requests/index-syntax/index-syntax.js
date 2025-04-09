@@ -13,5 +13,6 @@ db.runCommand({
         numLists: '<numLists>'
       }
     }
-  ]
+  ],
+  $db: '{{.Database}}'
 })

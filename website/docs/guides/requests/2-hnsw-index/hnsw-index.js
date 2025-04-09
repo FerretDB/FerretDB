@@ -12,5 +12,6 @@ db.runCommand({
         efConstruction: Int32(64)
       }
     }
-  ]
+  ],
+  $db: '{{.Database}}'
 })

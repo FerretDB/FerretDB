@@ -22,5 +22,6 @@ db.runCommand({
       summary:
         'Victor Frankenstein, driven by an unquenchable thirst for knowledge, creates a living being, only to face tragic consequences as his creation turns monstrous.'
     }
-  ]
+  ],
+  $db: '{{.Database}}'
 })
