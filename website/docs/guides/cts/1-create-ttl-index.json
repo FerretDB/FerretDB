@@ -24,7 +24,7 @@
       "numIndexesAfter": {
         "$numberInt": "2"
       },
-      "createdCollectionAutomatically": false,
+      "createdCollectionAutomatically": true,
       "ok": {
         "$numberDouble": "1.0"
       }

@@ -19,17 +19,20 @@
             }
           }
         }
-      ]
+      ],
+      "$db": "{{.Database}}"
     },
     "response": {
+      "numIndexesBefore": {
+        "$numberInt": "1"
+      },
+      "numIndexesAfter": {
+        "$numberInt": "2"
+      },
+      "createdCollectionAutomatically": true,
       "ok": {
-        "$numberDouble": "0.0"
-      },
-      "errmsg": "OP_MSG requests require a $db argument",
-      "code": {
-        "$numberInt": "40571"
-      },
-      "codeName": "Location40571"
+        "$numberDouble": "1.0"
+      }
     }
   }
 }
