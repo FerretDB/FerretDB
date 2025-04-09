@@ -55,17 +55,18 @@
           }
         }
       ],
-      "cursor": {}
+      "cursor": {},
+      "$db": "{{.Database}}"
     },
     "response": {
       "ok": {
         "$numberDouble": "0.0"
       },
-      "errmsg": "OP_MSG requests require a $db argument",
+      "errmsg": "$search stage is only allowed on MongoDB Atlas",
       "code": {
-        "$numberInt": "40571"
+        "$numberInt": "6047401"
       },
-      "codeName": "Location40571"
+      "codeName": "Location6047401"
     }
   }
 }

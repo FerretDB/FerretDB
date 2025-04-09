@@ -14,12 +14,12 @@
     },
     "response": {
       "numIndexesBefore": {
-        "$numberInt": "2"
+        "$numberInt": "1"
       },
       "numIndexesAfter": {
-        "$numberInt": "3"
+        "$numberInt": "2"
       },
-      "createdCollectionAutomatically": false,
+      "createdCollectionAutomatically": true,
       "ok": {
         "$numberDouble": "1.0"
       }

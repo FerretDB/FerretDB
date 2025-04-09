@@ -140,27 +140,8 @@
     },
     "response": {
       "n": {
-        "$numberInt": "0"
+        "$numberInt": "3"
       },
-      "writeErrors": [
-        {
-          "index": {
-            "$numberInt": "0"
-          },
-          "code": {
-            "$numberInt": "11000"
-          },
-          "errmsg": "E11000 duplicate key error collection: {{.Database}}.books index: _id_ dup key: { _id: \"pride_prejudice_1813\" }",
-          "keyPattern": {
-            "_id": {
-              "$numberInt": "1"
-            }
-          },
-          "keyValue": {
-            "_id": "pride_prejudice_1813"
-          }
-        }
-      ],
       "ok": {
         "$numberDouble": "1.0"
       }
