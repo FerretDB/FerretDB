@@ -106,7 +106,7 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt <<EOF
 mkdir /tmp/cover /tmp/state
 chown postgres:postgres /tmp/cover /tmp/state
 
-apt install -y curl
+apt install -y curl runit
 curl -L https://pgp.mongodb.com/server-7.0.asc | apt-key add -
 echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/debian bookworm/mongodb-org/7.0 main" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list
 apt update
@@ -116,42 +116,30 @@ EOF
 COPY --from=evaluation-build /src/bin/ferretdb /usr/local/bin/ferretdb
 COPY build/ferretdb/99-start-ferretdb.sh /docker-entrypoint-initdb.d/
 
-HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-interval=5s \
-  CMD ["/ferretdb", "ping"]
-
-# evaluation hacks start there
+# runit hacks start there
 
 COPY --from=evaluation-build /src/build/ferretdb/evaluation/ferretdb.sh /etc/service/ferretdb/run
 COPY --from=evaluation-build /src/build/ferretdb/evaluation/postgresql.sh /etc/service/postgresql/run
 COPY --from=evaluation-build /src/build/ferretdb/evaluation/entrypoint.sh /entrypoint.sh
 
-RUN --mount=type=cache,sharing=locked,target=/var/cache/apt <<EOF
-set -ex
-
-apt update
-apt install -y curl runit
-
-curl -L https://pgp.mongodb.com/server-7.0.asc | apt-key add -
-echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/debian bookworm/mongodb-org/7.0 main" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list
-apt update
-apt install -y mongodb-mongosh
-EOF
-
-ENV FERRETDB_POSTGRESQL_URL=postgres://username:password@127.0.0.1:5432/postgres
-ENV POSTGRES_USER=username
-ENV POSTGRES_PASSWORD=password
-ENV POSTGRES_DB=postgres
-
 STOPSIGNAL SIGHUP
 ENTRYPOINT ["/entrypoint.sh"]
 
-# evaluation hacks stop there
+# runit hacks stop there
+
+HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-interval=5s \
+  CMD ["/ferretdb", "ping"]
 
 EXPOSE 27017 27018 8088
 
 ENV GOCOVERDIR=/tmp/cover
 ENV GORACE=halt_on_error=1,history_size=2
 
+ENV POSTGRES_USER=username
+ENV POSTGRES_PASSWORD=password
+ENV POSTGRES_DB=postgres
+
+ENV FERRETDB_POSTGRESQL_URL=postgres://username:password@127.0.0.1:5432/postgres
 ENV FERRETDB_STATE_DIR=/tmp/state
 
 # don't forget to update documentation if you change defaults

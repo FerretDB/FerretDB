@@ -2,4 +2,4 @@
 
 set -ex
 
-exec /ferretdb
+exec /usr/local/bin/ferretdb
