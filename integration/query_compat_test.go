@@ -40,7 +40,7 @@ type queryCompatTestCase struct {
 	limit      *int64                   // defaults to nil to leave unset
 	batchSize  *int32                   // defaults to nil to leave unset
 	projection bson.D                   // nil for leaving projection unset
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	resultType CompatTestCaseResultType // defaults to NonEmptyResult
 
 	skipIDCheck      bool   // skip check collected IDs, use it when no ids returned from query
 	skip             string // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1086
@@ -174,13 +174,13 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 			}
 
 			switch tc.resultType {
-			case nonEmptyResult:
+			case NonEmptyResult:
 				if tc.failsForFerretDB != "" {
 					return
 				}
 
 				assert.True(t, nonEmptyResults, "expected non-empty results")
-			case emptyResult:
+			case EmptyResult:
 				assert.False(t, nonEmptyResults, "expected empty results")
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
@@ -223,7 +223,7 @@ func TestQueryCompatFilter(t *testing.T) {
 		},
 		"UnknownFilterOperator": {
 			filter:     bson.D{{"v", bson.D{{"$someUnknownOperator", 42}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -268,19 +268,19 @@ func TestQueryCompatSort(t *testing.T) {
 		"Bad": {
 			filter:           bson.D{},
 			sort:             bson.D{{"v", 13}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"BadZero": {
 			filter:           bson.D{},
 			sort:             bson.D{{"v", 0}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"BadNull": {
 			filter:           bson.D{},
 			sort:             bson.D{{"v", nil}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"DotNotationIndex": {
@@ -294,26 +294,26 @@ func TestQueryCompatSort(t *testing.T) {
 		"DotNotationMissingField": {
 			filter:           bson.D{},
 			sort:             bson.D{{"v..foo", 1}, {"_id", 1}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 
 		"BadDollarStart": {
 			filter:           bson.D{},
 			sort:             bson.D{{"$v.foo", 1}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/265",
 		},
 		"BadDollarMid": {
 			filter:           bson.D{},
 			sort:             bson.D{{"v.$foo.bar", 1}, {"_id", 1}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/265",
 		},
 		"BadDollarEnd": {
 			filter:           bson.D{},
 			sort:             bson.D{{"_id", 1}, {"v.$foo.bar", 1}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/265",
 		},
 		"DollarPossible": {
@@ -369,7 +369,7 @@ func TestQueryCompatSkip(t *testing.T) {
 		"Big": {
 			filter:     bson.D{},
 			optSkip:    pointer.ToInt64(1000),
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Zero": {
 			filter:  bson.D{},
@@ -378,18 +378,18 @@ func TestQueryCompatSkip(t *testing.T) {
 		"Bad": {
 			filter:           bson.D{},
 			optSkip:          pointer.ToInt64(-1),
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"MaxInt64": {
 			filter:     bson.D{},
 			optSkip:    pointer.ToInt64(math.MaxInt64),
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MinInt64": {
 			filter:           bson.D{},
 			optSkip:          pointer.ToInt64(math.MinInt64),
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 	}
@@ -465,12 +465,12 @@ func TestQueryCompatBatchSize(t *testing.T) {
 		"Zero": {
 			filter:     bson.D{},
 			batchSize:  pointer.ToInt32(0),
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Bad": {
 			filter:           bson.D{},
 			batchSize:        pointer.ToInt32(-1),
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 	}

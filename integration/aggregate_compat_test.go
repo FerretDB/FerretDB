@@ -38,7 +38,7 @@ type aggregateStagesCompatTestCase struct {
 	pipeline bson.A         // required, unspecified $sort appends bson.D{{"$sort", bson.D{{"_id", 1}}}} for non empty pipeline.
 	maxTime  *time.Duration // optional, leave nil for unset maxTime
 
-	resultType       compatTestCaseResultType // defaults to nonEmptyResult
+	resultType       CompatTestCaseResultType // defaults to NonEmptyResult
 	skip             string                   // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1086
 	failsForFerretDB string
 	failsProviders   []shareddata.Provider // use only if failsForFerretDB is set, defaults to all providers
@@ -158,9 +158,9 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 			}
 
 			switch tc.resultType {
-			case nonEmptyResult:
+			case NonEmptyResult:
 				assert.True(t, nonEmptyResults, "expected non-empty results")
-			case emptyResult:
+			case EmptyResult:
 				if tc.failsForFerretDB != "" {
 					return
 				}
@@ -176,7 +176,7 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 // aggregateCommandCompatTestCase describes aggregate compatibility test case.
 type aggregateCommandCompatTestCase struct {
 	command          bson.D                   // required
-	resultType       compatTestCaseResultType // defaults to nonEmptyResult
+	resultType       CompatTestCaseResultType // defaults to NonEmptyResult
 	failsForFerretDB string
 }
 
@@ -240,9 +240,9 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 			})
 
 			switch tc.resultType {
-			case nonEmptyResult:
+			case NonEmptyResult:
 				assert.True(t, nonEmptyResults, "expected non-empty results")
-			case emptyResult:
+			case EmptyResult:
 				assert.False(t, nonEmptyResults, "expected empty results")
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
@@ -259,14 +259,14 @@ func TestAggregateCommandCompat(t *testing.T) {
 			command: bson.D{
 				{"aggregate", 1},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/349",
 		},
 		"FailedToParse": {
 			command: bson.D{
 				{"aggregate", 2},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/349",
 		},
 		"PipelineTypeMismatch": {
@@ -274,21 +274,21 @@ func TestAggregateCommandCompat(t *testing.T) {
 				{"aggregate", "collection-name"},
 				{"pipeline", 1},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"StageTypeMismatch": {
 			command: bson.D{
 				{"aggregate", "collection-name"},
 				{"pipeline", bson.A{1}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidStage": {
 			command: bson.D{
 				{"aggregate", "collection-name"},
 				{"pipeline", bson.A{"$invalid-stage"}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MaxTimeMSDoubleWholeNumber": {
 			command: bson.D{
@@ -403,25 +403,25 @@ func TestAggregateCompatCount(t *testing.T) {
 		},
 		"CountGroupID": {
 			pipeline:         bson.A{bson.D{{"$count", "_id"}}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/354",
 		},
 		"CountNonString": {
 			pipeline:   bson.A{bson.D{{"$count", 1}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"CountEmpty": {
 			pipeline:         bson.A{bson.D{{"$count", ""}}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/349",
 		},
 		"CountBadValue": {
 			pipeline:   bson.A{bson.D{{"$count", "v.foo"}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"CountBadPrefix": {
 			pipeline:   bson.A{bson.D{{"$count", "$foo"}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -715,7 +715,7 @@ func TestAggregateCompatGroup(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/390",
 		},
 		"IDExpressionAndInvalidOperator": {
@@ -729,7 +729,7 @@ func TestAggregateCompatGroup(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/389",
 		},
 		"IDDocument": {
@@ -774,55 +774,55 @@ func TestAggregateCompatGroup(t *testing.T) {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$"},
 			}}}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/390",
 		},
 		"EmptyVariable": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$$"},
 			}}}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/390",
 		},
 		"InvalidVariable$": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$$$"},
 			}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidVariable$s": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$$$s"},
 			}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NonExistingVariable": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$$s"},
 			}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/2275",
 		},
 		"SystemVariable": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$$NOW"},
 			}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/2275",
 		},
 		"GroupInvalidFields": {
 			pipeline:   bson.A{bson.D{{"$group", 1}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"EmptyGroup": {
 			pipeline:   bson.A{bson.D{{"$group", bson.D{}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MissingID": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"bla", 1},
 			}}}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/389",
 		},
 		"InvalidAccumulator": {
@@ -830,14 +830,14 @@ func TestAggregateCompatGroup(t *testing.T) {
 				{"_id", nil},
 				{"v", 1},
 			}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"EmptyAccumulator": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", nil},
 				{"v", bson.D{}},
 			}}}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/389",
 		},
 		"GroupMultipleAccumulator": {
@@ -845,14 +845,14 @@ func TestAggregateCompatGroup(t *testing.T) {
 				{"_id", nil},
 				{"v", bson.D{{"$count", "v"}, {"$count", "v"}}},
 			}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"GroupInvalidAccumulator": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", nil},
 				{"v", bson.D{{"invalid", "v"}}},
 			}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/2123",
 		},
 		"IDType": {
@@ -908,14 +908,14 @@ func TestAggregateCompatGroup(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$group", bson.D{{"_id", bson.D{{"$sum", "$"}}}}}},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/390",
 		},
 		"IDSumRecursiveInvalid": {
 			pipeline: bson.A{
 				bson.D{{"$group", bson.D{{"_id", bson.D{{"$sum", bson.D{{"$sum", "$"}}}}}}}},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/390",
 		},
 	}
@@ -1118,7 +1118,7 @@ func TestAggregateCompatGroupCount(t *testing.T) {
 				{"_id", nil},
 				{"count", bson.D{{"$count", ""}}},
 			}}}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/390",
 		},
 		"NonEmptyExpression": {
@@ -1126,7 +1126,7 @@ func TestAggregateCompatGroupCount(t *testing.T) {
 				{"_id", nil},
 				{"count", bson.D{{"$count", bson.D{{"a", 1}}}}},
 			}}}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/390",
 		},
 		"NonExistentField": {
@@ -1141,7 +1141,7 @@ func TestAggregateCompatGroupCount(t *testing.T) {
 				{"count", bson.D{{"$count", bson.D{}}}},
 				{"count", bson.D{{"$count", bson.D{}}}},
 			}}}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/390",
 		},
 	}
@@ -1158,7 +1158,7 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", 0}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"One": {
 			pipeline: bson.A{
@@ -1177,7 +1177,7 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", "5"}},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/349",
 		},
 		"Double": {
@@ -1185,7 +1185,7 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", 4.5}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DoubleInt": {
 			pipeline: bson.A{
@@ -1204,28 +1204,28 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", math.MinInt64}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Negative": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", -1}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NegativeDouble": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", -2.1}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Document": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", bson.D{}}},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/349",
 		},
 		"Int64Overflow": {
@@ -1233,7 +1233,7 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", float64(1 << 86)}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"AfterMatch": {
 			pipeline: bson.A{
@@ -1248,7 +1248,7 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$limit", 1}},
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NoSortAfterMatch": {
 			pipeline: bson.A{
@@ -1378,7 +1378,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/390",
 		},
 		"Int32": {
@@ -1475,7 +1475,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/390",
 		},
 		"RecursiveOperator": {
@@ -1493,13 +1493,13 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$group", bson.D{{"sum", bson.D{{"$sum", bson.D{{"v", "$v"}}}}}}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"RecursiveArrayInvalid": {
 			pipeline: bson.A{
 				bson.D{{"$group", bson.D{{"sum", bson.D{{"$sum", bson.D{{"$type", bson.A{"1", "2"}}}}}}}}},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/389",
 		},
 		"RecursiveOperatorNonExistent": {
@@ -1510,7 +1510,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 					{"sum", bson.D{{"$sum", bson.D{{"$non-existent", "$v"}}}}},
 				}}},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/389",
 		},
 	}
@@ -1564,7 +1564,7 @@ func TestAggregateCompatMatch(t *testing.T) {
 		},
 		"MatchBadValue": {
 			pipeline:   bson.A{bson.D{{"$match", 1}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"SumValue": {
 			pipeline: bson.A{
@@ -1635,27 +1635,27 @@ func TestAggregateCompatSort(t *testing.T) {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{
 				{"v..foo", 1},
 			}}}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/349",
 		},
 
 		"SortBadExpression": {
 			pipeline:         bson.A{bson.D{{"$sort", 1}}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/349",
 		},
 		"SortBadOrder": {
 			pipeline:         bson.A{bson.D{{"$sort", bson.D{{"_id", 0}}}}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/349",
 		},
 		"SortMissingKey": {
 			pipeline:   bson.A{bson.D{{"$sort", bson.D{}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"BadDollarStart": {
 			pipeline:         bson.A{bson.D{{"$sort", bson.D{{"$v.foo", 1}}}}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/354",
 		},
 	}
@@ -1697,14 +1697,14 @@ func TestAggregateCompatUnwind(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 				bson.D{{"$unwind", "$non-existent"}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Invalid": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 				bson.D{{"$unwind", "invalid"}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotation": {
 			pipeline: bson.A{
@@ -1717,14 +1717,14 @@ func TestAggregateCompatUnwind(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 				bson.D{{"$unwind", "$v.non-existent"}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ArrayDotNotation": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 				bson.D{{"$unwind", "$v.0"}},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/367",
 			failsProviders: shareddata.Providers{
 				shareddata.ArrayStrings,
@@ -1743,7 +1743,7 @@ func TestAggregateCompatUnwind(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 				bson.D{{"$unwind", "$v.0.foo"}},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/367",
 			failsProviders: shareddata.Providers{
 				shareddata.ArrayAndDocuments,
@@ -1752,7 +1752,7 @@ func TestAggregateCompatUnwind(t *testing.T) {
 		},
 		"Null": {
 			pipeline:   bson.A{bson.D{{"$unwind", nil}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ID": {
 			pipeline: bson.A{
@@ -1762,44 +1762,44 @@ func TestAggregateCompatUnwind(t *testing.T) {
 		},
 		"NameAsExpression": {
 			pipeline:   bson.A{bson.D{{"$unwind", "$add"}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"EmptyPath": {
 			pipeline:         bson.A{bson.D{{"$unwind", "$"}}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/349",
 		},
 		"EmptyVariable": {
 			pipeline:   bson.A{bson.D{{"$unwind", "$$"}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidVariable$": {
 			pipeline:   bson.A{bson.D{{"$unwind", "$$$"}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidVariable$s": {
 			pipeline:   bson.A{bson.D{{"$unwind", "$$$s"}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NonExistingVariable": {
 			pipeline:   bson.A{bson.D{{"$unwind", "$$s"}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"SystemVariable": {
 			pipeline:   bson.A{bson.D{{"$unwind", "$$NOW"}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Empty": {
 			pipeline:   bson.A{bson.D{{"$unwind", ""}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Number": {
 			pipeline:   bson.A{bson.D{{"$unwind", 42}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Array": {
 			pipeline:   bson.A{bson.D{{"$unwind", bson.A{"$v"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -1812,7 +1812,7 @@ func TestAggregateCompatSkip(t *testing.T) {
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"Document": {
 			pipeline:         bson.A{bson.D{{"$skip", bson.D{}}}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/349",
 		},
 		"Zero": {
@@ -1832,44 +1832,44 @@ func TestAggregateCompatSkip(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$skip", int32(1000)}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"StringInt": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$skip", "1"}},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/349",
 		},
 		"NegativeValue": {
 			pipeline:   bson.A{bson.D{{"$skip", int32(-1)}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NegativeDouble": {
 			pipeline:   bson.A{bson.D{{"$skip", -3.2}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MaxInt64": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$skip", math.MaxInt64}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MinInt64": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$skip", math.MinInt64}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Int64Overflow": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$skip", float64(1 << 86)}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"AfterMatch": {
 			pipeline: bson.A{
@@ -1899,7 +1899,7 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", "invalid"}},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/368",
 		},
 		"ZeroOperators": {
@@ -1907,7 +1907,7 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"v", bson.D{}}}}},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/369",
 		},
 		"TwoOperators": {
@@ -1915,7 +1915,7 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"v", bson.D{{"$type", "foo"}, {"$sum", 1}}}}}},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/368",
 		},
 		"DollarSignField": {
@@ -1923,7 +1923,7 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"$v", 1}}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Include1Field": {
 			pipeline: bson.A{
@@ -1968,7 +1968,7 @@ func TestAggregateCompatProject(t *testing.T) {
 
 				bson.D{{"$project", bson.D{{"foo", int32(0)}, {"bar", true}}}},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/368",
 		},
 		"Exclude1FieldInclude1Field": {
@@ -1977,7 +1977,7 @@ func TestAggregateCompatProject(t *testing.T) {
 
 				bson.D{{"$project", bson.D{{"foo", int32(1)}, {"bar", false}}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"IncludeFieldExcludeID": {
 			pipeline: bson.A{
@@ -2083,14 +2083,14 @@ func TestAggregateCompatProject(t *testing.T) {
 					{"v.array.42", false},
 				}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"EmptyDocument": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"foo", bson.D{}}}}},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/369",
 		},
 		"Document": {
@@ -2149,7 +2149,7 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$non-existent", "$v"}}}}}}}},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/368",
 		},
 		"TypeRecursiveInvalid": {
@@ -2163,7 +2163,7 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$type", bson.A{"1", "2"}}}}}}}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 
 		"TypeInt": {
@@ -2207,7 +2207,7 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.A{"foo", "bar"}}}}}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"TypeNestedArray": {
 			pipeline: bson.A{
@@ -2232,7 +2232,7 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"$type", "foo"}, {"$op", "foo"}}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -2300,7 +2300,7 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 					{"sum", bson.D{{"$sum", bson.A{"$"}}}},
 				}}},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/369",
 		},
 		"ArrayValue": {
@@ -2385,7 +2385,7 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 					{"sum", bson.D{{"$sum", bson.D{{"$sum", "$$$"}}}}},
 				}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MultipleRecursiveEmptyVariable": {
 			pipeline: bson.A{
@@ -2393,7 +2393,7 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 					{"sum", bson.D{{"$sum", bson.D{{"$sum", bson.D{{"$sum", "$$$"}}}}}}},
 				}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -2408,49 +2408,49 @@ func TestAggregateCompatAddFields(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$addFields", "invalid"}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidTypeBool": {
 			pipeline: bson.A{
 				bson.D{{"$addFields", false}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidTypeArray": {
 			pipeline: bson.A{
 				bson.D{{"$addFields", bson.A{}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidTypeInt32": {
 			pipeline: bson.A{
 				bson.D{{"$addFields", int32(1)}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidTypeInt64": {
 			pipeline: bson.A{
 				bson.D{{"$addFields", int64(1)}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidTypeFloat32": {
 			pipeline: bson.A{
 				bson.D{{"$addFields", float32(1)}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidTypeFloat64": {
 			pipeline: bson.A{
 				bson.D{{"$addFields", float64(1)}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidTypeNull": {
 			pipeline: bson.A{
 				bson.D{{"$addFields", nil}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Include1Field": {
 			pipeline: bson.A{
@@ -2487,14 +2487,14 @@ func TestAggregateCompatAddFields(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$addFields", bson.D{{"newField1", bson.D{{"$sum", 1}}}}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
 		},
 		"UnsupportedExpressionArray": {
 			pipeline: bson.A{
 				bson.D{{"$addFields", bson.D{{"newField1", bson.A{bson.D{{"$sum", 1}}}}}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
 		},
 
@@ -2503,7 +2503,7 @@ func TestAggregateCompatAddFields(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$addFields", bson.D{{"value", bson.D{{"$invalid-operator", "foo"}}}}}},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/349",
 		},
 		"Type": {
@@ -2535,7 +2535,7 @@ func TestAggregateCompatAddFields(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bson.D{{"$non-existent", "$v"}}}}}}}},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/349",
 		},
 		"TypeRecursiveInvalid": {
@@ -2580,21 +2580,21 @@ func TestAggregateCompatAddFields(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", "foo"}, {"$operator", "foo"}}}}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MultipleOperatorFirst": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", "foo"}, {"not-operator", "foo"}}}}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MultipleOperatorLast": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$addFields", bson.D{{"type", bson.D{{"not-operator", "foo"}, {"$type", "foo"}}}}}},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/349",
 		},
 		"TypeArraySingleItem": {
@@ -2608,7 +2608,7 @@ func TestAggregateCompatAddFields(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bson.A{"foo", "bar"}}}}}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"TypeNestedArray": {
 			pipeline: bson.A{
@@ -2650,49 +2650,49 @@ func TestAggregateCompatSet(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$set", "invalid"}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidTypeBool": {
 			pipeline: bson.A{
 				bson.D{{"$set", false}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidTypeArray": {
 			pipeline: bson.A{
 				bson.D{{"$set", bson.A{}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidTypeInt32": {
 			pipeline: bson.A{
 				bson.D{{"$set", int32(1)}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidTypeInt64": {
 			pipeline: bson.A{
 				bson.D{{"$set", int64(1)}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidTypeFloat32": {
 			pipeline: bson.A{
 				bson.D{{"$set", float32(1)}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidTypeFloat64": {
 			pipeline: bson.A{
 				bson.D{{"$set", float64(1)}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidTypeNull": {
 			pipeline: bson.A{
 				bson.D{{"$set", nil}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Include1Field": {
 			pipeline: bson.A{
@@ -2729,14 +2729,14 @@ func TestAggregateCompatSet(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$set", bson.D{{"newField1", bson.D{{"$sum", 1}}}}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
 		},
 		"UnsupportedExpressionArray": {
 			pipeline: bson.A{
 				bson.D{{"$set", bson.D{{"newField1", bson.A{bson.D{{"$sum", 1}}}}}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
 		},
 		"SumValue": {
@@ -2760,37 +2760,37 @@ func TestAggregateCompatUnset(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$unset", bson.A{1, 2, 3}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"EmptyArray": {
 			pipeline: bson.A{
 				bson.D{{"$unset", bson.A{}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"EmptyString": {
 			pipeline: bson.A{
 				bson.D{{"$unset", ""}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ArrayWithEmptyString": {
 			pipeline: bson.A{
 				bson.D{{"$unset", bson.A{""}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidTypeArrayWithDifferentTypes": {
 			pipeline: bson.A{
 				bson.D{{"$unset", bson.A{"v", 42, false}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidType": {
 			pipeline: bson.A{
 				bson.D{{"$unset", false}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Unset1Field": {
 			pipeline: bson.A{
