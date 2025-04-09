@@ -33,7 +33,7 @@ type command struct {
 	// Handler processes this command.
 	//
 	// The passed context is canceled when the client disconnects.
-	Handler middleware.MsgHandlerFunc
+	Handler middleware.HandleFunc
 
 	// Help is shown in the `listCommands` command output.
 	// If empty, that command is hidden, but still can be used.
@@ -340,8 +340,8 @@ func (h *Handler) Commands() map[string]*command {
 // auth is a middleware that wraps the command handler with authentication check.
 //
 // Context must contain [*conninfo.ConnInfo].
-func auth(next middleware.MsgHandlerFunc, l *slog.Logger, command string) middleware.MsgHandlerFunc {
-	return func(ctx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+func auth(next middleware.HandleFunc, l *slog.Logger, command string) middleware.HandleFunc {
+	return func(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
 		conv := conninfo.Get(ctx).Conv()
 		succeed := conv.Succeed()
 		username := conv.Username()
@@ -367,8 +367,8 @@ func auth(next middleware.MsgHandlerFunc, l *slog.Logger, command string) middle
 }
 
 // notImplemented returns a handler that returns an error indicating that the command is not implemented.
-func notImplemented(command string) middleware.MsgHandlerFunc {
-	return func(context.Context, *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+func notImplemented(command string) middleware.HandleFunc {
+	return func(context.Context, *middleware.Request) (*middleware.Response, error) {
 		return nil, mongoerrors.New(
 			mongoerrors.ErrNotImplemented,
 			fmt.Sprintf("Command %s is not implemented", command),

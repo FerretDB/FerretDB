@@ -31,7 +31,7 @@ import (
 // CmdQuery implements deprecated OP_QUERY message handling.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) CmdQuery(connCtx context.Context, query *middleware.QueryRequest) (*middleware.ReplyResponse, error) {
+func (h *Handler) CmdQuery(connCtx context.Context, query *middleware.Request) (*middleware.Response, error) {
 	q := query.OpQuery.Query()
 	cmd := q.Command()
 	collection := query.OpQuery.FullCollectionName
@@ -39,7 +39,7 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *middleware.QueryReque
 	suffix := ".$cmd"
 	if !strings.HasSuffix(collection, suffix) {
 		// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/527
-		return middleware.Reply(wirebson.MustDocument(
+		return middleware.MakeReply(wirebson.MustDocument(
 			"$err", "OP_QUERY is no longer supported. The client driver may require an update.",
 			"code", int32(mongoerrors.ErrLocation5739101),
 			"ok", float64(0),
@@ -61,7 +61,7 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *middleware.QueryReque
 			return nil, lazyerrors.Error(err)
 		}
 
-		return middleware.Reply(reply)
+		return middleware.MakeReply(reply)
 
 	case "saslStart":
 		if slices.Contains(q.FieldNames(), "$db") {
@@ -79,7 +79,7 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *middleware.QueryReque
 
 		must.NoError(reply.Add("ok", float64(1)))
 
-		return middleware.Reply(reply)
+		return middleware.MakeReply(reply)
 
 	case "saslContinue":
 		if slices.Contains(q.FieldNames(), "$db") {
@@ -95,7 +95,7 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *middleware.QueryReque
 			return nil, err
 		}
 
-		return middleware.Reply(reply)
+		return middleware.MakeReply(reply)
 	}
 
 	return nil, mongoerrors.NewWithArgument(

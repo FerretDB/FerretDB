@@ -32,8 +32,8 @@ import (
 // MsgCreateIndexes implements `createIndexes` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgCreateIndexes(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
-	spec, err := req.RawDocument()
+func (h *Handler) MsgCreateIndexes(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -73,7 +73,7 @@ func (h *Handler) MsgCreateIndexes(connCtx context.Context, req *middleware.MsgR
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.Response(res)
+	return middleware.MakeResponse(res)
 }
 
 // createIndexes calls DocumentDB API to create indexes, decodes and maps embedded error to command error if any.

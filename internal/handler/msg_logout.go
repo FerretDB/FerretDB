@@ -27,8 +27,8 @@ import (
 // MsgLogout implements `logout` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgLogout(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
-	spec, err := req.RawDocument()
+func (h *Handler) MsgLogout(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -41,7 +41,7 @@ func (h *Handler) MsgLogout(connCtx context.Context, req *middleware.MsgRequest)
 		h.L.WarnContext(connCtx, "MsgLogout: no SCRAM conversation")
 	}
 
-	return middleware.Response(wirebson.MustDocument(
+	return middleware.MakeResponse(wirebson.MustDocument(
 		"ok", float64(1),
 	))
 }
