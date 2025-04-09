@@ -57,5 +57,5 @@ func (h *Handler) MsgUpdate(connCtx context.Context, req *middleware.Request) (*
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.MakeResponse(mongoerrors.MapWriteErrors(connCtx, res))
+	return middleware.ResponseMsg(mongoerrors.MapWriteErrors(connCtx, res))
 }

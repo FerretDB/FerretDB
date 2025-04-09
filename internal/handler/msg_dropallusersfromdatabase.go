@@ -73,7 +73,7 @@ func (h *Handler) MsgDropAllUsersFromDatabase(connCtx context.Context, req *midd
 
 	usersV, ok := usersInfoDoc.Get("users").(wirebson.AnyArray)
 	if !ok {
-		return middleware.MakeResponse(wirebson.MustDocument(
+		return middleware.ResponseMsg(wirebson.MustDocument(
 			"n", int32(0),
 			"ok", float64(1),
 		))
@@ -110,7 +110,7 @@ func (h *Handler) MsgDropAllUsersFromDatabase(connCtx context.Context, req *midd
 		n++
 	}
 
-	return middleware.MakeResponse(wirebson.MustDocument(
+	return middleware.ResponseMsg(wirebson.MustDocument(
 		"n", n,
 		"ok", float64(1),
 	))

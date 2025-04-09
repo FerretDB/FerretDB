@@ -333,6 +333,9 @@ func (h *Handler) initCommands() {
 }
 
 // Commands returns a map of enabled commands.
+//
+// Remove this method.
+// TODO https://github.com/FerretDB/FerretDB/issues/4965
 func (h *Handler) Commands() map[string]*command {
 	return h.commands
 }

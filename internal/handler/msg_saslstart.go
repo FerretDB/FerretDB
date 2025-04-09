@@ -58,7 +58,7 @@ func (h *Handler) MsgSASLStart(connCtx context.Context, req *middleware.Request)
 
 	must.NoError(res.Add("ok", float64(1)))
 
-	return middleware.MakeResponse(res)
+	return middleware.ResponseMsg(res)
 }
 
 // saslStart starts SCRAM conversation.

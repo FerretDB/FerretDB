@@ -23,6 +23,7 @@ import (
 
 	"github.com/FerretDB/wire"
 
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/tlsutil"
 )
@@ -76,27 +77,43 @@ func dialTLS(addr, certFile, keyFile, caFile string) (net.Conn, error) {
 }
 
 // Close stops the handler.
-func (r *Handler) Close() {
-	r.conn.Close()
+func (h *Handler) Close() {
+	_ = h.conn.Close()
 }
 
-// Handle handles the message by sending it to another wire protocol compatible service.
-func (r *Handler) Handle(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody) (*wire.MsgHeader, wire.MsgBody) {
+// Handle processes a request by sending it to another wire protocol compatible service.
+func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	deadline, _ := ctx.Deadline()
-	r.conn.SetDeadline(deadline)
+	_ = h.conn.SetDeadline(deadline)
 
-	if err := wire.WriteMessage(r.bufw, header, body); err != nil {
-		panic(err)
+	var body wire.MsgBody
+
+	switch {
+	case req.OpMsg != nil:
+		body = req.OpMsg
+	case req.OpQuery != nil:
+		body = req.OpQuery
+	default:
+		return nil, lazyerrors.New("request body is nil")
 	}
 
-	if err := r.bufw.Flush(); err != nil {
-		panic(err)
+	if err := wire.WriteMessage(h.bufw, req.WireHeader(), body); err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	resHeader, resBody, err := wire.ReadMessage(r.bufr)
+	if err := h.bufw.Flush(); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	respHeader, respBody, err := wire.ReadMessage(h.bufr)
 	if err != nil {
-		panic(err)
+		return nil, lazyerrors.Error(err)
 	}
 
-	return resHeader, resBody
+	return middleware.ResponseWire(respHeader, respBody)
 }
+
+// check interfaces
+var (
+	_ middleware.HandleFunc = (*Handler)(nil).Handle
+)

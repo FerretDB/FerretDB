@@ -166,7 +166,7 @@ func (h *Handler) MsgExplain(connCtx context.Context, req *middleware.Request) (
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.MakeResponse(res)
+	return middleware.ResponseMsg(res)
 }
 
 // unmarshalExplain unmarshalls the plan from EXPLAIN postgreSQL command.

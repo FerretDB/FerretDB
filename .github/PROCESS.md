@@ -10,8 +10,8 @@ This guide tries to be short and does not mention things that are completely aut
 
 We want our work to be visible and transparent.
 This way we can help each other and make sure that we are on the right track.
-To uphold these principles, we agree to make results of our daily work available for others through various means such as
-pull requests, code reviews, created issues, or any other relevant method.
+To uphold these principles, we agree to make results of our daily work available for others through various means
+such as pushed commits, updated pull requests, code reviews, created issues, or any other relevant method.
 
 ### Community
 
