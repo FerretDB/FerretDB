@@ -91,13 +91,13 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			"$db", "admin",
 		)).Encode())))
 
-		res, err := s.handler.Commands()["saslStart"].Handler(ctx, &middleware.MsgRequest{OpMsg: msg})
+		res, err := s.handler.Commands()["saslStart"].Handler(ctx, &middleware.Request{OpMsg: msg})
 		if err != nil {
 			http.Error(w, lazyerrors.Error(err).Error(), http.StatusUnauthorized)
 			return
 		}
 
-		resDoc := must.NotFail(must.NotFail(res.RawDocument()).Decode())
+		resDoc := must.NotFail(must.NotFail(res.OpMsg.RawDocument()).Decode())
 		convId := resDoc.Get("conversationId").(int32)
 
 		payloadBytes := resDoc.Get("payload").(wirebson.Binary).B
@@ -115,13 +115,13 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			"$db", "admin",
 		)).Encode())))
 
-		res, err = s.handler.Commands()["saslContinue"].Handler(ctx, &middleware.MsgRequest{OpMsg: msg})
+		res, err = s.handler.Commands()["saslContinue"].Handler(ctx, &middleware.Request{OpMsg: msg})
 		if err != nil {
 			http.Error(w, lazyerrors.Error(err).Error(), http.StatusUnauthorized)
 			return
 		}
 
-		resDoc = must.NotFail(must.NotFail(res.RawDocument()).Decode())
+		resDoc = must.NotFail(must.NotFail(res.OpMsg.RawDocument()).Decode())
 		if !resDoc.Get("done").(bool) {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
@@ -239,7 +239,7 @@ func prepareDocument(pairs ...any) (*wirebson.Document, error) {
 // which can be used as handler command msg.
 //
 // If any of pair values is nil it's ignored.
-func prepareOpMsg(pairs ...any) (*middleware.MsgRequest, error) {
+func prepareOpMsg(pairs ...any) (*middleware.Request, error) {
 	doc, err := prepareDocument(pairs...)
 	if err != nil {
 		return nil, err
@@ -250,7 +250,7 @@ func prepareOpMsg(pairs ...any) (*middleware.MsgRequest, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &middleware.MsgRequest{OpMsg: req}, nil
+	return &middleware.Request{OpMsg: req}, nil
 }
 
 // decodeJsonRequest takes request with json body and decodes it into

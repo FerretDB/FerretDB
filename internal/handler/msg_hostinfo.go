@@ -34,8 +34,8 @@ import (
 // MsgHostInfo implements `hostInfo` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgHostInfo(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
-	spec, err := req.RawDocument()
+func (h *Handler) MsgHostInfo(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -77,7 +77,7 @@ func (h *Handler) MsgHostInfo(connCtx context.Context, req *middleware.MsgReques
 		os = "Windows"
 	}
 
-	return middleware.Response(wirebson.MustDocument(
+	return middleware.MakeResponse(wirebson.MustDocument(
 		"system", must.NotFail(wirebson.NewDocument(
 			"currentTime", now,
 			"hostname", hostname,

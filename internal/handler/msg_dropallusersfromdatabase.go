@@ -28,8 +28,8 @@ import (
 // MsgDropAllUsersFromDatabase implements `dropAllUsersFromDatabase` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgDropAllUsersFromDatabase(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) { //nolint:lll // for readability
-	spec, err := req.RawDocument()
+func (h *Handler) MsgDropAllUsersFromDatabase(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) { //nolint:lll // for readability
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -73,7 +73,7 @@ func (h *Handler) MsgDropAllUsersFromDatabase(connCtx context.Context, req *midd
 
 	usersV, ok := usersInfoDoc.Get("users").(wirebson.AnyArray)
 	if !ok {
-		return middleware.Response(wirebson.MustDocument(
+		return middleware.MakeResponse(wirebson.MustDocument(
 			"n", int32(0),
 			"ok", float64(1),
 		))
@@ -110,7 +110,7 @@ func (h *Handler) MsgDropAllUsersFromDatabase(connCtx context.Context, req *midd
 		n++
 	}
 
-	return middleware.Response(wirebson.MustDocument(
+	return middleware.MakeResponse(wirebson.MustDocument(
 		"n", n,
 		"ok", float64(1),
 	))
