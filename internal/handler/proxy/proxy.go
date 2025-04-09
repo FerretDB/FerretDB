@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package proxy handles messages by sending them to another wire protocol compatible service.
+// Package proxy handles requests by sending them to another wire protocol compatible service.
 package proxy
 
 import (
@@ -28,7 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/tlsutil"
 )
 
-// Handler handles messages by sending them to another wire protocol compatible service.
+// Handler handles requests by sending them to another wire protocol compatible service.
 type Handler struct {
 	conn net.Conn
 	bufr *bufio.Reader
@@ -76,8 +76,11 @@ func dialTLS(addr, certFile, keyFile, caFile string) (net.Conn, error) {
 	return conn, nil
 }
 
-// Close stops the handler.
-func (h *Handler) Close() {
+// Run runs the handler until ctx is canceled.
+//
+// When this method returns, handler is stopped.
+func (h *Handler) Run(ctx context.Context) {
+	<-ctx.Done()
 	_ = h.conn.Close()
 }
 

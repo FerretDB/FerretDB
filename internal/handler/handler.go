@@ -133,6 +133,7 @@ func (h *Handler) Run(ctx context.Context) {
 	}
 }
 
+// Handle processes a request.
 func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/4965
 	panic("not implemented")

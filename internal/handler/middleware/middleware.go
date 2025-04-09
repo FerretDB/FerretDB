@@ -15,9 +15,7 @@
 // Package middleware provides wrappers for command handlers.
 package middleware
 
-import (
-	"context"
-)
+import "context"
 
 // HandleFunc represents a function/method that processes a single request.
 //

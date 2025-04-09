@@ -155,6 +155,11 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 	ctx = conninfo.Ctx(ctx, connInfo)
 
+	// That's not the best – it makes proxy handler very different from the main handler.
+	// Instead, proxy handler should map connections based on connInfo.
+	// TODO https://github.com/FerretDB/FerretDB/issues/4965
+	go c.proxy.Run(ctx)
+
 	done := make(chan struct{})
 
 	// handle ctx cancellation
@@ -211,10 +216,6 @@ func (c *conn) run(ctx context.Context) (err error) {
 	defer func() {
 		if e := bufw.Flush(); err == nil {
 			err = e
-		}
-
-		if c.proxy != nil {
-			c.proxy.Close()
 		}
 
 		// c.netConn is closed by the caller

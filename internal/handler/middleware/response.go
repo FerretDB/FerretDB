@@ -66,7 +66,7 @@ func ResponseMsg(doc wirebson.AnyDocument) (*Response, error) {
 	return &Response{OpMsg: msg}, nil
 }
 
-// ResponseMsg creates a new OP_REPLY response from the given document.
+// ResponseReply creates a new OP_REPLY response from the given document.
 func ResponseReply(doc wirebson.AnyDocument) (*Response, error) {
 	reply, err := wire.NewOpReply(doc)
 	if err != nil {
