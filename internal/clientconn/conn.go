@@ -158,7 +158,9 @@ func (c *conn) run(ctx context.Context) (err error) {
 	// That's not the best – it makes proxy handler very different from the main handler.
 	// Instead, proxy handler should map connections based on connInfo.
 	// TODO https://github.com/FerretDB/FerretDB/issues/4965
-	go c.proxy.Run(ctx)
+	if c.proxy != nil {
+		go c.proxy.Run(ctx)
+	}
 
 	done := make(chan struct{})
 
