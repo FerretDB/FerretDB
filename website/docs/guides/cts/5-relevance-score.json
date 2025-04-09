@@ -25,15 +25,14 @@
         "score": {
           "$meta": "textScore"
         }
-      },
-      "$db": "{{.Database}}"
+      }
     },
     "response": {
       "cursor": {
         "id": {
           "$numberLong": "0"
         },
-        "ns": "{{.Database}}.books",
+        "ns": "cts.books",
         "firstBatch": []
       },
       "ok": {

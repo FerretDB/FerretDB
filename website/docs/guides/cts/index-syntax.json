@@ -17,8 +17,7 @@
             "numLists": "\u003cnumLists\u003e"
           }
         }
-      ],
-      "$db": "{{.Database}}"
+      ]
     },
     "response": {
       "ok": {

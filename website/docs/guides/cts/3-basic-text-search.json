@@ -6,8 +6,7 @@
         "$text": {
           "$search": "drama"
         }
-      },
-      "$db": "{{.Database}}"
+      }
     },
     "response": {
       "cursor": {
@@ -15,7 +14,7 @@
         "id": {
           "$numberLong": "0"
         },
-        "ns": "{{.Database}}.books"
+        "ns": "cts.books"
       },
       "ok": {
         "$numberDouble": "1.0"

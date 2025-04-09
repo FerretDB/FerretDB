@@ -10,8 +10,7 @@
           },
           "name": "title_summary_text_index"
         }
-      ],
-      "$db": "{{.Database}}"
+      ]
     },
     "response": {
       "numIndexesBefore": {

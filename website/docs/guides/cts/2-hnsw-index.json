@@ -22,8 +22,7 @@
             }
           }
         }
-      ],
-      "$db": "{{.Database}}"
+      ]
     },
     "response": {
       "numIndexesBefore": {

@@ -14,8 +14,7 @@
           }
         }
       ],
-      "cursor": {},
-      "$db": "{{.Database}}"
+      "cursor": {}
     },
     "response": {
       "ok": {

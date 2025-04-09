@@ -1,1 +1,1 @@
-response = { cursor: { id: Long(0), ns: '{{.Database}}.books', firstBatch: [] }, ok: Double(1.0) }
+response = { cursor: { id: Long(0), ns: 'cts.books', firstBatch: [] }, ok: Double(1.0) }

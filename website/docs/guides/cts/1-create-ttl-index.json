@@ -14,8 +14,7 @@
             "$numberInt": "60"
           }
         }
-      ],
-      "$db": "{{.Database}}"
+      ]
     },
     "response": {
       "numIndexesBefore": {

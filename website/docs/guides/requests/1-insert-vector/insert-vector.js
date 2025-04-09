@@ -64,6 +64,5 @@ db.runCommand({
         Double(-0.001792)
       ]
     }
-  ],
-  $db: '{{.Database}}'
+  ]
 })
