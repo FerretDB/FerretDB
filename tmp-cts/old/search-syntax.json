@@ -1,0 +1,30 @@
+{
+  "search-syntax": {
+    "request": {
+      "aggregate": "collectionName",
+      "pipeline": [
+        {
+          "$search": {
+            "cosmosSearch": {
+              "vector": "\u003cvector\u003e",
+              "path": "\u003cpath\u003e",
+              "k": "\u003ck\u003e",
+              "efSearch": "\u003cefSearch\u003e"
+            }
+          }
+        }
+      ],
+      "cursor": {}
+    },
+    "response": {
+      "ok": {
+        "$numberDouble": "0.0"
+      },
+      "errmsg": "OP_MSG requests require a $db argument",
+      "code": {
+        "$numberInt": "40571"
+      },
+      "codeName": "Location40571"
+    }
+  }
+}

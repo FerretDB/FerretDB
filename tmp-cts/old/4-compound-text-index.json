@@ -1,0 +1,26 @@
+{
+  "compound-text-index": {
+    "request": {
+      "createIndexes": "books",
+      "indexes": [
+        {
+          "key": {
+            "title": "text",
+            "summary": "text"
+          },
+          "name": "title_summary_text_index"
+        }
+      ]
+    },
+    "response": {
+      "ok": {
+        "$numberDouble": "0.0"
+      },
+      "errmsg": "OP_MSG requests require a $db argument",
+      "code": {
+        "$numberInt": "40571"
+      },
+      "codeName": "Location40571"
+    }
+  }
+}

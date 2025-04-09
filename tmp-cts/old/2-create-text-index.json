@@ -1,0 +1,28 @@
+{
+  "create-text-index": {
+    "request": {
+      "createIndexes": "books",
+      "indexes": [
+        {
+          "key": {
+            "summary": "text"
+          },
+          "name": "summary_text_index"
+        }
+      ],
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "numIndexesBefore": {
+        "$numberInt": "2"
+      },
+      "numIndexesAfter": {
+        "$numberInt": "3"
+      },
+      "createdCollectionAutomatically": false,
+      "ok": {
+        "$numberDouble": "1.0"
+      }
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "create-ttl-index": {
+    "request": {
+      "createIndexes": "books",
+      "indexes": [
+        {
+          "key": {
+            "reservation.date": {
+              "$numberInt": "1"
+            }
+          },
+          "name": "reservation_ttl",
+          "expireAfterSeconds": {
+            "$numberInt": "60"
+          }
+        }
+      ],
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "numIndexesBefore": {
+        "$numberInt": "1"
+      },
+      "numIndexesAfter": {
+        "$numberInt": "2"
+      },
+      "createdCollectionAutomatically": true,
+      "ok": {
+        "$numberDouble": "1.0"
+      }
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "hnsw-index": {
+    "request": {
+      "createIndexes": "books",
+      "indexes": [
+        {
+          "name": "vector_hnsw_index",
+          "key": {
+            "vector": "cosmosSearch"
+          },
+          "cosmosSearchOptions": {
+            "kind": "vector-hnsw",
+            "similarity": "COS",
+            "dimensions": {
+              "$numberInt": "12"
+            },
+            "m": {
+              "$numberInt": "16"
+            },
+            "efConstruction": {
+              "$numberInt": "64"
+            }
+          }
+        }
+      ],
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "ok": {
+        "$numberDouble": "0.0"
+      },
+      "errmsg": "Error in specification { name: \"vector_hnsw_index\", key: { vector: \"cosmosSearch\" }, cosmosSearchOptions: { kind: \"vector-hnsw\", similarity: \"COS\", dimensions: 12, m: 16, efConstruction: 64 } } :: caused by :: The field 'cosmosSearchOptions' is not valid for an index specification. Specification: { name: \"vector_hnsw_index\", key: { vector: \"cosmosSearch\" }, cosmosSearchOptions: { kind: \"vector-hnsw\", similarity: \"COS\", dimensions: 12, m: 16, efConstruction: 64 } }",
+      "code": {
+        "$numberInt": "197"
+      },
+      "codeName": "InvalidIndexSpecificationOption"
+    }
+  }
+}

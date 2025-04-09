@@ -1,0 +1,33 @@
+{
+  "index-syntax": {
+    "request": {
+      "createIndexes": "\u003ccollectionName\u003e",
+      "indexes": [
+        {
+          "name": "\u003cindexName\u003e",
+          "key": {
+            "\u003cpath\u003e": "cosmosSearch"
+          },
+          "cosmosSearchOptions": {
+            "kind": "\u003ckind\u003e",
+            "similarity": "\u003csimilarity\u003e",
+            "dimensions": "\u003cdimensions\u003e",
+            "m": "\u003cm\u003e",
+            "efConstruction": "\u003cefConstruction\u003e",
+            "numLists": "\u003cnumLists\u003e"
+          }
+        }
+      ]
+    },
+    "response": {
+      "ok": {
+        "$numberDouble": "0.0"
+      },
+      "errmsg": "OP_MSG requests require a $db argument",
+      "code": {
+        "$numberInt": "40571"
+      },
+      "codeName": "Location40571"
+    }
+  }
+}

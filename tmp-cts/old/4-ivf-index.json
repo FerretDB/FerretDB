@@ -1,0 +1,35 @@
+{
+  "ivf-index": {
+    "request": {
+      "createIndexes": "books",
+      "indexes": [
+        {
+          "name": "vector_ivf_index",
+          "key": {
+            "vector": "cosmosSearch"
+          },
+          "cosmosSearchOptions": {
+            "kind": "vector-ivf",
+            "similarity": "COS",
+            "dimensions": {
+              "$numberInt": "12"
+            },
+            "numLists": {
+              "$numberInt": "3"
+            }
+          }
+        }
+      ]
+    },
+    "response": {
+      "ok": {
+        "$numberDouble": "0.0"
+      },
+      "errmsg": "OP_MSG requests require a $db argument",
+      "code": {
+        "$numberInt": "40571"
+      },
+      "codeName": "Location40571"
+    }
+  }
+}
