@@ -5,10 +5,8 @@
       "indexes": [
         {
           "key": {
-            "reservation": {
-              "date": {
-                "$numberInt": "1"
-              }
+            "reservation.date": {
+              "$numberInt": "1"
             }
           },
           "name": "reservation_ttl",
@@ -16,8 +14,20 @@
             "$numberInt": "60"
           }
         }
-      ]
+      ],
+      "$db": "{{.Database}}"
     },
-    "response": {}
+    "response": {
+      "numIndexesBefore": {
+        "$numberInt": "1"
+      },
+      "numIndexesAfter": {
+        "$numberInt": "2"
+      },
+      "createdCollectionAutomatically": false,
+      "ok": {
+        "$numberDouble": "1.0"
+      }
+    }
   }
 }

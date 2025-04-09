@@ -15,8 +15,16 @@
             }
           }
         }
-      ]
+      ],
+      "$db": "{{.Database}}"
     },
-    "response": {}
+    "response": {
+      "n": {
+        "$numberInt": "1"
+      },
+      "ok": {
+        "$numberDouble": "1.0"
+      }
+    }
   }
 }

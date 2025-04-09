@@ -9,8 +9,20 @@
           },
           "name": "summary_text_index"
         }
-      ]
+      ],
+      "$db": "{{.Database}}"
     },
-    "response": {}
+    "response": {
+      "numIndexesBefore": {
+        "$numberInt": "2"
+      },
+      "numIndexesAfter": {
+        "$numberInt": "3"
+      },
+      "createdCollectionAutomatically": false,
+      "ok": {
+        "$numberDouble": "1.0"
+      }
+    }
   }
 }

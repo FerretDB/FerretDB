@@ -19,6 +19,15 @@
         }
       ]
     },
-    "response": {}
+    "response": {
+      "ok": {
+        "$numberDouble": "0.0"
+      },
+      "errmsg": "OP_MSG requests require a $db argument",
+      "code": {
+        "$numberInt": "40571"
+      },
+      "codeName": "Location40571"
+    }
   }
 }
