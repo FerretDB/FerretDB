@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package integration
+package query
 
 import (
 	"math"
@@ -24,6 +24,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/v2/integration"
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
 	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
@@ -38,7 +39,7 @@ func TestFindAndModifyEmptyCollectionName(t *testing.T) {
 
 	assert.Nil(t, res)
 
-	AssertEqualAltCommandError(
+	integration.AssertEqualAltCommandError(
 		t,
 		mongo.CommandError{
 			Code:    73,
@@ -481,11 +482,11 @@ func TestFindAndModifyCommandErrors(tt *testing.T) {
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 			if tc.altMessage != "" {
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+				integration.AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 				return
 			}
 
-			AssertEqualCommandError(t, *tc.err, err)
+			integration.AssertEqualCommandError(t, *tc.err, err)
 		})
 	}
 }
@@ -645,5 +646,5 @@ func TestFindAndModifyCommentQuery(t *testing.T) {
 		{"ok", float64(1)},
 	}
 
-	AssertEqualDocuments(t, expected, actual)
+	integration.AssertEqualDocuments(t, expected, actual)
 }
