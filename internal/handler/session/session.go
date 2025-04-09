@@ -75,7 +75,7 @@ func (s *sessionInfo) close() {
 
 // getSessionUUID extracts the session ID from `lsid`.
 // If `lsid` field does not exist, it returns an empty uuid.
-func getSessionUUID(spec wirebson.RawDocument) (uuid.UUID, error) {
+func getSessionUUID(spec wirebson.AnyDocument) (uuid.UUID, error) {
 	doc, err := spec.Decode()
 	if err != nil {
 		return uuid.Nil, lazyerrors.Error(err)

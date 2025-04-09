@@ -15,7 +15,9 @@
 // Package shareddata provides data for tests and benchmarks.
 package shareddata
 
-import "golang.org/x/exp/maps"
+import (
+	"math/rand/v2"
+)
 
 // unset represents a field that should not be set.
 var unset = struct{}{}
@@ -60,18 +62,53 @@ func AllProviders() Providers {
 		ArrayAndDocuments,
 	}
 
-	// check that names are unique and randomize order
-	res := make(map[string]Provider, len(providers))
+	names := make(map[string]struct{}, len(providers))
+	res := make([]Provider, 0, len(providers))
+
 	for _, p := range providers {
 		n := p.Name()
-		if _, ok := res[n]; ok {
+		if _, ok := names[n]; ok {
 			panic("duplicate provider name: " + n)
 		}
 
-		res[n] = p
+		names[n] = struct{}{}
+		res = append(res, p)
 	}
 
-	return maps.Values(res)
+	// just using a map with maps.Values is not random enough
+	rand.Shuffle(len(res), func(i, j int) {
+		res[i], res[j] = res[j], res[i]
+	})
+
+	return res
+}
+
+// AllBenchmarkProviders returns all benchmark providers in random order.
+func AllBenchmarkProviders() []BenchmarkProvider {
+	providers := []BenchmarkProvider{
+		BenchSmall,
+		BenchSettings,
+	}
+
+	names := make(map[string]struct{}, len(providers))
+	res := make([]BenchmarkProvider, 0, len(providers))
+
+	for _, p := range providers {
+		n := p.baseName()
+		if _, ok := names[n]; ok {
+			panic("duplicate benchmark provider base name: " + n)
+		}
+
+		names[n] = struct{}{}
+		res = append(res, p)
+	}
+
+	// just using a map with maps.Values is not random enough
+	rand.Shuffle(len(res), func(i, j int) {
+		res[i], res[j] = res[j], res[i]
+	})
+
+	return res
 }
 
 // Providers are array of providers.

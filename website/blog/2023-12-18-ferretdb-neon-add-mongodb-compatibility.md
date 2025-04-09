@@ -118,40 +118,40 @@ This will connect you directly to the `ferretdb` database.
 With `mongosh` running, let's try to insert some documents into our FerretDB instance.
 You are going to insert two footballer data into a `players` collection.
 
-```json5
+```js
 db.players.insertMany([
-   {
-       futbin_id: 3,
-       player_name: "Giggs",
-       player_extended_name: "Ryan Giggs",
-       quality: "Gold - Rare",
-       overall: 92,
-       nationality: "Wales",
-       position: "LM",
-       pace: 90,
-       dribbling: 91,
-       shooting: 80,
-       passing: 90,
-       defending: 44,
-       physicality: 67
-   },
-   {
-       futbin_id: 4,
-       player_name: "Scholes",
-       player_extended_name: "Paul Scholes",
-       quality: "Gold - Rare",
-       overall: 91,
-       nationality: "England",
-       position: "CM",
-       pace: 72,
-       dribbling: 80,
-       shooting: 87,
-       passing: 91,
-       defending: 64,
-       physicality: 82,
-       base_id: 246
-   }
-]);
+  {
+    futbin_id: 3,
+    player_name: 'Giggs',
+    player_extended_name: 'Ryan Giggs',
+    quality: 'Gold - Rare',
+    overall: 92,
+    nationality: 'Wales',
+    position: 'LM',
+    pace: 90,
+    dribbling: 91,
+    shooting: 80,
+    passing: 90,
+    defending: 44,
+    physicality: 67
+  },
+  {
+    futbin_id: 4,
+    player_name: 'Scholes',
+    player_extended_name: 'Paul Scholes',
+    quality: 'Gold - Rare',
+    overall: 91,
+    nationality: 'England',
+    position: 'CM',
+    pace: 72,
+    dribbling: 80,
+    shooting: 87,
+    passing: 91,
+    defending: 64,
+    physicality: 82,
+    base_id: 246
+  }
+])
 ```
 
 Great!
@@ -162,20 +162,22 @@ Now when you run `db.players.find()`, it should return all the documents stored 
 Next, you need to update "Giggs" record to reflect his current position as a `CM`.
 To do this, we can just run an `updateOne` command to target just that particular player:
 
-```json5
-db.players.updateOne(
-    { player_name: "Giggs" },
-    { $set: { position: "CM" } }
-);
+```js
+db.players.updateOne({ player_name: 'Giggs' }, { $set: { position: 'CM' } })
 ```
 
 Let's query the collection to see if the changes have been made:
 
-```text
-ferretdb> db.players.find({player_name: "Giggs"})
-[
+```js
+db.players.find({ player_name: 'Giggs' })
+```
+
+The output should show the updated record:
+
+```js
+response = [
   {
-    _id: ObjectId("657c2bddc1aa97bc73fd3e7c"),
+    _id: ObjectId('657c2bddc1aa97bc73fd3e7c'),
     futbin_id: 3,
     player_name: 'Giggs',
     player_extended_name: 'Ryan Giggs',

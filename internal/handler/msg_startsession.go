@@ -17,9 +17,9 @@ package handler
 import (
 	"context"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/session"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
@@ -27,8 +27,8 @@ import (
 // MsgStartSession implements `startSession` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgStartSession(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
+func (h *Handler) MsgStartSession(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -39,11 +39,11 @@ func (h *Handler) MsgStartSession(connCtx context.Context, msg *wire.OpMsg) (*wi
 
 	sessionID := h.s.NewSession(connCtx)
 
-	return wire.MustOpMsg(
+	return middleware.MakeResponse(wirebson.MustDocument(
 		"id", wirebson.MustDocument(
 			"id", wirebson.Binary{Subtype: wirebson.BinaryUUID, B: sessionID[:]},
 		),
 		"timeoutMinutes", session.LogicalSessionTimeoutMinutes,
 		"ok", float64(1),
-	), nil
+	))
 }

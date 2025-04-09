@@ -55,7 +55,7 @@ func TestOpQuery(t *testing.T) {
 		code := resMsg.Get("code")
 		assert.Equal(t, int32(5739101), code)
 
-		expectedMsg := "OP_QUERY is no longer supported. The client driver may require an upgrade."
+		expectedMsg := "OP_QUERY is no longer supported."
 		resErr := resMsg.Get("$err")
 		assert.Contains(t, resErr, expectedMsg)
 	})
@@ -77,7 +77,7 @@ func TestOpQuery(t *testing.T) {
 		code := resMsg.Get("code")
 		assert.Equal(t, int32(352), code)
 
-		expectedMsg := "Unsupported OP_QUERY command: unknown. The client driver may require an upgrade."
+		expectedMsg := "Unsupported OP_QUERY command: unknown."
 		errMsg := resMsg.Get("errmsg")
 		assert.Contains(t, errMsg, expectedMsg)
 	})
@@ -93,7 +93,7 @@ func TestOpQuery(t *testing.T) {
 		res, err := resBody.(*wire.OpReply).RawDocument().Decode()
 		require.NoError(t, err)
 
-		fixCluster(t, res)
+		FixCluster(t, res)
 
 		expected := must.NotFail(wirebson.NewDocument(
 			"ok", float64(0),
@@ -154,7 +154,7 @@ func TestOpQueryIsMaster(t *testing.T) {
 			res.Remove("electionId")
 			res.Remove("lastWrite")
 
-			fixCluster(t, res)
+			FixCluster(t, res)
 
 			expectedComparable := must.NotFail(wirebson.NewDocument(
 				"ismaster", true,
@@ -223,7 +223,7 @@ func TestOpQueryIsMasterHelloOk(t *testing.T) {
 			res.Remove("electionId")
 			res.Remove("lastWrite")
 
-			fixCluster(t, res)
+			FixCluster(t, res)
 
 			expectedComparable := must.NotFail(wirebson.NewDocument(
 				"helloOk", true,
@@ -284,7 +284,7 @@ func TestOpQueryHello(tt *testing.T) {
 	res.Remove("electionId")
 	res.Remove("lastWrite")
 
-	fixCluster(t, res)
+	FixCluster(t, res)
 
 	expectedComparable := must.NotFail(wirebson.NewDocument(
 		"isWritablePrimary", true,

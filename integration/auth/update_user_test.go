@@ -56,7 +56,7 @@ func TestUpdateUserCommand(t *testing.T) {
 				Name:    "BadValue",
 				Message: "Must specify at least one field to update in updateUser",
 			},
-			altMessage: "updateUser and pwd are required fields",
+			altMessage: "Password cannot be empty.",
 		},
 		"UserNotFound": {
 			username: "do_not_use",

@@ -17,9 +17,9 @@ package handler
 import (
 	"context"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
@@ -28,19 +28,20 @@ import (
 // MsgGetParameter implements `getParameter` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgGetParameter(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
+func (h *Handler) MsgGetParameter(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
-		return nil, err
-	}
-
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
 	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+		return nil, err
 	}
 
 	getParameter := doc.Get(doc.Command())
@@ -95,11 +96,7 @@ func (h *Handler) MsgGetParameter(connCtx context.Context, msg *wire.OpMsg) (*wi
 
 	must.NoError(res.Add("ok", float64(1)))
 
-	if msg, err = wire.NewOpMsg(res); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return msg, nil
+	return middleware.MakeResponse(res)
 }
 
 // selectParameters makes a selection of requested parameters.

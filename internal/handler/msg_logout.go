@@ -17,19 +17,18 @@ package handler
 import (
 	"context"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgLogout implements `logout` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgLogout(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
+func (h *Handler) MsgLogout(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -42,9 +41,7 @@ func (h *Handler) MsgLogout(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 		h.L.WarnContext(connCtx, "MsgLogout: no SCRAM conversation")
 	}
 
-	res := must.NotFail(wirebson.NewDocument(
+	return middleware.MakeResponse(wirebson.MustDocument(
 		"ok", float64(1),
 	))
-
-	return wire.NewOpMsg(must.NotFail(res.Encode()))
 }

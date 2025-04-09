@@ -30,10 +30,9 @@ import (
 // FindOne implements [ServerInterface].
 func (s *Server) FindOne(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	l := s.l
 
-	if l.Enabled(ctx, slog.LevelDebug) {
-		l.DebugContext(ctx, fmt.Sprintf("Request:\n%s\n", must.NotFail(httputil.DumpRequest(r, true))))
+	if s.l.Enabled(ctx, slog.LevelDebug) {
+		s.l.DebugContext(ctx, fmt.Sprintf("Request:\n%s", must.NotFail(httputil.DumpRequest(r, true))))
 	}
 
 	var req api.FindOneRequestBody
@@ -60,7 +59,7 @@ func (s *Server) FindOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resRaw := must.NotFail(resMsg.RawDocument())
+	resRaw := must.NotFail(resMsg.OpMsg.RawDocument())
 	cursor := must.NotFail(resRaw.Decode()).Get("cursor").(wirebson.AnyDocument)
 	firstBatch := must.NotFail(cursor.Decode()).Get("firstBatch").(wirebson.AnyArray)
 

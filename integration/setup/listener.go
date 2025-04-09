@@ -112,8 +112,6 @@ func setupListener(tb testing.TB, ctx context.Context, opts *ListenerOpts, logge
 	p, err := documentdb.NewPool(*postgreSQLURLF, logging.WithName(logger, "pool"), sp)
 	require.NoError(tb, err)
 
-	tb.Cleanup(p.Close)
-
 	handlerOpts := &handler.NewOpts{
 		Pool: p,
 		Auth: true,
@@ -132,12 +130,12 @@ func setupListener(tb testing.TB, ctx context.Context, opts *ListenerOpts, logge
 	h, err := handler.New(handlerOpts)
 	require.NoError(tb, err)
 
-	listenerOpts := clientconn.NewListenerOpts{
-		ProxyAddr:      *targetProxyAddrF,
-		Mode:           clientconn.NormalMode,
-		Metrics:        listenerMetrics,
+	listenerOpts := clientconn.ListenerOpts{
 		Handler:        h,
+		Metrics:        listenerMetrics,
 		Logger:         logger,
+		Mode:           clientconn.NormalMode,
+		ProxyAddr:      *targetProxyAddrF,
 		TestRecordsDir: filepath.Join(Dir(tb), "..", "..", "tmp", "records"),
 	}
 

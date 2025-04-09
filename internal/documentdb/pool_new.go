@@ -55,10 +55,14 @@ func newPgxPool(uri string, l *slog.Logger, sp *state.Provider) (*pgxpool.Pool, 
 	// versions and parameters could change without FerretDB restart
 	config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
 		// see https://github.com/jackc/pgx/issues/1726#issuecomment-1711612138
-		ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
 
-		return newPgxPoolCheckConn(ctx, conn, l, sp)
+		if e := newPgxPoolCheckConn(ctx, conn, l, sp); e != nil {
+			return lazyerrors.Error(e)
+		}
+
+		return nil
 	}
 
 	// port tracing, tweak logging
@@ -80,7 +84,7 @@ func newPgxPool(uri string, l *slog.Logger, sp *state.Provider) (*pgxpool.Pool, 
 	return p, nil
 }
 
-// newPgxPoolSetDefaults sets default PostgreSQL URI parameters.
+// newPgxPoolSetDefaults sets default PostgreSQL URL parameters.
 //
 // Keep it in sync with docs.
 func newPgxPoolSetDefaults(values url.Values) {
@@ -115,7 +119,7 @@ func newPgxPoolCheckConn(ctx context.Context, conn *pgx.Conn, l *slog.Logger, sp
 
 	row := conn.QueryRow(ctx, `SELECT version(), documentdb_api.binary_extended_version()`)
 	if err := row.Scan(&postgresqlVersion, &documentdbVersion); err != nil {
-		return lazyerrors.Error(err)
+		return lazyerrors.Errorf("%w (please check DocumentDB installation)", err)
 	}
 
 	if s := sp.Get(); s.PostgreSQLVersion != postgresqlVersion || s.DocumentDBVersion != documentdbVersion {
@@ -129,16 +133,18 @@ func newPgxPoolCheckConn(ctx context.Context, conn *pgx.Conn, l *slog.Logger, sp
 
 		if s.DocumentDBVersion != "" && s.DocumentDBVersion != version.DocumentDB {
 			l.WarnContext(
-				ctx, "newPgxPoolCheckConn: unexpected DocumentDB version",
+				ctx, "Unexpected DocumentDB version; see "+version.DocumentDBURL,
 				slog.String("expected", version.DocumentDB), slog.String("actual", s.DocumentDBVersion),
 			)
 		}
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/4997
 	if _, err := conn.Exec(ctx, "SET documentdb.enableUserCrud TO true"); err != nil {
 		return lazyerrors.Error(err)
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/4997
 	if _, err := conn.Exec(ctx, "SET documentdb.maxUserLimit TO 100"); err != nil {
 		return lazyerrors.Error(err)
 	}

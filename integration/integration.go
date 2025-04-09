@@ -115,8 +115,8 @@ func convert(t testing.TB, v any) any {
 	}
 }
 
-// fixCluster removes document fields that are specific for MongoDB running in a cluster.
-func fixCluster(t testing.TB, doc *wirebson.Document) {
+// FixCluster removes document fields that are specific for MongoDB running in a cluster.
+func FixCluster(t testing.TB, doc *wirebson.Document) {
 	t.Helper()
 
 	doc.Remove("$clusterTime")
@@ -194,7 +194,7 @@ func fixActualUpdateN(t testing.TB, actual *wirebson.Document) {
 func fixExpected(t testing.TB, expected *wirebson.Document) {
 	t.Helper()
 
-	fixCluster(t, expected)
+	FixCluster(t, expected)
 	fixOrder(t, expected)
 }
 
@@ -202,7 +202,7 @@ func fixExpected(t testing.TB, expected *wirebson.Document) {
 func fixActual(t testing.TB, actual *wirebson.Document) {
 	t.Helper()
 
-	fixCluster(t, actual)
+	FixCluster(t, actual)
 	fixOrder(t, actual)
 	fixActualUpdateN(t, actual)
 }
@@ -458,6 +458,26 @@ func AssertEqualAltWriteError(t testing.TB, expected mongo.WriteError, altMessag
 
 	expected.Message = altMessage
 	return assert.Equal(t, expected, a)
+}
+
+// RemoveKey returns a copy of the document with the given key removed,
+// and the value of that key (that could be nil if the key was not found).
+func RemoveKey(t testing.TB, doc bson.D, key string) (bson.D, any) {
+	t.Helper()
+
+	res := make(bson.D, 0, len(doc))
+	var v any
+
+	for _, field := range doc {
+		if field.Key == key {
+			v = field.Value
+			continue
+		}
+
+		res = append(res, field)
+	}
+
+	return res, v
 }
 
 // UnsetRaw returns error with all Raw fields unset. It returns nil if err is nil.

@@ -19,15 +19,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"net"
 	"os"
 	"strconv"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
-	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
@@ -36,22 +36,20 @@ import (
 // MsgExplain implements `explain` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgExplain(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	opID := h.operations.Start("command")
-	defer h.operations.Stop(opID)
-
-	spec, err := msg.RawDocument()
+func (h *Handler) MsgExplain(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
-		return nil, err
-	}
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
 	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+		return nil, err
 	}
 
 	dbName, err := getRequiredParam[string](doc, "$db")
@@ -82,15 +80,15 @@ func (h *Handler) MsgExplain(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	cmd := explainDoc.Command()
 
-	collection, ok := explainDoc.Get(cmd).(string)
-	if !ok {
-		return nil, mongoerrors.NewWithArgument(mongoerrors.ErrInvalidNamespace, "Failed to parse namespace element", "explain")
+	if _, ok = explainDoc.Get(cmd).(string); !ok {
+		return nil, mongoerrors.NewWithArgument(
+			mongoerrors.ErrInvalidNamespace,
+			"Failed to parse namespace element",
+			"explain",
+		)
 	}
 
-	h.operations.Update(opID, dbName, collection, doc)
-
 	var f string
-
 	switch cmd {
 	case "aggregate":
 		f = "documentdb_api_catalog.bson_aggregation_pipeline"
@@ -168,12 +166,7 @@ func (h *Handler) MsgExplain(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
-	reply, err := res.Encode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return wire.NewOpMsg(reply)
+	return middleware.MakeResponse(res)
 }
 
 // unmarshalExplain unmarshalls the plan from EXPLAIN postgreSQL command.
@@ -196,9 +189,8 @@ func convertJSON(value any) any {
 	switch value := value.(type) {
 	case map[string]any:
 		d := wirebson.MakeDocument(len(value))
-		keys := maps.Keys(value)
 
-		for _, k := range keys {
+		for k := range maps.Keys(value) {
 			v := value[k]
 			must.NoError(d.Add(k, convertJSON(v)))
 		}

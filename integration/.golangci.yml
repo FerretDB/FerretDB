@@ -16,8 +16,8 @@ linters-settings:
             desc: use `context` package instead
           - pkg: golang.org/x/exp/slices
             desc: use `slices` package instead
-          # - pkg: golang.org/x/exp/maps
-          #   desc: use `maps` package instead
+          - pkg: golang.org/x/exp/maps
+            desc: use `maps` package instead
       commonerrors:
         files:
           - $all
@@ -29,7 +29,7 @@ linters-settings:
     sections:
       - standard
       - default
-      - prefix(github.com/FerretDB/FerretDB/v2)
+      - prefix(github.com/FerretDB/FerretDB/v2/)
       - prefix(github.com/FerretDB/FerretDB/v2/integration)
   goconst:
     min-occurrences: 5

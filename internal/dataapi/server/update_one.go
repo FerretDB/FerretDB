@@ -30,10 +30,9 @@ import (
 // UpdateOne implements [ServerInterface].
 func (s *Server) UpdateOne(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	l := s.l
 
-	if l.Enabled(ctx, slog.LevelDebug) {
-		l.DebugContext(ctx, fmt.Sprintf("Request:\n%s\n", must.NotFail(httputil.DumpRequest(r, true))))
+	if s.l.Enabled(ctx, slog.LevelDebug) {
+		s.l.DebugContext(ctx, fmt.Sprintf("Request:\n%s", must.NotFail(httputil.DumpRequest(r, true))))
 	}
 
 	var req api.UpdateRequestBody
@@ -69,7 +68,7 @@ func (s *Server) UpdateOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resDoc := must.NotFail(must.NotFail(resMsg.RawDocument()).Decode())
+	resDoc := must.NotFail(must.NotFail(resMsg.OpMsg.RawDocument()).Decode())
 
 	res := must.NotFail(wirebson.NewDocument(
 		"matchedCount", resDoc.Get("n"),
