@@ -15,11 +15,11 @@ With [CloudNativePG](https://cloudnative-pg.io/), a Kubernetes-native operator f
 
 <!--truncate-->
 
-**We previously covered [how to run FerretDB on Kubernetes using CloudNativePG (CNPG) as the PostgreSQL operator](https://blog.ferretdb.io/run-ferretdb-cloudnativepg-kubernetes/).**
-While that guide remains relevant for FerretDB v1.x, we've since [released FerretDB v2.0](https://blog.ferretdb.io/ferretdb-v2-ga-open-source-mongodb-alternative-ready-for-production/)), which brings significant changes: improved performance, better MongoDB compatibility, and new features.
+We previously covered [how to run FerretDB on Kubernetes using CloudNativePG (CNPG) as the PostgreSQL operator](https://blog.ferretdb.io/run-ferretdb-cloudnativepg-kubernetes/).
+While that guide remains relevant for FerretDB v1.x, we've since [released FerretDB v2.0](https://blog.ferretdb.io/ferretdb-v2-ga-open-source-mongodb-alternative-ready-for-production/), which brings significant changes: improved performance, better MongoDB compatibility, and new features.
 One key change – FerretDB v2.x now requires a PostgreSQL backend with the DocumentDB extension.
 
-This guide will walk you through the steps to deploy FerretDB and PostgreSQL with DocumentDB extension using CloudNativePG on Kubernetes.
+This blog post will walk you through the steps to deploy FerretDB and PostgreSQL with DocumentDB extension using CloudNativePG on Kubernetes.
 
 ## Prerequisites
 
@@ -93,6 +93,7 @@ spec:
       - pg_cron
       - pg_documentdb_core
       - pg_documentdb
+      - pg_stat_statements
     parameters:
       cron.database_name: 'postgres'
 
@@ -109,6 +110,9 @@ Be sure to set both explicitly to avoid permission errors.
 
 We also load the required extensions and enable shared preload libraries needed by FerretDB.
 The `cron.database_name` parameter is set to `postgres` to ensure that the cron jobs run in the correct database.
+
+The `bootstrap` section is where we run the SQL command to create the DocumentDB extension.
+Since CloudNativePG doesn't execute entrypoint scripts from the DocumentDB image, we need to manually create the extension during initialization.
 
 Apply it:
 
@@ -127,8 +131,8 @@ kubectl get cluster -n cnpg
 You should see the cluster in `Running` state.
 
 ```text
-NAME                STATUS   REPLICAS   READY   AGE
-postgres-cluster   Running  3          3       1m
+NAME               AGE    INSTANCES   READY   STATUS                     PRIMARY
+postgres-cluster   176m   3           3       Cluster in healthy state   postgres-cluster-1
 ```
 
 To get the generated password for the `postgres` user:
@@ -191,7 +195,7 @@ For production environments, instead of hardcoding the password, consider using 
 
 We are also creating a service named `ferretdb-service` that exposes the FerretDB deployment on port `27017`.
 
-Then apply FerretDB:
+Then apply it:
 
 ```sh
 kubectl apply -f ferretdb.yaml -n cnpg
@@ -214,7 +218,7 @@ kubectl port-forward svc/ferretdb-service -n cnpg 27017:27017
 Then in another terminal, connect to FerretDB using `mongosh`:
 
 ```sh
-mongosh "mongodb://postgres:<password>@localhost:27017/
+mongosh "mongodb://postgres:<password>@localhost:27017/"
 ```
 
 You're now connected to FerretDB via `mongosh`.
