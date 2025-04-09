@@ -231,7 +231,7 @@ spec:
        override:
          fieldPath: "data"
          value:
-           raw: {"haproxy.cfg": "defaults\n    mode tcp\n    timeout connect 5000ms\n    timeout client 50000ms\n    timeout server 50000ms\n\nfrontend fe_main\n    bind *:5432\n    default_backend be_db_2\n\nbackend be_db_2\n    server db2 {{ .Values.Cluster2IP }}:27017 check"}
+           raw: {"haproxy.cfg": "defaults\n    mode tcp\n    timeout connect 5000ms\n    timeout client 50000ms\n    timeout server 50000ms\n\nfrontend fe_main\n    bind *:5432\n    default_backend be_db_2\n\nbackend be_db_2\n    server db2 {{.Values.Cluster2IP}}:27017 check"}
        patchType: "application/merge-patch+json"
 ```
 

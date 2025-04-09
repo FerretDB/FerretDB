@@ -111,16 +111,16 @@ func New(config *Config) (*FerretDB, error) {
 	}
 	logger := logging.WithName(logging.Logger(logOutput, lOpts, ""), "ferretdb")
 
-	metrics := connmetrics.NewListenerMetrics()
+	lm := connmetrics.NewListenerMetrics()
 
-	tl, err := telemetry.NewReporter(&telemetry.NewReporterOpts{
+	tr, err := telemetry.NewReporter(&telemetry.NewReporterOpts{
 		URL:            "https://beacon.ferretdb.com/",
 		Dir:            config.StateDir,
 		F:              new(telemetry.Flag),
 		DNT:            os.Getenv("DO_NOT_TRACK"),
 		ExecName:       os.Args[0],
 		P:              sp,
-		ConnMetrics:    metrics.ConnMetrics,
+		ConnMetrics:    lm.ConnMetrics,
 		L:              logging.WithName(logger, "telemetry"),
 		UndecidedDelay: time.Hour,
 		ReportInterval: 24 * time.Hour,
@@ -142,7 +142,7 @@ func New(config *Config) (*FerretDB, error) {
 		ReplSetName: "",
 
 		L:             logging.WithName(logger, "handler"),
-		ConnMetrics:   metrics.ConnMetrics,
+		ConnMetrics:   lm.ConnMetrics,
 		StateProvider: sp,
 	}
 
@@ -154,7 +154,7 @@ func New(config *Config) (*FerretDB, error) {
 
 	lis, err := clientconn.Listen(&clientconn.ListenerOpts{
 		Handler: h,
-		Metrics: metrics,
+		Metrics: lm,
 		Logger:  logger,
 
 		TCP: config.ListenAddr,
@@ -167,7 +167,7 @@ func New(config *Config) (*FerretDB, error) {
 	}
 
 	return &FerretDB{
-		tl:  tl,
+		tl:  tr,
 		lis: lis,
 	}, nil
 }

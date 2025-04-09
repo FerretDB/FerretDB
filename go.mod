@@ -2,21 +2,21 @@ module github.com/FerretDB/FerretDB/v2
 
 go 1.24
 
-toolchain go1.24.1
+toolchain go1.24.2
 
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/FerretDB/wire v0.0.18
-	github.com/alecthomas/kong v1.9.0
+	github.com/alecthomas/kong v1.10.0
 	github.com/arl/statsviz v0.6.0
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgerrcode v0.0.0-20240316143900-6e2875d9b438
-	github.com/jackc/pgx/v5 v5.7.2
+	github.com/jackc/pgx/v5 v5.7.4
 	github.com/oapi-codegen/runtime v1.1.1
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/prometheus/client_golang v1.21.1
 	github.com/prometheus/client_model v0.6.1
-	github.com/prometheus/common v0.62.0
+	github.com/prometheus/common v0.63.0
 	github.com/stretchr/testify v1.10.0
 	github.com/xdg-go/scram v1.1.2
 	go.mongodb.org/mongo-driver v1.17.3
@@ -26,10 +26,10 @@ require (
 	go.opentelemetry.io/otel/sdk v1.35.0
 	go.opentelemetry.io/otel/trace v1.35.0
 	go.uber.org/automaxprocs v1.6.0
-	golang.org/x/crypto/x509roots/fallback v0.0.0-20250312005926-b369b723c8ad
-	golang.org/x/net v0.37.0
-	golang.org/x/sys v0.31.0
-	golang.org/x/term v0.30.0
+	golang.org/x/crypto/x509roots/fallback v0.0.0-20250406160420-959f8f3db0fb
+	golang.org/x/net v0.38.0
+	golang.org/x/sys v0.32.0
+	golang.org/x/term v0.31.0
 )
 
 require (

@@ -29,8 +29,8 @@ import (
 // MsgDelete implements `delete` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgDelete(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
-	spec, seq := req.RawSections()
+func (h *Handler) MsgDelete(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, seq := req.OpMsg.RawSections()
 
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
 	doc, err := spec.Decode()
@@ -57,5 +57,5 @@ func (h *Handler) MsgDelete(connCtx context.Context, req *middleware.MsgRequest)
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.Response(mongoerrors.MapWriteErrors(connCtx, res))
+	return middleware.MakeResponse(mongoerrors.MapWriteErrors(connCtx, res))
 }

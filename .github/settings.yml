@@ -12,6 +12,7 @@ repository:
   enable_vulnerability_alerts: true
 
 # https://docs.github.com/en/rest/issues/labels
+# Labels are being used by issues, PRs, and discussions.
 labels:
   # area
   - name: area/admin
