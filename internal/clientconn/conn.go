@@ -414,8 +414,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 			}
 
 			var res *middleware.Response
-			res, err = cmdHandler(connCtx, middleware.RequestWire(reqHeader, msg))
-			if res != nil {
+			if res, err = cmdHandler(connCtx, middleware.RequestWire(reqHeader, msg)); res != nil {
 				resBody = res.OpMsg
 			}
 		}
@@ -436,8 +435,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 			cmdHandler := c.h.CmdQuery
 
 			var res *middleware.Response
-			res, err = cmdHandler(connCtx, middleware.RequestWire(reqHeader, query))
-			if res != nil {
+			if res, err = cmdHandler(connCtx, middleware.RequestWire(reqHeader, query)); res != nil {
 				resBody = res.OpReply
 			}
 		}
