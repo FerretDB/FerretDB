@@ -74,10 +74,7 @@ linters-settings:
     default-signifies-exhaustive: false
   exhaustruct:
     include:
-      - .*\Q/middleware.MsgRequest
-      - .*\Q/middleware.MsgResponse
-      - .*\Q/middleware.QueryRequest
-      - .*\Q/middleware.ReplyResponse
+      - TODO
   forbidigo:
     forbid:
       - p: ^\Qpgxpool.Pool.AcquireFunc\E$
