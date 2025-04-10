@@ -190,7 +190,7 @@ spec:
 
 The connection string uses the `postgres` superuser created by CNPG, the service endpoint exposed by the PostgreSQL cluster (`postgres-cluster-rw`), and the default `postgres` database.
 Be sure to replace `<password>` with the actual password you retrieved earlier.
-For production environments, instead of hardcoding the password, consider using `Secrets` to manage sensitive information.
+For production environments, instead of hardcoding the password, consider using secrets to manage sensitive information.
 
 We are also creating a service named `ferretdb-service` that exposes the FerretDB deployment on port `27017`.
 
