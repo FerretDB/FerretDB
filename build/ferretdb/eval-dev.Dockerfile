@@ -106,7 +106,7 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt <<EOF
 mkdir /tmp/cover /tmp/state
 chown postgres:postgres /tmp/cover /tmp/state
 
-apt install -y curl runit
+apt install -y curl
 curl -L https://pgp.mongodb.com/server-7.0.asc | apt-key add -
 echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/debian bookworm/mongodb-org/7.0 main" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list
 apt update
@@ -115,14 +115,6 @@ EOF
 
 COPY --from=evaluation-build /src/bin/ferretdb /usr/local/bin/ferretdb
 COPY build/ferretdb/99-start-ferretdb.sh /docker-entrypoint-initdb.d/
-
-COPY --from=evaluation-build /src/build/ferretdb/evaluation/ferretdb.sh /etc/service/ferretdb/run
-COPY --from=evaluation-build /src/build/ferretdb/evaluation/postgresql.sh /etc/service/postgresql/run
-COPY --from=evaluation-build /src/build/ferretdb/evaluation/entrypoint.sh /entrypoint.sh
-
-# send termination signal to each process, see https://smarden.org/runit/runsvdir.8
-STOPSIGNAL SIGHUP
-ENTRYPOINT ["/entrypoint.sh"]
 
 HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-interval=5s \
   CMD ["/ferretdb", "ping"]
