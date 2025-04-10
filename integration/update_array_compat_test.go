@@ -30,7 +30,7 @@ func TestUpdateArrayCompatPop(t *testing.T) {
 	testCases := map[string]updateCompatTestCase{
 		"DuplicateKeys": {
 			update:     bson.D{{"$pop", bson.D{{"v", 1}, {"v", 1}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Pop": {
 			update:           bson.D{{"$pop", bson.D{{"v", 1}}}},
@@ -126,7 +126,7 @@ func TestUpdateArrayCompatPop(t *testing.T) {
 		},
 		"NonExistentField": {
 			update:     bson.D{{"$pop", bson.D{{"non-existent-field", 1}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotation": {
 			filter: bson.D{{"_id", "array-documents-nested"}},
@@ -139,7 +139,7 @@ func TestUpdateArrayCompatPop(t *testing.T) {
 		"DotNotationNonArray": {
 			filter:           bson.D{{"_id", "array-documents-nested"}},
 			update:           bson.D{{"$pop", bson.D{{"v.0.foo.0.bar", 1}}}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/314",
 			failsIDs: []struct {
 				provider shareddata.Provider
@@ -150,23 +150,23 @@ func TestUpdateArrayCompatPop(t *testing.T) {
 		},
 		"DotNotationNonExistentPath": {
 			update:     bson.D{{"$pop", bson.D{{"non.existent.path", 1}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"PopEmptyValue": {
 			update:     bson.D{{"$pop", bson.D{}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"PopNotValidValueString": {
 			update:     bson.D{{"$pop", bson.D{{"v", "foo"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"PopNotValidValueInt": {
 			update:     bson.D{{"$pop", bson.D{{"v", int32(42)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotationObjectInArray": {
 			update:           bson.D{{"$pop", bson.D{{"v.array.foo.array", 1}}}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/413",
 			failsIDs: []struct {
 				provider shareddata.Provider
@@ -188,7 +188,7 @@ func TestUpdateArrayCompatPop(t *testing.T) {
 		},
 		"DotNotationObject": {
 			update:           bson.D{{"$pop", bson.D{{"v.foo", 1}}}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/413",
 			failsIDs: []struct {
 				provider shareddata.Provider
@@ -224,7 +224,7 @@ func TestUpdateArrayCompatPush(t *testing.T) {
 	testCases := map[string]updateCompatTestCase{
 		"DuplicateKeys": {
 			update:     bson.D{{"$push", bson.D{{"v", "foo"}, {"v", "bar"}}}},
-			resultType: emptyResult, // conflict because of duplicate keys "v" set in $push
+			resultType: EmptyResult, // conflict because of duplicate keys "v" set in $push
 		},
 		"String": {
 			update: bson.D{{"$push", bson.D{{"v", "foo"}}}},
@@ -242,7 +242,7 @@ func TestUpdateArrayCompatPush(t *testing.T) {
 		"DotNotationNonArray": {
 			filter:     bson.D{{"_id", "array-documents-nested"}},
 			update:     bson.D{{"$push", bson.D{{"v.0.foo.0.bar", "boo"}}}},
-			resultType: emptyResult, // attempt to push to non-array
+			resultType: EmptyResult, // attempt to push to non-array
 		},
 		"DotNotationNonExistentPath": {
 			update: bson.D{{"$push", bson.D{{"non.existent.path", int32(42)}}}},
@@ -263,7 +263,7 @@ func TestUpdateArrayCompatAddToSet(t *testing.T) {
 	testCases := map[string]updateCompatTestCase{
 		"DuplicateKeys": {
 			update:     bson.D{{"$addToSet", bson.D{{"v", int32(1)}, {"v", int32(1)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"String": {
 			update: bson.D{{"$addToSet", bson.D{{"v", "foo"}}}},
@@ -290,14 +290,14 @@ func TestUpdateArrayCompatAddToSet(t *testing.T) {
 		"DotNotationNonArray": {
 			filter:     bson.D{{"_id", "array-documents-nested"}},
 			update:     bson.D{{"$addToSet", bson.D{{"v.0.foo.0.bar", int32(1)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotationNonExistentPath": {
 			update: bson.D{{"$addToSet", bson.D{{"non.existent.path", int32(1)}}}},
 		},
 		"EmptyValue": {
 			update:     bson.D{{"$addToSet", bson.D{}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -311,11 +311,11 @@ func TestUpdateArrayCompatPullAll(t *testing.T) {
 	testCases := map[string]updateCompatTestCase{
 		"DuplicateKeys": {
 			update:     bson.D{{"$pullAll", bson.D{{"v", bson.A{int32(1)}}, {"v", bson.A{int32(1)}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"StringValue": {
 			update:     bson.D{{"$pullAll", bson.D{{"v", "foo"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"String": {
 			update: bson.D{{"$pullAll", bson.D{{"v", bson.A{"foo"}}}}},
@@ -337,12 +337,12 @@ func TestUpdateArrayCompatPullAll(t *testing.T) {
 		},
 		"NonExistentField": {
 			update:     bson.D{{"$pullAll", bson.D{{"non-existent-field", bson.A{int32(42)}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NotSuitableField": {
 			filter:     bson.D{{"_id", "int32"}},
 			update:     bson.D{{"$pullAll", bson.D{{"v.foo", bson.A{int32(42)}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotation": {
 			filter: bson.D{{"_id", "array-documents-nested"}},
@@ -351,15 +351,15 @@ func TestUpdateArrayCompatPullAll(t *testing.T) {
 		"DotNotationNonArray": {
 			filter:     bson.D{{"_id", "array-documents-nested"}},
 			update:     bson.D{{"$pullAll", bson.D{{"v.0.foo.0.bar", bson.A{int32(42)}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotationNonExistentPath": {
 			update:     bson.D{{"$pullAll", bson.D{{"non.existent.path", bson.A{int32(42)}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"EmptyValue": {
 			update:     bson.D{{"$pullAll", bson.D{}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -385,7 +385,7 @@ func TestUpdateArrayCompatAddToSetEach(t *testing.T) {
 		},
 		"NotArray": {
 			update:           bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", int32(1)}}}}}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/478",
 			failsIDs: []struct {
 				provider shareddata.Provider
@@ -433,7 +433,7 @@ func TestUpdateArrayCompatAddToSetEach(t *testing.T) {
 		"EmptyArray": {
 			filter:     bson.D{{"_id", "array-documents-nested"}},
 			update:     bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{}}}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ArrayMixedValuesExists": {
 			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{int32(42), "foo"}}}}}}},
@@ -447,7 +447,7 @@ func TestUpdateArrayCompatAddToSetEach(t *testing.T) {
 		"DotNotationNonArray": {
 			filter:     bson.D{{"_id", "array-documents-nested"}},
 			update:     bson.D{{"$addToSet", bson.D{{"v.0.foo.0.bar", bson.D{{"$each", bson.A{int32(42)}}}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotatPathNotExist": {
 			update: bson.D{{"$addToSet", bson.D{{"non.existent.path", bson.D{{"$each", bson.A{int32(42)}}}}}}},
@@ -476,12 +476,12 @@ func TestUpdateArrayCompatPushEach(t *testing.T) {
 		},
 		"NotArray": {
 			update:     bson.D{{"$push", bson.D{{"v", bson.D{{"$each", int32(1)}}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"EmptyArray": {
 			filter:           bson.D{{"_id", "array-documents-nested"}},
 			update:           bson.D{{"$push", bson.D{{"v", bson.D{{"$each", bson.A{}}}}}}},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/373",
 			failsIDs: []struct {
 				provider shareddata.Provider
@@ -505,7 +505,7 @@ func TestUpdateArrayCompatPushEach(t *testing.T) {
 		"DotNotationNonArray": {
 			filter:     bson.D{{"_id", "array-documents-nested"}},
 			update:     bson.D{{"$push", bson.D{{"v.0.foo.0.bar", bson.D{{"$each", bson.A{int32(42)}}}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotationPathNotExist": {
 			update: bson.D{{"$push", bson.D{{"non.existent.path", bson.D{{"$each", bson.A{int32(42)}}}}}}},
@@ -530,11 +530,11 @@ func TestUpdateArrayCompatPull(t *testing.T) {
 		},
 		"FieldNotExist": {
 			update:     bson.D{{"$pull", bson.D{{"non-existent-field", int32(42)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Array": {
 			update:     bson.D{{"$pull", bson.D{{"v", bson.A{int32(42)}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Null": {
 			update: bson.D{{"$pull", bson.D{{"v", nil}}}},
@@ -544,11 +544,11 @@ func TestUpdateArrayCompatPull(t *testing.T) {
 		},
 		"DotNotationPathNotExist": {
 			update:     bson.D{{"$pull", bson.D{{"non.existent.path", int32(42)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotationNotArray": {
 			update:     bson.D{{"$pull", bson.D{{"v.0.foo.0.bar", int32(42)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 

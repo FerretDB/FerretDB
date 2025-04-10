@@ -30,7 +30,7 @@ type explainCompatTestCase struct {
 	command    string                   // required
 	filter     bson.D                   // ignored if nil
 	pipeline   bson.A                   // ignored if nil
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	resultType CompatTestCaseResultType // defaults to NonEmptyResult
 
 	failsForFerretDB string
 	skip             string // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1086
@@ -121,9 +121,9 @@ func testExplainCompatError(tt *testing.T, testCases map[string]explainCompatTes
 				}
 
 				switch tc.resultType {
-				case nonEmptyResult:
+				case NonEmptyResult:
 					assert.True(t, nonEmptyResults, "expected non-empty results")
-				case emptyResult:
+				case EmptyResult:
 					assert.False(t, nonEmptyResults, "expected empty results")
 				default:
 					t.Fatalf("unknown result type %v", tc.resultType)
