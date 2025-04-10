@@ -106,7 +106,7 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt <<EOF
 mkdir /tmp/cover /tmp/state
 chown postgres:postgres /tmp/cover /tmp/state
 
-apt install -y curl
+apt install -y curl supervisor
 curl -L https://pgp.mongodb.com/server-7.0.asc | apt-key add -
 echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/debian bookworm/mongodb-org/7.0 main" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list
 apt update
@@ -115,6 +115,10 @@ EOF
 
 COPY --from=evaluation-build /src/bin/ferretdb /usr/local/bin/ferretdb
 COPY build/ferretdb/99-start-ferretdb.sh /docker-entrypoint-initdb.d/
+
+RUN mkdir -p /var/log/supervisor
+COPY --from=evaluation-build /src/build/ferretdb/evaluation/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
 
 HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-interval=5s \
   CMD ["/ferretdb", "ping"]
