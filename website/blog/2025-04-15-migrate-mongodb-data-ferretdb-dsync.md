@@ -10,32 +10,28 @@ tags: [open source, sspl, document databases, community]
 
 ![Migrating MongoDB Data to FerretDB with Dsync](/img/blog/ferretdb-migration-dsync.jpg)
 
+If you're looking to migrate data from MongoDB to FerretDB, ensuring a smooth transition is crucial.
+
 <!--truncate-->
 
-If you're looking to migrate from MongoDB to FerretDB, `mongodump` and `mongorestore` may not be the best tools for the job.
-
-Let's say you're moving data to a Mongo-compatible backend like FerretDB, or planning a hybrid architecture involving DocumentDB or CosmosDB.
-You fire up mongorestore, point it at your dump, and suddenly it doesn't work.
+Traditional migration workflows often rely on static dumps and manual restoration steps, which can often lead to issues and data loss.
 BSON parsing errors.
 Skipped collections.
 Metadata mismatches.
 Authentication quirks.
 And worst of all – no clue where things went wrong.
 
-With `dsync`, rather than restoring static `.bson` files, dsync connects directly to both your source and destination MongoDB-compatible services and streams data over the Mongo wire protocol, sidestepping the compatibility landmines that mongorestore often stumbles over.
+`dsync` connects directly to both the source and destination of MongoDB-compatible services and streams data in real time.
+You get a full initial sync followed by live replication, making it ideal for both one-time migrations and zero-downtime switchover.
 
-In this post, we'll show you how to:
-
-- Spin up a lightweight MongoDB instance locally
-- Load sample data into it
-- Use `dsync` to migrate the data to a running FerretDB instance
+In this post, you'll learn to use `dsync` to migrate the data from MongoDB to a running FerretDB instance.
 
 ## Prerequisites
 
-- Running FerretDB instance
+Ensure to have the following:
+
+- [Running FerretDB instance](https://docs.ferretdb.io/installation/ferretdb/)
 - Running MongoDB instance (local or remote)
-- `dsync` built from [https://github.com/adiom-data/dsync](https://github.com/adiom-data/dsync)
-- Go installed (if building `dsync` yourself)
 
 ## Download `dsync`
 
