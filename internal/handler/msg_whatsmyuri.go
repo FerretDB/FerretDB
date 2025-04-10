@@ -37,7 +37,7 @@ func (h *Handler) MsgWhatsMyURI(connCtx context.Context, req *middleware.Request
 		return nil, err
 	}
 
-	return middleware.MakeResponse(wirebson.MustDocument(
+	return middleware.ResponseMsg(wirebson.MustDocument(
 		"you", conninfo.Get(connCtx).Peer.String(),
 		"ok", float64(1),
 	))

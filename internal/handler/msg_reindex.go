@@ -160,7 +160,7 @@ func (h *Handler) MsgReIndex(connCtx context.Context, req *middleware.Request) (
 
 	indexesAfter := listDoc.Get("cursor").(*wirebson.Document).Get("firstBatch").(*wirebson.Array)
 
-	return middleware.MakeResponse(wirebson.MustDocument(
+	return middleware.ResponseMsg(wirebson.MustDocument(
 		"nIndexesWas", int32(indexesBefore.Len()),
 		"nIndexes", createDoc.Get("numIndexesAfter"),
 		"indexes", indexesAfter,

@@ -71,7 +71,7 @@ func (h *Handler) MsgCompact(connCtx context.Context, req *middleware.Request) (
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.MakeResponse(wirebson.MustDocument(
+	return middleware.ResponseMsg(wirebson.MustDocument(
 		"bytesFreed", int32(0),
 		"ok", float64(1),
 	))

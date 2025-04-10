@@ -68,5 +68,5 @@ func (h *Handler) MsgDropIndexes(connCtx context.Context, req *middleware.Reques
 
 	// this currently fails due to
 	// TODO https://github.com/FerretDB/FerretDB/issues/4730
-	return middleware.MakeResponse(res)
+	return middleware.ResponseMsg(res)
 }

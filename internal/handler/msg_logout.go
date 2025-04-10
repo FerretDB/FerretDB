@@ -41,7 +41,7 @@ func (h *Handler) MsgLogout(connCtx context.Context, req *middleware.Request) (*
 		h.L.WarnContext(connCtx, "MsgLogout: no SCRAM conversation")
 	}
 
-	return middleware.MakeResponse(wirebson.MustDocument(
+	return middleware.ResponseMsg(wirebson.MustDocument(
 		"ok", float64(1),
 	))
 }
