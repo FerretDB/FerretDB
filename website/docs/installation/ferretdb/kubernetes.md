@@ -49,6 +49,8 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ferretdb
+  labels:
+    app: ferretdb
 spec:
   selector:
     app: ferretdb
