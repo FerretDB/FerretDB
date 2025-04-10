@@ -23,6 +23,9 @@ linters-settings:
           - $all
         deny:
           - pkg: github.com/FerretDB/FerretDB/v2/internal/handler/commonerrors
+  exhaustruct:
+    include:
+      - TODO
   exhaustive:
     default-signifies-exhaustive: false
   gci:

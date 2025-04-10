@@ -53,7 +53,7 @@ func (h *Handler) MsgSASLContinue(connCtx context.Context, req *middleware.Reque
 		return nil, err
 	}
 
-	return middleware.MakeResponse(res)
+	return middleware.ResponseMsg(res)
 }
 
 // saslContinue continues and finishes SCRAM conversation.

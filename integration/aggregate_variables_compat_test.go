@@ -129,7 +129,7 @@ func TestAggregateCompatRootVariable(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$unwind", "$$ROOT"}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
