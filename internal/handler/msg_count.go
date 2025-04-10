@@ -57,5 +57,5 @@ func (h *Handler) MsgCount(connCtx context.Context, req *middleware.Request) (*m
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.MakeResponse(page)
+	return middleware.ResponseMsg(page)
 }

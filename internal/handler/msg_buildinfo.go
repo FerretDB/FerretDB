@@ -53,7 +53,7 @@ func (h *Handler) MsgBuildInfo(connCtx context.Context, req *middleware.Request)
 		must.NoError(versionArray.Add(v))
 	}
 
-	return middleware.MakeResponse(wirebson.MustDocument(
+	return middleware.ResponseMsg(wirebson.MustDocument(
 		"version", info.MongoDBVersion,
 		"gitVersion", info.Commit,
 		"modules", wirebson.MakeArray(0),
