@@ -32,7 +32,11 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) CmdQuery(connCtx context.Context, query *middleware.Request) (*middleware.Response, error) {
-	q := query.OpQuery.Query()
+	q, err := query.OpQuery.Query()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	cmd := q.Command()
 	collection := query.OpQuery.FullCollectionName
 

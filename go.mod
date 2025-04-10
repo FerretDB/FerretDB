@@ -4,6 +4,9 @@ go 1.24
 
 toolchain go1.24.2
 
+// FIXME
+replace github.com/FerretDB/wire => ../wire
+
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/FerretDB/wire v0.0.18
@@ -20,7 +23,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/xdg-go/scram v1.1.2
 	go.mongodb.org/mongo-driver v1.17.3
-	go.mongodb.org/mongo-driver/v2 v2.1.0
+	go.mongodb.org/mongo-driver/v2 v2.1.1-0.20250407150314-cd295b66f41d
 	go.opentelemetry.io/otel v1.35.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.35.0
 	go.opentelemetry.io/otel/sdk v1.35.0
@@ -40,7 +43,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/golang/snappy v0.0.4 // indirect
+	github.com/golang/snappy v1.0.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.1 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
