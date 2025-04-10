@@ -107,11 +107,9 @@ We explicitly enable `enableSuperuserAccess` so that we can connect with the def
 CloudNativePG runs PostgreSQL with UID 26 by default, but the DocumentDB image requires UID and GID 999.
 Be sure to set both explicitly to avoid permission errors.
 
-We also load the required extensions and enable shared preload libraries needed by FerretDB.
+Since CloudNativePG doesn't execute entrypoint scripts from the image, we need to manually create the extension during initialization.
+We need to explicitly list `pg_cron`, `pg_documentdb_core`, and `documentdb` in `shared_preload_libraries` and use `postInitSQL` to create the extension.
 The `cron.database_name` parameter is set to `postgres` to ensure that the cron jobs run in the correct database.
-
-The `bootstrap` section is where we run the SQL command to create the DocumentDB extension.
-Since CloudNativePG doesn't execute entrypoint scripts from the DocumentDB image, we need to manually create the extension during initialization.
 
 Apply it:
 
