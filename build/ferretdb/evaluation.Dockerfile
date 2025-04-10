@@ -116,16 +116,13 @@ EOF
 COPY --from=evaluation-build /src/bin/ferretdb /usr/local/bin/ferretdb
 COPY build/ferretdb/99-start-ferretdb.sh /docker-entrypoint-initdb.d/
 
-# runit hacks start there
-
 COPY --from=evaluation-build /src/build/ferretdb/evaluation/ferretdb.sh /etc/service/ferretdb/run
 COPY --from=evaluation-build /src/build/ferretdb/evaluation/postgresql.sh /etc/service/postgresql/run
 COPY --from=evaluation-build /src/build/ferretdb/evaluation/entrypoint.sh /entrypoint.sh
 
+# send termination signal to each process, see https://smarden.org/runit/runsvdir.8
 STOPSIGNAL SIGHUP
 ENTRYPOINT ["/entrypoint.sh"]
-
-# runit hacks stop there
 
 HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-interval=5s \
   CMD ["/ferretdb", "ping"]
