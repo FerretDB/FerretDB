@@ -131,6 +131,9 @@ func newPgxPoolCheckConn(ctx context.Context, conn *pgx.Conn, l *slog.Logger, sp
 			l.ErrorContext(ctx, "newPgxPoolCheckConn: failed to update state", logging.Error(err))
 		}
 
+		// TODO https://github.com/FerretDB/FerretDB/issues/4989
+		_ = version.DocumentDBSafeToUpdate
+
 		if s.DocumentDBVersion != "" && s.DocumentDBVersion != version.DocumentDB {
 			l.WarnContext(
 				ctx, "Unexpected DocumentDB version; see "+version.DocumentDBURL,
