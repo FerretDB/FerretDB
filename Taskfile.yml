@@ -737,8 +737,9 @@ tasks:
 
   docs:
     desc: "Format, lint and build documentation"
-    deps: [gen-cts, fmt-docs]
     cmds:
+      - task: gen-cts
+      - task: fmt-docs
       - docker compose run --rm docusaurus-docs build
 
   blog:
