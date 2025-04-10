@@ -93,7 +93,6 @@ spec:
       - pg_cron
       - pg_documentdb_core
       - pg_documentdb
-      - pg_stat_statements
     parameters:
       cron.database_name: 'postgres'
 
