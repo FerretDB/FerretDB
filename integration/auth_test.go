@@ -952,7 +952,7 @@ func TestHelloOpQuerySASLSupportedMechs(t *testing.T) {
 	require.NoError(t, err)
 
 	var res *wirebson.Document
-	res, err = resBody.(*wire.OpReply).Document()
+	res, err = resBody.(*wire.OpReply).DocumentDeep()
 	require.NoError(t, err)
 
 	ok := res.Get("ok")
