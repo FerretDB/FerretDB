@@ -53,5 +53,5 @@ func (h *Handler) MsgAggregate(connCtx context.Context, req *middleware.Request)
 
 	h.s.AddCursor(connCtx, userID, sessionID, cursorID)
 
-	return middleware.MakeResponse(page)
+	return middleware.ResponseMsg(page)
 }

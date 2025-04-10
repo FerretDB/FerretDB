@@ -46,7 +46,7 @@ func (h *Handler) MsgConnectionStatus(connCtx context.Context, req *middleware.R
 		))))
 	}
 
-	return middleware.MakeResponse(wirebson.MustDocument(
+	return middleware.ResponseMsg(wirebson.MustDocument(
 		"authInfo", must.NotFail(wirebson.NewDocument(
 			"authenticatedUsers", users,
 			"authenticatedUserRoles", must.NotFail(wirebson.NewArray()),
