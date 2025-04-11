@@ -55,6 +55,8 @@ func (s *Server) Find(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// We should use s.handler.Handle().
+	// TODO https://github.com/FerretDB/FerretDB/issues/5046
 	resMsg, err := s.handler.Commands()["find"].Handler(ctx, msg)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)

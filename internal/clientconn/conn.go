@@ -155,6 +155,13 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 	ctx = conninfo.Ctx(ctx, connInfo)
 
+	// That's not the best – it makes proxy handler very different from the main handler.
+	// Instead, proxy handler should map connections based on connInfo.
+	// TODO https://github.com/FerretDB/FerretDB/issues/4965
+	if c.proxy != nil {
+		go c.proxy.Run(ctx)
+	}
+
 	done := make(chan struct{})
 
 	// handle ctx cancellation
@@ -213,10 +220,6 @@ func (c *conn) run(ctx context.Context) (err error) {
 			err = e
 		}
 
-		if c.proxy != nil {
-			c.proxy.Close()
-		}
-
 		// c.netConn is closed by the caller
 	}()
 
@@ -258,7 +261,20 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 		}
 
 		// TODO https://github.com/FerretDB/FerretDB/issues/1997
-		proxyHeader, proxyBody = c.proxy.Handle(ctx, reqHeader, reqBody)
+		var resp *middleware.Response
+		resp, err = c.proxy.Handle(ctx, middleware.RequestWire(reqHeader, reqBody))
+		must.NoError(err)
+
+		proxyHeader = resp.WireHeader()
+
+		switch {
+		case resp.OpMsg != nil:
+			proxyBody = resp.OpMsg
+		case resp.OpReply != nil:
+			proxyBody = resp.OpReply
+		default:
+			panic("response body is nil")
+		}
 	}
 
 	// handle request unless we are in proxy mode
@@ -398,9 +414,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 			}
 
 			var res *middleware.Response
-			res, err = cmdHandler(connCtx, &middleware.Request{OpMsg: msg})
-
-			if res != nil {
+			if res, err = cmdHandler(connCtx, middleware.RequestWire(reqHeader, msg)); res != nil {
 				resBody = res.OpMsg
 			}
 		}
@@ -410,17 +424,20 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 		resHeader.OpCode = wire.OpCodeReply
 
-		command = query.Query().Command()
+		var q *wirebson.Document
+		if q, err = query.Query(); err == nil {
+			command = q.Command()
+		}
 
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
-		cmdHandler := c.h.CmdQuery
+		if err == nil {
+			cmdHandler := c.h.CmdQuery
 
-		var res *middleware.Response
-		res, err = cmdHandler(connCtx, &middleware.Request{OpQuery: query})
-
-		if res != nil {
-			resBody = res.OpReply
+			var res *middleware.Response
+			if res, err = cmdHandler(connCtx, middleware.RequestWire(reqHeader, query)); res != nil {
+				resBody = res.OpReply
+			}
 		}
 
 	case wire.OpCodeReply:

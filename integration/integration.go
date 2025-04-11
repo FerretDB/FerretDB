@@ -33,19 +33,19 @@ import (
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
 )
 
-//go:generate ../bin/stringer -linecomment -type compatTestCaseResultType
+//go:generate ../bin/stringer -linecomment -type CompatTestCaseResultType
 
-// compatTestCaseResultType represents compatibility test case result type.
+// CompatTestCaseResultType represents compatibility test case result type.
 //
 // It is used to avoid errors with invalid queries making tests pass.
-type compatTestCaseResultType int
+type CompatTestCaseResultType int
 
 const (
 	// Test case should return non-empty result at least for one collection/provider.
-	nonEmptyResult compatTestCaseResultType = iota
+	NonEmptyResult CompatTestCaseResultType = iota
 
 	// Test case should return empty result for all collections/providers.
-	emptyResult
+	EmptyResult
 )
 
 // convert converts given driver value ([bson.D], [bson.A], etc) to FerretDB's bson package value.

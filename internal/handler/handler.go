@@ -24,6 +24,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/session"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
@@ -132,6 +133,12 @@ func (h *Handler) Run(ctx context.Context) {
 	}
 }
 
+// Handle processes a request.
+func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/5046
+	panic("not implemented")
+}
+
 // Describe implements [prometheus.Collector].
 func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
 	h.Pool.Describe(ch)
@@ -143,3 +150,8 @@ func (h *Handler) Collect(ch chan<- prometheus.Metric) {
 	h.Pool.Collect(ch)
 	h.s.Collect(ch)
 }
+
+// check interfaces
+var (
+	_ middleware.HandleFunc = (*Handler)(nil).Handle
+)

@@ -57,7 +57,7 @@ func (h *Handler) MsgFerretDebugError(connCtx context.Context, req *middleware.R
 
 	switch {
 	case arg == "ok":
-		return middleware.MakeResponse(wirebson.MustDocument(
+		return middleware.ResponseMsg(wirebson.MustDocument(
 			"ok", float64(1),
 		))
 

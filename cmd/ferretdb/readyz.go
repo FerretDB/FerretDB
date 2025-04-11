@@ -26,7 +26,6 @@ import (
 	"github.com/FerretDB/wire/wireclient"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // ReadyZ represents the Readiness probe.
@@ -98,7 +97,7 @@ func (r *ReadyZ) Probe(ctx context.Context) bool {
 			return false
 		}
 
-		res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
+		res, err := resBody.(*wire.OpMsg).Document()
 		if err != nil {
 			r.l.ErrorContext(ctx, "Decoding ping response failed", logging.Error(err))
 			return false

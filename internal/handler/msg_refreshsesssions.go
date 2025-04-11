@@ -50,7 +50,7 @@ func (h *Handler) MsgRefreshSessions(connCtx context.Context, req *middleware.Re
 
 	h.s.CreateOrUpdateSessions(connCtx, ids)
 
-	return middleware.MakeResponse(wirebson.MustDocument(
+	return middleware.ResponseMsg(wirebson.MustDocument(
 		"ok", float64(1),
 	))
 }
