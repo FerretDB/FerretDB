@@ -136,6 +136,9 @@ COPY --from=evaluation-build /src/build/ferretdb/evaluation/postgresql-shutdown.
 COPY --from=evaluation-build /src/build/ferretdb/evaluation/postgresql-shutdown.sh /etc/service/postgresql/control/k
 COPY --from=evaluation-build /src/build/ferretdb/evaluation/postgresql-shutdown.sh /etc/service/postgresql/control/x
 
+# wait 10 seconds before kill
+ENV SVWAIT 10
+
 COPY --from=evaluation-build /src/build/ferretdb/evaluation/entrypoint.sh /entrypoint.sh
 
 # send termination signal to each process, see https://smarden.org/runit/runsvdir.8

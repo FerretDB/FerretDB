@@ -2,4 +2,4 @@
 
 set -ex
 
-exec runit
+exec /usr/bin/runsvdir /etc/service
