@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# for evaluation (formerly "all-in-one") releases (`ferretdb-eval` image)
+# for evaluation (formerly "all-in-one" or "ferretdb-eval") releases (`ferretdb-eval-dev` image)
 
 # While we already know commit and version from commit.txt and version.txt inside image,
 # it is not possible to use them in LABELs for the final image.
