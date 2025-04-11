@@ -118,13 +118,30 @@ COPY build/ferretdb/99-start-ferretdb.sh /docker-entrypoint-initdb.d/
 
 COPY --from=evaluation-build /src/build/ferretdb/evaluation/ferretdb.sh /etc/service/ferretdb/run
 COPY --from=evaluation-build /src/build/ferretdb/evaluation/postgresql.sh /etc/service/postgresql/run
-COPY --from=evaluation-build /src/build/ferretdb/evaluation/entrypoint.sh /entrypoint.sh
 
 # upon INT signal, ctrlaltdel file is executed https://smarden.org/runit1/runit.8#sect6
 COPY --from=evaluation-build /src/build/ferretdb/evaluation/ctrlaltdel.sh /etc/runit/ctrlaltdel
+COPY --from=evaluation-build /src/build/ferretdb/evaluation/entrypoint.sh /entrypoint.sh
 
-# send INT signal to ctrlaltdel file
-STOPSIGNAL SIGINT
+# shutdown FerretDB and PostgreSQL upon receiving signals
+COPY --from=evaluation-build /src/build/ferretdb/evaluation/ferretdb-shutdown.sh /etc/service/ferretdb/control/t
+COPY --from=evaluation-build /src/build/ferretdb/evaluation/ferretdb-shutdown.sh /etc/service/ferretdb/control/d
+COPY --from=evaluation-build /src/build/ferretdb/evaluation/ferretdb-shutdown.sh /etc/service/ferretdb/control/h
+COPY --from=evaluation-build /src/build/ferretdb/evaluation/ferretdb-shutdown.sh /etc/service/ferretdb/control/i
+COPY --from=evaluation-build /src/build/ferretdb/evaluation/ferretdb-shutdown.sh /etc/service/ferretdb/control/q
+COPY --from=evaluation-build /src/build/ferretdb/evaluation/ferretdb-shutdown.sh /etc/service/ferretdb/control/k
+COPY --from=evaluation-build /src/build/ferretdb/evaluation/ferretdb-shutdown.sh /etc/service/ferretdb/control/x
+
+COPY --from=evaluation-build /src/build/ferretdb/evaluation/postgresql-shutdown.sh /etc/service/postgresql/control/t
+COPY --from=evaluation-build /src/build/ferretdb/evaluation/postgresql-shutdown.sh /etc/service/postgresql/control/d
+COPY --from=evaluation-build /src/build/ferretdb/evaluation/postgresql-shutdown.sh /etc/service/postgresql/control/h
+COPY --from=evaluation-build /src/build/ferretdb/evaluation/postgresql-shutdown.sh /etc/service/postgresql/control/i
+COPY --from=evaluation-build /src/build/ferretdb/evaluation/postgresql-shutdown.sh /etc/service/postgresql/control/q
+COPY --from=evaluation-build /src/build/ferretdb/evaluation/postgresql-shutdown.sh /etc/service/postgresql/control/k
+COPY --from=evaluation-build /src/build/ferretdb/evaluation/postgresql-shutdown.sh /etc/service/postgresql/control/x
+
+# send termination signal to each process, see https://smarden.org/runit/runsvdir.8
+STOPSIGNAL SIGHUP
 ENTRYPOINT ["/entrypoint.sh"]
 
 HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-interval=5s \
