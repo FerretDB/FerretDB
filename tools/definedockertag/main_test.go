@@ -58,6 +58,9 @@ func TestDefine(t *testing.T) {
 				evaluationImages: []string{
 					"ghcr.io/ferretdb/ferretdb-eval:pr-define-docker-tag",
 				},
+				evalImages: []string{
+					"ghcr.io/ferretdb/ferretdb-eval:pr-define-docker-tag",
+				},
 				developmentImages: []string{
 					"ghcr.io/ferretdb/ferretdb-dev:pr-define-docker-tag",
 				},
@@ -74,6 +77,9 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				evaluationImages: []string{
+					"ghcr.io/otherorg/otherrepo-eval:pr-define-docker-tag",
+				},
+				evalImages: []string{
 					"ghcr.io/otherorg/otherrepo-eval:pr-define-docker-tag",
 				},
 				developmentImages: []string{
@@ -95,6 +101,9 @@ func TestDefine(t *testing.T) {
 				evaluationImages: []string{
 					"ghcr.io/ferretdb/ferretdb-eval:pr-mongo-go-driver-29d768e",
 				},
+				evalImages: []string{
+					"ghcr.io/ferretdb/ferretdb-eval:pr-mongo-go-driver-29d768e",
+				},
 				developmentImages: []string{
 					"ghcr.io/ferretdb/ferretdb-dev:pr-mongo-go-driver-29d768e",
 				},
@@ -111,6 +120,9 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				evaluationImages: []string{
+					"ghcr.io/otherorg/otherrepo-eval:pr-mongo-go-driver-29d768e",
+				},
+				evalImages: []string{
 					"ghcr.io/otherorg/otherrepo-eval:pr-mongo-go-driver-29d768e",
 				},
 				developmentImages: []string{
@@ -132,6 +144,9 @@ func TestDefine(t *testing.T) {
 				evaluationImages: []string{
 					"ghcr.io/ferretdb/ferretdb-eval:pr-define-docker-tag",
 				},
+				evalImages: []string{
+					"ghcr.io/ferretdb/ferretdb-eval:pr-define-docker-tag",
+				},
 				developmentImages: []string{
 					"ghcr.io/ferretdb/ferretdb-dev:pr-define-docker-tag",
 				},
@@ -148,6 +163,9 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				evaluationImages: []string{
+					"ghcr.io/otherorg/otherrepo-eval:pr-define-docker-tag",
+				},
+				evalImages: []string{
 					"ghcr.io/otherorg/otherrepo-eval:pr-define-docker-tag",
 				},
 				developmentImages: []string{
@@ -167,6 +185,11 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				evaluationImages: []string{
+					"ferretdb/ferretdb-eval:main",
+					"ghcr.io/ferretdb/ferretdb-eval:main",
+					"quay.io/ferretdb/ferretdb-eval:main",
+				},
+				evalImages: []string{
 					"ferretdb/ferretdb-eval:main",
 					"ghcr.io/ferretdb/ferretdb-eval:main",
 					"quay.io/ferretdb/ferretdb-eval:main",
@@ -196,6 +219,9 @@ func TestDefine(t *testing.T) {
 				evaluationImages: []string{
 					"ghcr.io/otherorg/otherrepo-eval:main",
 				},
+				evalImages: []string{
+					"ghcr.io/otherorg/otherrepo-eval:main",
+				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:main",
 				},
@@ -216,6 +242,11 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				evaluationImages: []string{
+					"ferretdb/ferretdb-eval:main-v1",
+					"ghcr.io/ferretdb/ferretdb-eval:main-v1",
+					"quay.io/ferretdb/ferretdb-eval:main-v1",
+				},
+				evalImages: []string{
 					"ferretdb/ferretdb-eval:main-v1",
 					"ghcr.io/ferretdb/ferretdb-eval:main-v1",
 					"quay.io/ferretdb/ferretdb-eval:main-v1",
@@ -245,6 +276,9 @@ func TestDefine(t *testing.T) {
 				evaluationImages: []string{
 					"ghcr.io/otherorg/otherrepo-eval:main-v1",
 				},
+				evalImages: []string{
+					"ghcr.io/otherorg/otherrepo-eval:main-v1",
+				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:main-v1",
 				},
@@ -265,6 +299,11 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				evaluationImages: []string{
+					"ferretdb/ferretdb-eval:releases-2.1",
+					"ghcr.io/ferretdb/ferretdb-eval:releases-2.1",
+					"quay.io/ferretdb/ferretdb-eval:releases-2.1",
+				},
+				evalImages: []string{
 					"ferretdb/ferretdb-eval:releases-2.1",
 					"ghcr.io/ferretdb/ferretdb-eval:releases-2.1",
 					"quay.io/ferretdb/ferretdb-eval:releases-2.1",
@@ -294,6 +333,9 @@ func TestDefine(t *testing.T) {
 				evaluationImages: []string{
 					"ghcr.io/otherorg/otherrepo-eval:releases-2.1",
 				},
+				evalImages: []string{
+					"ghcr.io/otherorg/otherrepo-eval:releases-2.1",
+				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:releases-2.1",
 				},
@@ -314,6 +356,11 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				evaluationImages: []string{
+					"ferretdb/ferretdb-eval:1.26.0-beta",
+					"ghcr.io/ferretdb/ferretdb-eval:1.26.0-beta",
+					"quay.io/ferretdb/ferretdb-eval:1.26.0-beta",
+				},
+				evalImages: []string{
 					"ferretdb/ferretdb-eval:1.26.0-beta",
 					"ghcr.io/ferretdb/ferretdb-eval:1.26.0-beta",
 					"quay.io/ferretdb/ferretdb-eval:1.26.0-beta",
@@ -343,6 +390,9 @@ func TestDefine(t *testing.T) {
 				evaluationImages: []string{
 					"ghcr.io/otherorg/otherrepo-eval:1.26.0-beta",
 				},
+				evalImages: []string{
+					"ghcr.io/otherorg/otherrepo-eval:1.26.0-beta",
+				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:1.26.0-beta",
 				},
@@ -363,6 +413,23 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				evaluationImages: []string{
+					"ferretdb/ferretdb-eval:2",
+					"ferretdb/ferretdb-eval:2.0",
+					"ferretdb/ferretdb-eval:2.0.0",
+					"ferretdb/ferretdb-eval:2.0.0-rc.1",
+					"ferretdb/ferretdb-eval:latest",
+					"ghcr.io/ferretdb/ferretdb-eval:2",
+					"ghcr.io/ferretdb/ferretdb-eval:2.0",
+					"ghcr.io/ferretdb/ferretdb-eval:2.0.0",
+					"ghcr.io/ferretdb/ferretdb-eval:2.0.0-rc.1",
+					"ghcr.io/ferretdb/ferretdb-eval:latest",
+					"quay.io/ferretdb/ferretdb-eval:2",
+					"quay.io/ferretdb/ferretdb-eval:2.0",
+					"quay.io/ferretdb/ferretdb-eval:2.0.0",
+					"quay.io/ferretdb/ferretdb-eval:2.0.0-rc.1",
+					"quay.io/ferretdb/ferretdb-eval:latest",
+				},
+				evalImages: []string{
 					"ferretdb/ferretdb-eval:2",
 					"ferretdb/ferretdb-eval:2.0",
 					"ferretdb/ferretdb-eval:2.0.0",
@@ -432,6 +499,13 @@ func TestDefine(t *testing.T) {
 					"ghcr.io/otherorg/otherrepo-eval:2.0.0-rc.1",
 					"ghcr.io/otherorg/otherrepo-eval:latest",
 				},
+				evalImages: []string{
+					"ghcr.io/otherorg/otherrepo-eval:2",
+					"ghcr.io/otherorg/otherrepo-eval:2.0",
+					"ghcr.io/otherorg/otherrepo-eval:2.0.0",
+					"ghcr.io/otherorg/otherrepo-eval:2.0.0-rc.1",
+					"ghcr.io/otherorg/otherrepo-eval:latest",
+				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:2",
 					"ghcr.io/otherorg/otherrepo-dev:2.0",
@@ -460,6 +534,17 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				evaluationImages: []string{
+					"ferretdb/ferretdb-eval:1",
+					"ferretdb/ferretdb-eval:1.26",
+					"ferretdb/ferretdb-eval:1.26.0",
+					"ghcr.io/ferretdb/ferretdb-eval:1",
+					"ghcr.io/ferretdb/ferretdb-eval:1.26",
+					"ghcr.io/ferretdb/ferretdb-eval:1.26.0",
+					"quay.io/ferretdb/ferretdb-eval:1",
+					"quay.io/ferretdb/ferretdb-eval:1.26",
+					"quay.io/ferretdb/ferretdb-eval:1.26.0",
+				},
+				evalImages: []string{
 					"ferretdb/ferretdb-eval:1",
 					"ferretdb/ferretdb-eval:1.26",
 					"ferretdb/ferretdb-eval:1.26.0",
@@ -509,6 +594,11 @@ func TestDefine(t *testing.T) {
 					"ghcr.io/otherorg/otherrepo-eval:1.26",
 					"ghcr.io/otherorg/otherrepo-eval:1.26.0",
 				},
+				evalImages: []string{
+					"ghcr.io/otherorg/otherrepo-eval:1",
+					"ghcr.io/otherorg/otherrepo-eval:1.26",
+					"ghcr.io/otherorg/otherrepo-eval:1.26.0",
+				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:1",
 					"ghcr.io/otherorg/otherrepo-dev:1.26",
@@ -533,6 +623,20 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				evaluationImages: []string{
+					"ferretdb/ferretdb-eval:2",
+					"ferretdb/ferretdb-eval:2.0",
+					"ferretdb/ferretdb-eval:2.0.0",
+					"ferretdb/ferretdb-eval:latest",
+					"ghcr.io/ferretdb/ferretdb-eval:2",
+					"ghcr.io/ferretdb/ferretdb-eval:2.0",
+					"ghcr.io/ferretdb/ferretdb-eval:2.0.0",
+					"ghcr.io/ferretdb/ferretdb-eval:latest",
+					"quay.io/ferretdb/ferretdb-eval:2",
+					"quay.io/ferretdb/ferretdb-eval:2.0",
+					"quay.io/ferretdb/ferretdb-eval:2.0.0",
+					"quay.io/ferretdb/ferretdb-eval:latest",
+				},
+				evalImages: []string{
 					"ferretdb/ferretdb-eval:2",
 					"ferretdb/ferretdb-eval:2.0",
 					"ferretdb/ferretdb-eval:2.0.0",
@@ -592,6 +696,12 @@ func TestDefine(t *testing.T) {
 					"ghcr.io/otherorg/otherrepo-eval:2.0.0",
 					"ghcr.io/otherorg/otherrepo-eval:latest",
 				},
+				evalImages: []string{
+					"ghcr.io/otherorg/otherrepo-eval:2",
+					"ghcr.io/otherorg/otherrepo-eval:2.0",
+					"ghcr.io/otherorg/otherrepo-eval:2.0.0",
+					"ghcr.io/otherorg/otherrepo-eval:latest",
+				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:2",
 					"ghcr.io/otherorg/otherrepo-dev:2.0",
@@ -643,6 +753,11 @@ func TestDefine(t *testing.T) {
 					"ghcr.io/ferretdb/ferretdb-eval:main",
 					"quay.io/ferretdb/ferretdb-eval:main",
 				},
+				evalImages: []string{
+					"ferretdb/ferretdb-eval:main",
+					"ghcr.io/ferretdb/ferretdb-eval:main",
+					"quay.io/ferretdb/ferretdb-eval:main",
+				},
 				developmentImages: []string{
 					"ferretdb/ferretdb-dev:main",
 					"ghcr.io/ferretdb/ferretdb-dev:main",
@@ -668,6 +783,9 @@ func TestDefine(t *testing.T) {
 				evaluationImages: []string{
 					"ghcr.io/otherorg/otherrepo-eval:main",
 				},
+				evalImages: []string{
+					"ghcr.io/otherorg/otherrepo-eval:main",
+				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:main",
 				},
@@ -688,6 +806,11 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				evaluationImages: []string{
+					"ferretdb/ferretdb-eval:main",
+					"ghcr.io/ferretdb/ferretdb-eval:main",
+					"quay.io/ferretdb/ferretdb-eval:main",
+				},
+				evalImages: []string{
 					"ferretdb/ferretdb-eval:main",
 					"ghcr.io/ferretdb/ferretdb-eval:main",
 					"quay.io/ferretdb/ferretdb-eval:main",
@@ -715,6 +838,9 @@ func TestDefine(t *testing.T) {
 			},
 			expected: &result{
 				evaluationImages: []string{
+					"ghcr.io/otherorg/otherrepo-eval:main",
+				},
+				evalImages: []string{
 					"ghcr.io/otherorg/otherrepo-eval:main",
 				},
 				developmentImages: []string{
@@ -778,6 +904,9 @@ func TestResults(t *testing.T) {
 
 	result := &result{
 		evaluationImages: []string{
+			"ferretdb/ferretdb-eval:2.1.0",
+		},
+		evalImages: []string{
 			"ferretdb/ferretdb-eval:2.1.0",
 		},
 		developmentImages: []string{
