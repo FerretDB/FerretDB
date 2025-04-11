@@ -39,7 +39,7 @@ func TestOpQuery(t *testing.T) {
 	ctx, conn := s.Ctx, s.WireConn
 
 	t.Run("CollectionNameWithout.$cmd", func(t *testing.T) {
-		q := must.NotFail(wire.NewOpQuery(must.NotFail(wirebson.NewDocument("unknown", int32(1)))))
+		q := wire.MustOpQuery("unknown", int32(1))
 		q.FullCollectionName = "invalid"
 		q.NumberToReturn = -1
 
@@ -61,7 +61,7 @@ func TestOpQuery(t *testing.T) {
 	})
 
 	t.Run("UnknownOpQuery", func(t *testing.T) {
-		q := must.NotFail(wire.NewOpQuery(must.NotFail(wirebson.NewDocument("unknown", int32(1)))))
+		q := wire.MustOpQuery("unknown", int32(1))
 		q.FullCollectionName = "admin.$cmd"
 		q.NumberToReturn = -1
 
@@ -83,7 +83,7 @@ func TestOpQuery(t *testing.T) {
 	})
 
 	t.Run("BadNumberToReturn", func(t *testing.T) {
-		q := must.NotFail(wire.NewOpQuery(must.NotFail(wirebson.NewDocument("ismaster", int32(1)))))
+		q := wire.MustOpQuery("ismaster", int32(1))
 		q.FullCollectionName = "admin.$cmd"
 		q.NumberToReturn = 0
 
@@ -124,7 +124,7 @@ func TestOpQueryIsMaster(t *testing.T) {
 		t.Run(name, func(tt *testing.T) {
 			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/955")
 
-			q := must.NotFail(wire.NewOpQuery(must.NotFail(wirebson.NewDocument(tc.command, int32(1)))))
+			q := wire.MustOpQuery(tc.command, int32(1))
 			q.FullCollectionName = "admin.$cmd"
 			q.NumberToReturn = -1
 
@@ -190,10 +190,10 @@ func TestOpQueryIsMasterHelloOk(t *testing.T) {
 		t.Run(name, func(tt *testing.T) {
 			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/955")
 
-			q := must.NotFail(wire.NewOpQuery(must.NotFail(wirebson.NewDocument(
+			q := wire.MustOpQuery(
 				tc.command, int32(1),
 				"helloOk", true,
-			))))
+			)
 			q.FullCollectionName = "admin.$cmd"
 			q.NumberToReturn = -1
 
@@ -253,9 +253,9 @@ func TestOpQueryHello(tt *testing.T) {
 
 	ctx, conn := s.Ctx, s.WireConn
 
-	q := must.NotFail(wire.NewOpQuery(must.NotFail(wirebson.NewDocument(
+	q := wire.MustOpQuery(
 		"hello", int32(1),
-	))))
+	)
 	q.FullCollectionName = "admin.$cmd"
 	q.NumberToReturn = -1
 
