@@ -414,8 +414,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 			}
 
 			var res *middleware.Response
-			res, err = cmdHandler(connCtx, middleware.RequestWire(reqHeader, msg))
-			if res != nil {
+			if res, err = cmdHandler(connCtx, middleware.RequestWire(reqHeader, msg)); res != nil {
 				resBody = res.OpMsg
 			}
 		}
@@ -425,16 +424,20 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 		resHeader.OpCode = wire.OpCodeReply
 
-		command = query.Query().Command()
+		var q *wirebson.Document
+		if q, err = query.Query(); err == nil {
+			command = q.Command()
+		}
 
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
-		cmdHandler := c.h.CmdQuery
+		if err == nil {
+			cmdHandler := c.h.CmdQuery
 
-		var res *middleware.Response
-		res, err = cmdHandler(connCtx, middleware.RequestWire(reqHeader, query))
-		if res != nil {
-			resBody = res.OpReply
+			var res *middleware.Response
+			if res, err = cmdHandler(connCtx, middleware.RequestWire(reqHeader, query)); res != nil {
+				resBody = res.OpReply
+			}
 		}
 
 	case wire.OpCodeReply:
