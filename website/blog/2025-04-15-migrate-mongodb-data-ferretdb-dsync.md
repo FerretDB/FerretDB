@@ -14,14 +14,12 @@ If you're looking to migrate data from MongoDB to FerretDB, ensuring a smooth tr
 
 <!--truncate-->
 
-Traditional migration workflows often rely on static dumps and manual restoration steps, which can often lead to issues and data loss.
-BSON parsing errors.
+Traditional migration workflows often rely on static dumps and manual restoration steps, which can often lead to complications and data loss.
 Skipped collections.
 Metadata mismatches.
-Authentication quirks.
 And worst of all – no clue where things went wrong.
 
-`dsync` connects directly to both the source and destination of MongoDB-compatible services and streams data in real time.
+[`dsync`](https://github.com/adiom-data/dsync/) connects directly to both the source and destination of MongoDB-compatible services and streams data in real time.
 You get a full initial sync followed by live replication, making it ideal for both one-time migrations and zero-downtime switchover.
 
 In this post, you'll learn to use `dsync` to migrate the data from MongoDB to a running FerretDB instance.
@@ -46,83 +44,16 @@ cd dsync
 go build
 ```
 
-## Prepare a local MongoDB instance
-
-For a quick test, we'll use a local MongoDB instance.
-If you have one already running, you can skip this step.
-
-```sh
-rm -rf ~/temp/data_d
-mkdir -p ~/temp/data_d
-```
-
-Start `mongod`:
-
-```sh
-mongod --dbpath ~/temp/data_d --port 27018 --replSet rs0
-```
-
-Leave this terminal open.
-
-You need to initialize the replica set for `mongod` to work properly with `dsync`.
-`dsync` requires a replica set to be set on the source for the migration to work.
-
-Open a new terminal:
-
-```sh
-mongosh --port 27018
-```
-
-Then run:
-
-```js
-rs.initiate({
-  _id: 'rs0',
-  members: [{ _id: 0, host: 'localhost:27018' }]
-})
-```
-
-Confirm it works:
-
-```js
-rs.status()
-```
-
-Let's load some sample data into our local MongoDB instance.
-These sample data will be used to test the migration process.
-
-Clone and restore the dataset:
-
-```sh
-git clone https://github.com/mcampo2/mongodb-sample-databases
-cd mongodb-sample-databases
-mongorestore --port 27018 --dir=dump/
-```
-
-Next, verify the sample data to ensure it was loaded correctly.
-
-```sh
-mongosh --port 27018
-```
-
-Then:
-
-```js
-use sample_mflix
-db.movies.findOne()
-```
-
-You should see a document like:
-
-```json
-{ "_id" : ObjectId(...), "title" : "The Hunger Games", ... }
-```
-
 ## Run `dsync` to migrate into FerretDB
 
-Assuming FerretDB is running and listening on `localhost:27017`, specify the connection string (including the username and password) of your FerretDB instance if applicable and run `dsync`:
+To migrate data from your local MongoDB instance to FerretDB, you need to specify the source and destination connection strings.
 
-```bash
+Suppose our local MongoDB instance is running on `mongodb://localhost:27018/sample_mflix`.
+And FerretDB's connection string is `mongodb://<username>:<password>@localhost:27017`.
+
+You can go ahead and set the environment variables for the source and destination connection strings and run `dsync`:
+
+```sh
 export MDB_SRC='mongodb://localhost:27018/sample_mflix'
 export FERRETDB_DEST='mongodb://<username>:<password>@localhost:27017/sample_mflix'
 
@@ -137,32 +68,19 @@ Time Elapsed: 00:12:50        1/1 Namespaces synced
 Processing change stream events
 ```
 
-Next, we need to confirm that the data has been migrated successfully.
+The session will remain open for as long as `dsync` is running.
+So even if new data is added to the source MongoDB instance, `dsync` will keep track of it and replicate it to FerretDB.
 
-Connect to your FerretDB instance using `mongosh` or any MongoDB-compatible client.
-If you're using `mongosh`, you can connect to FerretDB like this:
+Confirm that the data has been migrated successfully by connecting to your FerretDB instance and checking the data.
 
-```sh
-mongosh mongodb://<username>:<password>@localhost:27017/sample_mflix
-```
+## Run your workloads in open source with FerretDB
 
-Once connected, you can check the data:
+With `dsync`, you can start migrating your data from MongoDB to FerretDB – without any downtime, or data loss.
 
-```js
-db.movies.countDocuments()
-db.movies.find().limit(5)
-```
+FerretDB lets you run your MongoDB workloads in open source, without fear of vendor lock-in or restrictive licenses like SSPL.
+Your data is yours, and you can run it wherever you want.
+With PostgreSQL with DocumentDB extension as the backend, FerretDB is designed to be a drop-in replacement for MongoDB, so you can keep using your existing tools and libraries without any changes.
 
-You should now see the same data in your FerretDB instance.
-As long as `dsync` remain running and connected, it will keep the data in sync between your local MongoDB instance and FerretDB.
-
-## Start migrating
-
-Now that you have a working setup, you can start migrating your data from MongoDB to FerretDB.
-Traditional tools like `mongodump` and `mongorestore` are excellent – until you start working outside pure MongoDB environments.
-FerretDB, DocumentDB, and CosmosDB introduce compatibility edge cases that make binary dumps fragile and unpredictable.
-
-`dsync` provides a modern, wire-protocol-native alternative that's easier to script, debug, and extend.
-If you're building CI pipelines or migrating test data into Mongo-compatible services, this approach gives you control without the overhead of managing `.bson` files or battling version mismatches.
-
-It's a great way to ensure your data is in sync and ready for production.
+Have any questions about the migration process?
+Contact us on any of our [community channels](https://docs.ferretdb.io/#community).
+We'd love to help you out.
