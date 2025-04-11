@@ -3,7 +3,7 @@ slug: migrate-mongodb-data-ferretdb-dsync
 title: 'Migrating MongoDB Data to FerretDB with dsync'
 authors: [alex]
 description: >
- Learn how to migrate your MongoDB data to FerretDB using dsync — with zero downtime and no data loss.
+  Learn how to migrate your MongoDB data to FerretDB using dsync — with zero downtime and no data loss.
 image: /img/blog/ferretdb-migration-dsync.jpg
 tags: [open source, sspl, document databases, community]
 ---
@@ -66,7 +66,7 @@ export FERRETDB_DEST='mongodb://<username>:<password>@localhost:27017/sample_mfl
 ```
 
 Replace `<username>` and `<password>` with your FerretDB credentials.
-If you’re running FerretDB without authentication enabled, you can omit them.
+If you're running FerretDB without authentication enabled, you can omit them.
 
 When you run dsync, it opens a live-change monitoring session in your terminal to track the progress of the migration.
 
@@ -90,4 +90,4 @@ Your data is yours, and you can run it wherever you want.
 With PostgreSQL with DocumentDB extension as the backend, FerretDB is designed to be a drop-in replacement for MongoDB, so you can keep using your existing tools and libraries without any changes.
 
 Have any questions about the migration process?
-Contact us on any of our [community channels](https://docs.ferretdb.io/#community) — we're happy to help.
+[Contact us on any of our community channels](https://docs.ferretdb.io/#community) – we're happy to help.
