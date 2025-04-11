@@ -116,6 +116,7 @@ EOF
 COPY --from=evaluation-build /src/bin/ferretdb /usr/local/bin/ferretdb
 COPY build/ferretdb/99-start-ferretdb.sh /docker-entrypoint-initdb.d/
 
+# TODO https://github.com/FerretDB/FerretDB/issues/5043
 RUN mkdir -p /var/log/supervisor
 COPY --from=evaluation-build /src/build/ferretdb/evaluation/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
