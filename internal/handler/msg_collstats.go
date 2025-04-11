@@ -90,5 +90,5 @@ func (h *Handler) MsgCollStats(connCtx context.Context, req *middleware.Request)
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.MakeResponse(page)
+	return middleware.ResponseMsg(page)
 }

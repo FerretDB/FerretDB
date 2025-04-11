@@ -73,7 +73,7 @@ func (h *Handler) MsgCreateIndexes(connCtx context.Context, req *middleware.Requ
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.MakeResponse(res)
+	return middleware.ResponseMsg(res)
 }
 
 // createIndexes calls DocumentDB API to create indexes, decodes and maps embedded error to command error if any.

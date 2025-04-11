@@ -96,7 +96,7 @@ func (h *Handler) MsgGetParameter(connCtx context.Context, req *middleware.Reque
 
 	must.NoError(res.Add("ok", float64(1)))
 
-	return middleware.MakeResponse(res)
+	return middleware.ResponseMsg(res)
 }
 
 // selectParameters makes a selection of requested parameters.

@@ -59,5 +59,5 @@ func (h *Handler) MsgDBStats(connCtx context.Context, req *middleware.Request) (
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.MakeResponse(res)
+	return middleware.ResponseMsg(res)
 }
