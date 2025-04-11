@@ -118,6 +118,7 @@ COPY build/ferretdb/99-start-ferretdb.sh /docker-entrypoint-initdb.d/
 
 COPY --from=evaluation-build /src/build/ferretdb/evaluation/ferretdb.sh /etc/service/ferretdb/run
 COPY --from=evaluation-build /src/build/ferretdb/evaluation/postgresql.sh /etc/service/postgresql/run
+COPY --from=evaluation-build /src/build/ferretdb/evaluation/ctrlaltdel.sh /etc/runit/ctrlaltdel
 
 # shutdown FerretDB and PostgreSQL upon receiving signals
 COPY --from=evaluation-build /src/build/ferretdb/evaluation/ferretdb-shutdown.sh /etc/service/ferretdb/control/t
@@ -136,13 +137,11 @@ COPY --from=evaluation-build /src/build/ferretdb/evaluation/postgresql-shutdown.
 COPY --from=evaluation-build /src/build/ferretdb/evaluation/postgresql-shutdown.sh /etc/service/postgresql/control/k
 COPY --from=evaluation-build /src/build/ferretdb/evaluation/postgresql-shutdown.sh /etc/service/postgresql/control/x
 
-# wait 10 seconds before kill
-ENV SVWAIT 10
 
 COPY --from=evaluation-build /src/build/ferretdb/evaluation/entrypoint.sh /entrypoint.sh
 
 # send termination signal to each process, see https://smarden.org/runit/runsvdir.8
-STOPSIGNAL SIGHUP
+STOPSIGNAL SIGINT
 ENTRYPOINT ["/entrypoint.sh"]
 
 HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-interval=5s \
