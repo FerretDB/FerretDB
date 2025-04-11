@@ -1,1 +1,1 @@
-response = { n: Int32(1), ok: Double(1.0) }
+response = { n: Int32(1), ok: 1.0 }

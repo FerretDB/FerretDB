@@ -11,7 +11,7 @@ db.books.insertMany([
         location: {
           city: 'London',
           country: 'United Kingdom',
-          geolocation: { type: 'Point', coordinates: [Double(-0.1276), Double(51.5072)] }
+          geolocation: { type: 'Point', coordinates: [-0.1276, 51.5072] }
         }
       }
     },
@@ -27,7 +27,7 @@ db.books.insertMany([
     ],
     isbn: '978-0141439518',
     pages: Int32(448),
-    price: { value: Double(19.99), currency: 'USD' },
+    price: { value: 19.99, currency: 'USD' },
     keywords: ['Elizabeth Bennet', 'Mr. Darcy', '19th Century'],
     reviews: [
       { user: 'johnny_moe', rating: Int32(5), comment: 'An all-time favorite!' },
@@ -38,7 +38,7 @@ db.books.insertMany([
       themes: ['Pride', 'Prejudice', 'Class', 'Marriage']
     },
     analytics: {
-      average_rating: Double(4.5),
+      average_rating: 4.5,
       ratings_count: Int32(1500),
       sales: { units_sold: Int32(1000000), countries: ['United States', 'United Kingdom', 'India'] }
     },
@@ -58,7 +58,7 @@ db.books.insertMany([
         location: {
           city: 'New York',
           country: 'United States',
-          geolocation: { type: 'Point', coordinates: [Double(-74.006), Double(40.7128)] }
+          geolocation: { type: 'Point', coordinates: [-74.006, 40.7128] }
         }
       }
     },
@@ -73,7 +73,7 @@ db.books.insertMany([
     ],
     isbn: '978-1503280786',
     pages: Int32(378),
-    price: { value: Double(15.99), currency: 'USD' },
+    price: { value: 15.99, currency: 'USD' },
     keywords: ['Captain Ahab', 'Whaling', 'Revenge'],
     reviews: [{ user: 'sailor_sam', rating: Int32(5), comment: 'A thrilling adventure on the high seas.' }],
     textual_analysis: {
@@ -81,7 +81,7 @@ db.books.insertMany([
       themes: ['Obsession', 'Revenge', 'Fate']
     },
     analytics: {
-      average_rating: Double(4.3),
+      average_rating: 4.3,
       ratings_count: Int32(800),
       sales: { units_sold: Int32(500000), countries: ['United States', 'United Kingdom'] }
     },
@@ -101,7 +101,7 @@ db.books.insertMany([
         location: {
           city: 'London',
           country: 'United Kingdom',
-          geolocation: { type: 'Point', coordinates: [Double(-0.1276), Double(51.5072)] }
+          geolocation: { type: 'Point', coordinates: [-0.1276, 51.5072] }
         }
       }
     },
@@ -116,7 +116,7 @@ db.books.insertMany([
     ],
     isbn: '978-0199537150',
     pages: Int32(336),
-    price: { value: Double(10.99), currency: 'USD' },
+    price: { value: 10.99, currency: 'USD' },
     keywords: ['Victor Frankenstein', 'Monster', 'Creation'],
     reviews: [
       { user: 'science_geek', rating: Int32(5), comment: 'A chilling exploration of ambition and consequence.' }
@@ -126,7 +126,7 @@ db.books.insertMany([
       themes: ['Ambition', 'Morality', 'Isolation']
     },
     analytics: {
-      average_rating: Double(4.7),
+      average_rating: 4.7,
       ratings_count: Int32(1200),
       sales: { units_sold: Int32(600000), countries: ['United Kingdom', 'United States'] }
     },
@@ -150,7 +150,7 @@ db.books.insertMany([
         location: {
           city: 'Upper Saddle River',
           country: 'United States',
-          geolocation: { type: 'Point', coordinates: [Double(-74.097), Double(40.998)] }
+          geolocation: { type: 'Point', coordinates: [-74.097, 40.998] }
         }
       }
     },
@@ -165,7 +165,7 @@ db.books.insertMany([
     ],
     isbn: '978-0131873254',
     pages: Int32(1119),
-    price: { value: Double(175.99), currency: 'USD' },
+    price: { value: 175.99, currency: 'USD' },
     keywords: ['Database Design', 'SQL', 'Data Storage', 'Query Processing'],
     reviews: [
       { user: 'tech_reader', rating: Int32(5), comment: 'Comprehensive resource for database systems.' },
@@ -177,7 +177,7 @@ db.books.insertMany([
       themes: ['Database Design', 'SQL Standards', 'Data Storage', 'Transaction Management']
     },
     analytics: {
-      average_rating: Double(4.5),
+      average_rating: 4.5,
       ratings_count: Int32(100),
       sales: { units_sold: Int32(50000), countries: ['United States', 'Canada', 'United Kingdom'] }
     },
@@ -197,7 +197,7 @@ db.books.insertMany([
         location: {
           city: 'Boston',
           country: 'United States',
-          geolocation: { type: 'Point', coordinates: [Double(-71.0598), Double(42.3601)] }
+          geolocation: { type: 'Point', coordinates: [-71.0598, 42.3601] }
         }
       }
     },
@@ -212,7 +212,7 @@ db.books.insertMany([
     ],
     isbn: '978-0132350884',
     pages: Int32(464),
-    price: { value: Double(49.99), currency: 'USD' },
+    price: { value: 49.99, currency: 'USD' },
     keywords: ['Software Craftsmanship', 'Code Quality', 'Agile Development', 'Programming Best Practices'],
     reviews: [
       { user: 'dev_guru', rating: Int32(5), comment: 'An essential guide for writing clean, maintainable code.' },
@@ -228,7 +228,7 @@ db.books.insertMany([
       themes: ['Code Quality', 'Best Practices', 'Software Maintenance', 'Agile Methodologies']
     },
     analytics: {
-      average_rating: Double(4.7),
+      average_rating: 4.7,
       ratings_count: Int32(2500),
       sales: { units_sold: Int32(150000), countries: ['United States', 'Canada', 'United Kingdom'] }
     },

@@ -13,5 +13,5 @@ response = {
       }
     ]
   },
-  ok: Double(1.0)
+  ok: 1.0
 }
