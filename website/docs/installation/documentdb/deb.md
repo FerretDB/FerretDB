@@ -13,6 +13,37 @@ We provide different DocumentDB `.deb` packages for various deployments on our [
   It includes features that significantly slow down performance and is not recommended for production use.
 
 Download the appropriate DocumentDB `.deb` package from our release page.
-Then, you can use `dpkg` tool to install it.
 
-You need to install PostgreSQL and additional dependencies required by the DocumentDB extension.
+Before installing the DocumentDB extension, you need to install PostgreSQL and additional dependencies required by the DocumentDB extension.
+
+With the dependencies installed, you can install the DocumentDB extension using `dpkg`.
+For example, to install the `documentdb.deb` package, run the following command:
+
+```sh
+sudo dpkg -i /path/to/documentdb.deb
+```
+
+Ensure to replace `/path/to/documentdb.deb` with the actual path and filename of the downloaded `.deb` package.
+
+Once installed, update your `postgresql.conf` to load the extension libraries on startup into the default `postgres` database.
+Add the following lines to `postgresql.conf`:
+
+```text
+shared_preload_libraries = 'pg_cron,pg_documentdb_core,pg_documentdb'
+cron.database_name       = 'postgres'
+```
+
+Then create the extension by running the following SQL command within the `postgres` database:
+
+```sql
+CREATE EXTENSION documentdb CASCADE;
+```
+
+:::caution
+We recommend using the default `postgres` database; some features may not work as expected if you use a different database.
+If you prefer to load the extension into a different database, make sure to create the database beforehand and update the `cron.database_name` setting accordingly.
+
+Ensure to restart the PostgreSQL service to apply the changes and run `CREATE EXTENSION documentdb CASCADE;` within the database to create the extension.
+:::
+
+You can now go ahead and set up FerretDB by following [this installation guide](../ferretdb/deb.md).
