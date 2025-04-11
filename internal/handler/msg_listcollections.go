@@ -53,5 +53,5 @@ func (h *Handler) MsgListCollections(connCtx context.Context, req *middleware.Re
 
 	h.s.AddCursor(connCtx, userID, sessionID, cursorID)
 
-	return middleware.MakeResponse(page)
+	return middleware.ResponseMsg(page)
 }

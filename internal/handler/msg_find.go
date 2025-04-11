@@ -53,5 +53,5 @@ func (h *Handler) MsgFind(connCtx context.Context, req *middleware.Request) (*mi
 
 	h.s.AddCursor(connCtx, userID, sessionID, cursorID)
 
-	return middleware.MakeResponse(page)
+	return middleware.ResponseMsg(page)
 }

@@ -15,46 +15,7 @@
 // Package middleware provides wrappers for command handlers.
 package middleware
 
-import (
-	"context"
-
-	"github.com/FerretDB/wire"
-	"github.com/FerretDB/wire/wirebson"
-
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
-)
-
-// Request represents incoming request from the client.
-type Request struct {
-	OpMsg   *wire.OpMsg
-	OpQuery *wire.OpQuery
-}
-
-// Response represent outgoing response to the client.
-type Response struct {
-	OpMsg   *wire.OpMsg
-	OpReply *wire.OpReply
-}
-
-// MakeResponse constructs an OP_MSG [*Response] from a single document.
-func MakeResponse(doc wirebson.AnyDocument) (*Response, error) {
-	msg, err := wire.NewOpMsg(doc)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &Response{OpMsg: msg}, nil
-}
-
-// MakeReply constructs an OP_QUERY [*Response] from a single document.
-func MakeReply(doc wirebson.AnyDocument) (*Response, error) {
-	reply, err := wire.NewOpReply(doc)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &Response{OpReply: reply}, nil
-}
+import "context"
 
 // HandleFunc represents a function/method that processes a single request.
 //

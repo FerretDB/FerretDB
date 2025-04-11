@@ -199,5 +199,5 @@ func (h *Handler) MsgGetLog(connCtx context.Context, req *middleware.Request) (*
 		)
 	}
 
-	return middleware.MakeResponse(res)
+	return middleware.ResponseMsg(res)
 }

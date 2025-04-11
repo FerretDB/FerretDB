@@ -39,7 +39,7 @@ func (h *Handler) MsgGetFreeMonitoringStatus(connCtx context.Context, req *middl
 	state := h.StateProvider.Get().TelemetryString()
 	message := "monitoring is " + state
 
-	return middleware.MakeResponse(wirebson.MustDocument(
+	return middleware.ResponseMsg(wirebson.MustDocument(
 		"state", state,
 		"message", message,
 		"ok", float64(1),
