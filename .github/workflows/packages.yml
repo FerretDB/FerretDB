@@ -116,6 +116,11 @@ jobs:
         id: tag
         run: bin/definedockertag
 
+      - run: echo "$OUTPUTS"
+        shell: bash
+        env:
+        OUTPUTS: ${{ toJSON(steps.tag.outputs) }}
+
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
