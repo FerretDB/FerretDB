@@ -77,7 +77,7 @@ spec:
 Ensure to update the `<username>` and `<password>`.
 Also, the `POSTGRES_DB` should be set as `postgres` – this is required to properly initialize the DocumentDB extension.
 
-Apply the manifest to create the PostgreSQL instance:
+Apply the `postgres.yaml` file to create the PostgreSQL instance:
 
 ```sh
 kubectl apply -f postgres.yaml
