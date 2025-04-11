@@ -17,7 +17,7 @@ to ensure consistency across deployments.
 For more information on the best FerretDB image to use, see the [DocumentDB release notes](https://github.com/FerretDB/documentdb/releases/).
 :::
 
-Create a `postgres.yaml` manifest with the following content:
+Create a `postgres.yaml` file with the following content:
 
 ```yaml
 apiVersion: apps/v1

@@ -18,7 +18,7 @@ Ensure to [enable telemetry](../../telemetry.md) to receive notifications on the
 For more information on the best DocumentDB version to use, see the [corresponding release notes for the FerretDB version](https://github.com/FerretDB/FerretDB/releases/).
 :::
 
-Create a `ferretdb.yaml` manifest with the following content:
+Create a `ferretdb.yaml` file with the following content:
 
 ```yaml
 apiVersion: apps/v1
@@ -61,7 +61,7 @@ spec:
 
 Ensure to update the `<username>` and `<password>`.
 
-Apply manifest:
+Apply the `ferretdb.yaml` file:
 
 ```sh
 kubectl apply -f ferretdb.yaml
