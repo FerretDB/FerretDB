@@ -2,4 +2,4 @@
 
 set -ex
 
-exec /usr/bin/runsvdir /etc/service
+/usr/bin/runsvdir /etc/service

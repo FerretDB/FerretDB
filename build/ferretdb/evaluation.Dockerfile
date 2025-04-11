@@ -118,9 +118,6 @@ COPY build/ferretdb/99-start-ferretdb.sh /docker-entrypoint-initdb.d/
 
 COPY --from=evaluation-build /src/build/ferretdb/evaluation/ferretdb.sh /etc/service/ferretdb/run
 COPY --from=evaluation-build /src/build/ferretdb/evaluation/postgresql.sh /etc/service/postgresql/run
-
-# upon INT signal, ctrlaltdel file is executed https://smarden.org/runit1/runit.8#sect6
-COPY --from=evaluation-build /src/build/ferretdb/evaluation/ctrlaltdel.sh /etc/runit/ctrlaltdel
 COPY --from=evaluation-build /src/build/ferretdb/evaluation/entrypoint.sh /entrypoint.sh
 
 # shutdown FerretDB and PostgreSQL upon receiving signals
