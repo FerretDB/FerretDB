@@ -2,4 +2,4 @@
 
 set -ex
 
-exec /usr/local/bin/ferretdb
+exec /usr/local/bin/ferretdb 2>&1

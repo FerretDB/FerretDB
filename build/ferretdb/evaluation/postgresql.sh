@@ -2,4 +2,4 @@
 
 set -ex
 
-exec /usr/local/bin/docker-entrypoint.sh postgres
+exec /usr/local/bin/docker-entrypoint.sh postgres 2>&1
