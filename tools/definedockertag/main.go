@@ -44,7 +44,7 @@ func main() {
 
 // result represents Docker image names and tags extracted from the environment.
 type result struct {
-	evaluationImages  []string
+	evalDevImages     []string
 	developmentImages []string
 	productionImages  []string
 }
@@ -155,7 +155,7 @@ func define(getenv githubactions.GetenvFunc) (*result, error) {
 		panic("both res and err are nil")
 	}
 
-	slices.Sort(res.evaluationImages)
+	slices.Sort(res.evalDevImages)
 	slices.Sort(res.developmentImages)
 	slices.Sort(res.productionImages)
 
@@ -169,8 +169,8 @@ func defineForPR(owner, repo, branch string) *result {
 	branch = parts[len(parts)-1]
 
 	res := &result{
-		evaluationImages: []string{
-			fmt.Sprintf("ghcr.io/%s/%s-eval:pr-%s", owner, repo, branch),
+		evalDevImages: []string{
+			fmt.Sprintf("ghcr.io/%s/%s-eval-dev:pr-%s", owner, repo, branch),
 		},
 		developmentImages: []string{
 			fmt.Sprintf("ghcr.io/%s/%s-dev:pr-%s", owner, repo, branch),
@@ -198,8 +198,8 @@ func defineForBranch(owner, repo, branch string) (*result, error) {
 	}
 
 	res := &result{
-		evaluationImages: []string{
-			fmt.Sprintf("ghcr.io/%s/%s-eval:%s", owner, repo, branch),
+		evalDevImages: []string{
+			fmt.Sprintf("ghcr.io/%s/%s-eval-dev:%s", owner, repo, branch),
 		},
 		developmentImages: []string{
 			fmt.Sprintf("ghcr.io/%s/%s-dev:%s", owner, repo, branch),
@@ -219,11 +219,11 @@ func defineForBranch(owner, repo, branch string) (*result, error) {
 		return res, nil
 	}
 
-	res.evaluationImages = append(res.evaluationImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-eval:%s", branch))
+	res.evalDevImages = append(res.evalDevImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-eval-dev:%s", branch))
 	res.developmentImages = append(res.developmentImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-dev:%s", branch))
 	res.productionImages = append(res.productionImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-dev:%s-prod", branch))
 
-	res.evaluationImages = append(res.evaluationImages, fmt.Sprintf("ferretdb/ferretdb-eval:%s", branch))
+	res.evalDevImages = append(res.evalDevImages, fmt.Sprintf("ferretdb/ferretdb-eval-dev:%s", branch))
 	res.developmentImages = append(res.developmentImages, fmt.Sprintf("ferretdb/ferretdb-dev:%s", branch))
 	res.productionImages = append(res.productionImages, fmt.Sprintf("ferretdb/ferretdb-dev:%s-prod", branch))
 
@@ -235,7 +235,7 @@ func defineForTag(owner, repo string, tags []string) *result {
 	res := new(result)
 
 	for _, t := range tags {
-		res.evaluationImages = append(res.evaluationImages, fmt.Sprintf("ghcr.io/%s/%s-eval:%s", owner, repo, t))
+		res.evalDevImages = append(res.evalDevImages, fmt.Sprintf("ghcr.io/%s/%s-eval-dev:%s", owner, repo, t))
 		res.developmentImages = append(res.developmentImages, fmt.Sprintf("ghcr.io/%s/%s-dev:%s", owner, repo, t))
 		res.productionImages = append(res.productionImages, fmt.Sprintf("ghcr.io/%s/%s:%s", owner, repo, t))
 	}
@@ -251,11 +251,11 @@ func defineForTag(owner, repo string, tags []string) *result {
 	}
 
 	for _, t := range tags {
-		res.evaluationImages = append(res.evaluationImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-eval:%s", t))
+		res.evalDevImages = append(res.evalDevImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-eval-dev:%s", t))
 		res.developmentImages = append(res.developmentImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-dev:%s", t))
 		res.productionImages = append(res.productionImages, fmt.Sprintf("quay.io/ferretdb/ferretdb:%s", t))
 
-		res.evaluationImages = append(res.evaluationImages, fmt.Sprintf("ferretdb/ferretdb-eval:%s", t))
+		res.evalDevImages = append(res.evalDevImages, fmt.Sprintf("ferretdb/ferretdb-eval-dev:%s", t))
 		res.developmentImages = append(res.developmentImages, fmt.Sprintf("ferretdb/ferretdb-dev:%s", t))
 		res.productionImages = append(res.productionImages, fmt.Sprintf("ferretdb/ferretdb:%s", t))
 	}
@@ -270,9 +270,9 @@ func setResults(action *githubactions.Action, res *result) {
 	fmt.Fprintf(w, "\tType\tImage\t\n")
 	fmt.Fprintf(w, "\t----\t-----\t\n")
 
-	for _, image := range res.evaluationImages {
+	for _, image := range res.evalDevImages {
 		u := imageURL(image)
-		_, _ = fmt.Fprintf(w, "\tEvaluation\t[`%s`](%s)\t\n", image, u)
+		_, _ = fmt.Fprintf(w, "\tEvaluation Development\t[`%s`](%s)\t\n", image, u)
 	}
 
 	for _, image := range res.developmentImages {
@@ -290,7 +290,7 @@ func setResults(action *githubactions.Action, res *result) {
 	action.AddStepSummary(buf.String())
 	action.Infof("%s", buf.String())
 
-	action.SetOutput("evaluation_images", strings.Join(res.evaluationImages, ","))
+	action.SetOutput("eval_dev_images", strings.Join(res.evalDevImages, ","))
 	action.SetOutput("development_images", strings.Join(res.developmentImages, ","))
 	action.SetOutput("production_images", strings.Join(res.productionImages, ","))
 }
