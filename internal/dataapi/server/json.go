@@ -15,7 +15,6 @@
 package server
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -28,13 +27,9 @@ import (
 
 // marshalJSON encodes wirebson.RawDocument into extended JSON.
 func marshalJSON(raw wirebson.RawDocument, jsonDst io.Writer) error {
-	b, err := bson.MarshalExtJSON(bson.Raw(raw), false, false)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
+	encoder := bson.NewEncoder(bson.NewExtJSONValueWriter(jsonDst, false, false))
 
-	_, err = io.Copy(jsonDst, bytes.NewReader(b))
-	if err != nil {
+	if err := encoder.Encode(bson.Raw(raw)); err != nil {
 		return lazyerrors.Error(err)
 	}
 
