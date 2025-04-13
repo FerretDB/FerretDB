@@ -30,8 +30,8 @@ import (
 // MsgKillAllSessionsByPattern implements `killAllSessionsByPattern` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgKillAllSessionsByPattern(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) { //nolint:lll // for readability
-	spec, err := req.RawDocument()
+func (h *Handler) MsgKillAllSessionsByPattern(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) { //nolint:lll // for readability
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -144,7 +144,7 @@ func (h *Handler) MsgKillAllSessionsByPattern(connCtx context.Context, req *midd
 		_ = h.Pool.KillCursor(connCtx, cursorID)
 	}
 
-	return middleware.Response(wirebson.MustDocument(
+	return middleware.ResponseMsg(wirebson.MustDocument(
 		"ok", float64(1),
 	))
 }

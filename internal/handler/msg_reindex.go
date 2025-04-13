@@ -32,8 +32,8 @@ import (
 // MsgReIndex implements `reIndex` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgReIndex(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
-	spec, err := req.RawDocument()
+func (h *Handler) MsgReIndex(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -160,7 +160,7 @@ func (h *Handler) MsgReIndex(connCtx context.Context, req *middleware.MsgRequest
 
 	indexesAfter := listDoc.Get("cursor").(*wirebson.Document).Get("firstBatch").(*wirebson.Array)
 
-	return middleware.Response(wirebson.MustDocument(
+	return middleware.ResponseMsg(wirebson.MustDocument(
 		"nIndexesWas", int32(indexesBefore.Len()),
 		"nIndexes", createDoc.Get("numIndexesAfter"),
 		"indexes", indexesAfter,

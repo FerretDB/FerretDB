@@ -30,8 +30,8 @@ import (
 // MsgKillCursors implements `killCursors` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgKillCursors(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
-	spec, err := req.RawDocument()
+func (h *Handler) MsgKillCursors(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -119,7 +119,7 @@ func (h *Handler) MsgKillCursors(connCtx context.Context, req *middleware.MsgReq
 		must.NoError(cursorsKilled.Add(id))
 	}
 
-	return middleware.Response(wirebson.MustDocument(
+	return middleware.ResponseMsg(wirebson.MustDocument(
 		"cursorsKilled", cursorsKilled,
 		"cursorsNotFound", cursorsNotFound,
 		"cursorsAlive", cursorsAlive,

@@ -32,8 +32,8 @@ import (
 // MsgSASLContinue implements `saslContinue` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgSASLContinue(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
-	spec, err := req.RawDocument()
+func (h *Handler) MsgSASLContinue(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -53,7 +53,7 @@ func (h *Handler) MsgSASLContinue(connCtx context.Context, req *middleware.MsgRe
 		return nil, err
 	}
 
-	return middleware.Response(res)
+	return middleware.ResponseMsg(res)
 }
 
 // saslContinue continues and finishes SCRAM conversation.
