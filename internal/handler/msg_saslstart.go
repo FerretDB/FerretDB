@@ -35,8 +35,8 @@ import (
 // MsgSASLStart implements `saslStart` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgSASLStart(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
-	spec, err := req.RawDocument()
+func (h *Handler) MsgSASLStart(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -58,7 +58,7 @@ func (h *Handler) MsgSASLStart(connCtx context.Context, req *middleware.MsgReque
 
 	must.NoError(res.Add("ok", float64(1)))
 
-	return middleware.Response(res)
+	return middleware.ResponseMsg(res)
 }
 
 // saslStart starts SCRAM conversation.

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package proxy sends requests to another wire protocol compatible service.
+// Package proxy handles requests by sending them to another wire protocol compatible service.
 package proxy
 
 import (
@@ -23,19 +23,20 @@ import (
 
 	"github.com/FerretDB/wire"
 
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/tlsutil"
 )
 
-// Router "handles" messages by sending them to another wire protocol compatible service.
-type Router struct {
+// Handler handles requests by sending them to another wire protocol compatible service.
+type Handler struct {
 	conn net.Conn
 	bufr *bufio.Reader
 	bufw *bufio.Writer
 }
 
-// New creates a new Router for a service with given address.
-func New(addr, certFile, keyFile, caFile string) (*Router, error) {
+// New creates a new Handler for a service with given address.
+func New(addr, certFile, keyFile, caFile string) (*Handler, error) {
 	var conn net.Conn
 	var err error
 
@@ -49,7 +50,7 @@ func New(addr, certFile, keyFile, caFile string) (*Router, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &Router{
+	return &Handler{
 		conn: conn,
 		bufr: bufio.NewReader(conn),
 		bufw: bufio.NewWriter(conn),
@@ -75,28 +76,47 @@ func dialTLS(addr, certFile, keyFile, caFile string) (net.Conn, error) {
 	return conn, nil
 }
 
-// Close stops the handler.
-func (r *Router) Close() {
-	r.conn.Close()
+// Run runs the handler until ctx is canceled.
+//
+// When this method returns, handler is stopped.
+func (h *Handler) Run(ctx context.Context) {
+	<-ctx.Done()
+	_ = h.conn.Close()
 }
 
-// Route routes the message by sending it to another wire protocol compatible service.
-func (r *Router) Route(ctx context.Context, header *wire.MsgHeader, body wire.MsgBody) (*wire.MsgHeader, wire.MsgBody) {
+// Handle processes a request by sending it to another wire protocol compatible service.
+func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	deadline, _ := ctx.Deadline()
-	r.conn.SetDeadline(deadline)
+	_ = h.conn.SetDeadline(deadline)
 
-	if err := wire.WriteMessage(r.bufw, header, body); err != nil {
-		panic(err)
+	var body wire.MsgBody
+
+	switch {
+	case req.OpMsg != nil:
+		body = req.OpMsg
+	case req.OpQuery != nil:
+		body = req.OpQuery
+	default:
+		return nil, lazyerrors.New("request body is nil")
 	}
 
-	if err := r.bufw.Flush(); err != nil {
-		panic(err)
+	if err := wire.WriteMessage(h.bufw, req.WireHeader(), body); err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	resHeader, resBody, err := wire.ReadMessage(r.bufr)
+	if err := h.bufw.Flush(); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	respHeader, respBody, err := wire.ReadMessage(h.bufr)
 	if err != nil {
-		panic(err)
+		return nil, lazyerrors.Error(err)
 	}
 
-	return resHeader, resBody
+	return middleware.ResponseWire(respHeader, respBody)
 }
+
+// check interfaces
+var (
+	_ middleware.HandleFunc = (*Handler)(nil).Handle
+)

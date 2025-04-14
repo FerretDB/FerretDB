@@ -36,8 +36,8 @@ import (
 // MsgExplain implements `explain` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgExplain(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
-	spec, err := req.RawDocument()
+func (h *Handler) MsgExplain(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -166,7 +166,7 @@ func (h *Handler) MsgExplain(connCtx context.Context, req *middleware.MsgRequest
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.Response(res)
+	return middleware.ResponseMsg(res)
 }
 
 // unmarshalExplain unmarshalls the plan from EXPLAIN postgreSQL command.

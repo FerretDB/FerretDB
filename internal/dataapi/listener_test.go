@@ -26,8 +26,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
@@ -305,7 +305,7 @@ func setupDataAPI(tb testing.TB, auth bool) (addr string, dbName string) {
 		u.User = url.UserPassword("username", "password")
 	}
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()))
+	client, err := mongo.Connect(options.Client().ApplyURI(u.String()))
 	require.NoError(tb, err)
 
 	addr = apiLis.lis.Addr().String()

@@ -17,7 +17,9 @@ package handler
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
@@ -31,7 +33,7 @@ type command struct {
 	// Handler processes this command.
 	//
 	// The passed context is canceled when the client disconnects.
-	Handler middleware.MsgHandlerFunc
+	Handler middleware.HandleFunc
 
 	// Help is shown in the `listCommands` command output.
 	// If empty, that command is hidden, but still can be used.
@@ -323,7 +325,7 @@ func (h *Handler) initCommands() {
 		}
 
 		if h.Auth && !cmd.anonymous {
-			cmd.Handler = middleware.Auth(cmd.Handler, logging.WithName(h.L, "auth"), name)
+			cmd.Handler = auth(cmd.Handler, logging.WithName(h.L, "auth"), name)
 		}
 
 		h.commands[name] = cmd
@@ -331,13 +333,45 @@ func (h *Handler) initCommands() {
 }
 
 // Commands returns a map of enabled commands.
+//
+// We should remove this method.
+// TODO https://github.com/FerretDB/FerretDB/issues/5046
 func (h *Handler) Commands() map[string]*command {
 	return h.commands
 }
 
+// auth is a middleware that wraps the command handler with authentication check.
+//
+// Context must contain [*conninfo.ConnInfo].
+func auth(next middleware.HandleFunc, l *slog.Logger, command string) middleware.HandleFunc {
+	return func(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
+		conv := conninfo.Get(ctx).Conv()
+		succeed := conv.Succeed()
+		username := conv.Username()
+
+		switch {
+		case conv == nil:
+			l.WarnContext(ctx, "No existing conversation")
+
+		case !succeed:
+			l.WarnContext(ctx, "Conversation did not succeed", slog.String("username", username))
+
+		default:
+			l.DebugContext(ctx, "Authentication passed", slog.String("username", username))
+
+			return next(ctx, req)
+		}
+
+		return nil, mongoerrors.New(
+			mongoerrors.ErrUnauthorized,
+			fmt.Sprintf("Command %s requires authentication", command),
+		)
+	}
+}
+
 // notImplemented returns a handler that returns an error indicating that the command is not implemented.
-func notImplemented(command string) middleware.MsgHandlerFunc {
-	return func(context.Context, *middleware.MsgRequest) (*middleware.MsgResponse, error) {
+func notImplemented(command string) middleware.HandleFunc {
+	return func(context.Context, *middleware.Request) (*middleware.Response, error) {
 		return nil, mongoerrors.New(
 			mongoerrors.ErrNotImplemented,
 			fmt.Sprintf("Command %s is not implemented", command),

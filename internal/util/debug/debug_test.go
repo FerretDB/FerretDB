@@ -84,6 +84,8 @@ func TestDebug(t *testing.T) {
 		u := "http://" + h.lis.Addr().String() + "/debug/archive"
 
 		expectedFiles := map[string]struct{}{
+			"version.json":    {},
+			"buildinfo.json":  {},
 			"metrics.txt":     {},
 			"vars.json":       {},
 			"profile.pprof":   {},
