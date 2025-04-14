@@ -114,7 +114,6 @@ apt install -y mongodb-mongosh
 EOF
 
 COPY --from=evaluation-build /src/bin/ferretdb /usr/local/bin/ferretdb
-COPY build/ferretdb/99-start-ferretdb.sh /docker-entrypoint-initdb.d/
 
 # TODO https://github.com/FerretDB/FerretDB/issues/5043
 COPY --from=evaluation-build /src/build/ferretdb/evaluation/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
