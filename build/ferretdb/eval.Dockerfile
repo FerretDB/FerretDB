@@ -70,24 +70,16 @@ git status
 export GOAMD64=v1
 export GOARM64=v8.0
 
-export CGO_ENABLED=1
-
-# Disable race detector on arm64 due to https://github.com/golang/go/issues/29948
-# (and that happens on GitHub-hosted Actions runners).
-RACE=false
-if test "$TARGETARCH" = "amd64"
-then
-    RACE=true
-fi
+export CGO_ENABLED=0
 
 go env
 
-# Do not trim paths to make debugging with delve easier.
+# Trim paths mostly to check that building with `-trimpath` is supported.
 
 # check if stdlib was cached
 go install -v -race=$RACE std
 
-go build -v -o=bin/ferretdb -race=$RACE -tags=ferretdb_dev -coverpkg=./... ./cmd/ferretdb
+go build -v -trimpath -o=bin/ferretdb ./cmd/ferretdb
 
 go version -m bin/ferretdb
 bin/ferretdb --version
@@ -97,7 +89,7 @@ EOF
 # final stage
 
 # Use production image and full tag close to the release.
-# FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-0.103.0-ferretdb-2.2.0 AS evaluation
+# FROM ghcr.io/ferretdb/postgres-documentdb:17-0.103.0-ferretdb-2.2.0 AS eval
 
 # Use moving development image during development.
 FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-ferretdb AS eval
@@ -123,9 +115,6 @@ HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-in
   CMD ["/ferretdb", "ping"]
 
 EXPOSE 27017 27018 8088
-
-ENV GOCOVERDIR=/tmp/cover
-ENV GORACE=halt_on_error=1,history_size=2
 
 ENV POSTGRES_USER=username
 ENV POSTGRES_PASSWORD=password
