@@ -474,13 +474,13 @@ tasks:
       vars: [FILE]
 
   # TODO https://github.com/FerretDB/FerretDB/issues/2212
-  docker-evaluation-push:
+  docker-eval-dev-push:
     cmds:
-      - echo 'docker-evaluation' > build/version/package.txt
+      - echo 'docker-eval-dev' > build/version/package.txt
       - task: docker-build
         vars:
-          FILE: ferretdb/evaluation
-          TARGET: evaluation
+          FILE: ferretdb/eval-dev
+          TARGET: eval-dev
           PLATFORM: linux/amd64 # no DocumentDB for linux/arm64 yet
           OUTPUT: type=image,push=true
     requires:
