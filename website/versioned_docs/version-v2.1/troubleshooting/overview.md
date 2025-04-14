@@ -11,9 +11,9 @@ If you experience any issues with FerretDB, this troubleshooting guide will help
 Do you have trouble setting up or connecting to FerretDB?
 Find solutions to common connectivity issues below.
 
-### Error initializing PostgreSQL with the DocumentDB extension in Docker
+### Error initializing PostgreSQL with DocumentDB extension in Docker
 
-If you get an error when initializing PostgreSQL with the DocumentDB extension in Docker,
+If you get an error when initializing PostgreSQL with DocumentDB extension in Docker,
 it may be due to an existing PostgreSQL data directory or volume.
 This error occurs because the previous PostgreSQL data directory was created without the DocumentDB extension.
 
@@ -30,7 +30,7 @@ change it to `./postgres-data`.
 You may need to export or migrate your data to the new PostgreSQL data directory.
 Follow our [migration guide](../migration/migrating-from-mongodb.md) for more details.
 
-For more details on setting up PostgreSQL with the DocumentDB extension in Docker,
+For more details on setting up PostgreSQL with DocumentDB extension in Docker,
 see the [Docker installation guide](../installation/documentdb/docker.md).
 
 ### Authentication error when connecting to FerretDB
