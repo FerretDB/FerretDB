@@ -907,7 +907,7 @@ func TestResults(t *testing.T) {
 			"ferretdb/ferretdb-eval:2.1.0",
 		},
 		evalImages: []string{
-			"ferretdb/ferretdb-eval:2.1.0",
+			"ferretdb/ferretdb-eval:2",
 		},
 		developmentImages: []string{
 			"ghcr.io/ferretdb/ferretdb-dev:2",
@@ -923,6 +923,7 @@ func TestResults(t *testing.T) {
  |Type        |Image                                                                                  |
  |----        |-----                                                                                  |
  |Evaluation  |['ferretdb/ferretdb-eval:2.1.0'](https://hub.docker.com/r/ferretdb/ferretdb-eval/tags) |
+ |Evaluation  |['ferretdb/ferretdb-eval:2'](https://hub.docker.com/r/ferretdb/ferretdb-eval/tags)     |
  |Development |['ghcr.io/ferretdb/ferretdb-dev:2'](https://ghcr.io/ferretdb/ferretdb-dev:2)           |
  |Production  |['quay.io/ferretdb/ferretdb:latest'](https://quay.io/ferretdb/ferretdb:latest)         |
 
@@ -934,6 +935,7 @@ func TestResults(t *testing.T) {
  |Type        |Image                                                                                  |
  |----        |-----                                                                                  |
  |Evaluation  |['ferretdb/ferretdb-eval:2.1.0'](https://hub.docker.com/r/ferretdb/ferretdb-eval/tags) |
+ |Evaluation  |['ferretdb/ferretdb-eval:2'](https://hub.docker.com/r/ferretdb/ferretdb-eval/tags)     |
  |Development |['ghcr.io/ferretdb/ferretdb-dev:2'](https://ghcr.io/ferretdb/ferretdb-dev:2)           |
  |Production  |['quay.io/ferretdb/ferretdb:latest'](https://quay.io/ferretdb/ferretdb:latest)         |
 
@@ -946,6 +948,9 @@ func TestResults(t *testing.T) {
 	expectedOutput := `
 evaluation_images<<_GitHubActionsFileCommandDelimeter_
 ferretdb/ferretdb-eval:2.1.0
+_GitHubActionsFileCommandDelimeter_
+eval_images<<_GitHubActionsFileCommandDelimeter_
+ferretdb/ferretdb-eval:2
 _GitHubActionsFileCommandDelimeter_
 development_images<<_GitHubActionsFileCommandDelimeter_
 ghcr.io/ferretdb/ferretdb-dev:2

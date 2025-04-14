@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# for evaluation (formerly "all-in-one") releases (`ferretdb-eval` image)
+# for evaluation production (formerly "all-in-one") releases (`ferretdb-eval` image)
 
 # While we already know commit and version from commit.txt and version.txt inside image,
 # it is not possible to use them in LABELs for the final image.
@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # prepare stage
 
-FROM --platform=$BUILDPLATFORM golang:1.24.2 AS evaluation-prepare
+FROM --platform=$BUILDPLATFORM golang:1.24.2 AS eval-prepare
 
 # use a single directory for all Go caches to simplify RUN --mount commands below
 ENV GOPATH=/cache/gopath
@@ -36,7 +36,7 @@ EOF
 
 # build stage
 
-FROM golang:1.24.2 AS evaluation-build
+FROM golang:1.24.2 AS eval-build
 
 ARG TARGETARCH
 
@@ -58,7 +58,7 @@ WORKDIR /src
 COPY . .
 
 # to add a dependency
-COPY --from=evaluation-prepare /src/go.mod /src/go.sum /src/
+COPY --from=eval-prepare /src/go.mod /src/go.sum /src/
 
 RUN --mount=type=cache,target=/cache <<EOF
 set -ex
@@ -100,21 +100,24 @@ EOF
 # FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-0.103.0-ferretdb-2.2.0 AS evaluation
 
 # Use moving development image during development.
-FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-ferretdb AS evaluation
+FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-ferretdb AS eval
 
 RUN --mount=type=cache,sharing=locked,target=/var/cache/apt <<EOF
 mkdir /tmp/cover /tmp/state
 chown postgres:postgres /tmp/cover /tmp/state
 
-apt install -y curl
+apt install -y curl supervisor
 curl -L https://pgp.mongodb.com/server-7.0.asc | apt-key add -
 echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/debian bookworm/mongodb-org/7.0 main" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list
 apt update
 apt install -y mongodb-mongosh
 EOF
 
-COPY --from=evaluation-build /src/bin/ferretdb /usr/local/bin/ferretdb
-COPY build/ferretdb/99-start-ferretdb.sh /docker-entrypoint-initdb.d/
+COPY --from=eval-build /src/bin/ferretdb /usr/local/bin/ferretdb
+
+# TODO https://github.com/FerretDB/FerretDB/issues/5043
+COPY --from=eval-build /src/build/ferretdb/evaluation/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
 
 HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-interval=5s \
   CMD ["/ferretdb", "ping"]

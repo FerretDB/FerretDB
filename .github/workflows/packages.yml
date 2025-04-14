@@ -140,6 +140,10 @@ jobs:
         if: steps.tag.outputs.evaluation_images != ''
         run: bin/task docker-evaluation-push DOCKER_IMAGES=${{ steps.tag.outputs.evaluation_images }}
 
+      - name: Build and push evaluation Docker images ${{ steps.tag.outputs.eval_images }}
+        if: steps.tag.outputs.eval_images != ''
+        run: bin/task docker-eval-push DOCKER_IMAGES=${{ steps.tag.outputs.eval_images }}
+
       - name: Build and push development Docker images ${{ steps.tag.outputs.development_images }}
         if: steps.tag.outputs.development_images != ''
         run: bin/task docker-development-push DOCKER_IMAGES=${{ steps.tag.outputs.development_images }}

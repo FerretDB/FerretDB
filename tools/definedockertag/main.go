@@ -288,6 +288,11 @@ func setResults(action *githubactions.Action, res *result) {
 		_, _ = fmt.Fprintf(w, "\tEvaluation\t[`%s`](%s)\t\n", image, u)
 	}
 
+	for _, image := range res.evalImages {
+		u := imageURL(image)
+		_, _ = fmt.Fprintf(w, "\tEvaluation\t[`%s`](%s)\t\n", image, u)
+	}
+
 	for _, image := range res.developmentImages {
 		u := imageURL(image)
 		_, _ = fmt.Fprintf(w, "\tDevelopment\t[`%s`](%s)\t\n", image, u)
@@ -304,6 +309,7 @@ func setResults(action *githubactions.Action, res *result) {
 	action.Infof("%s", buf.String())
 
 	action.SetOutput("evaluation_images", strings.Join(res.evaluationImages, ","))
+	action.SetOutput("eval_images", strings.Join(res.evalImages, ","))
 	action.SetOutput("development_images", strings.Join(res.developmentImages, ","))
 	action.SetOutput("production_images", strings.Join(res.productionImages, ","))
 }
