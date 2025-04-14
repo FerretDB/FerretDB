@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# for evaluation (formerly "all-in-one") releases (`ferretdb-eval` image)
+# for evaluation development releases (`ferretdb-eval-dev` image)
 
 # While we already know commit and version from commit.txt and version.txt inside image,
 # it is not possible to use them in LABELs for the final image.
@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # prepare stage
 
-FROM --platform=$BUILDPLATFORM golang:1.24.2 AS evaluation-prepare
+FROM --platform=$BUILDPLATFORM golang:1.24.2 AS eval-dev-prepare
 
 # use a single directory for all Go caches to simplify RUN --mount commands below
 ENV GOPATH=/cache/gopath
@@ -36,7 +36,7 @@ EOF
 
 # build stage
 
-FROM golang:1.24.2 AS evaluation-build
+FROM golang:1.24.2 AS eval-dev-build
 
 ARG TARGETARCH
 
@@ -58,7 +58,7 @@ WORKDIR /src
 COPY . .
 
 # to add a dependency
-COPY --from=evaluation-prepare /src/go.mod /src/go.sum /src/
+COPY --from=eval-dev-prepare /src/go.mod /src/go.sum /src/
 
 RUN --mount=type=cache,target=/cache <<EOF
 set -ex
@@ -97,10 +97,10 @@ EOF
 # final stage
 
 # Use production image and full tag close to the release.
-# FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-0.103.0-ferretdb-2.2.0 AS evaluation
+# FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-0.103.0-ferretdb-2.2.0 AS eval-dev
 
 # Use moving development image during development.
-FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-ferretdb AS evaluation
+FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-ferretdb AS eval-dev
 
 RUN --mount=type=cache,sharing=locked,target=/var/cache/apt <<EOF
 mkdir /tmp/cover /tmp/state
@@ -113,7 +113,7 @@ apt update
 apt install -y mongodb-mongosh
 EOF
 
-COPY --from=evaluation-build /src/bin/ferretdb /usr/local/bin/ferretdb
+COPY --from=eval-dev-build /src/bin/ferretdb /usr/local/bin/ferretdb
 COPY build/ferretdb/99-start-ferretdb.sh /docker-entrypoint-initdb.d/
 
 HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-interval=5s \
@@ -140,10 +140,10 @@ ARG LABEL_VERSION
 ARG LABEL_COMMIT
 
 # TODO https://github.com/FerretDB/FerretDB/issues/2212
-LABEL org.opencontainers.image.description="A truly Open Source MongoDB alternative (evaluation image)"
+LABEL org.opencontainers.image.description="A truly Open Source MongoDB alternative (evaluation development image)"
 LABEL org.opencontainers.image.revision="${LABEL_COMMIT}"
 LABEL org.opencontainers.image.source="https://github.com/FerretDB/FerretDB"
-LABEL org.opencontainers.image.title="FerretDB (evaluation image)"
+LABEL org.opencontainers.image.title="FerretDB (evaluation development image)"
 LABEL org.opencontainers.image.url="https://www.ferretdb.com/"
 LABEL org.opencontainers.image.vendor="FerretDB Inc."
 LABEL org.opencontainers.image.version="${LABEL_VERSION}"
