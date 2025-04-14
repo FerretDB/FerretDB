@@ -53,14 +53,13 @@ To migrate data from your local MongoDB instance to FerretDB, you need to specif
 Let's say:
 
 - MongoDB is running locally at `mongodb://localhost:27018/`
-- The target database is `sample_mflix`
 - FerretDB is running at `mongodb://<username>:<password>@localhost:27017`
 
-Set the following environment variables for the source and destination connection strings and run dsync:
+Set the following environment variables for the source and destination connection strings and run dsync to migrate all data:
 
 ```sh
-export MDB_SRC='mongodb://localhost:27018/sample_mflix'
-export FERRETDB_DEST='mongodb://<username>:<password>@localhost:27017/sample_mflix'
+export MDB_SRC='mongodb://localhost:27018/'
+export FERRETDB_DEST='mongodb://<username>:<password>@localhost:27017/'
 
 ./dsync --progress --logfile dsync.log "$MDB_SRC" "$FERRETDB_DEST"
 ```
