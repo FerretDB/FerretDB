@@ -131,11 +131,14 @@ EXPOSE 27017 27018 8088
 ENV GOCOVERDIR=/tmp/cover
 ENV GORACE=halt_on_error=1,history_size=2
 
+# POSTGRES_USER and POSTGRES_PASSWORD can be customized by environment variables,
+# if so FERRETDB_POSTGRESQL_URL must also be customized with the same credentials.
+# Failing that would cause panic in ferretdb.
 ENV POSTGRES_USER=username
 ENV POSTGRES_PASSWORD=password
 ENV POSTGRES_DB=postgres
-
 ENV FERRETDB_POSTGRESQL_URL=postgres://username:password@127.0.0.1:5432/postgres
+
 ENV FERRETDB_STATE_DIR=/tmp/state
 
 # don't forget to update documentation if you change defaults
