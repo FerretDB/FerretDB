@@ -134,6 +134,9 @@ ENV GORACE=halt_on_error=1,history_size=2
 
 ENV POSTGRES_DB=postgres
 
+# do not allow "trust" authentication for local connections
+ENV POSTGRES_INITDB_ARGS="--auth=scram-sha-256"
+
 ENV FERRETDB_STATE_DIR=/tmp/state
 
 # don't forget to update documentation if you change defaults
