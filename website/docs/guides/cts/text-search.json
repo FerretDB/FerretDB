@@ -1,85 +1,5 @@
 {
-  "basic-text-search": {
-    "request": {
-      "find": "books",
-      "filter": {
-        "$text": {
-          "$search": "drama"
-        }
-      }
-    },
-    "response": {
-      "cursor": {
-        "firstBatch": [
-          {
-            "_id": "pride_prejudice_1813",
-            "title": "Pride and Prejudice",
-            "author": "Jane Austen",
-            "summary": "The novel follows the story of Elizabeth Bennet, a spirited young woman navigating love, societal expectations, and family drama in 19th-century England."
-          }
-        ],
-        "id": {
-          "$numberLong": "0"
-        },
-        "ns": "test.books"
-      },
-      "ok": {
-        "$numberDouble": "1.0"
-      }
-    }
-  },
-  "compound-text-index": {
-    "request": {
-      "createIndexes": "books",
-      "indexes": [
-        {
-          "key": {
-            "title": "text",
-            "summary": "text"
-          },
-          "name": "title_summary_text_index"
-        }
-      ]
-    },
-    "response": {
-      "numIndexesBefore": {
-        "$numberInt": "1"
-      },
-      "numIndexesAfter": {
-        "$numberInt": "2"
-      },
-      "createdCollectionAutomatically": true,
-      "ok": {
-        "$numberDouble": "1.0"
-      }
-    }
-  },
-  "create-text-index": {
-    "request": {
-      "createIndexes": "books",
-      "indexes": [
-        {
-          "key": {
-            "summary": "text"
-          },
-          "name": "summary_text_index"
-        }
-      ]
-    },
-    "response": {
-      "numIndexesBefore": {
-        "$numberInt": "1"
-      },
-      "numIndexesAfter": {
-        "$numberInt": "2"
-      },
-      "createdCollectionAutomatically": true,
-      "ok": {
-        "$numberDouble": "1.0"
-      }
-    }
-  },
-  "insert-text-data": {
+  "1-insert-text-data": {
     "request": {
       "insert": "books",
       "documents": [
@@ -101,7 +21,8 @@
           "author": "Mary Shelley",
           "summary": "Victor Frankenstein, driven by an unquenchable thirst for knowledge, creates a living being, only to face tragic consequences as his creation turns monstrous."
         }
-      ]
+      ],
+      "$db": "{{.Database}}"
     },
     "response": {
       "n": {
@@ -112,7 +33,90 @@
       }
     }
   },
-  "relevance-score": {
+  "2-create-text-index": {
+    "request": {
+      "createIndexes": "books",
+      "indexes": [
+        {
+          "key": {
+            "summary": "text"
+          },
+          "name": "summary_text_index"
+        }
+      ],
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "numIndexesBefore": {
+        "$numberInt": "1"
+      },
+      "numIndexesAfter": {
+        "$numberInt": "2"
+      },
+      "createdCollectionAutomatically": true,
+      "ok": {
+        "$numberDouble": "1.0"
+      }
+    }
+  },
+  "3-basic-text-search": {
+    "request": {
+      "find": "books",
+      "filter": {
+        "$text": {
+          "$search": "drama"
+        }
+      },
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "cursor": {
+        "firstBatch": [
+          {
+            "_id": "pride_prejudice_1813",
+            "title": "Pride and Prejudice",
+            "author": "Jane Austen",
+            "summary": "The novel follows the story of Elizabeth Bennet, a spirited young woman navigating love, societal expectations, and family drama in 19th-century England."
+          }
+        ],
+        "id": {
+          "$numberLong": "0"
+        },
+        "ns": "{{.Database}}.books"
+      },
+      "ok": {
+        "$numberDouble": "1.0"
+      }
+    }
+  },
+  "4-compound-text-index": {
+    "request": {
+      "createIndexes": "books",
+      "indexes": [
+        {
+          "key": {
+            "title": "text",
+            "summary": "text"
+          },
+          "name": "title_summary_text_index"
+        }
+      ],
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "numIndexesBefore": {
+        "$numberInt": "1"
+      },
+      "numIndexesAfter": {
+        "$numberInt": "2"
+      },
+      "createdCollectionAutomatically": true,
+      "ok": {
+        "$numberDouble": "1.0"
+      }
+    }
+  },
+  "5-relevance-score": {
     "request": {
       "find": "books",
       "filter": {
@@ -138,14 +142,15 @@
         "score": {
           "$meta": "textScore"
         }
-      }
+      },
+      "$db": "{{.Database}}"
     },
     "response": {
       "cursor": {
         "id": {
           "$numberLong": "0"
         },
-        "ns": "db.books",
+        "ns": "{{.Database}}.books",
         "firstBatch": [
           {
             "_id": "moby_dick_1851",

@@ -1,5 +1,5 @@
 {
-  "create-ttl-index": {
+  "1-create-ttl-index": {
     "request": {
       "createIndexes": "books",
       "indexes": [
@@ -14,7 +14,8 @@
             "$numberInt": "60"
           }
         }
-      ]
+      ],
+      "$db": "{{.Database}}"
     },
     "response": {
       "numIndexesBefore": {
@@ -29,7 +30,7 @@
       }
     }
   },
-  "insert-ttl-data": {
+  "2-insert-ttl-data": {
     "request": {
       "insert": "books",
       "documents": [
@@ -45,7 +46,8 @@
             }
           }
         }
-      ]
+      ],
+      "$db": "{{.Database}}"
     },
     "response": {
       "n": {
