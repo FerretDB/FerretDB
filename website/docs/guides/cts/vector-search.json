@@ -135,8 +135,7 @@
             }
           ]
         }
-      ],
-      "$db": "{{.Database}}"
+      ]
     },
     "response": {
       "n": {
@@ -170,8 +169,7 @@
             }
           }
         }
-      ],
-      "$db": "{{.Database}}"
+      ]
     },
     "response": {
       "numIndexesBefore": {
@@ -242,14 +240,13 @@
           }
         }
       ],
-      "cursor": {},
-      "$db": "{{.Database}}"
+      "cursor": {}
     },
     "response": {
       "ok": {
         "$numberDouble": "0.0"
       },
-      "ns": "{{.Database}}.books",
+      "ns": "db.books",
       "firstBatch": [
         {
           "_id": "moby_dick_1851",
@@ -362,8 +359,7 @@
             }
           }
         }
-      ],
-      "$db": "{{.Database}}"
+      ]
     },
     "response": {
       "numIndexesBefore": {
@@ -432,14 +428,13 @@
           }
         }
       ],
-      "cursor": {},
-      "$db": "{{.Database}}"
+      "cursor": {}
     },
     "response": {
       "ok": {
         "$numberDouble": "0.0"
       },
-      "ns": "{{.Database}}.books",
+      "ns": "db.books",
       "firstBatch": [
         {
           "_id": "frankenstein_1818",

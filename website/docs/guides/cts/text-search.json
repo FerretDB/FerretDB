@@ -79,7 +79,7 @@
         "id": {
           "$numberLong": "0"
         },
-        "ns": "{{.Database}}.books"
+        "ns": "db.books"
       },
       "ok": {
         "$numberDouble": "1.0"
