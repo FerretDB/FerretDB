@@ -77,7 +77,7 @@ go env
 # Trim paths mostly to check that building with `-trimpath` is supported.
 
 # check if stdlib was cached
-go install -v -race=$RACE std
+go install -v -trimpath std
 
 go build -v -trimpath -o=bin/ferretdb ./cmd/ferretdb
 
