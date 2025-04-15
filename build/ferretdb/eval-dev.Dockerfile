@@ -117,9 +117,10 @@ COPY --from=eval-dev-build /src/bin/ferretdb /usr/local/bin/ferretdb
 
 # TODO https://github.com/FerretDB/FerretDB/issues/5043
 COPY --from=eval-dev-build /src/build/ferretdb/evaluation/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY --from=eval-dev-build /src/build/ferretdb/evaluation/entrypoint.sh /entrypoint.sh
 
-# run supervisord as PID 1 to manage postgresql and ferretdb
-ENTRYPOINT ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+ENTRYPOINT ["/entrypoint.sh"]
+
 # clear CMD set by postgresql base image
 CMD []
 
@@ -131,13 +132,7 @@ EXPOSE 27017 27018 8088
 ENV GOCOVERDIR=/tmp/cover
 ENV GORACE=halt_on_error=1,history_size=2
 
-# POSTGRES_USER and POSTGRES_PASSWORD can be customized by environment variables,
-# if so FERRETDB_POSTGRESQL_URL must also be customized with the same credentials.
-# Failing that would cause panic in ferretdb.
-ENV POSTGRES_USER=username
-ENV POSTGRES_PASSWORD=password
 ENV POSTGRES_DB=postgres
-ENV FERRETDB_POSTGRESQL_URL=postgres://username:password@127.0.0.1:5432/postgres
 
 ENV FERRETDB_STATE_DIR=/tmp/state
 
