@@ -145,7 +145,7 @@
         "id": {
           "$numberLong": "0"
         },
-        "ns": "cts.books",
+        "ns": "db.books",
         "firstBatch": [
           {
             "_id": "moby_dick_1851",
