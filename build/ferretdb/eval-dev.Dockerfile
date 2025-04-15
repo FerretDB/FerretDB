@@ -117,7 +117,10 @@ COPY --from=eval-dev-build /src/bin/ferretdb /usr/local/bin/ferretdb
 
 # TODO https://github.com/FerretDB/FerretDB/issues/5043
 COPY --from=eval-dev-build /src/build/ferretdb/evaluation/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# run supervisord as PID 1 to manage postgresql and ferretdb
 ENTRYPOINT ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+# clear CMD set by postgresql base image
 CMD []
 
 HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-interval=5s \
