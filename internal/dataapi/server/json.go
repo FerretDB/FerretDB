@@ -20,28 +20,16 @@ import (
 	"io"
 
 	"github.com/FerretDB/wire/wirebson"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/bsonrw"
+	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // marshalJSON encodes wirebson.RawDocument into extended JSON.
 func marshalJSON(raw wirebson.RawDocument, jsonDst io.Writer) error {
-	vw, err := bsonrw.NewExtJSONValueWriter(jsonDst, false, false)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
+	encoder := bson.NewEncoder(bson.NewExtJSONValueWriter(jsonDst, false, false))
 
-	encoder, err := bson.NewEncoder(vw)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	encoder.IntMinSize()
-
-	err = encoder.Encode(bson.Raw(raw))
-	if err != nil {
+	if err := encoder.Encode(bson.Raw(raw)); err != nil {
 		return lazyerrors.Error(err)
 	}
 
