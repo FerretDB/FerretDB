@@ -28,7 +28,7 @@ LibreChat can use FerretDB as its MongoDB-compatible database in two ways:
 
 ### Option 1: Connect to an existing FerretDB instance
 
-If you already have FerretDB running, simply point LibreChat to it using the MONGO_URI environment variable.
+If you already have FerretDB running, simply connect LibreChat to it using the MONGO_URI environment variable.
 
 For Docker-based setups, update `docker-compose.override.yml` file:
 
