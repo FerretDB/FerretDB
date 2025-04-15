@@ -1,6 +1,6 @@
 response = {
   ok: 0.0,
-  ns: '{{.Database}}.books',
+  ns: 'db.books',
   firstBatch: [
     {
       _id: 'frankenstein_1818',
