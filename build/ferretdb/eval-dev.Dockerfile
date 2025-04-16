@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# for evaluation development releases (`ferretdb-eval-dev` image)
+# evaluation image with development release (`ferretdb-eval-dev` image)
 
 # While we already know commit and version from commit.txt and version.txt inside image,
 # it is not possible to use them in LABELs for the final image.
@@ -96,7 +96,7 @@ EOF
 
 # final stage
 
-# Use production image and full tag close to the release.
+# Use development image and full tag close to the release.
 # FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-0.103.0-ferretdb-2.2.0 AS eval-dev
 
 # Use moving development image during development.
