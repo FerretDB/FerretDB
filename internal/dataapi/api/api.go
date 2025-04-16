@@ -14,4 +14,4 @@
 
 package api
 
-//go:generate ../../../bin/oapi-codegen --config=./oapi-config.yml ./openapi-patched.json
+//go:generate ../../../bin/oapi-codegen --config=./oapi-config.yml ./openapi.json
