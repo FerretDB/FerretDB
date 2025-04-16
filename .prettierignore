@@ -2,5 +2,5 @@
 # Textlint uses the same format, so we re-use the file.
 build/postgres-documentdb/documentdb/**
 internal/dataapi/api/openapi.json
-internal/dataapi/api/openapi-patched.json
+internal/dataapi/api/openapi-original.json
 website/static/codapi/snippet.js
