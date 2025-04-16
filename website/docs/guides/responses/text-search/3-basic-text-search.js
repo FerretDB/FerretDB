@@ -1,7 +1,5 @@
 response = {
   cursor: {
-    id: Long('0'),
-    ns: 'new.books',
     firstBatch: [
       {
         _id: 'pride_prejudice_1813',
@@ -10,7 +8,9 @@ response = {
         summary:
           'The novel follows the story of Elizabeth Bennet, a spirited young woman navigating love, societal expectations, and family drama in 19th-century England.'
       }
-    ]
+    ],
+    id: Long(0),
+    ns: 'db.books'
   },
-  ok: 1
+  ok: 1.0
 }
