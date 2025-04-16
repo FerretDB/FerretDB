@@ -33,6 +33,8 @@ shared_preload_libraries = 'pg_cron,pg_documentdb_core,pg_documentdb'
 cron.database_name       = 'postgres'
 ```
 
+Ensure to restart PostgreSQL for the changes to take effect.
+
 Then create the extension by running the following SQL command within the `postgres` database:
 
 ```sql
