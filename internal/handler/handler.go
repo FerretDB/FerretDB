@@ -17,6 +17,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -26,6 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/session"
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 )
@@ -135,8 +137,49 @@ func (h *Handler) Run(ctx context.Context) {
 
 // Handle processes a request.
 func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/5046
-	panic("not implemented")
+	switch {
+	case req.OpMsg != nil:
+		res, err := h.handleOpMsg(ctx, req)
+		if res != nil {
+			protoErr := mongoerrors.Make(ctx, err, "", h.L)
+			res, err = middleware.ResponseMsg(protoErr.Doc())
+		}
+
+		return res, err
+	case req.OpQuery != nil:
+		res, err := h.CmdQuery(ctx, req)
+		if err != nil {
+			protoErr := mongoerrors.Make(ctx, err, "", h.L)
+			res, err = middleware.ResponseReply(protoErr.Doc())
+		}
+
+		return res, err
+	default:
+		panic("unsupported request")
+	}
+}
+
+// handleOpMsg processes an OP_MSG request.
+func (h *Handler) handleOpMsg(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	doc, err := req.OpMsg.Document()
+	if err != nil {
+		return nil, err
+	}
+
+	msgCmd := doc.Command()
+
+	var cmdHandler middleware.HandleFunc
+
+	cmd, ok := h.commands[msgCmd]
+	if !ok {
+		cmdHandler = notFound(msgCmd)
+	} else if cmd.Handler == nil {
+		cmdHandler = notImplemented(msgCmd)
+	} else {
+		cmdHandler = cmd.Handler
+	}
+
+	return cmdHandler(ctx, req)
 }
 
 // Describe implements [prometheus.Collector].
@@ -149,6 +192,16 @@ func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
 func (h *Handler) Collect(ch chan<- prometheus.Metric) {
 	h.Pool.Collect(ch)
 	h.s.Collect(ch)
+}
+
+// notFound returns a handler that returns command not found error.
+func notFound(command string) middleware.HandleFunc {
+	return func(context.Context, *middleware.Request) (*middleware.Response, error) {
+		return nil, mongoerrors.New(
+			mongoerrors.ErrCommandNotFound,
+			fmt.Sprintf("no such command: '%s'", command),
+		)
+	}
 }
 
 // check interfaces
