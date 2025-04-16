@@ -39,11 +39,4 @@ Then create the extension by running the following SQL command within the `postg
 CREATE EXTENSION documentdb CASCADE;
 ```
 
-:::caution
-We recommend using the default `postgres` database; some features may not work as expected if you use a different database.
-If you prefer to load the extension into a different database, make sure to create the database beforehand and update the `cron.database_name` setting accordingly.
-
-Ensure to restart the PostgreSQL service to apply the changes and run `CREATE EXTENSION documentdb CASCADE;` within the database to create the extension.
-:::
-
 You can now go ahead and set up FerretDB by following [this installation guide](../ferretdb/deb.md).
