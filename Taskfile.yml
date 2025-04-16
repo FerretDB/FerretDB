@@ -730,15 +730,15 @@ tasks:
   docs-fmt:
     deps: [fmt-docs]
 
-  gen-cts:
+  docs-gen:
     cmds:
-      - bin/opendocdb-cts fmt --dir=website/docs/guides/cts
-      - bin/opendocdb-cts convert --dir=website/docs/guides/cts website/docs/guides
+      - bin/opendocdb-cts fmt --dir=website/docs/guides
+      - bin/opendocdb-cts convert --dir=website/docs/guides website/docs/guides/code
 
   docs:
     desc: "Format, lint and build documentation"
     cmds:
-      - task: gen-cts
+      - task: docs-gen
       - task: fmt-docs
       - docker compose run --rm docusaurus-docs build
 
