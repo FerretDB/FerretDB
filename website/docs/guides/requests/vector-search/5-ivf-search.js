@@ -10,7 +10,7 @@ db.runCommand({
             -0.009759286418557167, 0.06137007102370262
           ],
           path: 'vector',
-          k: Int32(2)
+          k: 2
         },
         returnStoredSource: true
       }
