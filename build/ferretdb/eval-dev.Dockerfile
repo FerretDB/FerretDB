@@ -117,12 +117,9 @@ COPY --from=eval-dev-build /src/bin/ferretdb /usr/local/bin/ferretdb
 
 # TODO https://github.com/FerretDB/FerretDB/issues/5043
 COPY --from=eval-dev-build /src/build/ferretdb/evaluation/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-COPY --from=eval-dev-build /src/build/ferretdb/evaluation/start-ferretdb.sh /start-ferretdb
+COPY --from=eval-dev-build /src/build/ferretdb/evaluation/entrypoint.sh /usr/local/bin/entrypoint.sh
 
-ENTRYPOINT ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
-
-# clear CMD set by postgresql base image
-CMD []
+ENTRYPOINT ["entrypoint.sh"]
 
 HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-interval=5s \
   CMD ["/ferretdb", "ping"]
