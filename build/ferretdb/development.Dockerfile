@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# for development releases (`ferret-dev` image)
+# for development releases (`ferretdb-dev` image)
 
 # While we already know commit and version from commit.txt and version.txt inside image,
 # it is not possible to use them in LABELs for the final image.
