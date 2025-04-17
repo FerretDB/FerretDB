@@ -135,8 +135,26 @@ func (h *Handler) Run(ctx context.Context) {
 
 // Handle processes a request.
 func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/5046
-	panic("not implemented")
+	switch {
+	case req.OpMsg != nil:
+		doc, err := req.OpMsg.Document()
+		if err != nil {
+			return nil, err
+		}
+
+		msgCmd := doc.Command()
+
+		cmd, ok := h.commands[msgCmd]
+		if ok && cmd.Handler != nil {
+			return cmd.Handler(ctx, req)
+		}
+
+		return notFound(msgCmd)(ctx, req)
+	case req.OpQuery != nil:
+		return h.CmdQuery(ctx, req)
+	default:
+		panic("unsupported request")
+	}
 }
 
 // Describe implements [prometheus.Collector].
