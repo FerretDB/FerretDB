@@ -122,7 +122,7 @@ COPY --from=eval-dev-build /src/build/ferretdb/evaluation/entrypoint.sh /usr/loc
 ENTRYPOINT ["entrypoint.sh"]
 
 HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-interval=5s \
-  CMD ["/ferretdb", "ping"]
+  CMD ["/usr/local/bin/ferretdb", "ping"]
 
 EXPOSE 27017 27018 8088
 
