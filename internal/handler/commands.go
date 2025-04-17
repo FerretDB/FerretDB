@@ -64,6 +64,7 @@ func (h *Handler) initCommands() {
 			Help:      "", // hidden
 		},
 		"bulkWrite": {
+			// TODO https://github.com/microsoft/documentdb/issues/108
 			// TODO https://github.com/FerretDB/FerretDB/issues/4910
 			Help: "", // hidden while not implemented
 		},
