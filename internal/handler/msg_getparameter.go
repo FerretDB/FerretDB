@@ -69,6 +69,7 @@ func (h *Handler) MsgGetParameter(connCtx context.Context, req *middleware.Reque
 			"settableAtStartup", true,
 		)),
 		"featureCompatibilityVersion", must.NotFail(wirebson.NewDocument(
+			// TODO https://github.com/FerretDB/FerretDB/issues/5073
 			"value", must.NotFail(wirebson.NewDocument("version", "7.0")),
 			"settableAtRuntime", false,
 			"settableAtStartup", false,
