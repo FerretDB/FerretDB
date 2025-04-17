@@ -50,11 +50,15 @@ Examples:
 
 To link to a file in the same directory, use the file name.
 
-- `[file in the same directory](writing-guide.md)`
+```text
+[file in the same directory](writing-guide.md)
+```
 
 To link to file in a different directory, specify the relative file path.
 
-- `[file in a different directory](../basic-operations/read.md)`.
+```text
+[file in a different directory](../basic-operations/read.md)
+```
 
 ## Images
 
