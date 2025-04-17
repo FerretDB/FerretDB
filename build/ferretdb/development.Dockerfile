@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# for development releases (`ferret-dev` image)
+# for development releases (`ferretdb-dev` image)
 
 # While we already know commit and version from commit.txt and version.txt inside image,
 # it is not possible to use them in LABELs for the final image.
@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # prepare stage
 
-FROM --platform=$BUILDPLATFORM golang:1.24.1 AS development-prepare
+FROM --platform=$BUILDPLATFORM golang:1.24.2 AS development-prepare
 
 # use a single directory for all Go caches to simplify RUN --mount commands below
 ENV GOPATH=/cache/gopath
@@ -36,7 +36,7 @@ EOF
 
 # build stage
 
-FROM golang:1.24.1 AS development-build
+FROM golang:1.24.2 AS development-build
 
 ARG TARGETARCH
 
@@ -103,7 +103,7 @@ COPY --from=development-build /src/bin/ferretdb /ferretdb
 
 # final stage
 
-FROM golang:1.24.1 AS development
+FROM golang:1.24.2 AS development
 
 ENV GOCOVERDIR=/tmp/cover
 ENV GORACE=halt_on_error=1,history_size=2

@@ -433,6 +433,7 @@ tasks:
       - for: [amd64, arm64]
         task: build-move-check
         vars:
+          # TODO https://github.com/FerretDB/FerretDB/issues/5019
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
           BIN_FILE: 'ferretdb-dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
@@ -453,6 +454,7 @@ tasks:
       - for: [amd64, arm64]
         task: build-move-check
         vars:
+          # TODO https://github.com/FerretDB/FerretDB/issues/5019
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
           BIN_FILE: 'ferretdb-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
@@ -472,13 +474,26 @@ tasks:
       vars: [FILE]
 
   # TODO https://github.com/FerretDB/FerretDB/issues/2212
-  docker-evaluation-push:
+  docker-eval-dev-push:
     cmds:
-      - echo 'docker-evaluation' > build/version/package.txt
+      - echo 'docker-eval-dev' > build/version/package.txt
       - task: docker-build
         vars:
-          FILE: ferretdb/evaluation
-          TARGET: evaluation
+          FILE: ferretdb/eval-dev
+          TARGET: eval-dev
+          PLATFORM: linux/amd64 # no DocumentDB for linux/arm64 yet
+          OUTPUT: type=image,push=true
+    requires:
+      vars: [DOCKER_IMAGES]
+
+  # TODO https://github.com/FerretDB/FerretDB/issues/2212
+  docker-eval-push:
+    cmds:
+      - echo 'docker-eval' > build/version/package.txt
+      - task: docker-build
+        vars:
+          FILE: ferretdb/eval
+          TARGET: eval
           PLATFORM: linux/amd64 # no DocumentDB for linux/arm64 yet
           OUTPUT: type=image,push=true
     requires:
@@ -527,6 +542,7 @@ tasks:
         --packager={{.PACKAGER}}
         --target=tmp/{{.PACKAGER}}s/ferretdb-{{.FILE_SUFFIX}}.{{.PACKAGER}}
     env:
+      # TODO https://github.com/FerretDB/FerretDB/issues/5019
       PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
       PACKAGE_ARCH: "{{.PACKAGE_ARCH}}"
       DIR_ARCH: "{{.DIR_ARCH}}"
@@ -559,6 +575,7 @@ tasks:
       - for: [amd64, arm64]
         task: packages-build
         vars:
+          # TODO https://github.com/FerretDB/FerretDB/issues/5019
           PACKAGER: deb
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
@@ -587,6 +604,7 @@ tasks:
       - for: [amd64, arm64]
         task: packages-build
         vars:
+          # TODO https://github.com/FerretDB/FerretDB/issues/5019
           PACKAGER: deb
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
@@ -627,6 +645,7 @@ tasks:
       - for: [amd64, arm64]
         task: packages-build
         vars:
+          # TODO https://github.com/FerretDB/FerretDB/issues/5019
           PACKAGER: rpm
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
@@ -655,6 +674,7 @@ tasks:
       - for: [amd64, arm64]
         task: packages-build
         vars:
+          # TODO https://github.com/FerretDB/FerretDB/issues/5019
           PACKAGER: rpm
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
@@ -723,10 +743,16 @@ tasks:
   docs-fmt:
     deps: [fmt-docs]
 
+  docs-gen:
+    cmds:
+      - bin/opendocdb-cts fmt --dir=website/docs/guides
+      - bin/opendocdb-cts convert --dir=website/docs/guides website/docs/guides
+
   docs:
     desc: "Format, lint and build documentation"
-    deps: [fmt-docs]
     cmds:
+      - task: docs-gen
+      - task: fmt-docs
       - docker compose run --rm docusaurus-docs build
 
   blog:
@@ -785,8 +811,8 @@ tasks:
       - docker compose run --rm --service-ports wrangler pages deployment create --project-name=blog website/build
 
   changelog:
-    desc: "Generate changelogs locally for a given milestone"
+    desc: "Generate changelog"
     cmds:
-      - bin/generatechangelog -milestone={{.MILESTONE_TITLE}} -previous={{.PREVIOUS_MILESTONE_TITLE}}
+      - bin/generatechangelog -prev={{.PREV}} -next={{.NEXT}}
     requires:
-      vars: [MILESTONE_TITLE, PREVIOUS_MILESTONE_TITLE]
+      vars: [PREV, NEXT]

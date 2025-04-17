@@ -271,7 +271,8 @@ func init() {
 
 	if info.Version != unknown {
 		if match := semVerTag.FindStringSubmatch(info.Version); match == nil || len(match) != semVerTag.NumSubexp()+1 {
-			msg := "Invalid build/version/version.txt file content. Please run `bin/task gen-version`.\n"
+			msg := fmt.Sprintf("info.Version: %q, version: %q\n", info.Version, version)
+			msg += "Invalid build/version/version.txt file content. Please run `bin/task gen-version`.\n"
 			msg += "Alternatively, create this file manually with a content similar to\n"
 			msg += "the output of `git describe`: `v<major>.<minor>.<patch>`.\n"
 			msg += "See https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/build/version"
@@ -279,9 +280,14 @@ func init() {
 		}
 	}
 
-	if info.Commit != unknown {
-		if info.Commit != commit && commit != "" {
-			panic("Invalid build/version/commit.txt file content. Please run `bin/task gen-version`.")
-		}
-	}
+	// This does not work for git submodules.
+	// Investigate and create an issue.
+	//
+	// if info.Commit != unknown {
+	// 	if info.Commit != commit && commit != "" {
+	// 		msg := fmt.Sprintf("info.Commit: %q, commit: %q\n", info.Commit, commit)
+	// 		msg += "Invalid build/version/commit.txt file content. Please run `bin/task gen-version`."
+	// 		panic(msg)
+	// 	}
+	// }
 }

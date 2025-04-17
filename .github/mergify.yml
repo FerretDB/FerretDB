@@ -11,7 +11,6 @@ pull_request_rules:
       - "-draft"
       - "-locked"
       - "-merged"
-      - "author != dependabot[bot]"
       - "base = main"
       - "branch-protection-review-decision = APPROVED"
       - "check-success = golangci-lint"

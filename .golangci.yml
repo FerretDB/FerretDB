@@ -72,6 +72,9 @@ linters-settings:
           - pkg: github.com/FerretDB/FerretDB/v2/internal/documentdb/cursor
   exhaustive:
     default-signifies-exhaustive: false
+  exhaustruct:
+    include:
+      - TODO
   forbidigo:
     forbid:
       - p: ^\Qpgxpool.Pool.AcquireFunc\E$
@@ -239,6 +242,7 @@ linters:
     - asciicheck
     - depguard
     - exhaustive
+    - exhaustruct
     - forbidigo
     - gci
     - gochecksumtype

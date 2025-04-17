@@ -28,8 +28,8 @@ import (
 // MsgGetParameter implements `getParameter` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgGetParameter(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
-	spec, err := req.RawDocument()
+func (h *Handler) MsgGetParameter(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -69,6 +69,7 @@ func (h *Handler) MsgGetParameter(connCtx context.Context, req *middleware.MsgRe
 			"settableAtStartup", true,
 		)),
 		"featureCompatibilityVersion", must.NotFail(wirebson.NewDocument(
+			// TODO https://github.com/FerretDB/FerretDB/issues/5073
 			"value", must.NotFail(wirebson.NewDocument("version", "7.0")),
 			"settableAtRuntime", false,
 			"settableAtStartup", false,
@@ -96,7 +97,7 @@ func (h *Handler) MsgGetParameter(connCtx context.Context, req *middleware.MsgRe
 
 	must.NoError(res.Add("ok", float64(1)))
 
-	return middleware.Response(res)
+	return middleware.ResponseMsg(res)
 }
 
 // selectParameters makes a selection of requested parameters.
