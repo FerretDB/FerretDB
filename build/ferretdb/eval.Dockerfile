@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# for development releases (`ferretdb-dev` image)
+# evaluation image (formerly "all-in-one") with production release (`ferretdb-eval` image)
 
 # While we already know commit and version from commit.txt and version.txt inside image,
 # it is not possible to use them in LABELs for the final image.
@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # prepare stage
 
-FROM --platform=$BUILDPLATFORM golang:1.24.2 AS development-prepare
+FROM --platform=$BUILDPLATFORM golang:1.24.2 AS eval-prepare
 
 # use a single directory for all Go caches to simplify RUN --mount commands below
 ENV GOPATH=/cache/gopath
@@ -36,7 +36,7 @@ EOF
 
 # build stage
 
-FROM golang:1.24.2 AS development-build
+FROM golang:1.24.2 AS eval-build
 
 ARG TARGETARCH
 
@@ -58,7 +58,7 @@ WORKDIR /src
 COPY . .
 
 # to add a dependency
-COPY --from=development-prepare /src/go.mod /src/go.sum /src/
+COPY --from=eval-prepare /src/go.mod /src/go.sum /src/
 
 RUN --mount=type=cache,target=/cache <<EOF
 set -ex
@@ -70,71 +70,69 @@ git status
 export GOAMD64=v1
 export GOARM64=v8.0
 
-export CGO_ENABLED=1
-
-# Disable race detector on arm64 due to https://github.com/golang/go/issues/29948
-# (and that happens on GitHub-hosted Actions runners).
-RACE=false
-if test "$TARGETARCH" = "amd64"
-then
-    RACE=true
-fi
+export CGO_ENABLED=0
 
 go env
 
-# Do not trim paths to make debugging with delve easier.
+# Trim paths mostly to check that building with `-trimpath` is supported.
 
 # check if stdlib was cached
-go install -v -race=$RACE std
+go install -v -trimpath std
 
-go build -v -o=bin/ferretdb -race=$RACE -tags=ferretdb_dev -coverpkg=./... ./cmd/ferretdb
+go build -v -trimpath -o=bin/ferretdb ./cmd/ferretdb
 
 go version -m bin/ferretdb
 bin/ferretdb --version
 EOF
 
 
-# stage for binary only
-
-FROM scratch AS development-binary
-
-COPY --from=development-build /src/bin/ferretdb /ferretdb
-
-
 # final stage
 
-FROM golang:1.24.2 AS development
+# Use production image and full tag close to the release.
+# FROM ghcr.io/ferretdb/postgres-documentdb:17-0.103.0-ferretdb-2.2.0 AS eval
 
-ENV GOCOVERDIR=/tmp/cover
-ENV GORACE=halt_on_error=1,history_size=2
+# Use moving development image during development.
+FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-ferretdb AS eval
 
-RUN mkdir /tmp/cover
+RUN --mount=type=cache,sharing=locked,target=/var/cache/apt <<EOF
+mkdir /tmp/cover /tmp/state
+chown postgres:postgres /tmp/cover /tmp/state
 
-COPY --from=development-build /src/bin/ferretdb /ferretdb
+apt install -y curl supervisor
+curl -L https://pgp.mongodb.com/server-7.0.asc | apt-key add -
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/debian bookworm/mongodb-org/7.0 main" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+apt update
+apt install -y mongodb-mongosh
+EOF
 
-ENTRYPOINT [ "/ferretdb" ]
+COPY --from=eval-build /src/bin/ferretdb /usr/local/bin/ferretdb
+
+# TODO https://github.com/FerretDB/FerretDB/issues/5043
+COPY --from=eval-build /src/build/ferretdb/evaluation/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY --from=eval-build /src/build/ferretdb/evaluation/entrypoint.sh /usr/local/bin/entrypoint.sh
+
+ENTRYPOINT ["entrypoint.sh"]
 
 HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-interval=5s \
-  CMD ["/ferretdb", "ping"]
+  CMD ["/usr/local/bin/ferretdb", "ping"]
 
-WORKDIR /
-VOLUME /state
 EXPOSE 27017 27018 8088
+
+ENV FERRETDB_STATE_DIR=/tmp/state
 
 # don't forget to update documentation if you change defaults
 ENV FERRETDB_LISTEN_ADDR=:27017
 # ENV FERRETDB_LISTEN_TLS=:27018
 ENV FERRETDB_DEBUG_ADDR=:8088
-ENV FERRETDB_STATE_DIR=/state
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
 
 # TODO https://github.com/FerretDB/FerretDB/issues/2212
-LABEL org.opencontainers.image.description="A truly Open Source MongoDB alternative (development image)"
+LABEL org.opencontainers.image.description="A truly Open Source MongoDB alternative (evaluation image)"
 LABEL org.opencontainers.image.revision="${LABEL_COMMIT}"
 LABEL org.opencontainers.image.source="https://github.com/FerretDB/FerretDB"
-LABEL org.opencontainers.image.title="FerretDB (development image)"
+LABEL org.opencontainers.image.title="FerretDB (evaluation image)"
 LABEL org.opencontainers.image.url="https://www.ferretdb.com/"
 LABEL org.opencontainers.image.vendor="FerretDB Inc."
 LABEL org.opencontainers.image.version="${LABEL_VERSION}"

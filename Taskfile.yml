@@ -487,6 +487,19 @@ tasks:
       vars: [DOCKER_IMAGES]
 
   # TODO https://github.com/FerretDB/FerretDB/issues/2212
+  docker-eval-push:
+    cmds:
+      - echo 'docker-eval' > build/version/package.txt
+      - task: docker-build
+        vars:
+          FILE: ferretdb/eval
+          TARGET: eval
+          PLATFORM: linux/amd64 # no DocumentDB for linux/arm64 yet
+          OUTPUT: type=image,push=true
+    requires:
+      vars: [DOCKER_IMAGES]
+
+  # TODO https://github.com/FerretDB/FerretDB/issues/2212
   docker-development-push:
     cmds:
       - echo 'docker-development' > build/version/package.txt
@@ -730,10 +743,16 @@ tasks:
   docs-fmt:
     deps: [fmt-docs]
 
+  docs-gen:
+    cmds:
+      - bin/opendocdb-cts fmt --dir=website/docs/guides
+      - bin/opendocdb-cts convert --dir=website/docs/guides website/docs/guides
+
   docs:
     desc: "Format, lint and build documentation"
-    deps: [fmt-docs]
     cmds:
+      - task: docs-gen
+      - task: fmt-docs
       - docker compose run --rm docusaurus-docs build
 
   blog:

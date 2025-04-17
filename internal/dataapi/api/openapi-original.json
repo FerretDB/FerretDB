@@ -1,5 +1,5 @@
 {
-  "openapi": "3.0.0",
+  "openapi": "3.1.0",
   "info": {
     "version": "v1",
     "title": "MongoDB Atlas Data API",
@@ -55,7 +55,17 @@
   ],
   "security": [
     {
-      "HttpAuth": []
+      "AccessToken": []
+    },
+    {
+      "Email": [],
+      "Password": []
+    },
+    {
+      "ApiKey": []
+    },
+    {
+      "CustomJwt": []
     }
   ],
   "paths": {
@@ -1155,10 +1165,6 @@
   },
   "components": {
     "securitySchemes": {
-      "HttpAuth": {
-        "type": "http",
-        "scheme": "basic"
-      },
       "AccessToken": {
         "type": "apiKey",
         "in": "header",
@@ -1218,7 +1224,6 @@
         "properties": {
           "filter": {
             "type": "object",
-            "x-go-type": "json.RawMessage",
             "description": "A MongoDB query filter that matches documents. For a list of all query operators that the Data API supports, see [Query Operators](https://www.mongodb.com/docs/atlas/app-services/mongodb/crud-and-aggregation-apis/#query-operators)."
           }
         }
@@ -1228,7 +1233,6 @@
         "properties": {
           "projection": {
             "type": "object",
-            "x-go-type": "json.RawMessage",
             "additionalProperties": {
               "type": "number",
               "enum": [
@@ -1263,8 +1267,10 @@
         "description": "The result of a findOne operation.",
         "properties": {
           "document": {
-            "type": "object",
-            "nullable": true,
+            "type": [
+              "object",
+              "null"
+            ],
             "description": "A document that matches the specified filter. If no documents match, this is `null`."
           }
         }
@@ -1274,17 +1280,14 @@
         "properties": {
           "error": {
             "type": "string",
-            "x-go-type-skip-optional-pointer": true,
             "description": "A message that describes the error."
           },
           "error_code": {
             "type": "string",
-            "x-go-type-skip-optional-pointer": true,
             "description": "The error type."
           },
           "link": {
             "type": "string",
-            "x-go-type-skip-optional-pointer": true,
             "description": "A link to a [log entry](https://www.mongodb.com/docs/atlas/app-services/logs/endpoint/) for the failed operation."
           }
         }
@@ -1348,7 +1351,6 @@
         "properties": {
           "sort": {
             "type": "object",
-            "x-go-type": "json.RawMessage",
             "description": "A [MongoDB sort expression](https://www.mongodb.com/docs/manual/reference/method/cursor.sort/) that indicates sorted field names and directions."
           }
         }
@@ -1425,7 +1427,6 @@
             "properties": {
               "document": {
                 "type": "object",
-                "x-go-type": "json.RawMessage",
                 "description": "A document to insert into the collection."
               }
             }
@@ -1456,7 +1457,6 @@
             "properties": {
               "documents": {
                 "type": "array",
-                "x-go-type": "json.RawMessage",
                 "items": {
                   "type": "object"
                 },
@@ -1499,7 +1499,6 @@
             "properties": {
               "update": {
                 "type": "object",
-                "x-go-type": "json.RawMessage",
                 "description": "A MongoDB update expression to apply to matching documents. For a list of all update operators that the Data API supports, see [Update Operators](https://www.mongodb.com/docs/atlas/app-services/mongodb/crud-and-aggregation-apis/#update-operators)."
               },
               "upsert": {
@@ -1567,7 +1566,6 @@
             "properties": {
               "pipeline": {
                 "type": "array",
-                "x-go-type": "json.RawMessage",
                 "description": "An array of aggregation stages.",
                 "items": {
                   "type": "object",

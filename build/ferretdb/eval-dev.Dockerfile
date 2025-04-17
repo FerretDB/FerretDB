@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# for evaluation development releases (`ferretdb-eval-dev` image)
+# evaluation image with development release (`ferretdb-eval-dev` image)
 
 # While we already know commit and version from commit.txt and version.txt inside image,
 # it is not possible to use them in LABELs for the final image.
@@ -96,7 +96,7 @@ EOF
 
 # final stage
 
-# Use production image and full tag close to the release.
+# Use development image and full tag close to the release.
 # FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-0.103.0-ferretdb-2.2.0 AS eval-dev
 
 # Use moving development image during development.
@@ -106,7 +106,7 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt <<EOF
 mkdir /tmp/cover /tmp/state
 chown postgres:postgres /tmp/cover /tmp/state
 
-apt install -y curl
+apt install -y curl supervisor
 curl -L https://pgp.mongodb.com/server-7.0.asc | apt-key add -
 echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/debian bookworm/mongodb-org/7.0 main" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list
 apt update
@@ -114,21 +114,25 @@ apt install -y mongodb-mongosh
 EOF
 
 COPY --from=eval-dev-build /src/bin/ferretdb /usr/local/bin/ferretdb
-COPY build/ferretdb/99-start-ferretdb.sh /docker-entrypoint-initdb.d/
+
+# TODO https://github.com/FerretDB/FerretDB/issues/5043
+COPY --from=eval-dev-build /src/build/ferretdb/evaluation/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY --from=eval-dev-build /src/build/ferretdb/evaluation/entrypoint.sh /usr/local/bin/entrypoint.sh
+
+ENTRYPOINT ["entrypoint.sh"]
 
 HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-interval=5s \
-  CMD ["/ferretdb", "ping"]
+  CMD ["/usr/local/bin/ferretdb", "ping"]
 
 EXPOSE 27017 27018 8088
 
 ENV GOCOVERDIR=/tmp/cover
 ENV GORACE=halt_on_error=1,history_size=2
 
-ENV POSTGRES_USER=username
-ENV POSTGRES_PASSWORD=password
-ENV POSTGRES_DB=postgres
+# FIXME
+# do not allow "trust" authentication for local connections while initializing
+# ENV POSTGRES_INITDB_ARGS="--auth=scram-sha-256"
 
-ENV FERRETDB_POSTGRESQL_URL=postgres://username:password@127.0.0.1:5432/postgres
 ENV FERRETDB_STATE_DIR=/tmp/state
 
 # don't forget to update documentation if you change defaults
