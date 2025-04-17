@@ -84,7 +84,17 @@ Rather than use relative paths, we strongly suggest the following approach, sinc
 
 `![FerretDB logo](/img/logo-dark.png)`.
 
+## Lists
+
+Lists should describe a sequence of items, such as a series of steps, features, or group related items.
+They should not be used for highlighting or emphasizing a single item; use code blocks or bold text instead.
+
+Our formatting tool will automatically reformat lists.
+
 ## Code blocks
+
+Code blocks should be used for code snippets, including shell commands, SQL queries, and JSON documents.
+It can also be used to highlight specific texts, including URLs, file names, and other important information.
 
 Always specify the language in Markdown code blocks.
 
@@ -114,11 +124,12 @@ response = [
 ```
 
 Use `sql` for SQL queries.
-Use `text` for the `psql` output and in other cases.
 
 ```sql
 SELECT _jsonb FROM "test"."_ferretdb_database_metadata" WHERE ((_jsonb->'_id')::jsonb = '"customers"');
 ```
+
+For `psql` output, environment variables, and in all other cases, use `text`.
 
 ```text
  _jsonb ----------------------------------------------------------------------------------------------------------------------------------------------
