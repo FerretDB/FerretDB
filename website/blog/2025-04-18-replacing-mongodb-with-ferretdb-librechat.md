@@ -83,7 +83,7 @@ services:
       - POSTGRES_PASSWORD=<password>
       - POSTGRES_DB=postgres
     volumes:
-      - ./ferret-data:/var/lib/postgresql/ferret-data
+      - ./data:/var/lib/postgresql/data
 
   ferretdb:
     image: ghcr.io/ferretdb/ferretdb:2.1.0
@@ -93,6 +93,8 @@ services:
     environment:
       - FERRETDB_POSTGRESQL_URL=postgres://<username>:<password>@postgres:5432/postgres
 ```
+
+Replace `<username>` and `<password>` with your desired FerretDB credentials.
 
 Once set up, run `docker-compose up` to start the entire stack.
 This will start FerretDB and PostgreSQL with DocumentDB extension, and LibreChat will connect to FerretDB using the specified connection string.
