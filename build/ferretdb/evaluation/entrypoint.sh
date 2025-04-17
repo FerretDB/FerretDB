@@ -12,6 +12,10 @@ if [ "${POSTGRES_DB:-postgres}" != "postgres" ]; then
     exit 1
 fi
 
-export FERRETDB_POSTGRESQL_URL="postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@127.0.0.1:5432/postgres"
+# prevent unset POSTGRES_DB using the value of POSTGRES_USER,
+# see https://hub.docker.com/_/postgres
+export POSTGRES_DB="postgres"
+
+export FERRETDB_POSTGRESQL_URL="postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DB}"
 
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
