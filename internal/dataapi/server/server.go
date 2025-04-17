@@ -82,18 +82,14 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		msg, err := prepareOpMsg(
+		msg := must.NotFail(prepareOpMsg(
 			"saslStart", int32(1),
 			"mechanism", "SCRAM-SHA-256",
 			"payload", wirebson.Binary{B: []byte(payload)},
 			// use skipEmptyExchange to complete the handshake with one `saslStart` and one `saslContinue`
 			"options", wirebson.MustDocument("skipEmptyExchange", true),
 			"$db", "admin",
-		)
-		if err != nil {
-			http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
-			return
-		}
+		))
 
 		res, err := s.handler.Handle(ctx, msg)
 		if err != nil {
@@ -112,16 +108,12 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		msg, err = prepareOpMsg(
+		msg = must.NotFail(prepareOpMsg(
 			"saslContinue", int32(1),
 			"conversationId", convId,
 			"payload", wirebson.Binary{B: []byte(payload)},
 			"$db", "admin",
-		)
-		if err != nil {
-			http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
-			return
-		}
+		))
 
 		res, err = s.handler.Handle(ctx, msg)
 		if err != nil {
