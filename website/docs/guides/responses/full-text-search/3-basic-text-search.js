@@ -12,5 +12,5 @@ response = {
     id: Long(0),
     ns: 'db.books'
   },
-  ok: Double(1)
+  ok: 1.0
 }
