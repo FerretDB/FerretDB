@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# for evaluation production (formerly "all-in-one") releases (`ferretdb-eval` image)
+# evaluation image (formerly "all-in-one") with production release (`ferretdb-eval` image)
 
 # While we already know commit and version from commit.txt and version.txt inside image,
 # it is not possible to use them in LABELs for the final image.
@@ -112,15 +112,10 @@ COPY --from=eval-build /src/build/ferretdb/evaluation/supervisord.conf /etc/supe
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
 
 HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-interval=5s \
-  CMD ["/ferretdb", "ping"]
+  CMD ["/usr/local/bin/ferretdb", "ping"]
 
 EXPOSE 27017 27018 8088
 
-ENV POSTGRES_USER=username
-ENV POSTGRES_PASSWORD=password
-ENV POSTGRES_DB=postgres
-
-ENV FERRETDB_POSTGRESQL_URL=postgres://username:password@127.0.0.1:5432/postgres
 ENV FERRETDB_STATE_DIR=/tmp/state
 
 # don't forget to update documentation if you change defaults
