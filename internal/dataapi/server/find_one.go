@@ -53,7 +53,7 @@ func (s *Server) FindOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resMsg, err := s.handler.Commands()["find"].Handler(ctx, msg)
+	resMsg, err := s.handler.Handle(ctx, msg)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
