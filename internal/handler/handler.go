@@ -17,7 +17,6 @@ package handler
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"time"
 
@@ -27,7 +26,6 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/session"
-	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 )
@@ -146,18 +144,12 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middlew
 
 		msgCmd := doc.Command()
 
-		var cmdHandler middleware.HandleFunc
-
 		cmd, ok := h.commands[msgCmd]
-		if !ok {
-			cmdHandler = notFound(msgCmd)
-		} else if cmd.Handler == nil {
-			cmdHandler = notImplemented(msgCmd)
-		} else {
-			cmdHandler = cmd.Handler
+		if ok && cmd.Handler != nil {
+			return cmd.Handler(ctx, req)
 		}
 
-		return cmdHandler(ctx, req)
+		return notFound(msgCmd)(ctx, req)
 	case req.OpQuery != nil:
 		return h.CmdQuery(ctx, req)
 	default:
@@ -175,16 +167,6 @@ func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
 func (h *Handler) Collect(ch chan<- prometheus.Metric) {
 	h.Pool.Collect(ch)
 	h.s.Collect(ch)
-}
-
-// notFound returns a handler that returns not found error.
-func notFound(command string) middleware.HandleFunc {
-	return func(context.Context, *middleware.Request) (*middleware.Response, error) {
-		return nil, mongoerrors.New(
-			mongoerrors.ErrCommandNotFound,
-			fmt.Sprintf("no such command: '%s'", command),
-		)
-	}
 }
 
 // check interfaces
