@@ -1,5 +1,5 @@
 response = {
-  ok: 0.0,
+  ok: Double(0),
   ns: 'db.books',
   firstBatch: [
     {
