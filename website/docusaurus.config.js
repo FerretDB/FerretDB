@@ -41,16 +41,11 @@ const config = {
             to: "/installation",
             from: "/quickstart",
           },
-          {
-            to: "/guides/full-text-search",
-            from: "/guides/text-search",
-          },
         ],
 
         createRedirects(to) {
           let res = [];
 
-          // TODO https://github.com/FerretDB/FerretDB/issues/4882
           if (!(to.startsWith("/v1") || to.startsWith("/v2"))) {
             // /v2.1/installation/ -> /installation/
             res.push("/v2.1" + to);

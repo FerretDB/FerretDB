@@ -1,7 +1,7 @@
 response = {
   cursor: {
-    id: Long('0'),
-    ns: 'new.books',
+    id: Long(0),
+    ns: 'db.books',
     firstBatch: [
       {
         _id: 'moby_dick_1851',
@@ -13,5 +13,5 @@ response = {
       }
     ]
   },
-  ok: 1
+  ok: Double(1)
 }
