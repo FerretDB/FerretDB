@@ -109,7 +109,9 @@ COPY --from=eval-build /src/bin/ferretdb /usr/local/bin/ferretdb
 
 # TODO https://github.com/FerretDB/FerretDB/issues/5043
 COPY --from=eval-build /src/build/ferretdb/evaluation/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+COPY --from=eval-build /src/build/ferretdb/evaluation/entrypoint.sh /usr/local/bin/entrypoint.sh
+
+ENTRYPOINT ["entrypoint.sh"]
 
 HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-interval=5s \
   CMD ["/usr/local/bin/ferretdb", "ping"]
