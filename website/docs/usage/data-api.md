@@ -109,7 +109,9 @@ Below is an example using Postman.
 
 Import the FerretDB Data API specification into Postman using the following URL:
 
-- `https://raw.githubusercontent.com/FerretDB/FerretDB/main/internal/dataapi/api/openapi.json`
+```text
+https://raw.githubusercontent.com/FerretDB/FerretDB/main/internal/dataapi/api/openapi.json
+```
 
 This will load available endpoints into Postman, as shown below:
 
