@@ -64,6 +64,7 @@ func (h *Handler) initCommands() {
 			Help:      "", // hidden
 		},
 		"bulkWrite": {
+			// TODO https://github.com/microsoft/documentdb/issues/108
 			// TODO https://github.com/FerretDB/FerretDB/issues/4910
 			Help: "", // hidden while not implemented
 		},
@@ -375,6 +376,16 @@ func notImplemented(command string) middleware.HandleFunc {
 		return nil, mongoerrors.New(
 			mongoerrors.ErrNotImplemented,
 			fmt.Sprintf("Command %s is not implemented", command),
+		)
+	}
+}
+
+// notFound returns a handler that returns not found error.
+func notFound(command string) middleware.HandleFunc {
+	return func(context.Context, *middleware.Request) (*middleware.Response, error) {
+		return nil, mongoerrors.New(
+			mongoerrors.ErrCommandNotFound,
+			fmt.Sprintf("no such command: '%s'", command),
 		)
 	}
 }
