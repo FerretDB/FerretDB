@@ -118,12 +118,11 @@ HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-in
 
 EXPOSE 27017 27018 8088
 
-ENV FERRETDB_STATE_DIR=/tmp/state
-
 # don't forget to update documentation if you change defaults
 ENV FERRETDB_LISTEN_ADDR=:27017
 # ENV FERRETDB_LISTEN_TLS=:27018
 ENV FERRETDB_DEBUG_ADDR=:8088
+ENV FERRETDB_STATE_DIR=/tmp/state
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
