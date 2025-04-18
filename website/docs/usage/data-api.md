@@ -11,9 +11,8 @@ The Data API is integrated directly into FerretDB – it's not a standalone serv
 ## Enable the Data API
 
 To access the FerretDB Data API, set the environment variable or flag (`FERRETDB_LISTEN_DATA_API_ADDR`/`--listen-data-api-addr`) to the desired address and port when starting FerretDB.
-The default address is `:8080`.
 
-For example, to run FerretDB locally with the Data API on port `8080`, you can use:
+Suppose you want to run the Data API on port `8080` and your FerretDB instance is running locally on `localhost:27017`.
 
 ```text
 --listen-data-api-addr=:8080
@@ -117,12 +116,13 @@ This will load available endpoints into Postman, as shown below:
 
 ![Import Data API Specification into Postman](/img/docs/import-data-api.jpg)
 
-Be sure to set the `{{baseURL}}` to `http://localhost:8080` or the listen address you configured for the Data API.
-
 Using the same examples from earlier, you can now test the endpoints directly in Postman.
-You can also set up environment variables in Postman for the `<username>` and `<password>` to avoid hardcoding them in the requests.
 
 Below are examples of the `insertOne` and `find` endpoints in Postman after importing the OpenAPI spec.
 
 ![Insert a single document](/img/docs/insert-one.jpg)
 ![Find a single document](/img/docs/find-one.jpg)
+
+Be sure to set the `{{baseURL}}` variable to the URL you configured for the Data API (`http://localhost:8080` in this case).
+You can also set up environment variables in Postman for the `<username>` and `<password>` to avoid hardcoding them in the requests.
+See the [Postman documentation](https://learning.postman.com/docs/sending-requests/variables/environment-variables/) for more information on how to set up environment variables.
