@@ -30,10 +30,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgUpdate(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, seq := req.OpMsg.RawSections()
-
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
-	doc, err := spec.Decode()
+	doc, spec, seq, err := req.OpMsg.Sections()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
