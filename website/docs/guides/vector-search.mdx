@@ -8,8 +8,6 @@ description: Learn about vector search parameters and capabilities in FerretDB.
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import CodeBlock from '@theme/CodeBlock';
-import IndexSyntax from '!!raw-loader!./requests/vector-search/2-hnsw-index.js';
-import SearchSyntax from '!!raw-loader!./requests/vector-search/5-ivf-search.js';
 import MyDataSet from '!!raw-loader!./requests/vector-search/1-insert-vector.js';
 import HNSWIndex from '!!raw-loader!./requests/vector-search/2-hnsw-index.js';
 import HSNWSearch from '!!raw-loader!./requests/vector-search/3-hnsw-search.js';
@@ -41,7 +39,31 @@ FerretDB supports the following vector index kinds:
 
 Vector index can be created using the usual `createIndexes` command with the following syntax:
 
-<CodeBlock language="js">{IndexSyntax}</CodeBlock>
+```js
+db.runCommand({
+  createIndexes: '<collectionName>',
+  indexes: [
+    {
+      name: '<indexName>',
+      key: {
+        '<path>': 'cosmosSearch'
+      },
+      cosmosSearchOptions: {
+        kind: '<kind>',
+        similarity: '<similarity>',
+        dimensions: '<dimensions>',
+
+        // HNSW only
+        m: '<m>',
+        efConstruction: '<efConstruction>',
+
+        // IVF only
+        numLists: '<numLists>'
+      }
+    }
+  ]
+})
+```
 
 A vector index definition can take the following parameters, depending on the kind of index:
 
@@ -91,7 +113,26 @@ To create an IVF index, set the `kind` field to `vector-ivf` when creating the v
 
 Once an index is created, you can perform vector searches using the `$search` stage in the aggregation pipeline:
 
-<CodeBlock language="js">{SearchSyntax}</CodeBlock>
+```js
+db.runCommand({
+  aggregate: 'collectionName',
+  pipeline: [
+    {
+      $search: {
+        cosmosSearch: {
+          vector: '<vector>',
+          path: '<path>',
+          k: '<k>',
+
+          // HNSW only
+          efSearch: '<efSearch>'
+        }
+      }
+    }
+  ],
+  cursor: {}
+})
+```
 
 A typical vector search query includes the query vector, the path to the field containing the vector, and the number of neighbors to return, as described below:
 
