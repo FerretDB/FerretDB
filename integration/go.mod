@@ -9,7 +9,7 @@ replace github.com/FerretDB/FerretDB/v2 => ../
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/FerretDB/FerretDB/v2 v2.0.0-00010101000000-000000000000
-	github.com/FerretDB/wire v0.0.21-0.20250418005155-7b46cb708694
+	github.com/FerretDB/wire v0.0.21
 	github.com/FerretDB/xfail v0.1.0
 	github.com/google/uuid v1.6.0
 	github.com/prometheus/client_golang v1.21.1
