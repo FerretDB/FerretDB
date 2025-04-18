@@ -20,9 +20,8 @@ tags:
 [LibreChat](https://www.librechat.ai/) is a free, open-source application that provides a user-friendly and customizable interface for interacting with various AI providers.
 It allows users to connect with providers like [OpenAI](https://openai.com/), [Azure](https://azure.microsoft.com/), [Anthropic](https://www.anthropic.com/), and more.
 
-For LibreChat users who want to stay fully open source, FerretDB is a great drop-in replacement for MongoDB.
-
-If you're looking to avoid proprietary databases or vendor lock-in, FerretDB is a drop-in replacement for MongoDB that runs on top of PostgreSQL.
+For LibreChat users who want to stay fully open source, FerretDB is a great drop-in replacement for MongoDB,
+especially if you're looking to avoid proprietary databases or vendor lock-in.
 It uses PostgreSQL with DocumentDB extension as the backend, while letting you use familiar MongoDB operations and commands.
 
 This guide shows how to run LibreChat with FerretDB as the database, either by connecting to an existing FerretDB instance or running everything in Docker.
@@ -62,7 +61,7 @@ If you're new to FerretDB, you can find [installation instructions here](https:/
 
 ### Option 2: Add FerretDB and PostgreSQL via Docker Compose
 
-If you don't have FerretDB running, you can set compile everything together using Docker Compose.
+If you don't have FerretDB running, you can run it alongside LibreChat using Docker Compose.
 
 To do that, add FerretDB and PostgreSQL with DocumentDB extension to your `docker-compose.override.yml` file.
 
@@ -96,7 +95,7 @@ services:
 
 Replace `<username>` and `<password>` with your desired FerretDB credentials.
 
-Once set up, run `docker-compose up` to start the entire stack.
+Once set up, run `docker compose up` to start the entire stack.
 This will start FerretDB and PostgreSQL with DocumentDB extension, and LibreChat will connect to FerretDB using the specified connection string.
 
 ## Further resources
