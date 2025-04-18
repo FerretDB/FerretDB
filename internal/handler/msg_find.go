@@ -28,13 +28,7 @@ import (
 // We should unexport this and other methods.
 // TODO https://github.com/FerretDB/FerretDB/issues/5046
 func (h *Handler) MsgFind(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
-	doc, err := spec.Decode()
+	doc, err := req.OpMsg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -47,6 +41,11 @@ func (h *Handler) MsgFind(connCtx context.Context, req *middleware.Request) (*mi
 	userID, sessionID, err := h.s.CreateOrUpdateByLSID(connCtx, doc)
 	if err != nil {
 		return nil, err
+	}
+
+	spec, err := req.OpMsg.DocumentRaw()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	page, cursorID, err := h.Pool.Find(connCtx, dbName, spec)

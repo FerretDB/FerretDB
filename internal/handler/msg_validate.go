@@ -17,6 +17,9 @@ package handler
 import (
 	"context"
 
+	"github.com/FerretDB/wire/wirebson"
+	"github.com/jackc/pgx/v5"
+
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
@@ -26,13 +29,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgValidate(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
-	doc, err := spec.Decode()
+	doc, err := req.OpMsg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -46,16 +43,20 @@ func (h *Handler) MsgValidate(connCtx context.Context, req *middleware.Request) 
 		return nil, err
 	}
 
-	conn, err := h.Pool.Acquire()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-	defer conn.Release()
-
-	page, err := documentdb_api.Validate(connCtx, conn.Conn(), h.L, dbName, spec)
+	spec, err := req.OpMsg.DocumentRaw()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.ResponseMsg(page)
+	var res wirebson.RawDocument
+
+	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
+		res, err = documentdb_api.Validate(connCtx, conn, h.L, dbName, spec)
+		return err
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return middleware.ResponseMsg(res)
 }

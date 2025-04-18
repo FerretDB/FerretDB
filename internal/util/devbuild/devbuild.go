@@ -18,3 +18,9 @@
 //
 // It is a separate package to avoid dependency cycles.
 package devbuild
+
+import "github.com/FerretDB/wire"
+
+func init() {
+	wire.Debug = Enabled
+}
