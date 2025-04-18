@@ -137,8 +137,7 @@ func (h *Handler) Run(ctx context.Context) {
 func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	switch {
 	case req.OpMsg != nil:
-		// req.OpMsg.Document() errors on `delete`, `insert` and `update`
-		doc, _, _, err := req.OpMsg.Sections()
+		doc, err := req.OpMsg.Section0()
 		if err != nil {
 			return nil, err
 		}
