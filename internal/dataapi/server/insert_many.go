@@ -51,7 +51,7 @@ func (s *Server) InsertMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = s.handler.Commands()["insert"].Handler(ctx, msg)
+	_, err = s.handler.Handle(ctx, msg)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
