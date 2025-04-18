@@ -41,22 +41,27 @@ Vector index can be created using the usual `createIndexes` command with the fol
 
 ```js
 db.runCommand({
-  aggregate: 'collectionName',
-  pipeline: [
+  createIndexes: '<collectionName>',
+  indexes: [
     {
-      $search: {
-        cosmosSearch: {
-          vector: '<vector>',
-          path: '<path>',
-          k: '<k>',
+      name: '<indexName>',
+      key: {
+        '<path>': 'cosmosSearch'
+      },
+      cosmosSearchOptions: {
+        kind: '<kind>',
+        similarity: '<similarity>',
+        dimensions: '<dimensions>',
 
-          // HNSW only
-          efSearch: '<efSearch>'
-        }
+        // HNSW only
+        m: '<m>',
+        efConstruction: '<efConstruction>',
+
+        // IVF only
+        numLists: '<numLists>'
       }
     }
-  ],
-  cursor: {}
+  ]
 })
 ```
 
@@ -110,27 +115,22 @@ Once an index is created, you can perform vector searches using the `$search` st
 
 ```js
 db.runCommand({
-  createIndexes: '<collectionName>',
-  indexes: [
+  aggregate: 'collectionName',
+  pipeline: [
     {
-      name: '<indexName>',
-      key: {
-        '<path>': 'cosmosSearch'
-      },
-      cosmosSearchOptions: {
-        kind: '<kind>',
-        similarity: '<similarity>',
-        dimensions: '<dimensions>',
+      $search: {
+        cosmosSearch: {
+          vector: '<vector>',
+          path: '<path>',
+          k: '<k>',
 
-        // HNSW only
-        m: '<m>',
-        efConstruction: '<efConstruction>',
-
-        // IVF only
-        numLists: '<numLists>'
+          // HNSW only
+          efSearch: '<efSearch>'
+        }
       }
     }
-  ]
+  ],
+  cursor: {}
 })
 ```
 
