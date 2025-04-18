@@ -380,13 +380,12 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	switch reqHeader.OpCode {
 	case wire.OpCodeMsg:
 		msg := reqBody.(*wire.OpMsg)
-		raw := msg.RawSection0()
 
 		resHeader.OpCode = wire.OpCodeMsg
 
 		// TODO https://github.com/FerretDB/FerretDB/issues/1997
 		var doc *wirebson.Document
-		if doc, err = raw.Decode(); err == nil {
+		if doc, err = msg.Section0(); err == nil {
 			command = doc.Command()
 		}
 
@@ -579,8 +578,7 @@ func (c *conn) logResponse(ctx context.Context, who string, resHeader *wire.MsgH
 	if resHeader.OpCode == wire.OpCodeMsg {
 		msg := resBody.(*wire.OpMsg)
 
-		raw := msg.RawSection0()
-		doc, _ := raw.Decode()
+		doc, _ := msg.Section0()
 
 		var ok bool
 
