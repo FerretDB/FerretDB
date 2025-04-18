@@ -44,8 +44,8 @@ func main() {
 
 // result represents Docker image names and tags extracted from the environment.
 type result struct {
-	evalImages        []string
 	evalDevImages     []string
+	evalImages        []string
 	developmentImages []string
 	productionImages  []string
 }
