@@ -22,25 +22,25 @@ import (
 	runtimedebug "runtime/debug"
 	"runtime/pprof"
 	"sync"
+	"sync/atomic"
 	"unsafe"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
 )
 
-// cleanupByToken maps each *Token to its runtime.Cleanup handle.
-// That lets Untrack cancel the scheduled cleanup and avoids leaks.
-var cleanupByToken sync.Map
-
 // Token should be a field of a tracked object.
 //
-// The underlying type is not struct{} because (from the Go spec)
-// "Two distinct zero-size variables may have the same address in memory",
-// and they do.
-type Token byte
+// Contains a byte field to ensure unique memory addresses, as Go spec states
+// "Two distinct zero-size variables may have the same address in memory".
+// Also stores cleanup handle for proper resource management.
+type Token struct {
+	token          byte
+	cleanupHandler atomic.Pointer[runtime.Cleanup]
+}
 
 // NewToken returns a new Token.
 func NewToken() *Token {
-	return new(Token)
+	return &Token{token: *new(byte)}
 }
 
 // profilesM protects access to profiles.
@@ -53,7 +53,8 @@ func profileName(obj any) string {
 
 // Track tracks the lifetime of an object until Untrack is called on it.
 //
-// Obj should a pointer to a struct with a field "token" of type *Token.
+// Obj should be a pointer to a struct with a field "token" of type *Token.
+// Uses generics to provide type safety.
 func Track[T any](obj *T, token *Token) {
 	checkArgs(obj, token)
 
@@ -77,7 +78,7 @@ func Track[T any](obj *T, token *Token) {
 	}
 
 	// use token instead of obj itself,
-	// because otherwise profile will hold a reference to obj and finalizer will never run
+	// because otherwise profile will hold a reference to obj and cleanup will never run
 	p.Add(token, 1)
 
 	msg := fmt.Sprintf("%T has not been finalized", obj)
@@ -85,19 +86,12 @@ func Track[T any](obj *T, token *Token) {
 		msg += "\nObject created by " + string(runtimedebug.Stack())
 	}
 
-	// Delete token from map and profile to avoid leaks.
 	c := runtime.AddCleanup(obj, func(msg string) {
-		cleanupByToken.Delete(token)
-
-		if p := pprof.Lookup(name); p != nil {
-			p.Remove(token)
-		}
-
 		panic(msg)
 	}, msg)
 
-	// Store cleanup handle so Untrack can Stop() it later.
-	cleanupByToken.Store(token, c)
+	// Assign cleanup-handler to current token so Untrack can Stop() it later.
+	token.cleanupHandler.Store(&c)
 }
 
 // Untrack stops tracking the lifetime of an object.
@@ -114,8 +108,8 @@ func Untrack[T any](obj *T, token *Token) {
 	p.Remove(token)
 
 	// Look up the handle by token and Stop() it to cancel the scheduled cleanup.
-	if v, ok := cleanupByToken.LoadAndDelete(token); ok {
-		v.(runtime.Cleanup).Stop()
+	if h := token.cleanupHandler.Swap(nil); h != nil {
+		h.Stop()
 	}
 }
 

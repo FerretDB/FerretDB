@@ -1,3 +1,17 @@
+// Copyright 2021 FerretDB Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package resource
 
 import (
@@ -5,6 +19,8 @@ import (
 	"runtime/pprof"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type TestTrackObject struct {
@@ -34,9 +50,7 @@ func TestTrackProfileEntryAdded(t *testing.T) {
 	Track(obj, obj.token)
 	t.Cleanup(func() { Untrack(obj, obj.token) })
 
-	if c := entryCount(t, obj); c != 1 {
-		t.Fatalf("want profile count 1, got %d", c)
-	}
+	assert.Equal(t, 1, entryCount(t, obj), "profile should have exactly one entry")
 }
 
 func TestTrackNoCleanupWhileReachable(t *testing.T) {
@@ -48,9 +62,7 @@ func TestTrackNoCleanupWhileReachable(t *testing.T) {
 	runGC(t)
 	runtime.KeepAlive(obj)
 
-	if c := entryCount(t, obj); c != 1 {
-		t.Fatalf("cleanup ran too early; profile count = %d", c)
-	}
+	assert.Equal(t, 1, entryCount(t, obj), "cleanup shouldn't run while object is reachable")
 }
 
 func TestTrackCleanupRunsWhenAbandoned(t *testing.T) {
@@ -69,9 +81,7 @@ func TestUntrackProfileEntryRemoved(t *testing.T) {
 	Track(obj, obj.token)
 
 	Untrack(obj, obj.token)
-	if c := entryCount(t, obj); c != 0 {
-		t.Fatalf("profile entry still present after Untrack; count = %d", c)
-	}
+	assert.Equal(t, 0, entryCount(t, obj), "profile entry should be removed after Untrack")
 
 	token := obj.token
 	runtime.KeepAlive(obj)
@@ -79,8 +89,6 @@ func TestUntrackProfileEntryRemoved(t *testing.T) {
 	// Object already unassigned from memory so cleanup is not necessary
 	runGC(t)
 
-	// cleanupByToken should no longer contain the token.
-	if _, ok := cleanupByToken.LoadAndDelete(token); ok {
-		t.Fatalf("cleanup handle leaked in map after Untrack")
-	}
+	// Fixed field name to match implementation (cleanup not cleanupHandler)
+	assert.Nil(t, token.cleanupHandler.Load(), "cleanup handle should be nil after Untrack")
 }
