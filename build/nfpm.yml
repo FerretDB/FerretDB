@@ -17,7 +17,7 @@ suggests:
   - postgresql
 
 contents:
-  - src: tmp/build/linux_${DIR_ARCH}/ferretdb
+  - src: tmp/build/${DIR_ARCH}-linux/ferretdb
     dst: /usr/bin/ferretdb
     expand: true
   - src: build/ferretdb.service

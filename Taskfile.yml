@@ -436,7 +436,7 @@ tasks:
           # TODO https://github.com/FerretDB/FerretDB/issues/5019
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          BIN_FILE: 'ferretdb-dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          BIN_FILE: 'ferretdb-dev-{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
           BIN_DIR: bin-dev
 
   build-production:
@@ -457,7 +457,7 @@ tasks:
           # TODO https://github.com/FerretDB/FerretDB/issues/5019
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          BIN_FILE: 'ferretdb-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          BIN_FILE: 'ferretdb-{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
           BIN_DIR: bin
 
   docker-local:
@@ -580,12 +580,12 @@ tasks:
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          FILE_SUFFIX: 'dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
       - for: [amd64, arm64]
         task: packages-deb-check
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
-          FILE_SUFFIX: 'dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
     vars:
       PACKAGE_VERSION:
         sh: bin/envtool{{exeExt}} package-version
@@ -609,12 +609,12 @@ tasks:
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          FILE_SUFFIX: 'linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: '{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
       - for: [amd64, arm64]
         task: packages-deb-check
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
-          FILE_SUFFIX: 'linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: '{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
     vars:
       PACKAGE_VERSION:
         sh: bin/envtool{{exeExt}} package-version
@@ -650,12 +650,12 @@ tasks:
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          FILE_SUFFIX: 'dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
       - for: [amd64, arm64]
         task: packages-rpm-check
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
-          FILE_SUFFIX: 'dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
     vars:
       PACKAGE_VERSION:
         sh: bin/envtool{{exeExt}} package-version
@@ -679,12 +679,12 @@ tasks:
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          FILE_SUFFIX: 'linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: '{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
       - for: [amd64, arm64]
         task: packages-rpm-check
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
-          FILE_SUFFIX: 'linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: '{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
     vars:
       PACKAGE_VERSION:
         sh: bin/envtool{{exeExt}} package-version
