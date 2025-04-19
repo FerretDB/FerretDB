@@ -379,3 +379,13 @@ func notImplemented(command string) middleware.HandleFunc {
 		)
 	}
 }
+
+// notFound returns a handler that returns not found error.
+func notFound(command string) middleware.HandleFunc {
+	return func(context.Context, *middleware.Request) (*middleware.Response, error) {
+		return nil, mongoerrors.New(
+			mongoerrors.ErrCommandNotFound,
+			fmt.Sprintf("no such command: '%s'", command),
+		)
+	}
+}
