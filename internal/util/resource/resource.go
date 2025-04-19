@@ -27,6 +27,10 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
 )
 
+// cleanupByToken maps each *Token to its runtime.Cleanup handle.
+// That lets Untrack cancel the scheduled cleanup and avoids leaks.
+var cleanupByToken sync.Map
+
 // Token should be a field of a tracked object.
 //
 // The underlying type is not struct{} because (from the Go spec)
@@ -50,7 +54,7 @@ func profileName(obj any) string {
 // Track tracks the lifetime of an object until Untrack is called on it.
 //
 // Obj should a pointer to a struct with a field "token" of type *Token.
-func Track(obj any, token *Token) {
+func Track[T any](obj *T, token *Token) {
 	checkArgs(obj, token)
 
 	name := profileName(obj)
@@ -76,28 +80,30 @@ func Track(obj any, token *Token) {
 	// because otherwise profile will hold a reference to obj and finalizer will never run
 	p.Add(token, 1)
 
-	var stack string
+	msg := fmt.Sprintf("%T has not been finalized", obj)
 	if devbuild.Enabled {
-		stack = string(runtimedebug.Stack())
+		msg += "\nObject created by " + string(runtimedebug.Stack())
 	}
 
-	// set finalizer on obj, not token
-	runtime.SetFinalizer(obj, func(obj any) {
-		// this closure has to use only obj argument and captured "stack" variable
+	// Delete token from map and profile to avoid leaks.
+	c := runtime.AddCleanup(obj, func(msg string) {
+		cleanupByToken.Delete(token)
 
-		msg := fmt.Sprintf("%T has not been finalized", obj)
-		if stack != "" {
-			msg += "\nObject created by " + stack
+		if p := pprof.Lookup(name); p != nil {
+			p.Remove(token)
 		}
 
 		panic(msg)
-	})
+	}, msg)
+
+	// Store cleanup handle so Untrack can Stop() it later.
+	cleanupByToken.Store(token, c)
 }
 
 // Untrack stops tracking the lifetime of an object.
 //
 // It is safe to call this function multiple times.
-func Untrack(obj any, token *Token) {
+func Untrack[T any](obj *T, token *Token) {
 	checkArgs(obj, token)
 
 	p := pprof.Lookup(profileName(obj))
@@ -107,7 +113,10 @@ func Untrack(obj any, token *Token) {
 
 	p.Remove(token)
 
-	runtime.SetFinalizer(obj, nil)
+	// Look up the handle by token and Stop() it to cancel the scheduled cleanup.
+	if v, ok := cleanupByToken.LoadAndDelete(token); ok {
+		v.(runtime.Cleanup).Stop()
+	}
 }
 
 // checkArgs checks Track and Untrack arguments.
