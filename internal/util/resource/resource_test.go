@@ -30,6 +30,7 @@ type TestTrackObject struct {
 // runGC forces several GC cycles to give the runtime a chance to run cleanups.
 func runGC(t *testing.T) {
 	t.Helper()
+
 	for i := 0; i < 8; i++ {
 		runtime.GC()
 		time.Sleep(10 * time.Millisecond)
@@ -39,9 +40,12 @@ func runGC(t *testing.T) {
 // entryCount returns the number of entries for obj in its pprof profile.
 func entryCount(t *testing.T, obj any) int {
 	t.Helper()
-	if p := pprof.Lookup(profileName(obj)); p != nil {
+
+	p := pprof.Lookup(profileName(obj))
+	if p != nil {
 		return p.Count()
 	}
+
 	return 0
 }
 
@@ -60,6 +64,7 @@ func TestTrackNoCleanupWhileReachable(t *testing.T) {
 
 	// GC should not run cleanup because obj is still reachable.
 	runGC(t)
+
 	runtime.KeepAlive(obj)
 
 	assert.Equal(t, 1, entryCount(t, obj), "cleanup shouldn't run while object is reachable")
@@ -73,6 +78,7 @@ func TestTrackCleanupRunsWhenAbandoned(t *testing.T) {
 
 	// Drop the reference; GC will trigger cleanup.
 	obj = nil
+
 	runGC(t)
 }
 
@@ -90,5 +96,5 @@ func TestUntrackProfileEntryRemoved(t *testing.T) {
 	runGC(t)
 
 	// Fixed field name to match implementation (cleanup not cleanupHandler)
-	assert.Nil(t, token.cleanupHandler.Load(), "cleanup handle should be nil after Untrack")
+	assert.Nil(t, token.cleanup.Load(), "cleanup handle should be nil after Untrack")
 }

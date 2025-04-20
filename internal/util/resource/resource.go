@@ -34,8 +34,8 @@ import (
 // "Two distinct zero-size variables may have the same address in memory".
 // Also stores cleanup handle for proper resource management.
 type Token struct {
-	token          byte
-	cleanupHandler atomic.Pointer[runtime.Cleanup]
+	cleanup atomic.Pointer[runtime.Cleanup]
+	token   byte
 }
 
 // NewToken returns a new Token.
@@ -91,7 +91,7 @@ func Track[T any](obj *T, token *Token) {
 	}, msg)
 
 	// Assign cleanup-handler to current token so Untrack can Stop() it later.
-	token.cleanupHandler.Store(&c)
+	token.cleanup.Store(&c)
 }
 
 // Untrack stops tracking the lifetime of an object.
@@ -108,7 +108,7 @@ func Untrack[T any](obj *T, token *Token) {
 	p.Remove(token)
 
 	// Look up the handle by token and Stop() it to cancel the scheduled cleanup.
-	if h := token.cleanupHandler.Swap(nil); h != nil {
+	if h := token.cleanup.Swap(nil); h != nil {
 		h.Stop()
 	}
 }
