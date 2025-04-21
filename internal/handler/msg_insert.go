@@ -16,6 +16,7 @@ package handler
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgx/v5"
@@ -45,6 +46,12 @@ func (h *Handler) MsgInsert(connCtx context.Context, req *middleware.Request) (*
 	dbName, err := getRequiredParam[string](doc, "$db")
 	if err != nil {
 		return nil, err
+	}
+
+	// TODO https://github.com/microsoft/documentdb/issues/148
+	if v := doc.Get("bypassEmptyTsReplacement"); v != nil {
+		h.L.WarnContext(connCtx, "bypassEmptyTsReplacement is not supported by DocumentDB yet", slog.Any("value", v))
+		doc.Remove("bypassEmptyTsReplacement")
 	}
 
 	var res wirebson.RawDocument
