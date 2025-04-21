@@ -435,7 +435,7 @@ tasks:
         vars:
           # TODO https://github.com/FerretDB/FerretDB/issues/5019
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
-          DIR_ARCH: '{{.ITEM}}' # arm/v7 -> arm_v7
+          DIR_ARCH: "{{.ITEM}}" # arm/v7 -> arm_v7
           BIN_FILE: 'ferretdb-dev-{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
           BIN_DIR: bin-dev
 
@@ -456,7 +456,7 @@ tasks:
         vars:
           # TODO https://github.com/FerretDB/FerretDB/issues/5019
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
-          DIR_ARCH: '{{.ITEM}}' # arm/v7 -> arm_v7
+          DIR_ARCH: "{{.ITEM}}" # arm/v7 -> arm_v7
           BIN_FILE: 'ferretdb-{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
           BIN_DIR: bin
 
@@ -579,7 +579,7 @@ tasks:
           PACKAGER: deb
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
-          DIR_ARCH: '{{.ITEM}}' # arm/v7 -> arm_v7
+          DIR_ARCH: "{{.ITEM}}" # arm/v7 -> arm_v7
           FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
       - for: [amd64, arm64]
         task: packages-deb-check
@@ -608,7 +608,7 @@ tasks:
           PACKAGER: deb
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
-          DIR_ARCH: '{{.ITEM}}' # arm/v7 -> arm_v7
+          DIR_ARCH: "{{.ITEM}}" # arm/v7 -> arm_v7
           FILE_SUFFIX: '{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
       - for: [amd64, arm64]
         task: packages-deb-check
@@ -649,7 +649,7 @@ tasks:
           PACKAGER: rpm
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
-          DIR_ARCH: '{{.ITEM}}' # arm/v7 -> arm_v7
+          DIR_ARCH: "{{.ITEM}}" # arm/v7 -> arm_v7
           FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
       - for: [amd64, arm64]
         task: packages-rpm-check
@@ -678,7 +678,7 @@ tasks:
           PACKAGER: rpm
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
-          DIR_ARCH: '{{.ITEM}}' # arm/v7 -> arm_v7
+          DIR_ARCH: "{{.ITEM}}" # arm/v7 -> arm_v7
           FILE_SUFFIX: '{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
       - for: [amd64, arm64]
         task: packages-rpm-check
