@@ -83,6 +83,8 @@ go build -v -trimpath -o=bin/ferretdb ./cmd/ferretdb
 
 go version -m bin/ferretdb
 bin/ferretdb --version
+
+mkdir /state
 EOF
 
 
@@ -95,9 +97,6 @@ EOF
 FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-ferretdb AS eval
 
 RUN --mount=type=cache,sharing=locked,target=/var/cache/apt <<EOF
-mkdir /tmp/cover /tmp/state
-chown postgres:postgres /tmp/cover /tmp/state
-
 apt install -y curl supervisor
 curl -L https://pgp.mongodb.com/server-7.0.asc | apt-key add -
 echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/debian bookworm/mongodb-org/7.0 main" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list
@@ -106,6 +105,7 @@ apt install -y mongodb-mongosh
 EOF
 
 COPY --from=eval-build /src/bin/ferretdb /usr/local/bin/ferretdb
+COPY --from=eval-build /state /state
 
 # TODO https://github.com/FerretDB/FerretDB/issues/5043
 COPY --from=eval-build /src/build/ferretdb/evaluation/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
@@ -116,9 +116,11 @@ ENTRYPOINT ["entrypoint.sh"]
 HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-interval=5s \
   CMD ["/usr/local/bin/ferretdb", "ping"]
 
+WORKDIR /
+VOLUME /state
 EXPOSE 27017 27018 8088
 
-ENV FERRETDB_STATE_DIR=/tmp/state
+ENV FERRETDB_STATE_DIR=/state
 
 # don't forget to update documentation if you change defaults
 ENV FERRETDB_LISTEN_ADDR=:27017
