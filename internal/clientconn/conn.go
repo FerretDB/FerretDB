@@ -402,17 +402,8 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
 		if err == nil {
-			var cmdHandler middleware.HandleFunc
-
-			cmd, ok := c.h.Commands()[command]
-			if ok && cmd.Handler != nil {
-				cmdHandler = cmd.Handler
-			} else {
-				cmdHandler = notFound(command)
-			}
-
 			var res *middleware.Response
-			if res, err = cmdHandler(connCtx, middleware.RequestWire(reqHeader, msg)); res != nil {
+			if res, err = c.h.Handle(connCtx, middleware.RequestWire(reqHeader, msg)); res != nil {
 				resBody = res.OpMsg
 			}
 		}
@@ -430,10 +421,8 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
 		if err == nil {
-			cmdHandler := c.h.CmdQuery
-
 			var res *middleware.Response
-			if res, err = cmdHandler(connCtx, middleware.RequestWire(reqHeader, query)); res != nil {
+			if res, err = c.h.Handle(connCtx, middleware.RequestWire(reqHeader, query)); res != nil {
 				resBody = res.OpReply
 			}
 		}
@@ -541,16 +530,6 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	}
 
 	return
-}
-
-// notFound returns a handler that returns an error indicating that the command is not found.
-func notFound(command string) middleware.HandleFunc {
-	return func(context.Context, *middleware.Request) (*middleware.Response, error) {
-		return nil, mongoerrors.New(
-			mongoerrors.ErrCommandNotFound,
-			fmt.Sprintf("no such command: '%s'", command),
-		)
-	}
 }
 
 // renamePartialFile takes over an open file `f` and closes it.
