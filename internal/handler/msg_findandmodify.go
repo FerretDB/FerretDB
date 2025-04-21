@@ -31,13 +31,12 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) MsgFindAndModify(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.RawDocument()
+	spec, err := req.OpMsg.DocumentRaw()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
-	doc, err := spec.Decode()
+	doc, err := req.OpMsg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
