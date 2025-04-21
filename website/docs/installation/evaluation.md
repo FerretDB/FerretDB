@@ -4,9 +4,10 @@ sidebar_position: 1
 
 # Evaluation
 
-We provide an evaluation image
-[`ghcr.io/ferretdb/ferretdb-eval:2`](https://ghcr.io/ferretdb/ferretdb-eval:2)
-for quick testing and experiments.
+We provide evaluation images that come with FerretDB and PostgreSQL with DocumentDB extension.
+
+- [`ghcr.io/ferretdb/ferretdb-eval:2`](https://ghcr.io/ferretdb/ferretdb-eval:2) image for quick testing and experiments.
+- [`ghcr.io/ferretdb/ferretdb-eval-dev:2`](https://ghcr.io/ferretdb/ferretdb-eval-dev:2) image for debugging, with features that make it slower.
 
 You'll need [Docker](https://docs.docker.com/get-docker/) installed to run it.
 
