@@ -88,7 +88,8 @@ func Track[T any](obj *T, token *Token) {
 
 	c := runtime.AddCleanup(obj, func(msg string) {
 		panic(msg)
-	}, msg)
+	}, msg,
+	)
 
 	// Assign cleanup-handler to current token so Untrack can Stop() it later.
 	token.cleanup.Store(&c)
