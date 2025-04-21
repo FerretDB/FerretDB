@@ -1,7 +1,7 @@
 github.com/AlekSi/pointer v1.2.0 h1:glcy/gc4h8HnG2Z3ZECSzZ1IX1x2JxRVuDzaJwQE0+w=
 github.com/AlekSi/pointer v1.2.0/go.mod h1:gZGfd3dpW4vEc/UlyfKKi1roIqcCgwOIvb0tSNSBle0=
-github.com/FerretDB/wire v0.0.22 h1:eedlxzGB2SznZ6WcuAmo8wt/nhthKpBmR8y1vm/hDAw=
-github.com/FerretDB/wire v0.0.22/go.mod h1:om/tZgwmsm0Pr4jhUHlzq1TjLeD7AnTxwYZy2xaM1wU=
+github.com/FerretDB/wire v0.0.23 h1:8X5AtSuVECF1jBBdmLL1agAYGA/jEeC1R5ckTWYXp7Q=
+github.com/FerretDB/wire v0.0.23/go.mod h1:om/tZgwmsm0Pr4jhUHlzq1TjLeD7AnTxwYZy2xaM1wU=
 github.com/RaveNoX/go-jsoncommentstrip v1.0.0/go.mod h1:78ihd09MekBnJnxpICcwzCMzGrKSKYe4AqU6PDYYpjk=
 github.com/alecthomas/assert/v2 v2.11.0 h1:2Q9r3ki8+JYXvGsDyBXwH3LcJ+WK5D0gc5E8vS6K3D0=
 github.com/alecthomas/assert/v2 v2.11.0/go.mod h1:Bze95FyfUr7x34QZrjL+XP+0qgp/zg8yS+TtBj1WA3k=

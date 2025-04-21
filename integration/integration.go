@@ -21,10 +21,10 @@ import (
 	"testing"
 
 	"github.com/FerretDB/wire/wirebson"
+	"github.com/FerretDB/wire/wiretest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -49,70 +49,10 @@ const (
 )
 
 // convert converts given driver value ([bson.D], [bson.A], etc) to FerretDB's bson package value.
+//
+// Deprecated: use [wirebson.FromDriver] instead.
 func convert(t testing.TB, v any) any {
-	t.Helper()
-
-	switch v := v.(type) {
-	// composite types
-	case primitive.D:
-		doc := wirebson.MakeDocument(len(v))
-		for _, e := range v {
-			err := doc.Add(e.Key, convert(t, e.Value))
-			require.NoError(t, err)
-		}
-
-		return doc
-
-	case primitive.A:
-		arr := wirebson.MakeArray(len(v))
-		for _, e := range v {
-			err := arr.Add(convert(t, e))
-			require.NoError(t, err)
-		}
-
-		return arr
-
-	// scalar types (in the same order as in bson package)
-	case float64:
-		return v
-	case string:
-		return v
-	case primitive.Binary:
-		return wirebson.Binary{
-			Subtype: wirebson.BinarySubtype(v.Subtype),
-			B:       v.Data,
-		}
-	case primitive.ObjectID:
-		return wirebson.ObjectID(v)
-	case bool:
-		return v
-	case primitive.DateTime:
-		return v.Time()
-	case nil:
-		return wirebson.Null
-	case primitive.Regex:
-		return wirebson.Regex{
-			Pattern: v.Pattern,
-			Options: v.Options,
-		}
-	case int32:
-		return v
-	case primitive.Timestamp:
-		return wirebson.Timestamp(uint64(v.T)<<32 | uint64(v.I))
-	case int64:
-		return v
-	case primitive.Decimal128:
-		h, l := v.GetBytes()
-
-		return wirebson.Decimal128{
-			H: h,
-			L: l,
-		}
-
-	default:
-		t.Fatalf("unexpected type %T", v)
-		panic("not reached")
-	}
+	return wiretest.FromDriver(t, v)
 }
 
 // FixCluster removes document fields that are specific for MongoDB running in a cluster.
