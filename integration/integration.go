@@ -28,8 +28,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
-
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
 )
 
@@ -181,7 +179,7 @@ func AssertEqualDocuments(t testing.TB, expected, actual bson.D) bool {
 	fixExpected(t, expectedDoc)
 	fixActual(t, actualDoc)
 
-	return testutil.AssertEqual(t, expectedDoc, actualDoc)
+	return wiretest.AssertEqual(t, expectedDoc, actualDoc)
 }
 
 // AssertEqualDocumentsSlice asserts that two document slices are equal in a way that is useful for tests.
@@ -199,7 +197,7 @@ func AssertEqualDocumentsSlice(t testing.TB, expected, actual []bson.D) bool {
 		fixActual(t, d)
 	}
 
-	return testutil.AssertEqualSlices(t, expectedDocs, actualDocs)
+	return wiretest.AssertEqualSlices(t, expectedDocs, actualDocs)
 }
 
 // AssertEqualCommandError asserts that the expected error is the same as the actual (ignoring the Raw part).
