@@ -25,6 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgUpdate implements `update` command.
@@ -49,6 +50,7 @@ func (h *Handler) MsgUpdate(connCtx context.Context, req *middleware.Request) (*
 	if v := doc.Get("bypassEmptyTsReplacement"); v != nil {
 		h.L.WarnContext(connCtx, "bypassEmptyTsReplacement is not supported by DocumentDB yet", slog.Any("value", v))
 		doc.Remove("bypassEmptyTsReplacement")
+		spec = must.NotFail(doc.Encode())
 	}
 
 	var res wirebson.RawDocument

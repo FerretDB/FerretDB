@@ -24,6 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // MsgFindAndModify implements `findAndModify` command.
@@ -54,6 +55,7 @@ func (h *Handler) MsgFindAndModify(connCtx context.Context, req *middleware.Requ
 	if v := doc.Get("bypassEmptyTsReplacement"); v != nil {
 		h.L.WarnContext(connCtx, "bypassEmptyTsReplacement is not supported by DocumentDB yet", slog.Any("value", v))
 		doc.Remove("bypassEmptyTsReplacement")
+		spec = must.NotFail(doc.Encode())
 	}
 
 	var res wirebson.RawDocument
