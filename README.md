@@ -60,8 +60,8 @@ Run this command to start FerretDB with PostgreSQL, ensure to update `<username>
 
 ```sh
 docker run -d --rm --name ferretdb -p 27017:27017 --platform linux/amd64 \
-  --env POSTGRES_USER=<username> \
-  --env POSTGRES_PASSWORD=<password> \
+  -e POSTGRES_USER=<username> \
+  -e POSTGRES_PASSWORD=<password> \
   ghcr.io/ferretdb/ferretdb-eval:2
 ```
 

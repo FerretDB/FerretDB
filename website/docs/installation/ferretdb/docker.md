@@ -7,9 +7,9 @@ description: How to set up FerretDB using Docker
 
 We provide Docker images for various deployments:
 
+- Evaluation images for quick testing and experiments.
 - Production image for stable and optimized deployments.
 - Development image for debugging problems.
-- Evaluation images for quick testing and experiments.
 
 The evaluation images are documented [separately](../evaluation.md).
 The rest are covered below.
