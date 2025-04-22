@@ -80,7 +80,6 @@ linters-settings:
         pkg: ^\Qgithub.com/jackc/pgx/v5/pgxpool\E$
         msg: Use `Acquire` with `defer Release()` instead.
 
-      # integration tests use a different configuration file
       - p: ^\Qbson.E\E$
         pkg: ^\Qgo.mongodb.org/mongo-driver/v2/bson\E$
         msg: Use `*wirebson.Document` or `*wirebson.Array` instead.
