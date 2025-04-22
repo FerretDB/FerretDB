@@ -82,7 +82,7 @@
         "id": {
           "$numberLong": "0"
         },
-        "ns": "db.books"
+        "ns": "{{.Database}}.books"
       },
       "ok": {
         "$numberDouble": "1.0"
@@ -150,7 +150,7 @@
         "id": {
           "$numberLong": "0"
         },
-        "ns": "db.books",
+        "ns": "{{.Database}}.books",
         "firstBatch": [
           {
             "_id": "moby_dick_1851",

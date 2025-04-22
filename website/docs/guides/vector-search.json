@@ -249,7 +249,7 @@
       "ok": {
         "$numberDouble": "0.0"
       },
-      "ns": "db.books",
+      "ns": "{{.Database}}.books",
       "firstBatch": [
         {
           "_id": "moby_dick_1851",
@@ -439,7 +439,7 @@
       "ok": {
         "$numberDouble": "0.0"
       },
-      "ns": "db.books",
+      "ns": "{{.Database}}.books",
       "firstBatch": [
         {
           "_id": "frankenstein_1818",
