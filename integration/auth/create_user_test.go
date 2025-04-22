@@ -20,9 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 
 	"github.com/FerretDB/FerretDB/v2/integration"
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
@@ -320,7 +319,7 @@ func TestCreateUserCommand(t *testing.T) {
 				for _, u := range v.Value.(bson.A)[0].(bson.D) {
 					switch u.Key {
 					case "userId":
-						uuid, ok := u.Value.(bsonprimitive.Binary)
+						uuid, ok := u.Value.(bson.Binary)
 						assert.True(t, ok, "userId is not a primitive.Binary")
 						assert.Equal(t, bson.TypeBinaryUUID, uuid.Subtype, "uuid subtype")
 						assert.Equal(t, 16, len(uuid.Data), "UUID length")

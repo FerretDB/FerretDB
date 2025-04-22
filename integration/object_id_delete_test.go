@@ -19,9 +19,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
 )
@@ -56,13 +55,13 @@ func TestSmokeObjectIDBinary(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
-	id, err := bsonprimitive.ObjectIDFromHex("62e7d8a3d23915343c4a5f3a")
+	id, err := bson.ObjectIDFromHex("62e7d8a3d23915343c4a5f3a")
 	require.NoError(t, err)
 
 	// Insert, update, delete a document with a "proper" ObjectID.
 	ins, err := collection.InsertOne(ctx, bson.D{{"_id", id}, {"string_value", "foo_2"}})
 	require.NoError(t, err)
-	insID := ins.InsertedID.(bsonprimitive.ObjectID)
+	insID := ins.InsertedID.(bson.ObjectID)
 	require.Equal(t, id, insID)
 
 	up, err := collection.UpdateOne(ctx, bson.D{{"_id", id}}, bson.D{{"$set", bson.D{{"string_value", "bar_2"}}}})

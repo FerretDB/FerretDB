@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"testing"
 
-	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
@@ -204,7 +203,7 @@ func TestUpdateArrayCompatPop(t *testing.T) {
 				{provider: shareddata.ArrayAndDocuments, ids: []string{"array-documents", "array-documents-two-fields", "document"}},
 				{
 					provider: shareddata.DocumentsDocuments,
-					ids:      []string{fmt.Sprint(bsonprimitive.ObjectID{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01})},
+					ids:      []string{fmt.Sprint(bson.ObjectID{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01})},
 				},
 				{provider: shareddata.ArrayStrings},
 				{provider: shareddata.ArrayDoubles},

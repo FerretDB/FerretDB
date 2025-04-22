@@ -19,7 +19,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 
@@ -51,7 +50,7 @@ func TestHello(tt *testing.T) {
 		case "connectionId":
 			assert.IsType(t, int32(0), field.Value)
 		case "localTime":
-			assert.IsType(t, bsonprimitive.DateTime(0), field.Value)
+			assert.IsType(t, bson.DateTime(0), field.Value)
 		default:
 			actualComparable = append(actualComparable, field)
 		}
@@ -171,7 +170,7 @@ func TestHelloWithSupportedMechs(t *testing.T) {
 				case "connectionId":
 					assert.IsType(t, int32(0), field.Value)
 				case "localTime":
-					assert.IsType(t, bsonprimitive.DateTime(0), field.Value)
+					assert.IsType(t, bson.DateTime(0), field.Value)
 				case "saslSupportedMechs":
 					// the order of mechanisms is not guaranteed
 					assert.ElementsMatch(t, tc.mechs, field.Value)

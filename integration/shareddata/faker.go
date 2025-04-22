@@ -20,7 +20,7 @@ import (
 	"strconv"
 	"time"
 
-	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
@@ -239,8 +239,8 @@ func (f *faker) FieldName() string {
 }
 
 // ObjectID generates a random non-zero ObjectID.
-func (f *faker) ObjectID() bsonprimitive.ObjectID {
-	var id bsonprimitive.ObjectID
+func (f *faker) ObjectID() bson.ObjectID {
+	var id bson.ObjectID
 	for id.IsZero() {
 		must.NotFail(f.r.Read(id[:]))
 	}
@@ -262,7 +262,7 @@ func (f *faker) ScalarValue() any {
 		case 0x02: // String
 			return words[f.r.Intn(len(words))]
 		case 0x05: // Binary
-			return bsonprimitive.Binary{Subtype: 0x00, Data: wordsB[f.r.Intn(len(wordsB))]}
+			return bson.Binary{Subtype: 0x00, Data: wordsB[f.r.Intn(len(wordsB))]}
 		case 0x07: // ObjectID
 			return f.ObjectID()
 		case 0x08: // Bool
@@ -280,7 +280,7 @@ func (f *faker) ScalarValue() any {
 		case 0x12: // Int64
 			return int64(f.r.Uint64())
 		case 0x13: // Decimal
-			return bsonprimitive.NewDecimal128(f.r.Uint64(), f.r.Uint64())
+			return bson.NewDecimal128(f.r.Uint64(), f.r.Uint64())
 		default:
 		}
 	}

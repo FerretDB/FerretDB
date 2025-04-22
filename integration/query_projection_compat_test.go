@@ -19,7 +19,6 @@ import (
 	"testing"
 	"time"
 
-	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
@@ -110,16 +109,16 @@ func TestQueryProjectionCompat(t *testing.T) {
 		},
 		"Assign1Field": {
 			filter:     bson.D{},
-			projection: bson.D{{"foo", bsonprimitive.NewObjectID()}},
+			projection: bson.D{{"foo", bson.NewObjectID()}},
 		},
 		"AssignID": {
 			filter:      bson.D{},
-			projection:  bson.D{{"_id", bsonprimitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}},
+			projection:  bson.D{{"_id", bson.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}},
 			skipIDCheck: true,
 		},
 		"Assign1FieldIncludeID": {
 			filter:     bson.D{},
-			projection: bson.D{{"_id", true}, {"foo", bsonprimitive.NewDateTimeFromTime(time.Unix(0, 0))}},
+			projection: bson.D{{"_id", true}, {"foo", bson.NewDateTimeFromTime(time.Unix(0, 0))}},
 		},
 		"Assign2FieldsIncludeID": {
 			filter:     bson.D{},
@@ -127,7 +126,7 @@ func TestQueryProjectionCompat(t *testing.T) {
 		},
 		"Assign1FieldExcludeID": {
 			filter:      bson.D{},
-			projection:  bson.D{{"_id", false}, {"foo", bsonprimitive.Regex{Pattern: "^fo"}}},
+			projection:  bson.D{{"_id", false}, {"foo", bson.Regex{Pattern: "^fo"}}},
 			skipIDCheck: true,
 		},
 		"DotNotationInclude": {

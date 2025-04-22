@@ -19,7 +19,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -42,7 +41,7 @@ func TestQueryArrayDotNotation(t *testing.T) {
 		"FieldPositionQueryRegex": {
 			// Move to compat.
 			// TODO https://github.com/FerretDB/FerretDB/issues/1540
-			filter: bson.D{{"v.array.0", bson.D{{"$lt", bsonprimitive.Regex{Pattern: "^$"}}}}},
+			filter: bson.D{{"v.array.0", bson.D{{"$lt", bson.Regex{Pattern: "^$"}}}}},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",

@@ -17,7 +17,6 @@ package integration
 import (
 	"testing"
 
-	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
@@ -205,12 +204,12 @@ func TestQueryLogicalCompatNot(t *testing.T) {
 		},
 		"ValueRegex": {
 			filter: bson.D{{
-				"v", bson.D{{"$not", bsonprimitive.Regex{Pattern: "^fo"}}},
+				"v", bson.D{{"$not", bson.Regex{Pattern: "^fo"}}},
 			}},
 		},
 		"NoSuchFieldRegex": {
 			filter: bson.D{{
-				"no-such-field", bson.D{{"$not", bsonprimitive.Regex{Pattern: "/someregex/"}}},
+				"no-such-field", bson.D{{"$not", bson.Regex{Pattern: "/someregex/"}}},
 			}},
 		},
 		"NestedNot": {

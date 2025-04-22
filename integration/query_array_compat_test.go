@@ -18,7 +18,6 @@ import (
 	"math"
 	"testing"
 
-	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
@@ -83,7 +82,7 @@ func TestQueryArrayCompatDotNotation(t *testing.T) {
 			filter: bson.D{{"v.0", bson.D{{"$type", "null"}}}},
 		},
 		"PositionRegex": {
-			filter: bson.D{{"v.1", bsonprimitive.Regex{Pattern: "foo"}}},
+			filter: bson.D{{"v.1", bson.Regex{Pattern: "foo"}}},
 		},
 		"NoSuchFieldPosition": {
 			filter:     bson.D{{"v.some.0", bson.A{42}}},
