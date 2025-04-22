@@ -142,12 +142,12 @@ func newPgxPoolCheckConn(ctx context.Context, conn *pgx.Conn, l *slog.Logger, sp
 		}
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/4997
+	// TODO https://github.com/FerretDB/FerretDB/issues/5085
+
 	if _, err := conn.Exec(ctx, "SET documentdb.enableUserCrud TO true"); err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/4997
 	if _, err := conn.Exec(ctx, "SET documentdb.maxUserLimit TO 100"); err != nil {
 		return lazyerrors.Error(err)
 	}
