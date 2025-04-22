@@ -29,7 +29,7 @@ import (
 // MsgUpdate implements `update` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgUpdate(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+func (h *Handler) msgUpdate(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	doc, spec, seq, err := req.OpMsg.Sections()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

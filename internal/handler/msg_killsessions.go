@@ -27,7 +27,7 @@ import (
 // MsgKillSessions implements `killSessions` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgKillSessions(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+func (h *Handler) msgKillSessions(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

@@ -27,7 +27,7 @@ import (
 // MsgWhatsMyURI implements `whatsMyURI` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgWhatsMyURI(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+func (h *Handler) msgWhatsMyURI(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

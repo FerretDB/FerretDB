@@ -29,7 +29,7 @@ import (
 // MsgInsert implements `insert` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgInsert(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+func (h *Handler) msgInsert(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	doc, spec, seq, err := req.OpMsg.Sections()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

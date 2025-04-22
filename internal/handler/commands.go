@@ -45,7 +45,7 @@ func (h *Handler) initCommands() {
 	commands := map[string]*command{
 		// sorted alphabetically
 		"aggregate": {
-			Handler: h.MsgAggregate,
+			Handler: h.msgAggregate,
 			Help:    "Returns aggregated data.",
 		},
 		"authenticate": {
@@ -54,12 +54,12 @@ func (h *Handler) initCommands() {
 			Help:      "", // hidden while not implemented
 		},
 		"buildInfo": {
-			Handler:   h.MsgBuildInfo,
+			Handler:   h.msgBuildInfo,
 			anonymous: true,
 			Help:      "Returns a summary of the build information.",
 		},
 		"buildinfo": { // old lowercase variant
-			Handler:   h.MsgBuildInfo,
+			Handler:   h.msgBuildInfo,
 			anonymous: true,
 			Help:      "", // hidden
 		},
@@ -69,15 +69,15 @@ func (h *Handler) initCommands() {
 			Help: "", // hidden while not implemented
 		},
 		"collMod": {
-			Handler: h.MsgCollMod,
+			Handler: h.msgCollMod,
 			Help:    "Adds options to a collection or modify view definitions.",
 		},
 		"collStats": {
-			Handler: h.MsgCollStats,
+			Handler: h.msgCollStats,
 			Help:    "Returns storage data for a collection.",
 		},
 		"compact": {
-			Handler: h.MsgCompact,
+			Handler: h.msgCompact,
 			Help:    "Reduces the disk space collection takes and refreshes its statistics.",
 		},
 		"connPoolStats": {
@@ -86,232 +86,232 @@ func (h *Handler) initCommands() {
 			Help:      "", // hidden while not implemented
 		},
 		"connectionStatus": {
-			Handler:   h.MsgConnectionStatus,
+			Handler:   h.msgConnectionStatus,
 			anonymous: true,
 			Help: "Returns information about the current connection, " +
 				"specifically the state of authenticated users and their available permissions.",
 		},
 		"count": {
-			Handler: h.MsgCount,
+			Handler: h.msgCount,
 			Help:    "Returns the count of documents that's matched by the query.",
 		},
 		"create": {
-			Handler: h.MsgCreate,
+			Handler: h.msgCreate,
 			Help:    "Creates the collection.",
 		},
 		"createIndexes": {
-			Handler: h.MsgCreateIndexes,
+			Handler: h.msgCreateIndexes,
 			Help:    "Creates indexes on a collection.",
 		},
 		"createUser": {
-			Handler: h.MsgCreateUser,
+			Handler: h.msgCreateUser,
 			Help:    "Creates a new user.",
 		},
 		"currentOp": {
-			Handler: h.MsgCurrentOp,
+			Handler: h.msgCurrentOp,
 			Help:    "Returns information about operations currently in progress.",
 		},
 		"dataSize": {
-			Handler: h.MsgDataSize,
+			Handler: h.msgDataSize,
 			Help:    "Returns the size of the collection in bytes.",
 		},
 		"dbStats": {
-			Handler: h.MsgDBStats,
+			Handler: h.msgDBStats,
 			Help:    "Returns the statistics of the database.",
 		},
 		"dbstats": { // old lowercase variant
-			Handler: h.MsgDBStats,
+			Handler: h.msgDBStats,
 			Help:    "", // hidden
 		},
 		"delete": {
-			Handler: h.MsgDelete,
+			Handler: h.msgDelete,
 			Help:    "Deletes documents matched by the query.",
 		},
 		"distinct": {
-			Handler: h.MsgDistinct,
+			Handler: h.msgDistinct,
 			Help:    "Returns an array of distinct values for the given field.",
 		},
 		"drop": {
-			Handler: h.MsgDrop,
+			Handler: h.msgDrop,
 			Help:    "Drops the collection.",
 		},
 		"dropAllUsersFromDatabase": {
-			Handler: h.MsgDropAllUsersFromDatabase,
+			Handler: h.msgDropAllUsersFromDatabase,
 			Help:    "Drops all user from database.",
 		},
 		"dropDatabase": {
-			Handler: h.MsgDropDatabase,
+			Handler: h.msgDropDatabase,
 			Help:    "Drops production database.",
 		},
 		"dropIndexes": {
-			Handler: h.MsgDropIndexes,
+			Handler: h.msgDropIndexes,
 			Help:    "Drops indexes on a collection.",
 		},
 		"dropUser": {
-			Handler: h.MsgDropUser,
+			Handler: h.msgDropUser,
 			Help:    "Drops user.",
 		},
 		"endSessions": {
-			Handler: h.MsgEndSessions,
+			Handler: h.msgEndSessions,
 			Help:    "Marks sessions as expired.",
 		},
 		"explain": {
-			Handler: h.MsgExplain,
+			Handler: h.msgExplain,
 			Help:    "Returns the execution plan.",
 		},
 		"ferretDebugError": {
-			Handler: h.MsgFerretDebugError,
+			Handler: h.msgFerretDebugError,
 			Help:    "Returns error for debugging.",
 		},
 		"find": {
-			Handler: h.MsgFind,
+			Handler: h.msgFind,
 			Help:    "Returns documents matched by the query.",
 		},
 		"findAndModify": {
-			Handler: h.MsgFindAndModify,
+			Handler: h.msgFindAndModify,
 			Help:    "Updates or deletes, and returns a document matched by the query.",
 		},
 		"findandmodify": { // old lowercase variant
-			Handler: h.MsgFindAndModify,
+			Handler: h.msgFindAndModify,
 			Help:    "", // hidden
 		},
 		"getCmdLineOpts": {
-			Handler: h.MsgGetCmdLineOpts,
+			Handler: h.msgGetCmdLineOpts,
 			Help:    "Returns a summary of all runtime and configuration options.",
 		},
 		"getFreeMonitoringStatus": {
-			Handler: h.MsgGetFreeMonitoringStatus,
+			Handler: h.msgGetFreeMonitoringStatus,
 			Help:    "Returns a status of the free monitoring.",
 		},
 		"getLog": {
-			Handler: h.MsgGetLog,
+			Handler: h.msgGetLog,
 			Help:    "Returns the most recent logged events from memory.",
 		},
 		"getMore": {
-			Handler: h.MsgGetMore,
+			Handler: h.msgGetMore,
 			Help:    "Returns the next batch of documents from a cursor.",
 		},
 		"getParameter": {
-			Handler: h.MsgGetParameter,
+			Handler: h.msgGetParameter,
 			Help:    "Returns the value of the parameter.",
 		},
 		"hello": {
-			Handler:   h.MsgHello,
+			Handler:   h.msgHello,
 			anonymous: true,
 			Help:      "Returns the role of the FerretDB instance.",
 		},
 		"hostInfo": {
-			Handler: h.MsgHostInfo,
+			Handler: h.msgHostInfo,
 			Help:    "Returns a summary of the system information.",
 		},
 		"insert": {
-			Handler: h.MsgInsert,
+			Handler: h.msgInsert,
 			Help:    "Inserts documents into the database.",
 		},
 		"isMaster": {
-			Handler:   h.MsgIsMaster,
+			Handler:   h.msgIsMaster,
 			anonymous: true,
 			Help:      "Returns the role of the FerretDB instance.",
 		},
 		"ismaster": { // old lowercase variant
-			Handler:   h.MsgIsMaster,
+			Handler:   h.msgIsMaster,
 			anonymous: true,
 			Help:      "", // hidden
 		},
 		"killAllSessions": {
-			Handler: h.MsgKillAllSessions,
+			Handler: h.msgKillAllSessions,
 			Help:    "Kills all sessions.",
 		},
 		"killAllSessionsByPattern": {
-			Handler: h.MsgKillAllSessionsByPattern,
+			Handler: h.msgKillAllSessionsByPattern,
 			Help:    "Kills all sessions that match the pattern.",
 		},
 		"killCursors": {
-			Handler: h.MsgKillCursors,
+			Handler: h.msgKillCursors,
 			Help:    "Closes server cursors.",
 		},
 		"killSessions": {
-			Handler: h.MsgKillSessions,
+			Handler: h.msgKillSessions,
 			Help:    "Kills sessions.",
 		},
 		"listCollections": {
-			Handler: h.MsgListCollections,
+			Handler: h.msgListCollections,
 			Help:    "Returns the information of the collections and views in the database.",
 		},
 		"listCommands": {
-			Handler: h.MsgListCommands,
+			Handler: h.msgListCommands,
 			Help:    "Returns a list of currently supported commands.",
 		},
 		"listDatabases": {
-			Handler: h.MsgListDatabases,
+			Handler: h.msgListDatabases,
 			Help:    "Returns a summary of all the databases.",
 		},
 		"listIndexes": {
-			Handler: h.MsgListIndexes,
+			Handler: h.msgListIndexes,
 			Help:    "Returns a summary of indexes of the specified collection.",
 		},
 		"logout": {
-			Handler:   h.MsgLogout,
+			Handler:   h.msgLogout,
 			anonymous: true,
 			Help:      "Logs out from the current session.",
 		},
 		"ping": {
-			Handler:   h.MsgPing,
+			Handler:   h.msgPing,
 			anonymous: true,
 			Help:      "Returns a pong response.",
 		},
 		"refreshSessions": {
-			Handler: h.MsgRefreshSessions,
+			Handler: h.msgRefreshSessions,
 			Help:    "Updates the last used time of sessions.",
 		},
 		"reIndex": {
-			Handler: h.MsgReIndex,
+			Handler: h.msgReIndex,
 			Help:    "Drops and recreates all indexes except default _id index of a collection.",
 		},
 		"renameCollection": {
-			Handler: h.MsgRenameCollection,
+			Handler: h.msgRenameCollection,
 			Help:    "Changes the name of an existing collection.",
 		},
 		"saslStart": {
-			Handler:   h.MsgSASLStart,
+			Handler:   h.msgSASLStart,
 			anonymous: true,
 			Help:      "", // hidden
 		},
 		"saslContinue": {
-			Handler:   h.MsgSASLContinue,
+			Handler:   h.msgSASLContinue,
 			anonymous: true,
 			Help:      "", // hidden
 		},
 		"serverStatus": {
-			Handler: h.MsgServerStatus,
+			Handler: h.msgServerStatus,
 			Help:    "Returns an overview of the databases state.",
 		},
 		"setFreeMonitoring": {
-			Handler: h.MsgSetFreeMonitoring,
+			Handler: h.msgSetFreeMonitoring,
 			Help:    "Toggles free monitoring.",
 		},
 		"startSession": {
-			Handler: h.MsgStartSession,
+			Handler: h.msgStartSession,
 			Help:    "Returns a session.",
 		},
 		"update": {
-			Handler: h.MsgUpdate,
+			Handler: h.msgUpdate,
 			Help:    "Updates documents that are matched by the query.",
 		},
 		"updateUser": {
-			Handler: h.MsgUpdateUser,
+			Handler: h.msgUpdateUser,
 			Help:    "Updates user.",
 		},
 		"usersInfo": {
-			Handler: h.MsgUsersInfo,
+			Handler: h.msgUsersInfo,
 			Help:    "Returns information about users.",
 		},
 		"validate": {
-			Handler: h.MsgValidate,
+			Handler: h.msgValidate,
 			Help:    "Validates collection.",
 		},
 		"whatsmyuri": {
-			Handler:   h.MsgWhatsMyURI,
+			Handler:   h.msgWhatsMyURI,
 			anonymous: true,
 			Help:      "Returns peer information.",
 		},

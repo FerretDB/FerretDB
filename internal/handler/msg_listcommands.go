@@ -29,7 +29,7 @@ import (
 // MsgListCommands implements `listCommands` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgListCommands(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+func (h *Handler) msgListCommands(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

@@ -26,7 +26,7 @@ import (
 // MsgGetMore implements `getMore` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgGetMore(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+func (h *Handler) msgGetMore(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

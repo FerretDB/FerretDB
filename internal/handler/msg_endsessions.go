@@ -26,7 +26,7 @@ import (
 // MsgEndSessions implements `endSessions` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgEndSessions(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+func (h *Handler) msgEndSessions(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

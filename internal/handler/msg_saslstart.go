@@ -35,7 +35,7 @@ import (
 // MsgSASLStart implements `saslStart` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgSASLStart(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+func (h *Handler) msgSASLStart(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
