@@ -23,10 +23,10 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgGetFreeMonitoringStatus implements `getFreeMonitoringStatus` command.
+// msgGetFreeMonitoringStatus implements `getFreeMonitoringStatus` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgGetFreeMonitoringStatus(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) { //nolint:lll // for readability
+func (h *Handler) msgGetFreeMonitoringStatus(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) { //nolint:lll // for readability
 	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
