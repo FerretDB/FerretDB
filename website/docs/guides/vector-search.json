@@ -135,7 +135,8 @@
             }
           ]
         }
-      ]
+      ],
+      "$db": "{{.Database}}"
     },
     "response": {
       "n": {
@@ -169,7 +170,8 @@
             }
           }
         }
-      ]
+      ],
+      "$db": "{{.Database}}"
     },
     "response": {
       "numIndexesBefore": {
@@ -240,7 +242,8 @@
           }
         }
       ],
-      "cursor": {}
+      "cursor": {},
+      "$db": "{{.Database}}"
     },
     "response": {
       "ok": {
@@ -359,7 +362,8 @@
             }
           }
         }
-      ]
+      ],
+      "$db": "{{.Database}}"
     },
     "response": {
       "numIndexesBefore": {
@@ -428,7 +432,8 @@
           }
         }
       ],
-      "cursor": {}
+      "cursor": {},
+      "$db": "{{.Database}}"
     },
     "response": {
       "ok": {

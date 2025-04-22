@@ -21,7 +21,8 @@
           "author": "Mary Shelley",
           "summary": "Victor Frankenstein, driven by an unquenchable thirst for knowledge, creates a living being, only to face tragic consequences as his creation turns monstrous."
         }
-      ]
+      ],
+      "$db": "{{.Database}}"
     },
     "response": {
       "n": {
@@ -42,7 +43,8 @@
           },
           "name": "summary_text_index"
         }
-      ]
+      ],
+      "$db": "{{.Database}}"
     },
     "response": {
       "numIndexesBefore": {
@@ -64,7 +66,8 @@
         "$text": {
           "$search": "drama"
         }
-      }
+      },
+      "$db": "{{.Database}}"
     },
     "response": {
       "cursor": {
@@ -97,7 +100,8 @@
           },
           "name": "title_summary_text_index"
         }
-      ]
+      ],
+      "$db": "{{.Database}}"
     },
     "response": {
       "numIndexesBefore": {
@@ -138,7 +142,8 @@
         "score": {
           "$meta": "textScore"
         }
-      }
+      },
+      "$db": "{{.Database}}"
     },
     "response": {
       "cursor": {
