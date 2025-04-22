@@ -145,8 +145,8 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middlew
 		msgCmd := doc.Command()
 
 		cmd, ok := h.commands[msgCmd]
-		if ok && cmd.Handler != nil {
-			return cmd.Handler(ctx, req)
+		if ok && cmd.handler != nil {
+			return cmd.handler(ctx, req)
 		}
 
 		return notFound(msgCmd)(ctx, req)
