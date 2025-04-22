@@ -124,7 +124,6 @@ ENTRYPOINT ["entrypoint.sh"]
 HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-interval=5s \
   CMD ["/usr/local/bin/ferretdb", "ping"]
 
-WORKDIR /
 VOLUME /state
 EXPOSE 27017 27018 8088
 
