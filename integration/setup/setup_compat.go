@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.opentelemetry.io/otel"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
@@ -96,14 +96,14 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 		uri = setupListener(tb, setupCtx, nil, logger)
 	}
 
-	targetClient = setupClient(tb, setupCtx, uri, false)
+	targetClient = setupClient(tb, setupCtx, uri)
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
 	targetCollections := setupCompatCollections(tb, setupCtx, targetClient, opts, *targetBackendF)
 
-	compatClient := setupClient(tb, setupCtx, *compatURLF, false)
+	compatClient := setupClient(tb, setupCtx, *compatURLF)
 	compatCollections := setupCompatCollections(tb, setupCtx, compatClient, opts, "mongodb")
 
 	err := levelVar.UnmarshalText([]byte(*logLevelF))

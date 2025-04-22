@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/util/debug"
@@ -137,7 +137,7 @@ func Startup() {
 
 		var client *mongo.Client
 
-		client, err = makeClient(clientCtx, *targetURLF, false)
+		client, err = makeClient(*targetURLF)
 		if err != nil {
 			l.LogAttrs(ctx, logging.LevelFatal, "Failed to connect to target system", slog.String("target_url", *targetURLF), logging.Error(err))
 		}
@@ -157,7 +157,7 @@ func Startup() {
 
 		var client *mongo.Client
 
-		client, err = makeClient(clientCtx, *compatURLF, false)
+		client, err = makeClient(*compatURLF)
 		if err != nil {
 			l.LogAttrs(ctx, logging.LevelFatal, "Failed to connect to compat system", slog.String("compat_url", *compatURLF), logging.Error(err))
 		}

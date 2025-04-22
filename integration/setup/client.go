@@ -24,9 +24,8 @@ import (
 
 	"github.com/FerretDB/wire/wireclient"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.opentelemetry.io/otel"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
@@ -64,14 +63,10 @@ func setClientPaths(uri string) (string, error) {
 }
 
 // makeClient returns new client for the given working MongoDB URI.
-func makeClient(ctx context.Context, uri string, disableOtel bool) (*mongo.Client, error) {
+func makeClient(uri string) (*mongo.Client, error) {
 	clientOpts := options.Client().ApplyURI(uri)
 
-	if !disableOtel {
-		clientOpts.SetMonitor(otelmongo.NewMonitor(otelmongo.WithCommandAttributeDisabled(false)))
-	}
-
-	client, err := mongo.Connect(ctx, clientOpts)
+	client, err := mongo.Connect(clientOpts)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -92,7 +87,7 @@ func makeClient(ctx context.Context, uri string, disableOtel bool) (*mongo.Clien
 //
 // If the connection can't be established, it panics,
 // as it doesn't make sense to proceed with other tests if we couldn't connect in one of them.
-func setupClient(tb testing.TB, ctx context.Context, uri string, disableOtel bool) *mongo.Client {
+func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupClient")
@@ -114,7 +109,7 @@ func setupClient(tb testing.TB, ctx context.Context, uri string, disableOtel boo
 
 	u.RawQuery = q.Encode()
 
-	client, err := makeClient(ctx, u.String(), disableOtel)
+	client, err := makeClient(u.String())
 	if err != nil {
 		tb.Error(err)
 		panic("setupClient: " + err.Error())

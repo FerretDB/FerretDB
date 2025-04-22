@@ -27,9 +27,9 @@ import (
 
 	"github.com/FerretDB/wire/wireclient"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.opentelemetry.io/otel"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
@@ -99,9 +99,6 @@ type SetupOpts struct {
 	// (not counting extra connections for monitoring that are mostly idle).
 	// Zero value disables explicit pool configuration.
 	PoolSize int
-
-	// DisableOtel disable OpenTelemetry monitoring for MongoDB driver.
-	DisableOtel bool
 
 	// WireConn defines if and how wire client connection is established.
 	WireConn WireConn
@@ -194,7 +191,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 		tb.Logf("URI with extra options: %s", uri)
 	}
 
-	client := setupClient(tb, setupCtx, uri, opts.DisableOtel)
+	client := setupClient(tb, setupCtx, uri)
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)

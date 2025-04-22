@@ -32,12 +32,10 @@ func TestDiffCollectionName(t *testing.T) {
 	t.Parallel()
 
 	testcases := map[string]struct {
-		collection  string
-		disableOtel bool
+		collection string
 	}{
 		"NonUTF-8": {
-			collection:  string([]byte{0xff, 0xfe, 0xfd}),
-			disableOtel: true, // otlptracehttp can't convert non-UTF-8 collection name as protobuf string
+			collection: string([]byte{0xff, 0xfe, 0xfd}),
 		},
 	}
 
@@ -46,7 +44,7 @@ func TestDiffCollectionName(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
 
-				s := setup.SetupWithOpts(t, &setup.SetupOpts{DisableOtel: tc.disableOtel})
+				s := setup.SetupWithOpts(t, nil)
 				ctx, collection := s.Ctx, s.Collection
 
 				err := collection.Database().CreateCollection(ctx, tc.collection)
@@ -71,7 +69,7 @@ func TestDiffCollectionName(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
 
-				s := setup.SetupWithOpts(t, &setup.SetupOpts{DisableOtel: tc.disableOtel})
+				s := setup.SetupWithOpts(t, nil)
 				ctx, collection := s.Ctx, s.Collection
 
 				fromName := testutil.CollectionName(t)
