@@ -20,10 +20,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
 	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
@@ -49,7 +48,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		failsForFerretDB string
 	}{
 		"Array": {
-			value: bsonprimitive.A{1, 5},
+			value: bson.A{1, 5},
 			expectedIDs: []any{
 				"decimal128-int-zero", "decimal128-zero",
 				"double-1", "double-3",
@@ -60,7 +59,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			},
 		},
 		"ArrayNegativeBitPositionValue": {
-			value: bsonprimitive.A{int32(-1)},
+			value: bson.A{int32(-1)},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -69,7 +68,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"ArrayFloatWholeBitPositionValue": {
-			value: bsonprimitive.A{1.0},
+			value: bson.A{1.0},
 			expectedIDs: []any{
 				"decimal128-int-zero", "decimal128-zero",
 				"double-1", "double-3", "double-big",
@@ -80,7 +79,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			},
 		},
 		"ArrayFloatNotWholeBitPositionValue": {
-			value: bsonprimitive.A{1.2},
+			value: bson.A{1.2},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -89,7 +88,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/278",
 		},
 		"ArrayStringBitPositionValue": {
-			value: bsonprimitive.A{"123"},
+			value: bson.A{"123"},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -150,7 +149,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		},
 
 		"Binary": {
-			value: bsonprimitive.Binary{Data: []byte{2}},
+			value: bson.Binary{Data: []byte{2}},
 			expectedIDs: []any{
 				"decimal128-int-zero", "decimal128-zero",
 				"double-1", "double-3",
@@ -161,7 +160,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			},
 		},
 		"BinaryWithZeroBytes": {
-			value: bsonprimitive.Binary{Data: []byte{0, 0, 2}},
+			value: bson.Binary{Data: []byte{0, 0, 2}},
 			expectedIDs: []any{
 				"decimal128", "decimal128-int", "decimal128-int-zero", "decimal128-whole", "decimal128-zero",
 				"double-1", "double-2", "double-big",
@@ -172,7 +171,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			},
 		},
 		"Binary9Bytes": {
-			value: bsonprimitive.Binary{Data: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9}},
+			value: bson.Binary{Data: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9}},
 			expectedIDs: []any{
 				"decimal128", "decimal128-int", "decimal128-int-zero", "decimal128-whole", "decimal128-zero",
 				"double-big", "double-whole", "double-zero",
@@ -273,13 +272,13 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 		failsForFerretDB string
 	}{
 		"Array": {
-			value: bsonprimitive.A{1, 5},
+			value: bson.A{1, 5},
 			expectedIDs: []any{
 				"decimal128", "decimal128-double", "decimal128-int", "decimal128-whole", "double-2", "double-whole", "int32", "int32-max", "int64", "int64-max",
 			},
 		},
 		"ArrayNegativeBitPositionValue": {
-			value: bsonprimitive.A{-1},
+			value: bson.A{-1},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -288,7 +287,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"ArrayBadValue": {
-			value: bsonprimitive.A{"123"},
+			value: bson.A{"123"},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -344,13 +343,13 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 		},
 
 		"Binary": {
-			value: bsonprimitive.Binary{Data: []byte{2}},
+			value: bson.Binary{Data: []byte{2}},
 			expectedIDs: []any{
 				"decimal128", "decimal128-double", "decimal128-int", "decimal128-whole", "double-2", "double-whole", "int32", "int32-max", "int64", "int64-max",
 			},
 		},
 		"BinaryWithZeroBytes": {
-			value:       bsonprimitive.Binary{Data: []byte{0, 0, 2}},
+			value:       bson.Binary{Data: []byte{0, 0, 2}},
 			expectedIDs: []any{"decimal128-double", "double-3", "int32-2", "int32-3", "int32-max", "int64-2", "int64-3", "int64-max"},
 		},
 
@@ -435,7 +434,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		failsForFerretDB string
 	}{
 		"Array": {
-			value: bsonprimitive.A{1, 5},
+			value: bson.A{1, 5},
 			expectedIDs: []any{
 				"decimal128-int-zero", "decimal128-zero",
 				"double-1", "double-3",
@@ -447,7 +446,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 			},
 		},
 		"ArrayNegativeBitPositionValue": {
-			value: bsonprimitive.A{-1},
+			value: bson.A{-1},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -456,7 +455,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"ArrayBadValue": {
-			value: bsonprimitive.A{"123"},
+			value: bson.A{"123"},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -511,7 +510,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		},
 
 		"Binary": {
-			value: bsonprimitive.Binary{Data: []byte{2}},
+			value: bson.Binary{Data: []byte{2}},
 			expectedIDs: []any{
 				"decimal128-int-zero", "decimal128-zero",
 				"double-1", "double-3",
@@ -523,7 +522,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 			},
 		},
 		"BinaryWithZeroBytes": {
-			value: bsonprimitive.Binary{Data: []byte{0, 0, 2}},
+			value: bson.Binary{Data: []byte{0, 0, 2}},
 			expectedIDs: []any{
 				"decimal128", "decimal128-int", "decimal128-int-zero", "decimal128-whole", "decimal128-zero",
 				"double-1", "double-2",
@@ -628,7 +627,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		failsForFerretDB string
 	}{
 		"Array": {
-			value: bsonprimitive.A{1, 5},
+			value: bson.A{1, 5},
 			expectedIDs: []any{
 				"decimal128", "decimal128-double", "decimal128-int", "decimal128-whole",
 				"double-2", "double-whole",
@@ -637,7 +636,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 			},
 		},
 		"ArrayNegativeBitPositionValue": {
-			value: bsonprimitive.A{-1},
+			value: bson.A{-1},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -646,7 +645,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 		"ArrayBadValue": {
-			value: bsonprimitive.A{"123"},
+			value: bson.A{"123"},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -698,13 +697,13 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		},
 
 		"Binary": {
-			value: bsonprimitive.Binary{Data: []byte{2}},
+			value: bson.Binary{Data: []byte{2}},
 			expectedIDs: []any{
 				"decimal128", "decimal128-double", "decimal128-int", "decimal128-whole", "double-2", "double-whole", "int32", "int32-max", "int64", "int64-max",
 			},
 		},
 		"BinaryWithZeroBytes": {
-			value:       bsonprimitive.Binary{Data: []byte{0, 0, 2}},
+			value:       bson.Binary{Data: []byte{0, 0, 2}},
 			expectedIDs: []any{"decimal128-double", "double-3", "int32-2", "int32-3", "int32-max", "int64-2", "int64-3", "int64-max"},
 		},
 
