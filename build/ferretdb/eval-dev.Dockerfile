@@ -124,6 +124,8 @@ ENTRYPOINT ["entrypoint.sh"]
 HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-interval=5s \
   CMD ["/usr/local/bin/ferretdb", "ping"]
 
+WORKDIR /
+VOLUME /state
 EXPOSE 27017 27018 8088
 
 ENV GOCOVERDIR=/tmp/cover
@@ -133,7 +135,7 @@ ENV GORACE=halt_on_error=1,history_size=2
 # do not allow "trust" authentication for local connections while initializing
 # ENV POSTGRES_INITDB_ARGS="--auth=scram-sha-256"
 
-ENV FERRETDB_STATE_DIR=/tmp/state
+ENV FERRETDB_STATE_DIR=/state
 
 # don't forget to update documentation if you change defaults
 ENV FERRETDB_LISTEN_ADDR=:27017
