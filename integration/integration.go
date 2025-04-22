@@ -145,7 +145,7 @@ func fixActual(t testing.TB, actual *wirebson.Document) {
 	fixActualUpdateN(t, actual)
 }
 
-// convertDocument converts given driver's document to FerretDB's *bson.Document.
+// convertDocument converts given driver's document to FerretDB's [*wirebson.Document].
 func convertDocument(t testing.TB, doc bson.D) *wirebson.Document {
 	t.Helper()
 
@@ -157,7 +157,7 @@ func convertDocument(t testing.TB, doc bson.D) *wirebson.Document {
 	return v.(*wirebson.Document)
 }
 
-// convertDocuments converts given driver's documents slice to FerretDB's []*bson.Document.
+// convertDocuments converts given driver's documents slice to FerretDB's []*wirebson.Document.
 func convertDocuments(t testing.TB, docs []bson.D) []*wirebson.Document {
 	t.Helper()
 
