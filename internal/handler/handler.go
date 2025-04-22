@@ -51,7 +51,7 @@ const (
 
 // Handler provides a set of methods to process clients' requests sent over wire protocol.
 //
-// MsgXXX methods handle OP_MSG commands.
+// The methods msgXXX handle OP_MSG commands.
 // CmdQuery handles a limited subset of OP_QUERY messages.
 //
 // Handler instance is shared between all client connections.
@@ -145,8 +145,8 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middlew
 		msgCmd := doc.Command()
 
 		cmd, ok := h.commands[msgCmd]
-		if ok && cmd.Handler != nil {
-			return cmd.Handler(ctx, req)
+		if ok && cmd.handler != nil {
+			return cmd.handler(ctx, req)
 		}
 
 		return notFound(msgCmd)(ctx, req)
