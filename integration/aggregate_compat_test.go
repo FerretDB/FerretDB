@@ -24,7 +24,6 @@ import (
 	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -1545,7 +1544,7 @@ func TestAggregateCompatMatch(t *testing.T) {
 			pipeline: bson.A{bson.D{{"$match", bson.D{{"v", bson.A{int32(42)}}}}}},
 		},
 		"Regex": {
-			pipeline: bson.A{bson.D{{"$match", bson.D{{"v", bson.D{{"$eq", bsonprimitive.Regex{Pattern: "foo", Options: "i"}}}}}}}},
+			pipeline: bson.A{bson.D{{"$match", bson.D{{"v", bson.D{{"$eq", bson.Regex{Pattern: "foo", Options: "i"}}}}}}}},
 		},
 		"Empty": {
 			pipeline: bson.A{
@@ -2006,19 +2005,19 @@ func TestAggregateCompatProject(t *testing.T) {
 		"Assign1Field": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$project", bson.D{{"foo", bsonprimitive.NewObjectID()}}}},
+				bson.D{{"$project", bson.D{{"foo", bson.NewObjectID()}}}},
 			},
 		},
 		"AssignID": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$project", bson.D{{"_id", bsonprimitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}}}},
+				bson.D{{"$project", bson.D{{"_id", bson.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}}}},
 			},
 		},
 		"Assign1FieldIncludeID": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$project", bson.D{{"_id", true}, {"foo", bsonprimitive.NewDateTimeFromTime(time.Unix(0, 0))}}}},
+				bson.D{{"$project", bson.D{{"_id", true}, {"foo", bson.NewDateTimeFromTime(time.Unix(0, 0))}}}},
 			},
 		},
 		"Assign2FieldsIncludeID": {
@@ -2030,7 +2029,7 @@ func TestAggregateCompatProject(t *testing.T) {
 		"Assign1FieldExcludeID": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$project", bson.D{{"_id", false}, {"foo", bsonprimitive.Regex{Pattern: "^fo"}}}}},
+				bson.D{{"$project", bson.D{{"_id", false}, {"foo", bson.Regex{Pattern: "^fo"}}}}},
 			},
 		},
 		"DotNotationInclude": {
@@ -2218,7 +2217,7 @@ func TestAggregateCompatProject(t *testing.T) {
 		"TypeObjectID": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bsonprimitive.NewObjectID()}}}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.NewObjectID()}}}}}},
 			},
 		},
 		"TypeBool": {
@@ -2619,7 +2618,7 @@ func TestAggregateCompatAddFields(t *testing.T) {
 		"TypeObjectID": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bsonprimitive.NewObjectID()}}}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bson.NewObjectID()}}}}}},
 			},
 		},
 		"TypeBool": {

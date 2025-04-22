@@ -20,7 +20,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/v2/bson"
 
@@ -48,7 +47,7 @@ func TestAggregateCommandCollStats(tt *testing.T) {
 					"ns", collection.Database().Name() + "." + collection.Name(),
 				},
 				{"host", ""},
-				{"localTime", bsonprimitive.DateTime(0)},
+				{"localTime", bson.DateTime(0)},
 			},
 		},
 		"Count": {
@@ -58,7 +57,7 @@ func TestAggregateCommandCollStats(tt *testing.T) {
 					"ns", collection.Database().Name() + "." + collection.Name(),
 				},
 				{"host", ""},
-				{"localTime", bsonprimitive.DateTime(0)},
+				{"localTime", bson.DateTime(0)},
 				{"count", int32(4)},
 			},
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/534",
@@ -68,7 +67,7 @@ func TestAggregateCommandCollStats(tt *testing.T) {
 			expected: bson.D{
 				{"ns", collection.Database().Name() + "." + collection.Name()},
 				{"host", ""},
-				{"localTime", bsonprimitive.DateTime(0)},
+				{"localTime", bson.DateTime(0)},
 				{"storageStats", bson.D{
 					{"size", int32(0)},
 					{"count", int32(0)},
@@ -93,7 +92,7 @@ func TestAggregateCommandCollStats(tt *testing.T) {
 			expected: bson.D{
 				{"ns", collection.Database().Name() + "." + collection.Name()},
 				{"host", ""},
-				{"localTime", bsonprimitive.DateTime(0)},
+				{"localTime", bson.DateTime(0)},
 				{"storageStats", bson.D{
 					{"size", int32(0)},
 					{"count", int32(0)},
@@ -119,7 +118,7 @@ func TestAggregateCommandCollStats(tt *testing.T) {
 			expected: bson.D{
 				{"ns", collection.Database().Name() + "." + collection.Name()},
 				{"host", ""},
-				{"localTime", bsonprimitive.DateTime(0)},
+				{"localTime", bson.DateTime(0)},
 				{"storageStats", bson.D{
 					{"size", int32(0)},
 					{"count", int32(0)},
@@ -144,7 +143,7 @@ func TestAggregateCommandCollStats(tt *testing.T) {
 			expected: bson.D{
 				{"ns", collection.Database().Name() + "." + collection.Name()},
 				{"host", ""},
-				{"localTime", bsonprimitive.DateTime(0)},
+				{"localTime", bson.DateTime(0)},
 				{"storageStats", bson.D{
 					{"size", int32(0)},
 					{"count", int32(0)},
@@ -208,8 +207,8 @@ func TestAggregateCommandCollStats(tt *testing.T) {
 					actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: ""})
 
 				case "localTime":
-					assert.IsType(t, bsonprimitive.DateTime(0), field.Value)
-					actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: bsonprimitive.DateTime(0)})
+					assert.IsType(t, bson.DateTime(0), field.Value)
+					actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: bson.DateTime(0)})
 
 				case "storageStats":
 					storageStats := field.Value.(bson.D)
@@ -441,8 +440,8 @@ func TestAggregateCommandCollStatsIndexSizes(tt *testing.T) {
 	for _, field := range res[0] {
 		switch field.Key {
 		case "localTime":
-			assert.IsType(t, bsonprimitive.DateTime(0), field.Value)
-			resComparable = append(resComparable, bson.E{Key: field.Key, Value: bsonprimitive.DateTime(0)})
+			assert.IsType(t, bson.DateTime(0), field.Value)
+			resComparable = append(resComparable, bson.E{Key: field.Key, Value: bson.DateTime(0)})
 
 		case "storageStats":
 			storageStats := field.Value.(bson.D)
@@ -473,8 +472,8 @@ func TestAggregateCommandCollStatsIndexSizes(tt *testing.T) {
 	for _, field := range resNoScale[0] {
 		switch field.Key {
 		case "localTime":
-			assert.IsType(t, bsonprimitive.DateTime(0), field.Value)
-			resNoScaleComparable = append(resNoScaleComparable, bson.E{Key: field.Key, Value: bsonprimitive.DateTime(0)})
+			assert.IsType(t, bson.DateTime(0), field.Value)
+			resNoScaleComparable = append(resNoScaleComparable, bson.E{Key: field.Key, Value: bson.DateTime(0)})
 
 		case "storageStats":
 			storageStats := field.Value.(bson.D)
