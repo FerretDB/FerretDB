@@ -18,13 +18,11 @@ ensure to update `<username>` and `<password>`.
 docker run -d --rm --name ferretdb -p 27017:27017 --platform linux/amd64 \
   -e POSTGRES_USER=<username> \
   -e POSTGRES_PASSWORD=<password> \
+  -v ./data:/var/lib/postgresql/data \
   ghcr.io/ferretdb/ferretdb-eval:2
 ```
 
 This command will start a container with FerretDB, pre-packaged PostgreSQL with DocumentDB extension, and MongoDB Shell for quick testing and experiments.
-
-However, it is unsuitable for production use cases because it keeps all data inside and loses it on shutdown.
-See other [installation guides](..) for instructions that don't have those problems.
 
 With that container running, you can:
 
