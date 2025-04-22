@@ -16,5 +16,6 @@ db.runCommand({
       }
     }
   ],
-  cursor: {}
+  cursor: {},
+  $db: 'db'
 })

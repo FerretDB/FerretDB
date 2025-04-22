@@ -749,8 +749,8 @@ tasks:
       - bin/opendocdb-cts convert --dir=website/docs/guides website/docs/guides --db=db
 
   cts:
-      cmds:
-        - bin/opendocdb-cts run --dir=website/docs/guides --uri=mongodb://127.0.0.1:27017/cts
+    cmds:
+      - bin/opendocdb-cts run --dir=website/docs/guides --uri=mongodb://127.0.0.1:27017/cts
 
   docs:
     desc: "Format, lint and build documentation"
