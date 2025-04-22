@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
@@ -130,7 +129,7 @@ func TestCountCommandCompatErrors(t *testing.T) {
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/401",
 		},
 		"CollectionArray": {
-			collectionName: bsonprimitive.A{},
+			collectionName: bson.A{},
 			command: bson.D{
 				{"query", bson.D{}},
 			},
@@ -144,14 +143,14 @@ func TestCountCommandCompatErrors(t *testing.T) {
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/401",
 		},
 		"CollectionBinary": {
-			collectionName: bsonprimitive.Binary{},
+			collectionName: bson.Binary{},
 			command: bson.D{
 				{"query", bson.D{}},
 			},
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/401",
 		},
 		"CollectionObjectID": {
-			collectionName: bsonprimitive.ObjectID{},
+			collectionName: bson.ObjectID{},
 			command: bson.D{
 				{"query", bson.D{}},
 			},
@@ -178,7 +177,7 @@ func TestCountCommandCompatErrors(t *testing.T) {
 			},
 		},
 		"CollectionRegex": {
-			collectionName: bsonprimitive.Regex{Pattern: "/foo/"},
+			collectionName: bson.Regex{Pattern: "/foo/"},
 			command: bson.D{
 				{"query", bson.D{}},
 			},
@@ -192,7 +191,7 @@ func TestCountCommandCompatErrors(t *testing.T) {
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/401",
 		},
 		"CollectionTimestamp": {
-			collectionName: bsonprimitive.Timestamp{},
+			collectionName: bson.Timestamp{},
 			command: bson.D{
 				{"query", bson.D{}},
 			},

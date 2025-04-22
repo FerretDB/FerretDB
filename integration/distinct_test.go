@@ -20,7 +20,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/v2/bson"
 
@@ -161,8 +160,8 @@ func TestDistinctDuplicatesDecimal128(t *testing.T) {
 	ctx, coll := setup.Setup(t)
 
 	docs := []any{
-		bson.D{{"v", must.NotFail(bsonprimitive.ParseDecimal128("42"))}},
-		bson.D{{"v", must.NotFail(bsonprimitive.ParseDecimal128("42.0"))}},
+		bson.D{{"v", must.NotFail(bson.ParseDecimal128("42"))}},
+		bson.D{{"v", must.NotFail(bson.ParseDecimal128("42.0"))}},
 	}
 
 	expected := []any{float64(42)}
@@ -174,7 +173,7 @@ func TestDistinctDuplicatesDecimal128(t *testing.T) {
 	require.NoError(t, err)
 
 	for i, v := range distinct {
-		value, ok := v.(bsonprimitive.Decimal128)
+		value, ok := v.(bson.Decimal128)
 		require.True(t, ok)
 
 		var floatValue float64

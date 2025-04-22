@@ -20,7 +20,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
@@ -144,7 +143,7 @@ func TestCountCompat(t *testing.T) {
 			optSkip: 0,
 		},
 		"IDObjectID": {
-			filter:  bson.D{{"_id", bsonprimitive.NilObjectID}},
+			filter:  bson.D{{"_id", bson.NilObjectID}},
 			optSkip: 0,
 		},
 		"IDNotExists": {

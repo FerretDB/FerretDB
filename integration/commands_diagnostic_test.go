@@ -21,7 +21,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -274,8 +273,8 @@ func TestHostInfoCommand(t *testing.T) {
 			for _, subElem := range elem.Value.(bson.D) {
 				switch subElem.Key {
 				case "currentTime":
-					assert.IsType(t, bsonprimitive.DateTime(0), subElem.Value)
-					elemForComparsion = append(elemForComparsion, bson.E{"currentTime", bsonprimitive.DateTime(0)})
+					assert.IsType(t, bson.DateTime(0), subElem.Value)
+					elemForComparsion = append(elemForComparsion, bson.E{"currentTime", bson.DateTime(0)})
 
 				case "hostname", "cpuArch":
 					assert.IsType(t, "", subElem.Value)
@@ -323,7 +322,7 @@ func TestHostInfoCommand(t *testing.T) {
 
 	expected := bson.D{
 		{"system", bson.D{
-			{"currentTime", bsonprimitive.DateTime(0)},
+			{"currentTime", bson.DateTime(0)},
 			{"hostname", ""},
 			{"cpuAddrSize", int32(0)},
 			{"numCores", int32(0)},
@@ -413,14 +412,14 @@ func TestValidateCommand(t *testing.T) {
 		err := collection.Database().RunCommand(ctx, command).Decode(&res)
 		require.NoError(t, err)
 
-		var uuid bsonprimitive.Binary
+		var uuid bson.Binary
 
 		for _, elem := range res {
 			if elem.Key != "uuid" {
 				continue
 			}
 
-			uuid = elem.Value.(bsonprimitive.Binary)
+			uuid = elem.Value.(bson.Binary)
 			require.Equal(t, bson.TypeBinaryUUID, uuid.Subtype)
 			require.Equal(t, 16, len(uuid.Data))
 
@@ -464,14 +463,14 @@ func TestValidateCommand(t *testing.T) {
 		err = collection.Database().RunCommand(ctx, command).Decode(&res)
 		require.NoError(t, err)
 
-		var uuid bsonprimitive.Binary
+		var uuid bson.Binary
 
 		for _, elem := range res {
 			if elem.Key != "uuid" {
 				continue
 			}
 
-			uuid = elem.Value.(bsonprimitive.Binary)
+			uuid = elem.Value.(bson.Binary)
 			require.Equal(t, bson.TypeBinaryUUID, uuid.Subtype)
 			require.Equal(t, 16, len(uuid.Data))
 
