@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/bson"
 
@@ -671,10 +671,10 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 			resultType: EmptyResult,
 		},
 		"DateTime": {
-			update: bson.D{{"$max", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 12, 18, 42, 123000000, time.UTC))}}}},
+			update: bson.D{{"$max", bson.D{{"v", bsonprimitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 12, 18, 42, 123000000, time.UTC))}}}},
 		},
 		"DateTimeLower": {
-			update: bson.D{{"$max", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 3, 18, 42, 123000000, time.UTC))}}}},
+			update: bson.D{{"$max", bson.D{{"v", bsonprimitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 3, 18, 42, 123000000, time.UTC))}}}},
 		},
 		"ArrayEmpty": {
 			update: bson.D{{"$max", bson.D{{"v", bson.A{}}}}},
@@ -901,10 +901,10 @@ func TestUpdateFieldCompatMin(t *testing.T) {
 			resultType: EmptyResult,
 		},
 		"DateTime": {
-			update: bson.D{{"$min", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 12, 18, 42, 123000000, time.UTC))}}}},
+			update: bson.D{{"$min", bson.D{{"v", bsonprimitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 12, 18, 42, 123000000, time.UTC))}}}},
 		},
 		"DateTimeLower": {
-			update: bson.D{{"$min", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 3, 18, 42, 123000000, time.UTC))}}}},
+			update: bson.D{{"$min", bson.D{{"v", bsonprimitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 3, 18, 42, 123000000, time.UTC))}}}},
 		},
 		"ArrayEmpty": {
 			update: bson.D{{"$min", bson.D{{"v", bson.A{}}}}},
@@ -1110,7 +1110,7 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 			resultType: EmptyResult,
 		},
 		"InvalidDoc": {
-			update:     bson.D{{"$rename", primitive.D{}}},
+			update:     bson.D{{"$rename", bsonprimitive.D{}}},
 			resultType: EmptyResult,
 		},
 		"DotNotationDocumentMove": {
@@ -1516,7 +1516,7 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			}{
 				{
 					provider: shareddata.DocumentsDocuments,
-					ids:      []string{fmt.Sprint(primitive.ObjectID{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01})},
+					ids:      []string{fmt.Sprint(bsonprimitive.ObjectID{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01})},
 				},
 				{provider: shareddata.Composites, ids: []string{"document"}},
 				{provider: shareddata.ArrayAndDocuments, ids: []string{"document"}},
@@ -1527,49 +1527,49 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			update: bson.D{{"$set", bson.D{{"foo", int32(42)}, {"bar", "baz"}}}},
 		},
 		"Binary": {
-			update: bson.D{{"$set", bson.D{{"v", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}}}},
+			update: bson.D{{"$set", bson.D{{"v", bsonprimitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}}}},
 		},
 		"BinaryGenericSubtype": {
-			update: bson.D{{"$set", bson.D{{"v", primitive.Binary{Subtype: 0x00, Data: []byte{42, 0, 13}}}}}},
+			update: bson.D{{"$set", bson.D{{"v", bsonprimitive.Binary{Subtype: 0x00, Data: []byte{42, 0, 13}}}}}},
 		},
 		"BinaryEmpty": {
-			update: bson.D{{"$set", bson.D{{"v", primitive.Binary{Data: []byte{}}}}}},
+			update: bson.D{{"$set", bson.D{{"v", bsonprimitive.Binary{Data: []byte{}}}}}},
 		},
 		"ObjectID": {
-			update: bson.D{{"$set", bson.D{{"v", must.NotFail(primitive.ObjectIDFromHex("000102030405060708091011"))}}}},
+			update: bson.D{{"$set", bson.D{{"v", must.NotFail(bsonprimitive.ObjectIDFromHex("000102030405060708091011"))}}}},
 		},
 		"ObjectIDEmpty": {
-			update: bson.D{{"$set", bson.D{{"v", primitive.NilObjectID}}}},
+			update: bson.D{{"$set", bson.D{{"v", bsonprimitive.NilObjectID}}}},
 		},
 		"Bool": {
 			update: bson.D{{"$set", bson.D{{"v", true}}}},
 		},
 		"Datetime": {
-			update: bson.D{{"$set", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}}}},
+			update: bson.D{{"$set", bson.D{{"v", bsonprimitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}}}},
 		},
 		"DatetimeNanoSecDiff": {
-			update: bson.D{{"$set", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000001, time.UTC))}}}},
+			update: bson.D{{"$set", bson.D{{"v", bsonprimitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000001, time.UTC))}}}},
 		},
 		"DatetimeEpoch": {
-			update: bson.D{{"$set", bson.D{{"v", primitive.NewDateTimeFromTime(time.Unix(0, 0))}}}},
+			update: bson.D{{"$set", bson.D{{"v", bsonprimitive.NewDateTimeFromTime(time.Unix(0, 0))}}}},
 		},
 		"Regex": {
-			update: bson.D{{"$set", bson.D{{"v", primitive.Regex{Pattern: "foo"}}}}},
+			update: bson.D{{"$set", bson.D{{"v", bsonprimitive.Regex{Pattern: "foo"}}}}},
 		},
 		"RegexOption": {
-			update: bson.D{{"$set", bson.D{{"v", primitive.Regex{Pattern: "foo", Options: "i"}}}}},
+			update: bson.D{{"$set", bson.D{{"v", bsonprimitive.Regex{Pattern: "foo", Options: "i"}}}}},
 		},
 		"RegexEmpty": {
-			update: bson.D{{"$set", bson.D{{"v", primitive.Regex{}}}}},
+			update: bson.D{{"$set", bson.D{{"v", bsonprimitive.Regex{}}}}},
 		},
 		"Timestamp": {
-			update: bson.D{{"$set", bson.D{{"v", primitive.Timestamp{T: 41, I: 12}}}}},
+			update: bson.D{{"$set", bson.D{{"v", bsonprimitive.Timestamp{T: 41, I: 12}}}}},
 		},
 		"TimestampNoI": {
-			update: bson.D{{"$set", bson.D{{"v", primitive.Timestamp{T: 41}}}}},
+			update: bson.D{{"$set", bson.D{{"v", bsonprimitive.Timestamp{T: 41}}}}},
 		},
 		"TimestampNoT": {
-			update: bson.D{{"$set", bson.D{{"v", primitive.Timestamp{I: 12}}}}},
+			update: bson.D{{"$set", bson.D{{"v", bsonprimitive.Timestamp{I: 12}}}}},
 		},
 		"DocFieldExist": {
 			update:           bson.D{{"$set", bson.D{{"v.foo", int32(1)}}}},
@@ -2503,11 +2503,11 @@ func TestUpdateFieldCompatBit(t *testing.T) {
 			resultType: EmptyResult,
 		},
 		"Binary": {
-			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"and", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}}}}}},
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"and", bsonprimitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}}}}}},
 			resultType: EmptyResult,
 		},
 		"ObjectID": {
-			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"or", primitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11}}}}}}},
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"or", bsonprimitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11}}}}}}},
 			resultType: EmptyResult,
 		},
 		"Bool": {
@@ -2515,7 +2515,7 @@ func TestUpdateFieldCompatBit(t *testing.T) {
 			resultType: EmptyResult,
 		},
 		"DateTime": {
-			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"or", primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC))}}}}}},
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"or", bsonprimitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC))}}}}}},
 			resultType: EmptyResult,
 		},
 		"Nil": {
@@ -2523,11 +2523,11 @@ func TestUpdateFieldCompatBit(t *testing.T) {
 			resultType: EmptyResult,
 		},
 		"Regex": {
-			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"xor", primitive.Regex{Pattern: "foo", Options: "i"}}}}}}},
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"xor", bsonprimitive.Regex{Pattern: "foo", Options: "i"}}}}}}},
 			resultType: EmptyResult,
 		},
 		"Timestamp": {
-			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"xor", primitive.Timestamp{T: 42, I: 13}}}}}}},
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"xor", bsonprimitive.Timestamp{T: 42, I: 13}}}}}}},
 			resultType: EmptyResult,
 		},
 		"Object": {

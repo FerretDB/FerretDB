@@ -18,7 +18,7 @@ import (
 	"math"
 	"testing"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
@@ -29,51 +29,51 @@ func TestQueryEvaluationCompatRegexErrors(t *testing.T) {
 
 	testCases := map[string]queryCompatTestCase{
 		"MissingClosingParen": {
-			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "g(-z]+ng  wrong regex"}}}}},
+			filter:     bson.D{{"v", bson.D{{"$regex", bsonprimitive.Regex{Pattern: "g(-z]+ng  wrong regex"}}}}},
 			resultType: EmptyResult,
 		},
 		"MissingClosingBracket": {
-			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "g[-z+ng  wrong regex"}}}}},
+			filter:     bson.D{{"v", bson.D{{"$regex", bsonprimitive.Regex{Pattern: "g[-z+ng  wrong regex"}}}}},
 			resultType: EmptyResult,
 		},
 		"InvalidEscape": {
-			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "\\uZ"}}}}},
+			filter:     bson.D{{"v", bson.D{{"$regex", bsonprimitive.Regex{Pattern: "\\uZ"}}}}},
 			resultType: EmptyResult,
 		},
 		"NamedCapture": {
-			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "(?P<name)"}}}}},
+			filter:     bson.D{{"v", bson.D{{"$regex", bsonprimitive.Regex{Pattern: "(?P<name)"}}}}},
 			resultType: EmptyResult,
 		},
 		"UnexpectedParen": {
-			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: ")"}}}}},
+			filter:     bson.D{{"v", bson.D{{"$regex", bsonprimitive.Regex{Pattern: ")"}}}}},
 			resultType: EmptyResult,
 		},
 		"TrailingBackslash": {
-			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `abc\`}}}}},
+			filter:     bson.D{{"v", bson.D{{"$regex", bsonprimitive.Regex{Pattern: `abc\`}}}}},
 			resultType: EmptyResult,
 		},
 		"InvalidRepetition": {
-			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `a**`}}}}},
+			filter:     bson.D{{"v", bson.D{{"$regex", bsonprimitive.Regex{Pattern: `a**`}}}}},
 			resultType: EmptyResult,
 		},
 		"MissingRepetitionArgumentStar": {
-			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `*`}}}}},
+			filter:     bson.D{{"v", bson.D{{"$regex", bsonprimitive.Regex{Pattern: `*`}}}}},
 			resultType: EmptyResult,
 		},
 		"MissingRepetitionArgumentPlus": {
-			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `+`}}}}},
+			filter:     bson.D{{"v", bson.D{{"$regex", bsonprimitive.Regex{Pattern: `+`}}}}},
 			resultType: EmptyResult,
 		},
 		"MissingRepetitionArgumentQuestion": {
-			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `?`}}}}},
+			filter:     bson.D{{"v", bson.D{{"$regex", bsonprimitive.Regex{Pattern: `?`}}}}},
 			resultType: EmptyResult,
 		},
 		"InvalidClassRange": {
-			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `[z-a]`}}}}},
+			filter:     bson.D{{"v", bson.D{{"$regex", bsonprimitive.Regex{Pattern: `[z-a]`}}}}},
 			resultType: EmptyResult,
 		},
 		"InvalidNestedRepetitionOperatorStar": {
-			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `a**`}}}}},
+			filter:     bson.D{{"v", bson.D{{"$regex", bsonprimitive.Regex{Pattern: `a**`}}}}},
 			resultType: EmptyResult,
 		},
 		"InvalidPerlOp": {
@@ -85,7 +85,7 @@ func TestQueryEvaluationCompatRegexErrors(t *testing.T) {
 			resultType: EmptyResult,
 		},
 		"RegexNoSuchField": {
-			filter:     bson.D{{"no-such-field", bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}}}},
+			filter:     bson.D{{"no-such-field", bson.D{{"$regex", bsonprimitive.Regex{Pattern: "foo"}}}}},
 			resultType: EmptyResult,
 		},
 		"RegexNoSuchFieldString": {
@@ -93,7 +93,7 @@ func TestQueryEvaluationCompatRegexErrors(t *testing.T) {
 			resultType: EmptyResult,
 		},
 		"RegexBadOption": {
-			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "foo", Options: "123"}}}}},
+			filter:     bson.D{{"v", bson.D{{"$regex", bsonprimitive.Regex{Pattern: "foo", Options: "123"}}}}},
 			resultType: EmptyResult,
 		},
 	}

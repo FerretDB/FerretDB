@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -211,13 +211,13 @@ func TestUpdateCommandUpsert(tt *testing.T) {
 			updateRes: bson.D{
 				{"n", int32(1)},
 				{"upserted", bson.A{
-					bson.D{{"index", int32(0)}, {"_id", primitive.ObjectID{}}},
+					bson.D{{"index", int32(0)}, {"_id", bsonprimitive.ObjectID{}}},
 				}},
 				{"nModified", int32(0)},
 				{"ok", float64(1)},
 			},
 
-			findRes: []bson.D{{{"_id", ""}, {"v", nil}}, {{"_id", primitive.ObjectID{}}, {"updateV", "val"}}},
+			findRes: []bson.D{{{"_id", ""}, {"v", nil}}, {{"_id", bsonprimitive.ObjectID{}}, {"updateV", "val"}}},
 		},
 		"NoUpdateOperatorEmptyQuery": {
 			updates: bson.A{
@@ -245,12 +245,12 @@ func TestUpdateCommandUpsert(tt *testing.T) {
 			updateRes: bson.D{
 				{"n", int32(1)},
 				{"upserted", bson.A{
-					bson.D{{"index", int32(0)}, {"_id", primitive.ObjectID{}}},
+					bson.D{{"index", int32(0)}, {"_id", bsonprimitive.ObjectID{}}},
 				}},
 				{"nModified", int32(0)},
 				{"ok", float64(1)},
 			},
-			findRes: []bson.D{{{"_id", ""}, {"v", nil}}, {{"_id", primitive.ObjectID{}}, {"queryV", "v"}, {"updateV", "val"}}},
+			findRes: []bson.D{{{"_id", ""}, {"v", nil}}, {{"_id", bsonprimitive.ObjectID{}}, {"queryV", "v"}, {"updateV", "val"}}},
 		},
 		"NoUpdateOperatorNoQueryOperator": {
 			updates: bson.A{
@@ -263,12 +263,12 @@ func TestUpdateCommandUpsert(tt *testing.T) {
 			updateRes: bson.D{
 				{"n", int32(1)},
 				{"upserted", bson.A{
-					bson.D{{"index", int32(0)}, {"_id", primitive.ObjectID{}}},
+					bson.D{{"index", int32(0)}, {"_id", bsonprimitive.ObjectID{}}},
 				}},
 				{"nModified", int32(0)},
 				{"ok", float64(1)},
 			},
-			findRes: []bson.D{{{"_id", ""}, {"v", nil}}, {{"_id", primitive.ObjectID{}}, {"updateV", "val"}}},
+			findRes: []bson.D{{{"_id", ""}, {"v", nil}}, {{"_id", bsonprimitive.ObjectID{}}, {"updateV", "val"}}},
 		},
 		"MultipleUpserts": {
 			updates: bson.A{
@@ -286,16 +286,16 @@ func TestUpdateCommandUpsert(tt *testing.T) {
 			updateRes: bson.D{
 				{"n", int32(2)},
 				{"upserted", bson.A{
-					bson.D{{"index", int32(0)}, {"_id", primitive.ObjectID{}}},
-					bson.D{{"index", int32(1)}, {"_id", primitive.ObjectID{}}},
+					bson.D{{"index", int32(0)}, {"_id", bsonprimitive.ObjectID{}}},
+					bson.D{{"index", int32(1)}, {"_id", bsonprimitive.ObjectID{}}},
 				}},
 				{"nModified", int32(0)},
 				{"ok", float64(1)},
 			},
 			findRes: []bson.D{
 				{{"_id", ""}, {"v", nil}},
-				{{"_id", primitive.ObjectID{}}, {"updateV", "greater"}},
-				{{"_id", primitive.ObjectID{}}, {"updateV", "less"}},
+				{{"_id", bsonprimitive.ObjectID{}}, {"updateV", "greater"}},
+				{{"_id", bsonprimitive.ObjectID{}}, {"updateV", "less"}},
 			},
 		},
 		"UnknownUpdateOperator": {
@@ -359,8 +359,8 @@ func TestUpdateCommandUpsert(tt *testing.T) {
 							switch field.Key {
 							case "_id":
 								// _id is generated, cannot check for exact value so check it is not zero value
-								assert.IsType(t, primitive.ObjectID{}, field.Value)
-								actualElem = append(actualElem, bson.E{"_id", primitive.ObjectID{}})
+								assert.IsType(t, bsonprimitive.ObjectID{}, field.Value)
+								actualElem = append(actualElem, bson.E{"_id", bsonprimitive.ObjectID{}})
 							default:
 								actualElem = append(actualElem, field)
 							}
@@ -396,8 +396,8 @@ func TestUpdateCommandUpsert(tt *testing.T) {
 						switch elem.Value.(type) {
 						case string:
 							comparableDoc = append(comparableDoc, bson.E{"_id", ""})
-						case primitive.ObjectID:
-							comparableDoc = append(comparableDoc, bson.E{"_id", primitive.ObjectID{}})
+						case bsonprimitive.ObjectID:
+							comparableDoc = append(comparableDoc, bson.E{"_id", bsonprimitive.ObjectID{}})
 						default:
 							require.Fail(tt, "The _id field should be of a string type or primitive.ObjectID")
 						}

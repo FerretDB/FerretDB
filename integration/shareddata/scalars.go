@@ -20,7 +20,7 @@ import (
 	"sync"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
@@ -76,26 +76,26 @@ var Scalars = &Values[string]{
 		"string-whole":  "42",
 		"string-empty":  "",
 
-		"binary":       primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}},
-		"binary-empty": primitive.Binary{Data: []byte{}},
+		"binary":       bsonprimitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}},
+		"binary-empty": bsonprimitive.Binary{Data: []byte{}},
 
-		"objectid":       primitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11},
-		"objectid-empty": primitive.NilObjectID,
+		"objectid":       bsonprimitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11},
+		"objectid-empty": bsonprimitive.NilObjectID,
 
 		// no Undefined
 
 		"bool-false": false,
 		"bool-true":  true,
 
-		"datetime":          primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC)),
-		"datetime-epoch":    primitive.NewDateTimeFromTime(time.Unix(0, 0)),
-		"datetime-year-min": primitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)),
-		"datetime-year-max": primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC)),
+		"datetime":          bsonprimitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC)),
+		"datetime-epoch":    bsonprimitive.NewDateTimeFromTime(time.Unix(0, 0)),
+		"datetime-year-min": bsonprimitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)),
+		"datetime-year-max": bsonprimitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC)),
 
 		"null": nil,
 
-		"regex":       primitive.Regex{Pattern: "foo", Options: "i"},
-		"regex-empty": primitive.Regex{},
+		"regex":       bsonprimitive.Regex{Pattern: "foo", Options: "i"},
+		"regex-empty": bsonprimitive.Regex{},
 
 		// no DBPointer
 		// no JavaScript code
@@ -110,8 +110,8 @@ var Scalars = &Values[string]{
 		"int32-2":    int32(1048560),   // random
 		"int32-3":    int32(268435440), // random
 
-		"timestamp":   primitive.Timestamp{T: 42, I: 13},
-		"timestamp-i": primitive.Timestamp{I: 1},
+		"timestamp":   bsonprimitive.Timestamp{T: 42, I: 13},
+		"timestamp-i": bsonprimitive.Timestamp{I: 1},
 
 		"int64":            int64(42),
 		"int64-zero":       int64(0),
@@ -123,13 +123,13 @@ var Scalars = &Values[string]{
 		"int64-2":          int64(281474976700000),   // random
 		"int64-3":          int64(72057594040000000), // random
 
-		"decimal128-int":      must.NotFail(primitive.ParseDecimal128("42")),
-		"decimal128-int-zero": must.NotFail(primitive.ParseDecimal128("0")),
+		"decimal128-int":      must.NotFail(bsonprimitive.ParseDecimal128("42")),
+		"decimal128-int-zero": must.NotFail(bsonprimitive.ParseDecimal128("0")),
 
-		"decimal128":        must.NotFail(primitive.ParseDecimal128("42.13")),
-		"decimal128-whole":  must.NotFail(primitive.ParseDecimal128("42.0")),
-		"decimal128-zero":   must.NotFail(primitive.ParseDecimal128("0.0")),
-		"decimal128-double": must.NotFail(primitive.ParseDecimal128("9007199254740991.0")),
+		"decimal128":        must.NotFail(bsonprimitive.ParseDecimal128("42.13")),
+		"decimal128-whole":  must.NotFail(bsonprimitive.ParseDecimal128("42.0")),
+		"decimal128-zero":   must.NotFail(bsonprimitive.ParseDecimal128("0.0")),
+		"decimal128-double": must.NotFail(bsonprimitive.ParseDecimal128("9007199254740991.0")),
 
 		// no Min key
 		// no Max key
@@ -222,8 +222,8 @@ var Strings = &Values[string]{
 var Binaries = &Values[string]{
 	name: "Binaries",
 	data: map[string]any{
-		"binary":       primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}},
-		"binary-empty": primitive.Binary{Data: []byte{}},
+		"binary":       bsonprimitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}},
+		"binary-empty": bsonprimitive.Binary{Data: []byte{}},
 		"binary-null":  nil,
 	},
 }
@@ -232,8 +232,8 @@ var Binaries = &Values[string]{
 var ObjectIDs = &Values[string]{
 	name: "ObjectIDs",
 	data: map[string]any{
-		"objectid":       primitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11},
-		"objectid-empty": primitive.NilObjectID,
+		"objectid":       bsonprimitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11},
+		"objectid-empty": bsonprimitive.NilObjectID,
 		"objectid-null":  nil,
 	},
 }
@@ -252,10 +252,10 @@ var Bools = &Values[string]{
 var DateTimes = &Values[string]{
 	name: "DateTimes",
 	data: map[string]any{
-		"datetime":          primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC)),
-		"datetime-epoch":    primitive.NewDateTimeFromTime(time.Unix(0, 0)),
-		"datetime-year-min": primitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)),
-		"datetime-year-max": primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC)),
+		"datetime":          bsonprimitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC)),
+		"datetime-epoch":    bsonprimitive.NewDateTimeFromTime(time.Unix(0, 0)),
+		"datetime-year-min": bsonprimitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)),
+		"datetime-year-max": bsonprimitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC)),
 		"datetime-null":     nil,
 	},
 }
@@ -272,8 +272,8 @@ var Nulls = &Values[string]{
 var Regexes = &Values[string]{
 	name: "Regexes",
 	data: map[string]any{
-		"regex":       primitive.Regex{Pattern: "foo", Options: "i"},
-		"regex-empty": primitive.Regex{},
+		"regex":       bsonprimitive.Regex{Pattern: "foo", Options: "i"},
+		"regex-empty": bsonprimitive.Regex{},
 		"regex-null":  nil,
 	},
 }
@@ -297,8 +297,8 @@ var Int32s = &Values[string]{
 var Timestamps = &Values[string]{
 	name: "Timestamps",
 	data: map[string]any{
-		"timestamp":      primitive.Timestamp{T: 42, I: 13},
-		"timestamp-i":    primitive.Timestamp{I: 1},
+		"timestamp":      bsonprimitive.Timestamp{T: 42, I: 13},
+		"timestamp-i":    bsonprimitive.Timestamp{I: 1},
 		"timestamp-null": nil,
 	},
 }
@@ -344,28 +344,28 @@ var Int64s = &Values[string]{
 var Decimal128s = &Values[string]{
 	name: "Decimal128s",
 	data: map[string]any{
-		"decimal128":       must.NotFail(primitive.ParseDecimal128("42.13")),
-		"decimal128-whole": must.NotFail(primitive.ParseDecimal128("42.0")),
-		"decimal128-zero":  must.NotFail(primitive.ParseDecimal128("0.0")),
+		"decimal128":       must.NotFail(bsonprimitive.ParseDecimal128("42.13")),
+		"decimal128-whole": must.NotFail(bsonprimitive.ParseDecimal128("42.0")),
+		"decimal128-zero":  must.NotFail(bsonprimitive.ParseDecimal128("0.0")),
 
 		// decimal128 corner exponent values
-		"decimal128-max-exp": mustParseDecimal128FromBigInt(big.NewInt(42), primitive.MaxDecimal128Exp),
-		"decimal128-min-exp": mustParseDecimal128FromBigInt(big.NewInt(42), primitive.MinDecimal128Exp),
+		"decimal128-max-exp": mustParseDecimal128FromBigInt(big.NewInt(42), bsonprimitive.MaxDecimal128Exp),
+		"decimal128-min-exp": mustParseDecimal128FromBigInt(big.NewInt(42), bsonprimitive.MinDecimal128Exp),
 
 		// decimal128 corner significant values + corner exponent values
 		"decimal128-max-sig":     mustParseDecimal128FromBigInt(decimal128MaxSig, 0),
-		"decimal128-max-exp-sig": mustParseDecimal128FromBigInt(decimal128MaxSig, primitive.MaxDecimal128Exp),
-		"decimal128-min-exp-sig": mustParseDecimal128FromBigInt(decimal128MaxSig, primitive.MinDecimal128Exp),
+		"decimal128-max-exp-sig": mustParseDecimal128FromBigInt(decimal128MaxSig, bsonprimitive.MaxDecimal128Exp),
+		"decimal128-min-exp-sig": mustParseDecimal128FromBigInt(decimal128MaxSig, bsonprimitive.MinDecimal128Exp),
 
-		"decimal128-int":      must.NotFail(primitive.ParseDecimal128("42")),
-		"decimal128-int-zero": must.NotFail(primitive.ParseDecimal128("0")),
+		"decimal128-int":      must.NotFail(bsonprimitive.ParseDecimal128("42")),
+		"decimal128-int-zero": must.NotFail(bsonprimitive.ParseDecimal128("0")),
 	},
 }
 
 // mustParseDecimal128FromBigInt parses the significand and exponent into a Decimal128 value.
 // It panics on failure.
-func mustParseDecimal128FromBigInt(sig *big.Int, exp int) primitive.Decimal128 {
-	res, ok := primitive.ParseDecimal128FromBigInt(sig, exp)
+func mustParseDecimal128FromBigInt(sig *big.Int, exp int) bsonprimitive.Decimal128 {
+	res, ok := bsonprimitive.ParseDecimal128FromBigInt(sig, exp)
 	must.BeTrue(ok)
 
 	return res
@@ -380,11 +380,11 @@ var Unsets = &Values[string]{
 }
 
 // ObjectIDKeys contains documents with ObjectID keys for tests.
-var ObjectIDKeys = &Values[primitive.ObjectID]{
+var ObjectIDKeys = &Values[bsonprimitive.ObjectID]{
 	name: "ObjectIDKeys",
-	data: map[primitive.ObjectID]any{
+	data: map[bsonprimitive.ObjectID]any{
 		{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11}: "objectid",
-		primitive.NilObjectID: "objectid-empty",
+		bsonprimitive.NilObjectID: "objectid-empty",
 	},
 }
 

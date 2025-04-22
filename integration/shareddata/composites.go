@@ -18,7 +18,7 @@ import (
 	"math"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
@@ -59,14 +59,14 @@ var Composites = &Values[string]{
 		"array-composite": bson.A{
 			42.13,
 			"foo",
-			primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}},
-			primitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11},
+			bsonprimitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}},
+			bsonprimitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11},
 			true,
-			primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC)),
+			bsonprimitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC)),
 			nil,
-			primitive.Regex{Pattern: "foo", Options: "i"},
+			bsonprimitive.Regex{Pattern: "foo", Options: "i"},
 			int32(42),
-			primitive.Timestamp{T: 42, I: 13},
+			bsonprimitive.Timestamp{T: 42, I: 13},
 			int64(41),
 		},
 	},
@@ -152,14 +152,14 @@ var DocumentsStrings = &Values[string]{
 }
 
 // DocumentsDocuments contains documents with documents for tests.
-var DocumentsDocuments = &Values[primitive.ObjectID]{
+var DocumentsDocuments = &Values[bsonprimitive.ObjectID]{
 	name: "DocumentsDocuments",
-	data: map[primitive.ObjectID]any{
+	data: map[bsonprimitive.ObjectID]any{
 		{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01}: bson.D{{"foo", int32(42)}},
 		{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}: bson.D{{"bar", bson.D{}}},
 		{0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02}: bson.D{{"_id", bson.A{int32(42), int32(42)}}},
 		{0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03}: bson.D{{"_id", bson.D{{"foo", "bar"}}}},
-		{0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04}: bson.D{{"_id", bson.D{{"_id", primitive.Regex{Pattern: "foo", Options: "i"}}}}},
+		{0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04}: bson.D{{"_id", bson.D{{"_id", bsonprimitive.Regex{Pattern: "foo", Options: "i"}}}}},
 	},
 }
 
@@ -256,7 +256,7 @@ var ArrayInt64s = &Values[string]{
 var ArrayRegexes = &Values[string]{
 	name: "ArrayRegexes",
 	data: map[string]any{
-		"array-regex": bson.A{primitive.Regex{Pattern: "foo", Options: "i"}, primitive.Regex{Pattern: "foo", Options: "i"}},
+		"array-regex": bson.A{bsonprimitive.Regex{Pattern: "foo", Options: "i"}, bsonprimitive.Regex{Pattern: "foo", Options: "i"}},
 	},
 }
 

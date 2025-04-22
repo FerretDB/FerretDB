@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/v2/bson"
 
@@ -308,7 +308,7 @@ func TestUpdateUserCommand(t *testing.T) {
 				for _, u := range v.Value.(bson.A)[0].(bson.D) {
 					switch u.Key {
 					case "userId":
-						uuid, ok := u.Value.(primitive.Binary)
+						uuid, ok := u.Value.(bsonprimitive.Binary)
 						assert.True(t, ok, "userId is not a primitive.Binary")
 						assert.Equal(t, bson.TypeBinaryUUID, uuid.Subtype, "uuid subtype")
 						assert.Equal(t, 16, len(uuid.Data), "UUID length")

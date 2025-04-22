@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -51,7 +51,7 @@ func TestQueryBadFindType(t *testing.T) {
 			altMessage: "collection name has invalid type object",
 		},
 		"Array": {
-			value: primitive.A{},
+			value: bsonprimitive.A{},
 			err: &mongo.CommandError{
 				Code:    73,
 				Name:    "InvalidNamespace",
@@ -69,7 +69,7 @@ func TestQueryBadFindType(t *testing.T) {
 			altMessage: "collection name has invalid type double",
 		},
 		"Binary": {
-			value: primitive.Binary{},
+			value: bsonprimitive.Binary{},
 			err: &mongo.CommandError{
 				Code:    73,
 				Name:    "InvalidNamespace",
@@ -78,7 +78,7 @@ func TestQueryBadFindType(t *testing.T) {
 			altMessage: "collection name has invalid type binData",
 		},
 		"ObjectID": {
-			value: primitive.ObjectID{},
+			value: bsonprimitive.ObjectID{},
 			err: &mongo.CommandError{
 				Code:    73,
 				Name:    "InvalidNamespace",
@@ -114,7 +114,7 @@ func TestQueryBadFindType(t *testing.T) {
 			altMessage: "collection name has invalid type null",
 		},
 		"Regex": {
-			value: primitive.Regex{Pattern: "/foo/"},
+			value: bsonprimitive.Regex{Pattern: "/foo/"},
 			err: &mongo.CommandError{
 				Code:    73,
 				Name:    "InvalidNamespace",
@@ -132,7 +132,7 @@ func TestQueryBadFindType(t *testing.T) {
 			altMessage: "collection name has invalid type int",
 		},
 		"Timestamp": {
-			value: primitive.Timestamp{},
+			value: bsonprimitive.Timestamp{},
 			err: &mongo.CommandError{
 				Code:    73,
 				Name:    "InvalidNamespace",

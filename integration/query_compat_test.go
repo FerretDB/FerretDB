@@ -23,7 +23,7 @@ import (
 	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -213,13 +213,13 @@ func TestQueryCompatFilter(t *testing.T) {
 			filter: bson.D{{"_id", "string"}},
 		},
 		"IDNilObjectID": {
-			filter: bson.D{{"_id", primitive.NilObjectID}},
+			filter: bson.D{{"_id", bsonprimitive.NilObjectID}},
 		},
 		"IDObjectID": {
-			filter: bson.D{{"_id", primitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11}}},
+			filter: bson.D{{"_id", bsonprimitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11}}},
 		},
 		"ObjectID": {
-			filter: bson.D{{"v", primitive.NilObjectID}},
+			filter: bson.D{{"v", bsonprimitive.NilObjectID}},
 		},
 		"UnknownFilterOperator": {
 			filter:     bson.D{{"v", bson.D{{"$someUnknownOperator", 42}}}},

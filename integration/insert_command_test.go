@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/v2/bson"
 
@@ -102,7 +102,7 @@ func TestInsertCommandErrors(t *testing.T) {
 		},
 		"InsertRegexAsDocumentID": {
 			toInsert: []any{
-				bson.D{{"_id", primitive.Regex{Pattern: "foo", Options: "i"}}},
+				bson.D{{"_id", bsonprimitive.Regex{Pattern: "foo", Options: "i"}}},
 			},
 			ordered: false,
 			werr: &mongo.WriteError{

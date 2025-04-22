@@ -20,7 +20,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
@@ -59,7 +58,7 @@ func TestCommandsReplication(t *testing.T) {
 			delete(m, "setName")
 			delete(m, "setVersion")
 
-			assert.InDelta(t, time.Now().Unix(), m["localTime"].(primitive.DateTime).Time().Unix(), 2)
+			assert.InDelta(t, time.Now().Unix(), m["localTime"].(bson.DateTime).Time().Unix(), 2)
 			delete(m, "localTime")
 
 			expected := bson.M{

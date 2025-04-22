@@ -20,7 +20,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
@@ -130,8 +129,8 @@ func testQueryCommandCompat(t *testing.T, testCases map[string]queryCommandCompa
 
 					AssertEqualDocuments(t, targetRes, compatRes)
 
-					targetDocs := targetRes.Map()["cursor"].(bson.D).Map()["firstBatch"].(primitive.A)
-					compatDocs := compatRes.Map()["cursor"].(bson.D).Map()["firstBatch"].(primitive.A)
+					targetDocs := targetRes.Map()["cursor"].(bson.D).Map()["firstBatch"].(bson.A)
+					compatDocs := compatRes.Map()["cursor"].(bson.D).Map()["firstBatch"].(bson.A)
 
 					if len(targetDocs) > 0 || len(compatDocs) > 0 {
 						nonEmptyResults = true

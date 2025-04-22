@@ -26,7 +26,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -171,7 +170,7 @@ func TestListDatabases(t *testing.T) {
 		"Regex": {
 			filter: bson.D{
 				{Key: "name", Value: name},
-				{Key: "name", Value: primitive.Regex{Pattern: "^Test", Options: "i"}},
+				{Key: "name", Value: bson.Regex{Pattern: "^Test", Options: "i"}},
 			},
 			expected: mongo.ListDatabasesResult{
 				Databases: []mongo.DatabaseSpecification{{
@@ -182,7 +181,7 @@ func TestListDatabases(t *testing.T) {
 		"RegexNameOnly": {
 			filter: bson.D{
 				{Key: "name", Value: name},
-				{Key: "name", Value: primitive.Regex{Pattern: "^Test", Options: "i"}},
+				{Key: "name", Value: bson.Regex{Pattern: "^Test", Options: "i"}},
 			},
 			opts: []*options.ListDatabasesOptions{
 				options.ListDatabases().SetNameOnly(true),
@@ -204,7 +203,7 @@ func TestListDatabases(t *testing.T) {
 		"RegexNotFound": {
 			filter: bson.D{
 				{Key: "name", Value: name},
-				{Key: "name", Value: primitive.Regex{Pattern: "^xyz$", Options: "i"}},
+				{Key: "name", Value: bson.Regex{Pattern: "^xyz$", Options: "i"}},
 			},
 			expected: mongo.ListDatabasesResult{
 				Databases: []mongo.DatabaseSpecification{},
@@ -214,7 +213,7 @@ func TestListDatabases(t *testing.T) {
 		"RegexNotFoundNameOnly": {
 			filter: bson.D{
 				{Key: "name", Value: name},
-				{Key: "name", Value: primitive.Regex{Pattern: "^xyz$", Options: "i"}},
+				{Key: "name", Value: bson.Regex{Pattern: "^xyz$", Options: "i"}},
 			},
 			opts: []*options.ListDatabasesOptions{
 				options.ListDatabases().SetNameOnly(true),
@@ -226,7 +225,7 @@ func TestListDatabases(t *testing.T) {
 		},
 		"Multiple": {
 			filter: bson.D{
-				{Key: "name", Value: primitive.Regex{Pattern: "^" + name, Options: "i"}},
+				{Key: "name", Value: bson.Regex{Pattern: "^" + name, Options: "i"}},
 			},
 			expected: mongo.ListDatabasesResult{
 				Databases: []mongo.DatabaseSpecification{
@@ -324,14 +323,14 @@ func TestListCollectionsUUID(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, res, 1)
 
-	var uuid primitive.Binary
+	var uuid bson.Binary
 
 	for _, v := range res[0] {
 		if v.Key == "info" {
 			info := v.Value.(bson.D)
 			for _, vv := range info {
 				if vv.Key == "uuid" {
-					uuid = vv.Value.(primitive.Binary)
+					uuid = vv.Value.(bson.Binary)
 					assert.Equal(t, bson.TypeBinaryUUID, uuid.Subtype)
 					assert.Len(t, uuid.Data, 16)
 				}
@@ -729,8 +728,8 @@ func TestGetParameterCommand(t *testing.T) {
 			for k, item := range tc.expected {
 				assert.Contains(t, keys, k)
 				assert.IsType(t, item, m[k])
-				if it, ok := item.(primitive.D); ok {
-					z := m[k].(primitive.D)
+				if it, ok := item.(bson.D); ok {
+					z := m[k].(bson.D)
 					AssertEqualDocuments(t, it, z)
 				} else {
 					assert.Equal(t, m[k], item)
@@ -1932,9 +1931,9 @@ func TestServerStatusCommand(t *testing.T) {
 			actualComparable = append(actualComparable, bson.E{field.Key, ""})
 
 		case "localTime":
-			assert.IsType(t, primitive.DateTime(0), field.Value)
-			assert.WithinDuration(t, time.Now(), field.Value.(primitive.DateTime).Time(), 2*time.Second)
-			actualComparable = append(actualComparable, bson.E{field.Key, primitive.DateTime(0)})
+			assert.IsType(t, bson.DateTime(0), field.Value)
+			assert.WithinDuration(t, time.Now(), field.Value.(bson.DateTime).Time(), 2*time.Second)
+			actualComparable = append(actualComparable, bson.E{field.Key, bson.DateTime(0)})
 
 		case "pid", "uptimeMillis":
 			assert.IsType(t, int64(0), field.Value)
@@ -1981,7 +1980,7 @@ func TestServerStatusCommand(t *testing.T) {
 		{"uptime", float64(0)},
 		{"uptimeMillis", int64(0)},
 		{"uptimeEstimate", int64(0)},
-		{"localTime", primitive.DateTime(0)},
+		{"localTime", bson.DateTime(0)},
 		{"catalogStats", bson.D{
 			{"collections", int32(0)},
 			{"clustered", int32(0)},
@@ -2059,10 +2058,10 @@ func TestServerStatusCommandMetrics(t *testing.T) {
 					actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: ""})
 
 				case "localTime":
-					localTime, ok := field.Value.(primitive.DateTime)
+					localTime, ok := field.Value.(bson.DateTime)
 					require.True(t, ok)
 					assert.NotEmpty(t, localTime)
-					actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: primitive.DateTime(0)})
+					actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: bson.DateTime(0)})
 
 				case "pid", "uptimeMillis":
 					subField, ok := field.Value.(int64)
@@ -2162,7 +2161,7 @@ func TestServerStatusCommandMetrics(t *testing.T) {
 				}},
 				{"freeMonitoring", bson.D{{"state", "undecided"}}},
 				{"host", ""},
-				{"localTime", primitive.DateTime(0)},
+				{"localTime", bson.DateTime(0)},
 				{"metrics", bson.D{{"commands", bson.D{}}}},
 				{"ok", float64(1)},
 				{"pid", int64(0)},
@@ -2228,10 +2227,10 @@ func TestServerStatusCommandFreeMonitoring(t *testing.T) {
 					actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: ""})
 
 				case "localTime":
-					localTime, ok := field.Value.(primitive.DateTime)
+					localTime, ok := field.Value.(bson.DateTime)
 					require.True(t, ok)
 					assert.NotEmpty(t, localTime)
-					actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: primitive.DateTime(0)})
+					actualComparable = append(actualComparable, bson.E{Key: field.Key, Value: bson.DateTime(0)})
 
 				case "pid", "uptimeMillis":
 					subField, ok := field.Value.(int64)
@@ -2344,7 +2343,7 @@ func TestServerStatusCommandFreeMonitoring(t *testing.T) {
 				}},
 				{"freeMonitoring", bson.D{{"state", tc.expectedStatus}}},
 				{"host", ""},
-				{"localTime", primitive.DateTime(0)},
+				{"localTime", bson.DateTime(0)},
 				{"metrics", bson.D{{"commands", bson.D{}}}},
 				{"ok", float64(1)},
 				{"pid", int64(0)},

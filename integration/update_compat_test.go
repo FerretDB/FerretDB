@@ -24,7 +24,7 @@ import (
 	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -602,11 +602,11 @@ func testUpdateCurrentDateCompat(tt *testing.T, testCases map[string]updateCurre
 								require.IsType(t, expectedV, actualV)
 
 								switch actualV := actualV.(type) {
-								case primitive.DateTime:
-									assert.WithinDuration(t, expectedV.(primitive.DateTime).Time(), actualV.Time(), maxDifference)
+								case bsonprimitive.DateTime:
+									assert.WithinDuration(t, expectedV.(bsonprimitive.DateTime).Time(), actualV.Time(), maxDifference)
 
-								case primitive.Timestamp:
-									expectedT := expectedV.(primitive.Timestamp)
+								case bsonprimitive.Timestamp:
+									expectedT := expectedV.(bsonprimitive.Timestamp)
 									assert.WithinDuration(t, time.Unix(int64(expectedT.T), 0), time.Unix(int64(actualV.T), 0), maxDifference)
 
 								default:
@@ -791,7 +791,7 @@ func TestUpdateCompat(t *testing.T) {
 				}},
 				{provider: shareddata.ObjectIDs, ids: []string{"objectid-empty", "objectid-null"}},
 				{provider: shareddata.ObjectIDKeys, ids: []string{fmt.Sprint(
-					primitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11},
+					bsonprimitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11},
 				)}},
 				{provider: shareddata.Composites, ids: []string{
 					"array-documents", "array-empty", "document", "document-composite", "document-composite-numerical-field-name",
@@ -807,10 +807,10 @@ func TestUpdateCompat(t *testing.T) {
 				}},
 				{provider: shareddata.DocumentsDeeplyNested, ids: []string{"four", "three", "two"}},
 				{provider: shareddata.DocumentsDocuments, ids: []string{
-					fmt.Sprint(primitive.ObjectID{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}),
-					fmt.Sprint(primitive.ObjectID{0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02}),
-					fmt.Sprint(primitive.ObjectID{0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03}),
-					fmt.Sprint(primitive.ObjectID{0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04}),
+					fmt.Sprint(bsonprimitive.ObjectID{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}),
+					fmt.Sprint(bsonprimitive.ObjectID{0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02}),
+					fmt.Sprint(bsonprimitive.ObjectID{0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03}),
+					fmt.Sprint(bsonprimitive.ObjectID{0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04}),
 				}},
 				{provider: shareddata.ArrayStrings, ids: []string{
 					"array-string-duplicate", "array-string-numbers", "array-string-with-nil", "array-string-empty",
@@ -985,7 +985,7 @@ func TestUpdateCompatReplacementDoc(t *testing.T) {
 					"int64-neg-big-minus", "int64-prec-min", "int64-prec-min-plus", "int64-prec-min-minus", "int64-prec-min-minus-two",
 				}},
 				{provider: shareddata.ObjectIDs, ids: []string{"objectid-empty", "objectid-null"}},
-				{provider: shareddata.ObjectIDKeys, ids: []string{fmt.Sprint(primitive.ObjectID{
+				{provider: shareddata.ObjectIDKeys, ids: []string{fmt.Sprint(bsonprimitive.ObjectID{
 					0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11,
 				})}},
 				{provider: shareddata.Composites, ids: []string{
@@ -1002,10 +1002,10 @@ func TestUpdateCompatReplacementDoc(t *testing.T) {
 				}},
 				{provider: shareddata.DocumentsDeeplyNested, ids: []string{"four", "three", "two"}},
 				{provider: shareddata.DocumentsDocuments, ids: []string{
-					fmt.Sprint(primitive.ObjectID{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}),
-					fmt.Sprint(primitive.ObjectID{0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02}),
-					fmt.Sprint(primitive.ObjectID{0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03}),
-					fmt.Sprint(primitive.ObjectID{0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04}),
+					fmt.Sprint(bsonprimitive.ObjectID{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}),
+					fmt.Sprint(bsonprimitive.ObjectID{0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02}),
+					fmt.Sprint(bsonprimitive.ObjectID{0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03}),
+					fmt.Sprint(bsonprimitive.ObjectID{0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04}),
 				}},
 				{provider: shareddata.ArrayStrings, ids: []string{
 					"array-string-duplicate", "array-string-numbers", "array-string-with-nil", "array-string-empty",

@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	xdgscram "github.com/xdg-go/scram"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -167,7 +167,7 @@ func TestAuth(t *testing.T) {
 
 			r, err := connCollection.InsertOne(ctx, bson.D{{"ping", "pong"}})
 			require.NoError(t, err, "cannot insert document")
-			id := r.InsertedID.(primitive.ObjectID)
+			id := r.InsertedID.(bsonprimitive.ObjectID)
 			require.NotEmpty(t, id)
 
 			var result bson.D

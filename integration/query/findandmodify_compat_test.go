@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/bson"
 
@@ -136,7 +136,7 @@ func TestFindAndModifyCompatErrors(t *testing.T) {
 		"InvalidID": {
 			command: bson.D{
 				{"query", bson.D{{"non-existent", "val"}}},
-				{"update", bson.D{{"_id", primitive.Regex{Pattern: "[a-z]*[0-9]"}}, {"v", int32(43)}}},
+				{"update", bson.D{{"_id", bsonprimitive.Regex{Pattern: "[a-z]*[0-9]"}}, {"v", int32(43)}}},
 				{"upsert", true},
 			},
 			providers:        []shareddata.Provider{shareddata.Int32s},

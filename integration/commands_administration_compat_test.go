@@ -22,7 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
@@ -86,11 +86,11 @@ func TestListCollectionsCompat(t *testing.T) {
 					for _, infoField := range info {
 						switch infoField.Key {
 						case "uuid":
-							uuid, uuidOk := infoField.Value.(primitive.Binary)
+							uuid, uuidOk := infoField.Value.(bsonprimitive.Binary)
 							require.True(t, uuidOk)
 							assert.Equal(t, bson.TypeBinaryUUID, uuid.Subtype)
 							assert.Len(t, uuid.Data, 16)
-							infoComparable = append(infoComparable, bson.E{Key: infoField.Key, Value: primitive.Binary{}})
+							infoComparable = append(infoComparable, bson.E{Key: infoField.Key, Value: bsonprimitive.Binary{}})
 						default:
 							infoComparable = append(infoComparable, infoField)
 						}

@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/v2/bson"
 
@@ -97,7 +97,7 @@ func TestAggregateGroupSumDecimalDouble(tt *testing.T) {
 	ctx, collection := setup.Setup(t)
 
 	_, err := collection.InsertMany(ctx, bson.A{
-		bson.D{{"_id", "decimal128"}, {"v", must.NotFail(primitive.ParseDecimal128("42.1"))}},
+		bson.D{{"_id", "decimal128"}, {"v", must.NotFail(bsonprimitive.ParseDecimal128("42.1"))}},
 		bson.D{{"_id", "double"}, {"v", float64(42.1)}},
 	})
 	require.NoError(t, err)
@@ -112,7 +112,7 @@ func TestAggregateGroupSumDecimalDouble(tt *testing.T) {
 
 	expected := bson.A{bson.D{
 		{"_id", nil},
-		{"sum", primitive.NewDecimal128(3459220962935157325, 6906845732440572485)}, // 84.20000000000000142108547152020037
+		{"sum", bsonprimitive.NewDecimal128(3459220962935157325, 6906845732440572485)}, // 84.20000000000000142108547152020037
 	}}
 
 	assert.Equal(t, expected, res)
@@ -1265,7 +1265,7 @@ func TestAggregateCommandCursor(t *testing.T) {
 		pipeline any // optional, defaults to bson.A{}
 		cursor   any // optional, nil to leave cursor unset
 
-		firstBatch       primitive.A         // optional, expected firstBatch
+		firstBatch       bsonprimitive.A     // optional, expected firstBatch
 		err              *mongo.CommandError // optional, expected error from MongoDB
 		altMessage       string              // optional, alternative error message for FerretDB, ignored if empty
 		failsForFerretDB string

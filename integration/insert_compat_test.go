@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -183,7 +183,7 @@ func TestInsertCompat(t *testing.T) {
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/295",
 		},
 		"IDRegex": {
-			insert:           []any{bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}}},
+			insert:           []any{bson.D{{"_id", bsonprimitive.Regex{Pattern: "^regex$", Options: "i"}}}},
 			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/295",
 		},
@@ -191,7 +191,7 @@ func TestInsertCompat(t *testing.T) {
 		"OrderedAllErrors": {
 			insert: []any{
 				bson.D{{"_id", bson.A{"foo", "bar"}}},
-				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
+				bson.D{{"_id", bsonprimitive.Regex{Pattern: "^regex$", Options: "i"}}},
 			},
 			ordered:          true,
 			resultType:       EmptyResult,
@@ -200,7 +200,7 @@ func TestInsertCompat(t *testing.T) {
 		"UnorderedAllErrors": {
 			insert: []any{
 				bson.D{{"_id", bson.A{"foo", "bar"}}},
-				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
+				bson.D{{"_id", bsonprimitive.Regex{Pattern: "^regex$", Options: "i"}}},
 			},
 			ordered:          false,
 			resultType:       EmptyResult,
@@ -210,7 +210,7 @@ func TestInsertCompat(t *testing.T) {
 		"OrderedOneError": {
 			insert: []any{
 				bson.D{{"_id", "1"}},
-				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
+				bson.D{{"_id", bsonprimitive.Regex{Pattern: "^regex$", Options: "i"}}},
 				bson.D{{"_id", "2"}},
 			},
 			ordered:          true,
@@ -220,7 +220,7 @@ func TestInsertCompat(t *testing.T) {
 			insert: []any{
 				bson.D{{"_id", "1"}},
 				bson.D{{"_id", "1"}},
-				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
+				bson.D{{"_id", bsonprimitive.Regex{Pattern: "^regex$", Options: "i"}}},
 				bson.D{{"_id", "2"}},
 			},
 			ordered:          false,
@@ -229,7 +229,7 @@ func TestInsertCompat(t *testing.T) {
 		"OrderedThreeErrors": {
 			insert: []any{
 				bson.D{{"_id", "1"}},
-				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
+				bson.D{{"_id", bsonprimitive.Regex{Pattern: "^regex$", Options: "i"}}},
 				bson.D{{"_id", "2"}},
 				bson.D{{"_id", "1"}},
 				bson.D{{"_id", "3"}},
@@ -241,7 +241,7 @@ func TestInsertCompat(t *testing.T) {
 		"UnorderedThreeErrors": {
 			insert: []any{
 				bson.D{{"_id", "1"}},
-				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
+				bson.D{{"_id", bsonprimitive.Regex{Pattern: "^regex$", Options: "i"}}},
 				bson.D{{"_id", "2"}},
 				bson.D{{"_id", "1"}},
 				bson.D{{"_id", "3"}},

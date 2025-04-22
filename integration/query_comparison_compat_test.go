@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
@@ -179,10 +179,10 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 			filter: bson.D{{"v", ""}},
 		},
 		"Binary": {
-			filter: bson.D{{"v", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}},
+			filter: bson.D{{"v", bsonprimitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}},
 		},
 		"BinaryEmpty": {
-			filter: bson.D{{"v", primitive.Binary{}}},
+			filter: bson.D{{"v", bsonprimitive.Binary{}}},
 		},
 		"BoolFalse": {
 			filter: bson.D{{"v", false}},
@@ -191,16 +191,16 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 			filter: bson.D{{"v", true}},
 		},
 		"Datetime": {
-			filter: bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}},
+			filter: bson.D{{"v", bsonprimitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}},
 		},
 		"DatetimeEpoch": {
-			filter: bson.D{{"v", primitive.NewDateTimeFromTime(time.Unix(0, 0))}},
+			filter: bson.D{{"v", bsonprimitive.NewDateTimeFromTime(time.Unix(0, 0))}},
 		},
 		"DatetimeYearMin": {
-			filter: bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC))}},
+			filter: bson.D{{"v", bsonprimitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC))}},
 		},
 		"DatetimeYearMax": {
-			filter: bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC))}},
+			filter: bson.D{{"v", bsonprimitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC))}},
 		},
 		"IDNull": {
 			filter:     bson.D{{"_id", nil}},
@@ -222,7 +222,7 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 			filter: bson.D{{"_id", "string"}},
 		},
 		"IDObjectID": {
-			filter: bson.D{{"_id", primitive.NilObjectID}},
+			filter: bson.D{{"_id", bsonprimitive.NilObjectID}},
 		},
 		"ValueNull": {
 			filter: bson.D{{"v", nil}},
@@ -234,7 +234,7 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 			filter: bson.D{{"v", 42}},
 		},
 		"ValueRegex": {
-			filter: bson.D{{"v", primitive.Regex{Pattern: "^fo"}}},
+			filter: bson.D{{"v", bsonprimitive.Regex{Pattern: "^fo"}}},
 		},
 
 		"EmptyKey": {
@@ -365,16 +365,16 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$eq", ""}}}},
 		},
 		"Binary": {
-			filter: bson.D{{"v", bson.D{{"$eq", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}}}},
+			filter: bson.D{{"v", bson.D{{"$eq", bsonprimitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}}}},
 		},
 		"BinaryEmpty": {
-			filter: bson.D{{"v", bson.D{{"$eq", primitive.Binary{Data: []byte{}}}}}},
+			filter: bson.D{{"v", bson.D{{"$eq", bsonprimitive.Binary{Data: []byte{}}}}}},
 		},
 		"ObjectID": {
-			filter: bson.D{{"v", bson.D{{"$eq", must.NotFail(primitive.ObjectIDFromHex("000102030405060708091011"))}}}},
+			filter: bson.D{{"v", bson.D{{"$eq", must.NotFail(bsonprimitive.ObjectIDFromHex("000102030405060708091011"))}}}},
 		},
 		"ObjectIDEmpty": {
-			filter: bson.D{{"v", bson.D{{"$eq", primitive.NilObjectID}}}},
+			filter: bson.D{{"v", bson.D{{"$eq", bsonprimitive.NilObjectID}}}},
 		},
 		"BoolFalse": {
 			filter: bson.D{{"v", bson.D{{"$eq", false}}}},
@@ -383,29 +383,29 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$eq", true}}}},
 		},
 		"Datetime": {
-			filter: bson.D{{"v", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}}}},
+			filter: bson.D{{"v", bson.D{{"$eq", bsonprimitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}}}},
 		},
 		"DatetimeEpoch": {
-			filter: bson.D{{"v", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Unix(0, 0))}}}},
+			filter: bson.D{{"v", bson.D{{"$eq", bsonprimitive.NewDateTimeFromTime(time.Unix(0, 0))}}}},
 		},
 		"DatetimeYearMin": {
-			filter: bson.D{{"v", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC))}}}},
+			filter: bson.D{{"v", bson.D{{"$eq", bsonprimitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC))}}}},
 		},
 		"DatetimeYearMax": {
-			filter: bson.D{{"v", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC))}}}},
+			filter: bson.D{{"v", bson.D{{"$eq", bsonprimitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC))}}}},
 		},
 		"Null": {
 			filter: bson.D{{"v", bson.D{{"$eq", nil}}}},
 		},
 		"RegexWithoutOption": {
-			filter:     bson.D{{"v", bson.D{{"$eq", primitive.Regex{Pattern: "foo"}}}}},
+			filter:     bson.D{{"v", bson.D{{"$eq", bsonprimitive.Regex{Pattern: "foo"}}}}},
 			resultType: EmptyResult,
 		},
 		"RegexWithOption": {
-			filter: bson.D{{"v", bson.D{{"$eq", primitive.Regex{Pattern: "foo", Options: "i"}}}}},
+			filter: bson.D{{"v", bson.D{{"$eq", bsonprimitive.Regex{Pattern: "foo", Options: "i"}}}}},
 		},
 		"RegexEmpty": {
-			filter: bson.D{{"v", bson.D{{"$eq", primitive.Regex{}}}}},
+			filter: bson.D{{"v", bson.D{{"$eq", bsonprimitive.Regex{}}}}},
 		},
 		"Int32": {
 			filter: bson.D{{"v", bson.D{{"$eq", int32(42)}}}},
@@ -420,10 +420,10 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$eq", int32(math.MinInt32)}}}},
 		},
 		"Timestamp": {
-			filter: bson.D{{"v", bson.D{{"$eq", primitive.Timestamp{T: 42, I: 13}}}}},
+			filter: bson.D{{"v", bson.D{{"$eq", bsonprimitive.Timestamp{T: 42, I: 13}}}}},
 		},
 		"TimestampI": {
-			filter: bson.D{{"v", bson.D{{"$eq", primitive.Timestamp{I: 1}}}}},
+			filter: bson.D{{"v", bson.D{{"$eq", bsonprimitive.Timestamp{I: 1}}}}},
 		},
 		"Int64": {
 			filter: bson.D{{"v", bson.D{{"$eq", int64(42)}}}},
@@ -561,19 +561,19 @@ func TestQueryComparisonCompatGt(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$gt", ""}}}},
 		},
 		"Binary": {
-			filter: bson.D{{"v", bson.D{{"$gt", primitive.Binary{Subtype: 0x80, Data: []byte{42}}}}}},
+			filter: bson.D{{"v", bson.D{{"$gt", bsonprimitive.Binary{Subtype: 0x80, Data: []byte{42}}}}}},
 		},
 		"BinaryNoSubtype": {
-			filter: bson.D{{"v", bson.D{{"$gt", primitive.Binary{Data: []byte{42}}}}}},
+			filter: bson.D{{"v", bson.D{{"$gt", bsonprimitive.Binary{Data: []byte{42}}}}}},
 		},
 		"BinaryEmpty": {
-			filter: bson.D{{"v", bson.D{{"$gt", primitive.Binary{}}}}},
+			filter: bson.D{{"v", bson.D{{"$gt", bsonprimitive.Binary{}}}}},
 		},
 		"ObjectID": {
-			filter: bson.D{{"v", bson.D{{"$gt", must.NotFail(primitive.ObjectIDFromHex("000102030405060708091010"))}}}},
+			filter: bson.D{{"v", bson.D{{"$gt", must.NotFail(bsonprimitive.ObjectIDFromHex("000102030405060708091010"))}}}},
 		},
 		"ObjectIDEmpty": {
-			filter: bson.D{{"v", bson.D{{"$gt", primitive.NilObjectID}}}},
+			filter: bson.D{{"v", bson.D{{"$gt", bsonprimitive.NilObjectID}}}},
 		},
 		"Bool": {
 			filter: bson.D{{"v", bson.D{{"$gt", false}}}},
@@ -586,7 +586,7 @@ func TestQueryComparisonCompatGt(t *testing.T) {
 			resultType: EmptyResult,
 		},
 		"Regex": {
-			filter:     bson.D{{"v", bson.D{{"$gt", primitive.Regex{Pattern: "foo"}}}}},
+			filter:     bson.D{{"v", bson.D{{"$gt", bsonprimitive.Regex{Pattern: "foo"}}}}},
 			resultType: EmptyResult,
 		},
 		"Int32": {
@@ -596,13 +596,13 @@ func TestQueryComparisonCompatGt(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$gt", int32(math.MaxInt32)}}}},
 		},
 		"Timestamp": {
-			filter: bson.D{{"v", bson.D{{"$gt", primitive.Timestamp{T: 41, I: 12}}}}},
+			filter: bson.D{{"v", bson.D{{"$gt", bsonprimitive.Timestamp{T: 41, I: 12}}}}},
 		},
 		"TimestampNoI": {
-			filter: bson.D{{"v", bson.D{{"$gt", primitive.Timestamp{T: 41}}}}},
+			filter: bson.D{{"v", bson.D{{"$gt", bsonprimitive.Timestamp{T: 41}}}}},
 		},
 		"TimestampNoT": {
-			filter: bson.D{{"v", bson.D{{"$gt", primitive.Timestamp{I: 12}}}}},
+			filter: bson.D{{"v", bson.D{{"$gt", bsonprimitive.Timestamp{I: 12}}}}},
 		},
 		"Int64": {
 			filter: bson.D{{"v", bson.D{{"$gt", int64(42)}}}},
@@ -692,19 +692,19 @@ func TestQueryComparisonCompatGte(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$gte", ""}}}},
 		},
 		"Binary": {
-			filter: bson.D{{"v", bson.D{{"$gte", primitive.Binary{Subtype: 0x80, Data: []byte{42}}}}}},
+			filter: bson.D{{"v", bson.D{{"$gte", bsonprimitive.Binary{Subtype: 0x80, Data: []byte{42}}}}}},
 		},
 		"BinaryNoSubtype": {
-			filter: bson.D{{"v", bson.D{{"$gte", primitive.Binary{Data: []byte{42}}}}}},
+			filter: bson.D{{"v", bson.D{{"$gte", bsonprimitive.Binary{Data: []byte{42}}}}}},
 		},
 		"BinaryEmpty": {
-			filter: bson.D{{"v", bson.D{{"$gte", primitive.Binary{}}}}},
+			filter: bson.D{{"v", bson.D{{"$gte", bsonprimitive.Binary{}}}}},
 		},
 		"ObjectID": {
-			filter: bson.D{{"v", bson.D{{"$gte", must.NotFail(primitive.ObjectIDFromHex("000102030405060708091011"))}}}},
+			filter: bson.D{{"v", bson.D{{"$gte", must.NotFail(bsonprimitive.ObjectIDFromHex("000102030405060708091011"))}}}},
 		},
 		"ObjectIDEmpty": {
-			filter: bson.D{{"v", bson.D{{"$gte", primitive.NilObjectID}}}},
+			filter: bson.D{{"v", bson.D{{"$gte", bsonprimitive.NilObjectID}}}},
 		},
 		"Bool": {
 			filter: bson.D{{"v", bson.D{{"$gte", false}}}},
@@ -716,7 +716,7 @@ func TestQueryComparisonCompatGte(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$gte", nil}}}},
 		},
 		"Regex": {
-			filter:     bson.D{{"v", bson.D{{"$gte", primitive.Regex{Pattern: "foo"}}}}},
+			filter:     bson.D{{"v", bson.D{{"$gte", bsonprimitive.Regex{Pattern: "foo"}}}}},
 			resultType: EmptyResult,
 		},
 		"Int32": {
@@ -729,13 +729,13 @@ func TestQueryComparisonCompatGte(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$gte", int32(45)}}}},
 		},
 		"Timestamp": {
-			filter: bson.D{{"v", bson.D{{"$gte", primitive.Timestamp{T: 41, I: 12}}}}},
+			filter: bson.D{{"v", bson.D{{"$gte", bsonprimitive.Timestamp{T: 41, I: 12}}}}},
 		},
 		"TimestampNoI": {
-			filter: bson.D{{"v", bson.D{{"$gte", primitive.Timestamp{T: 42}}}}},
+			filter: bson.D{{"v", bson.D{{"$gte", bsonprimitive.Timestamp{T: 42}}}}},
 		},
 		"TimestampNoT": {
-			filter: bson.D{{"v", bson.D{{"$gte", primitive.Timestamp{I: 13}}}}},
+			filter: bson.D{{"v", bson.D{{"$gte", bsonprimitive.Timestamp{I: 13}}}}},
 		},
 		"Int64": {
 			filter: bson.D{{"v", bson.D{{"$gte", int64(42)}}}},
@@ -813,20 +813,20 @@ func TestQueryComparisonCompatLt(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$lt", "b"}}}},
 		},
 		"Binary": {
-			filter: bson.D{{"v", bson.D{{"$lt", primitive.Binary{Subtype: 0x80, Data: []byte{43}}}}}},
+			filter: bson.D{{"v", bson.D{{"$lt", bsonprimitive.Binary{Subtype: 0x80, Data: []byte{43}}}}}},
 		},
 		"BinaryNoSubtype": {
-			filter: bson.D{{"v", bson.D{{"$lt", primitive.Binary{Data: []byte{43}}}}}},
+			filter: bson.D{{"v", bson.D{{"$lt", bsonprimitive.Binary{Data: []byte{43}}}}}},
 		},
 		"BinaryEmpty": {
-			filter:     bson.D{{"v", bson.D{{"$lt", primitive.Binary{}}}}},
+			filter:     bson.D{{"v", bson.D{{"$lt", bsonprimitive.Binary{}}}}},
 			resultType: EmptyResult,
 		},
 		"ObjectID": {
-			filter: bson.D{{"v", bson.D{{"$lt", must.NotFail(primitive.ObjectIDFromHex("000102030405060708091012"))}}}},
+			filter: bson.D{{"v", bson.D{{"$lt", must.NotFail(bsonprimitive.ObjectIDFromHex("000102030405060708091012"))}}}},
 		},
 		"ObjectIDEmpty": {
-			filter:     bson.D{{"v", bson.D{{"$lt", primitive.NilObjectID}}}},
+			filter:     bson.D{{"v", bson.D{{"$lt", bsonprimitive.NilObjectID}}}},
 			resultType: EmptyResult,
 		},
 		"Bool": {
@@ -840,7 +840,7 @@ func TestQueryComparisonCompatLt(t *testing.T) {
 			resultType: EmptyResult,
 		},
 		"Regex": {
-			filter:     bson.D{{"v", bson.D{{"$lt", primitive.Regex{Pattern: "foo"}}}}},
+			filter:     bson.D{{"v", bson.D{{"$lt", bsonprimitive.Regex{Pattern: "foo"}}}}},
 			resultType: EmptyResult,
 		},
 		"Int32": {
@@ -850,13 +850,13 @@ func TestQueryComparisonCompatLt(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$lt", int32(math.MinInt32)}}}},
 		},
 		"Timestamp": {
-			filter: bson.D{{"v", bson.D{{"$lt", primitive.Timestamp{T: 43, I: 14}}}}},
+			filter: bson.D{{"v", bson.D{{"$lt", bsonprimitive.Timestamp{T: 43, I: 14}}}}},
 		},
 		"TimestampNoI": {
-			filter: bson.D{{"v", bson.D{{"$lt", primitive.Timestamp{T: 43}}}}},
+			filter: bson.D{{"v", bson.D{{"$lt", bsonprimitive.Timestamp{T: 43}}}}},
 		},
 		"TimestampNoT": {
-			filter: bson.D{{"v", bson.D{{"$lt", primitive.Timestamp{I: 14}}}}},
+			filter: bson.D{{"v", bson.D{{"$lt", bsonprimitive.Timestamp{I: 14}}}}},
 		},
 		"Int64": {
 			filter: bson.D{{"v", bson.D{{"$lt", int64(42)}}}},
@@ -934,19 +934,19 @@ func TestQueryComparisonCompatLte(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$lte", "a"}}}},
 		},
 		"Binary": {
-			filter: bson.D{{"v", bson.D{{"$lte", primitive.Binary{Subtype: 0x80, Data: []byte{42}}}}}},
+			filter: bson.D{{"v", bson.D{{"$lte", bsonprimitive.Binary{Subtype: 0x80, Data: []byte{42}}}}}},
 		},
 		"BinaryNoSubtype": {
-			filter: bson.D{{"v", bson.D{{"$lte", primitive.Binary{Data: []byte{42}}}}}},
+			filter: bson.D{{"v", bson.D{{"$lte", bsonprimitive.Binary{Data: []byte{42}}}}}},
 		},
 		"BinaryEmpty": {
-			filter: bson.D{{"v", bson.D{{"$lte", primitive.Binary{}}}}},
+			filter: bson.D{{"v", bson.D{{"$lte", bsonprimitive.Binary{}}}}},
 		},
 		"ObjectID": {
-			filter: bson.D{{"v", bson.D{{"$lte", must.NotFail(primitive.ObjectIDFromHex("000102030405060708091011"))}}}},
+			filter: bson.D{{"v", bson.D{{"$lte", must.NotFail(bsonprimitive.ObjectIDFromHex("000102030405060708091011"))}}}},
 		},
 		"ObjectIDEmpty": {
-			filter: bson.D{{"v", bson.D{{"$lte", primitive.NilObjectID}}}},
+			filter: bson.D{{"v", bson.D{{"$lte", bsonprimitive.NilObjectID}}}},
 		},
 		"Bool": {
 			filter: bson.D{{"v", bson.D{{"$lte", true}}}},
@@ -958,7 +958,7 @@ func TestQueryComparisonCompatLte(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$lte", nil}}}},
 		},
 		"Regex": {
-			filter:     bson.D{{"v", bson.D{{"$lte", primitive.Regex{Pattern: "foo"}}}}},
+			filter:     bson.D{{"v", bson.D{{"$lte", bsonprimitive.Regex{Pattern: "foo"}}}}},
 			resultType: EmptyResult,
 		},
 		"Int32": {
@@ -968,13 +968,13 @@ func TestQueryComparisonCompatLte(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$lte", int32(math.MinInt32)}}}},
 		},
 		"Timestamp": {
-			filter: bson.D{{"v", bson.D{{"$lte", primitive.Timestamp{T: 42, I: 13}}}}},
+			filter: bson.D{{"v", bson.D{{"$lte", bsonprimitive.Timestamp{T: 42, I: 13}}}}},
 		},
 		"TimestampNoI": {
-			filter: bson.D{{"v", bson.D{{"$lte", primitive.Timestamp{T: 42}}}}},
+			filter: bson.D{{"v", bson.D{{"$lte", bsonprimitive.Timestamp{T: 42}}}}},
 		},
 		"TimestampNoT": {
-			filter: bson.D{{"v", bson.D{{"$lte", primitive.Timestamp{I: 13}}}}},
+			filter: bson.D{{"v", bson.D{{"$lte", bsonprimitive.Timestamp{I: 13}}}}},
 		},
 		"Int64": {
 			filter: bson.D{{"v", bson.D{{"$lte", int64(42)}}}},
@@ -1017,7 +1017,7 @@ func TestQueryComparisonCompatNin(t *testing.T) {
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/262",
 		},
 		"Regex": {
-			filter: bson.D{{"v", bson.D{{"$nin", bson.A{primitive.Regex{Pattern: "foo", Options: "i"}}}}}},
+			filter: bson.D{{"v", bson.D{{"$nin", bson.A{bsonprimitive.Regex{Pattern: "foo", Options: "i"}}}}}},
 			skip:   "https://github.com/FerretDB/FerretDB/issues/1781",
 		},
 		"NilInsteadOfArray": {
@@ -1063,7 +1063,7 @@ func TestQueryComparisonCompatIn(t *testing.T) {
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/262",
 		},
 		"Regex": {
-			filter: bson.D{{"v", bson.D{{"$in", bson.A{primitive.Regex{Pattern: "foo", Options: "i"}}}}}},
+			filter: bson.D{{"v", bson.D{{"$in", bson.A{bsonprimitive.Regex{Pattern: "foo", Options: "i"}}}}}},
 			skip:   "https://github.com/FerretDB/FerretDB/issues/1781",
 		},
 		"NilInsteadOfArray": {
@@ -1144,10 +1144,10 @@ func TestQueryComparisonCompatNe(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$ne", ""}}}},
 		},
 		"Binary": {
-			filter: bson.D{{"v", bson.D{{"$ne", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}}}},
+			filter: bson.D{{"v", bson.D{{"$ne", bsonprimitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}}}},
 		},
 		"BinaryEmpty": {
-			filter: bson.D{{"v", bson.D{{"$ne", primitive.Binary{Data: []byte{}}}}}},
+			filter: bson.D{{"v", bson.D{{"$ne", bsonprimitive.Binary{Data: []byte{}}}}}},
 		},
 		"BoolFalse": {
 			filter: bson.D{{"v", bson.D{{"$ne", false}}}},
@@ -1156,22 +1156,22 @@ func TestQueryComparisonCompatNe(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$ne", true}}}},
 		},
 		"Datetime": {
-			filter: bson.D{{"v", bson.D{{"$ne", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}}}},
+			filter: bson.D{{"v", bson.D{{"$ne", bsonprimitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}}}},
 		},
 		"DatetimeEpoch": {
-			filter: bson.D{{"v", bson.D{{"$ne", primitive.NewDateTimeFromTime(time.Unix(0, 0))}}}},
+			filter: bson.D{{"v", bson.D{{"$ne", bsonprimitive.NewDateTimeFromTime(time.Unix(0, 0))}}}},
 		},
 		"DatetimeYearMin": {
-			filter: bson.D{{"v", bson.D{{"$ne", primitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC))}}}},
+			filter: bson.D{{"v", bson.D{{"$ne", bsonprimitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC))}}}},
 		},
 		"DatetimeYearMax": {
-			filter: bson.D{{"v", bson.D{{"$ne", primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC))}}}},
+			filter: bson.D{{"v", bson.D{{"$ne", bsonprimitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC))}}}},
 		},
 		"Timestamp": {
-			filter: bson.D{{"v", bson.D{{"$ne", primitive.Timestamp{T: 42, I: 13}}}}},
+			filter: bson.D{{"v", bson.D{{"$ne", bsonprimitive.Timestamp{T: 42, I: 13}}}}},
 		},
 		"TimestampNoI": {
-			filter: bson.D{{"v", bson.D{{"$ne", primitive.Timestamp{T: 1}}}}},
+			filter: bson.D{{"v", bson.D{{"$ne", bsonprimitive.Timestamp{T: 1}}}}},
 		},
 		"Null": {
 			filter: bson.D{{"v", bson.D{{"$ne", nil}}}},
@@ -1238,7 +1238,7 @@ func TestQueryComparisonCompatNe(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$ne", -int64(1<<53-1) - 1}}}},
 		},
 		"Regex": {
-			filter:     bson.D{{"v", bson.D{{"$ne", primitive.Regex{Pattern: "foo"}}}}},
+			filter:     bson.D{{"v", bson.D{{"$ne", bsonprimitive.Regex{Pattern: "foo"}}}}},
 			resultType: EmptyResult,
 		},
 		"Document": {
