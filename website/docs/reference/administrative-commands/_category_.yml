@@ -1,0 +1,7 @@
+---
+label: Administrative Commands
+position: 4
+link:
+  type: generated-index
+  description: >
+    This section details administrative commands in FerretDB, including commands for managing the database, server, and collections.
