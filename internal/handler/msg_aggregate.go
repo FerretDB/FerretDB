@@ -21,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgAggregate implements `aggregate` command.
+// msgAggregate implements `aggregate` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgAggregate(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

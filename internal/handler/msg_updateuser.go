@@ -26,7 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgUpdateUser implements `updateUser` command.
+// msgUpdateUser implements `updateUser` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgUpdateUser(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

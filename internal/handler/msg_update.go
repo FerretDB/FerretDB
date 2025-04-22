@@ -26,7 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgUpdate implements `update` command.
+// msgUpdate implements `update` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgUpdate(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

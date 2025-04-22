@@ -23,7 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgDropIndexes implements `dropIndexes` command.
+// msgDropIndexes implements `dropIndexes` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgDropIndexes(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

@@ -28,7 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgDataSize implements `dataSize` command.
+// msgDataSize implements `dataSize` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgDataSize(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

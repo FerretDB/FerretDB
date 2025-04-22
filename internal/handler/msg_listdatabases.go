@@ -25,7 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgListDatabases implements `listDatabases` command.
+// msgListDatabases implements `listDatabases` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgListDatabases(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

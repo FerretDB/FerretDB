@@ -26,7 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgDropUser implements `dropUser` command.
+// msgDropUser implements `dropUser` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgDropUser(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

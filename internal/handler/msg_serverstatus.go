@@ -30,7 +30,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgServerStatus implements `serverStatus` command.
+// msgServerStatus implements `serverStatus` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgServerStatus(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

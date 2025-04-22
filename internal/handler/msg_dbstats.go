@@ -25,7 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgDBStats implements `dbStats` command.
+// msgDBStats implements `dbStats` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgDBStats(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

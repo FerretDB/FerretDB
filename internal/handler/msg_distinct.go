@@ -24,7 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgDistinct implements `distinct` command.
+// msgDistinct implements `distinct` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgDistinct(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

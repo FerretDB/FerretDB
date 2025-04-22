@@ -33,7 +33,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgExplain implements `explain` command.
+// msgExplain implements `explain` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgExplain(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

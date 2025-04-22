@@ -31,7 +31,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgHello implements `hello` command.
+// msgHello implements `hello` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgHello(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

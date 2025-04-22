@@ -28,7 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgBuildInfo implements `buildInfo` command.
+// msgBuildInfo implements `buildInfo` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgBuildInfo(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

@@ -29,7 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgCreateIndexes implements `createIndexes` command.
+// msgCreateIndexes implements `createIndexes` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgCreateIndexes(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

@@ -25,7 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgCurrentOp implements `currentOp` command.
+// msgCurrentOp implements `currentOp` command.
 //
 // The passed context is canceled when the client connection is closed.
 //

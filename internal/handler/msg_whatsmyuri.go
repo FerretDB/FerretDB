@@ -24,7 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgWhatsMyURI implements `whatsMyURI` command.
+// msgWhatsMyURI implements `whatsMyURI` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgWhatsMyURI(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

@@ -32,7 +32,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/scram"
 )
 
-// MsgSASLStart implements `saslStart` command.
+// msgSASLStart implements `saslStart` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgSASLStart(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

@@ -51,7 +51,7 @@ const (
 
 // Handler provides a set of methods to process clients' requests sent over wire protocol.
 //
-// MsgXXX methods handle OP_MSG commands.
+// msgXXX methods handle OP_MSG commands.
 // CmdQuery handles a limited subset of OP_QUERY messages.
 //
 // Handler instance is shared between all client connections.

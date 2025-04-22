@@ -25,7 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgGetParameter implements `getParameter` command.
+// msgGetParameter implements `getParameter` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgGetParameter(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

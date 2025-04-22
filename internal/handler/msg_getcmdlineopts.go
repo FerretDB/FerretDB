@@ -24,7 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgGetCmdLineOpts implements `getCmdLineOpts` command.
+// msgGetCmdLineOpts implements `getCmdLineOpts` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgGetCmdLineOpts(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

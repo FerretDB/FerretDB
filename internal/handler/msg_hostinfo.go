@@ -31,7 +31,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgHostInfo implements `hostInfo` command.
+// msgHostInfo implements `hostInfo` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgHostInfo(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

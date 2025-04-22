@@ -24,7 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgKillSessions implements `killSessions` command.
+// msgKillSessions implements `killSessions` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgKillSessions(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

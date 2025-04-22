@@ -26,7 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgListCommands implements `listCommands` command.
+// msgListCommands implements `listCommands` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgListCommands(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

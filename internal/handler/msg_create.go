@@ -32,7 +32,7 @@ import (
 // TODO https://github.com/FerretDB/FerretDB/issues/4879
 var collectionNameRe = regexp.MustCompile("^[^\\.$\x00][^$\x00]{0,234}$")
 
-// MsgCreate implements `create` command.
+// msgCreate implements `create` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgCreate(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

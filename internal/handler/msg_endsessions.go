@@ -23,7 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgEndSessions implements `endSessions` command.
+// msgEndSessions implements `endSessions` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgEndSessions(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

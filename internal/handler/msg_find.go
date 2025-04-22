@@ -21,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgFind implements `find` command.
+// msgFind implements `find` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgFind(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

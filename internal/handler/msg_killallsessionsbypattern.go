@@ -27,7 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgKillAllSessionsByPattern implements `killAllSessionsByPattern` command.
+// msgKillAllSessionsByPattern implements `killAllSessionsByPattern` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgKillAllSessionsByPattern(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) { //nolint:lll // for readability

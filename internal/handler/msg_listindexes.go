@@ -21,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgListIndexes implements `listIndexes` command.
+// msgListIndexes implements `listIndexes` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgListIndexes(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

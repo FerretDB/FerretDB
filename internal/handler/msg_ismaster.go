@@ -25,7 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgIsMaster implements `isMaster` command.
+// msgIsMaster implements `isMaster` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgIsMaster(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

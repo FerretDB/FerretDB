@@ -23,7 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgRefreshSessions implements `refreshSessions` command.
+// msgRefreshSessions implements `refreshSessions` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgRefreshSessions(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

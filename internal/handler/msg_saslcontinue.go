@@ -29,7 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
-// MsgSASLContinue implements `saslContinue` command.
+// msgSASLContinue implements `saslContinue` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgSASLContinue(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {

@@ -28,7 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 )
 
-// MsgSetFreeMonitoring implements `setFreeMonitoring` command.
+// msgSetFreeMonitoring implements `setFreeMonitoring` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgSetFreeMonitoring(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
