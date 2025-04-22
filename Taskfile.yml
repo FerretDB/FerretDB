@@ -202,7 +202,7 @@ tasks:
 
   test-integration-postgresql:
     desc: "Run integration tests for PostgreSQL/DocumentDB"
-    deps: [gen-version, test-integration-pre]
+    deps: [gen-version, test-integration-build]
     dir: integration
     cmds:
       - >
@@ -228,7 +228,7 @@ tasks:
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
-    deps: [gen-version, test-integration-pre]
+    deps: [gen-version, test-integration-build]
     dir: integration
     cmds:
       - >
