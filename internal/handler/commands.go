@@ -30,10 +30,10 @@ type command struct {
 	// anonymous indicates that the command does not require authentication.
 	anonymous bool
 
-	// Handler processes this command.
+	// handler processes this command.
 	//
 	// The passed context is canceled when the client disconnects.
-	Handler middleware.HandleFunc
+	handler middleware.HandleFunc
 
 	// Help is shown in the `listCommands` command output.
 	// If empty, that command is hidden, but still can be used.
@@ -45,7 +45,7 @@ func (h *Handler) initCommands() {
 	commands := map[string]*command{
 		// sorted alphabetically
 		"aggregate": {
-			Handler: h.MsgAggregate,
+			handler: h.msgAggregate,
 			Help:    "Returns aggregated data.",
 		},
 		"authenticate": {
@@ -54,12 +54,12 @@ func (h *Handler) initCommands() {
 			Help:      "", // hidden while not implemented
 		},
 		"buildInfo": {
-			Handler:   h.MsgBuildInfo,
+			handler:   h.msgBuildInfo,
 			anonymous: true,
 			Help:      "Returns a summary of the build information.",
 		},
 		"buildinfo": { // old lowercase variant
-			Handler:   h.MsgBuildInfo,
+			handler:   h.msgBuildInfo,
 			anonymous: true,
 			Help:      "", // hidden
 		},
@@ -69,15 +69,15 @@ func (h *Handler) initCommands() {
 			Help: "", // hidden while not implemented
 		},
 		"collMod": {
-			Handler: h.MsgCollMod,
+			handler: h.msgCollMod,
 			Help:    "Adds options to a collection or modify view definitions.",
 		},
 		"collStats": {
-			Handler: h.MsgCollStats,
+			handler: h.msgCollStats,
 			Help:    "Returns storage data for a collection.",
 		},
 		"compact": {
-			Handler: h.MsgCompact,
+			handler: h.msgCompact,
 			Help:    "Reduces the disk space collection takes and refreshes its statistics.",
 		},
 		"connPoolStats": {
@@ -86,232 +86,232 @@ func (h *Handler) initCommands() {
 			Help:      "", // hidden while not implemented
 		},
 		"connectionStatus": {
-			Handler:   h.MsgConnectionStatus,
+			handler:   h.msgConnectionStatus,
 			anonymous: true,
 			Help: "Returns information about the current connection, " +
 				"specifically the state of authenticated users and their available permissions.",
 		},
 		"count": {
-			Handler: h.MsgCount,
+			handler: h.msgCount,
 			Help:    "Returns the count of documents that's matched by the query.",
 		},
 		"create": {
-			Handler: h.MsgCreate,
+			handler: h.msgCreate,
 			Help:    "Creates the collection.",
 		},
 		"createIndexes": {
-			Handler: h.MsgCreateIndexes,
+			handler: h.msgCreateIndexes,
 			Help:    "Creates indexes on a collection.",
 		},
 		"createUser": {
-			Handler: h.MsgCreateUser,
+			handler: h.msgCreateUser,
 			Help:    "Creates a new user.",
 		},
 		"currentOp": {
-			Handler: h.MsgCurrentOp,
+			handler: h.msgCurrentOp,
 			Help:    "Returns information about operations currently in progress.",
 		},
 		"dataSize": {
-			Handler: h.MsgDataSize,
+			handler: h.msgDataSize,
 			Help:    "Returns the size of the collection in bytes.",
 		},
 		"dbStats": {
-			Handler: h.MsgDBStats,
+			handler: h.msgDBStats,
 			Help:    "Returns the statistics of the database.",
 		},
 		"dbstats": { // old lowercase variant
-			Handler: h.MsgDBStats,
+			handler: h.msgDBStats,
 			Help:    "", // hidden
 		},
 		"delete": {
-			Handler: h.MsgDelete,
+			handler: h.msgDelete,
 			Help:    "Deletes documents matched by the query.",
 		},
 		"distinct": {
-			Handler: h.MsgDistinct,
+			handler: h.msgDistinct,
 			Help:    "Returns an array of distinct values for the given field.",
 		},
 		"drop": {
-			Handler: h.MsgDrop,
+			handler: h.msgDrop,
 			Help:    "Drops the collection.",
 		},
 		"dropAllUsersFromDatabase": {
-			Handler: h.MsgDropAllUsersFromDatabase,
+			handler: h.msgDropAllUsersFromDatabase,
 			Help:    "Drops all user from database.",
 		},
 		"dropDatabase": {
-			Handler: h.MsgDropDatabase,
+			handler: h.msgDropDatabase,
 			Help:    "Drops production database.",
 		},
 		"dropIndexes": {
-			Handler: h.MsgDropIndexes,
+			handler: h.msgDropIndexes,
 			Help:    "Drops indexes on a collection.",
 		},
 		"dropUser": {
-			Handler: h.MsgDropUser,
+			handler: h.msgDropUser,
 			Help:    "Drops user.",
 		},
 		"endSessions": {
-			Handler: h.MsgEndSessions,
+			handler: h.msgEndSessions,
 			Help:    "Marks sessions as expired.",
 		},
 		"explain": {
-			Handler: h.MsgExplain,
+			handler: h.msgExplain,
 			Help:    "Returns the execution plan.",
 		},
 		"ferretDebugError": {
-			Handler: h.MsgFerretDebugError,
+			handler: h.msgFerretDebugError,
 			Help:    "Returns error for debugging.",
 		},
 		"find": {
-			Handler: h.MsgFind,
+			handler: h.msgFind,
 			Help:    "Returns documents matched by the query.",
 		},
 		"findAndModify": {
-			Handler: h.MsgFindAndModify,
+			handler: h.msgFindAndModify,
 			Help:    "Updates or deletes, and returns a document matched by the query.",
 		},
 		"findandmodify": { // old lowercase variant
-			Handler: h.MsgFindAndModify,
+			handler: h.msgFindAndModify,
 			Help:    "", // hidden
 		},
 		"getCmdLineOpts": {
-			Handler: h.MsgGetCmdLineOpts,
+			handler: h.msgGetCmdLineOpts,
 			Help:    "Returns a summary of all runtime and configuration options.",
 		},
 		"getFreeMonitoringStatus": {
-			Handler: h.MsgGetFreeMonitoringStatus,
+			handler: h.msgGetFreeMonitoringStatus,
 			Help:    "Returns a status of the free monitoring.",
 		},
 		"getLog": {
-			Handler: h.MsgGetLog,
+			handler: h.msgGetLog,
 			Help:    "Returns the most recent logged events from memory.",
 		},
 		"getMore": {
-			Handler: h.MsgGetMore,
+			handler: h.msgGetMore,
 			Help:    "Returns the next batch of documents from a cursor.",
 		},
 		"getParameter": {
-			Handler: h.MsgGetParameter,
+			handler: h.msgGetParameter,
 			Help:    "Returns the value of the parameter.",
 		},
 		"hello": {
-			Handler:   h.MsgHello,
+			handler:   h.msgHello,
 			anonymous: true,
 			Help:      "Returns the role of the FerretDB instance.",
 		},
 		"hostInfo": {
-			Handler: h.MsgHostInfo,
+			handler: h.msgHostInfo,
 			Help:    "Returns a summary of the system information.",
 		},
 		"insert": {
-			Handler: h.MsgInsert,
+			handler: h.msgInsert,
 			Help:    "Inserts documents into the database.",
 		},
 		"isMaster": {
-			Handler:   h.MsgIsMaster,
+			handler:   h.msgIsMaster,
 			anonymous: true,
 			Help:      "Returns the role of the FerretDB instance.",
 		},
 		"ismaster": { // old lowercase variant
-			Handler:   h.MsgIsMaster,
+			handler:   h.msgIsMaster,
 			anonymous: true,
 			Help:      "", // hidden
 		},
 		"killAllSessions": {
-			Handler: h.MsgKillAllSessions,
+			handler: h.msgKillAllSessions,
 			Help:    "Kills all sessions.",
 		},
 		"killAllSessionsByPattern": {
-			Handler: h.MsgKillAllSessionsByPattern,
+			handler: h.msgKillAllSessionsByPattern,
 			Help:    "Kills all sessions that match the pattern.",
 		},
 		"killCursors": {
-			Handler: h.MsgKillCursors,
+			handler: h.msgKillCursors,
 			Help:    "Closes server cursors.",
 		},
 		"killSessions": {
-			Handler: h.MsgKillSessions,
+			handler: h.msgKillSessions,
 			Help:    "Kills sessions.",
 		},
 		"listCollections": {
-			Handler: h.MsgListCollections,
+			handler: h.msgListCollections,
 			Help:    "Returns the information of the collections and views in the database.",
 		},
 		"listCommands": {
-			Handler: h.MsgListCommands,
+			handler: h.msgListCommands,
 			Help:    "Returns a list of currently supported commands.",
 		},
 		"listDatabases": {
-			Handler: h.MsgListDatabases,
+			handler: h.msgListDatabases,
 			Help:    "Returns a summary of all the databases.",
 		},
 		"listIndexes": {
-			Handler: h.MsgListIndexes,
+			handler: h.msgListIndexes,
 			Help:    "Returns a summary of indexes of the specified collection.",
 		},
 		"logout": {
-			Handler:   h.MsgLogout,
+			handler:   h.msgLogout,
 			anonymous: true,
 			Help:      "Logs out from the current session.",
 		},
 		"ping": {
-			Handler:   h.MsgPing,
+			handler:   h.msgPing,
 			anonymous: true,
 			Help:      "Returns a pong response.",
 		},
 		"refreshSessions": {
-			Handler: h.MsgRefreshSessions,
+			handler: h.msgRefreshSessions,
 			Help:    "Updates the last used time of sessions.",
 		},
 		"reIndex": {
-			Handler: h.MsgReIndex,
+			handler: h.msgReIndex,
 			Help:    "Drops and recreates all indexes except default _id index of a collection.",
 		},
 		"renameCollection": {
-			Handler: h.MsgRenameCollection,
+			handler: h.msgRenameCollection,
 			Help:    "Changes the name of an existing collection.",
 		},
 		"saslStart": {
-			Handler:   h.MsgSASLStart,
+			handler:   h.msgSASLStart,
 			anonymous: true,
 			Help:      "", // hidden
 		},
 		"saslContinue": {
-			Handler:   h.MsgSASLContinue,
+			handler:   h.msgSASLContinue,
 			anonymous: true,
 			Help:      "", // hidden
 		},
 		"serverStatus": {
-			Handler: h.MsgServerStatus,
+			handler: h.msgServerStatus,
 			Help:    "Returns an overview of the databases state.",
 		},
 		"setFreeMonitoring": {
-			Handler: h.MsgSetFreeMonitoring,
+			handler: h.msgSetFreeMonitoring,
 			Help:    "Toggles free monitoring.",
 		},
 		"startSession": {
-			Handler: h.MsgStartSession,
+			handler: h.msgStartSession,
 			Help:    "Returns a session.",
 		},
 		"update": {
-			Handler: h.MsgUpdate,
+			handler: h.msgUpdate,
 			Help:    "Updates documents that are matched by the query.",
 		},
 		"updateUser": {
-			Handler: h.MsgUpdateUser,
+			handler: h.msgUpdateUser,
 			Help:    "Updates user.",
 		},
 		"usersInfo": {
-			Handler: h.MsgUsersInfo,
+			handler: h.msgUsersInfo,
 			Help:    "Returns information about users.",
 		},
 		"validate": {
-			Handler: h.MsgValidate,
+			handler: h.msgValidate,
 			Help:    "Validates collection.",
 		},
 		"whatsmyuri": {
-			Handler:   h.MsgWhatsMyURI,
+			handler:   h.msgWhatsMyURI,
 			anonymous: true,
 			Help:      "Returns peer information.",
 		},
@@ -321,24 +321,16 @@ func (h *Handler) initCommands() {
 	h.commands = make(map[string]*command, len(commands))
 
 	for name, cmd := range commands {
-		if cmd.Handler == nil {
-			cmd.Handler = notImplemented(name)
+		if cmd.handler == nil {
+			cmd.handler = notImplemented(name)
 		}
 
 		if h.Auth && !cmd.anonymous {
-			cmd.Handler = auth(cmd.Handler, logging.WithName(h.L, "auth"), name)
+			cmd.handler = auth(cmd.handler, logging.WithName(h.L, "auth"), name)
 		}
 
 		h.commands[name] = cmd
 	}
-}
-
-// Commands returns a map of enabled commands.
-//
-// We should remove this method.
-// TODO https://github.com/FerretDB/FerretDB/issues/5046
-func (h *Handler) Commands() map[string]*command {
-	return h.commands
 }
 
 // auth is a middleware that wraps the command handler with authentication check.
@@ -376,6 +368,16 @@ func notImplemented(command string) middleware.HandleFunc {
 		return nil, mongoerrors.New(
 			mongoerrors.ErrNotImplemented,
 			fmt.Sprintf("Command %s is not implemented", command),
+		)
+	}
+}
+
+// notFound returns a handler that returns not found error.
+func notFound(command string) middleware.HandleFunc {
+	return func(context.Context, *middleware.Request) (*middleware.Response, error) {
+		return nil, mongoerrors.New(
+			mongoerrors.ErrCommandNotFound,
+			fmt.Sprintf("no such command: '%s'", command),
 		)
 	}
 }
