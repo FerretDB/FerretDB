@@ -25,10 +25,10 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgDropAllUsersFromDatabase implements `dropAllUsersFromDatabase` command.
+// msgDropAllUsersFromDatabase implements `dropAllUsersFromDatabase` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgDropAllUsersFromDatabase(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) { //nolint:lll // for readability
+func (h *Handler) msgDropAllUsersFromDatabase(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) { //nolint:lll // for readability
 	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

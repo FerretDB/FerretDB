@@ -26,10 +26,10 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgInsert implements `insert` command.
+// msgInsert implements `insert` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgInsert(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+func (h *Handler) msgInsert(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	doc, spec, seq, err := req.OpMsg.Sections()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
