@@ -18,7 +18,7 @@ import (
 	"maps"
 	"slices"
 
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 // Provider is implemented by shared data sets that provide documents.

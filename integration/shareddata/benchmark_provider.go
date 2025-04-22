@@ -20,7 +20,7 @@ import (
 	"iter"
 	"reflect"
 
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )

@@ -17,7 +17,7 @@ package shareddata
 import (
 	"iter"
 
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 // BenchSmall provides documents that look like:
