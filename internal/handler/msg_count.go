@@ -25,10 +25,10 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgCount implements `count` command.
+// msgCount implements `count` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgCount(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+func (h *Handler) msgCount(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	doc, err := req.OpMsg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
