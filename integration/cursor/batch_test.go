@@ -20,9 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 
 	"github.com/FerretDB/FerretDB/v2/integration"
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
@@ -42,7 +41,7 @@ func TestFindCommandBatchSize(t *testing.T) {
 		filter    any // optional, nil to leave filter unset
 		batchSize any // optional, nil to leave batchSize unset
 
-		firstBatch       bsonprimitive.A     // optional, expected firstBatch
+		firstBatch       bson.A              // optional, expected firstBatch
 		err              *mongo.CommandError // optional, expected error from MongoDB
 		altMessage       string              // optional, alternative error message for FerretDB, ignored if empty
 		failsForFerretDB string

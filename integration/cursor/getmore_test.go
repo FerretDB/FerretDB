@@ -24,9 +24,9 @@ import (
 	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/FerretDB/FerretDB/v2/integration"
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
@@ -607,7 +607,7 @@ func TestGetMoreCommandConnection(t *testing.T) {
 
 		_, cursorID := getComparableCursorResponse(t, res)
 
-		client2, err := mongo.Connect(ctx, options.Client().ApplyURI(s.MongoDBURI))
+		client2, err := mongo.Connect(options.Client().ApplyURI(s.MongoDBURI))
 		require.NoError(t, err)
 
 		t.Cleanup(func() {
