@@ -28,10 +28,10 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgDataSize implements `dataSize` command.
+// msgDataSize implements `dataSize` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgDataSize(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+func (h *Handler) msgDataSize(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
