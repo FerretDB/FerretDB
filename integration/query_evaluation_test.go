@@ -19,10 +19,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
 	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
@@ -49,15 +48,15 @@ func TestQueryEvaluationRegex(t *testing.T) {
 		expectedIDs []any // optional
 	}{
 		"Regex": {
-			filter:      bson.D{{"v", bson.D{{"$regex", bsonprimitive.Regex{Pattern: "foo"}}}}},
+			filter:      bson.D{{"v", bson.D{{"$regex", bson.Regex{Pattern: "foo"}}}}},
 			expectedIDs: []any{"multiline-string", "string"},
 		},
 		"RegexNested": {
-			filter:      bson.D{{"v.foo.bar", bson.D{{"$regex", bsonprimitive.Regex{Pattern: "quz"}}}}},
+			filter:      bson.D{{"v.foo.bar", bson.D{{"$regex", bson.Regex{Pattern: "quz"}}}}},
 			expectedIDs: []any{"document-nested-strings"},
 		},
 		"RegexWithOption": {
-			filter:      bson.D{{"v", bson.D{{"$regex", bsonprimitive.Regex{Pattern: "42", Options: "i"}}}}},
+			filter:      bson.D{{"v", bson.D{{"$regex", bson.Regex{Pattern: "42", Options: "i"}}}}},
 			expectedIDs: []any{"string-double", "string-whole"},
 		},
 		"RegexStringOptionMatchCaseInsensitive": {

@@ -20,10 +20,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	bsonprimitive "go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
 	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
@@ -211,13 +210,13 @@ func TestUpdateCommandUpsert(tt *testing.T) {
 			updateRes: bson.D{
 				{"n", int32(1)},
 				{"upserted", bson.A{
-					bson.D{{"index", int32(0)}, {"_id", bsonprimitive.ObjectID{}}},
+					bson.D{{"index", int32(0)}, {"_id", bson.ObjectID{}}},
 				}},
 				{"nModified", int32(0)},
 				{"ok", float64(1)},
 			},
 
-			findRes: []bson.D{{{"_id", ""}, {"v", nil}}, {{"_id", bsonprimitive.ObjectID{}}, {"updateV", "val"}}},
+			findRes: []bson.D{{{"_id", ""}, {"v", nil}}, {{"_id", bson.ObjectID{}}, {"updateV", "val"}}},
 		},
 		"NoUpdateOperatorEmptyQuery": {
 			updates: bson.A{
@@ -245,12 +244,12 @@ func TestUpdateCommandUpsert(tt *testing.T) {
 			updateRes: bson.D{
 				{"n", int32(1)},
 				{"upserted", bson.A{
-					bson.D{{"index", int32(0)}, {"_id", bsonprimitive.ObjectID{}}},
+					bson.D{{"index", int32(0)}, {"_id", bson.ObjectID{}}},
 				}},
 				{"nModified", int32(0)},
 				{"ok", float64(1)},
 			},
-			findRes: []bson.D{{{"_id", ""}, {"v", nil}}, {{"_id", bsonprimitive.ObjectID{}}, {"queryV", "v"}, {"updateV", "val"}}},
+			findRes: []bson.D{{{"_id", ""}, {"v", nil}}, {{"_id", bson.ObjectID{}}, {"queryV", "v"}, {"updateV", "val"}}},
 		},
 		"NoUpdateOperatorNoQueryOperator": {
 			updates: bson.A{
@@ -263,12 +262,12 @@ func TestUpdateCommandUpsert(tt *testing.T) {
 			updateRes: bson.D{
 				{"n", int32(1)},
 				{"upserted", bson.A{
-					bson.D{{"index", int32(0)}, {"_id", bsonprimitive.ObjectID{}}},
+					bson.D{{"index", int32(0)}, {"_id", bson.ObjectID{}}},
 				}},
 				{"nModified", int32(0)},
 				{"ok", float64(1)},
 			},
-			findRes: []bson.D{{{"_id", ""}, {"v", nil}}, {{"_id", bsonprimitive.ObjectID{}}, {"updateV", "val"}}},
+			findRes: []bson.D{{{"_id", ""}, {"v", nil}}, {{"_id", bson.ObjectID{}}, {"updateV", "val"}}},
 		},
 		"MultipleUpserts": {
 			updates: bson.A{
@@ -286,16 +285,16 @@ func TestUpdateCommandUpsert(tt *testing.T) {
 			updateRes: bson.D{
 				{"n", int32(2)},
 				{"upserted", bson.A{
-					bson.D{{"index", int32(0)}, {"_id", bsonprimitive.ObjectID{}}},
-					bson.D{{"index", int32(1)}, {"_id", bsonprimitive.ObjectID{}}},
+					bson.D{{"index", int32(0)}, {"_id", bson.ObjectID{}}},
+					bson.D{{"index", int32(1)}, {"_id", bson.ObjectID{}}},
 				}},
 				{"nModified", int32(0)},
 				{"ok", float64(1)},
 			},
 			findRes: []bson.D{
 				{{"_id", ""}, {"v", nil}},
-				{{"_id", bsonprimitive.ObjectID{}}, {"updateV", "greater"}},
-				{{"_id", bsonprimitive.ObjectID{}}, {"updateV", "less"}},
+				{{"_id", bson.ObjectID{}}, {"updateV", "greater"}},
+				{{"_id", bson.ObjectID{}}, {"updateV", "less"}},
 			},
 		},
 		"UnknownUpdateOperator": {
@@ -359,8 +358,8 @@ func TestUpdateCommandUpsert(tt *testing.T) {
 							switch field.Key {
 							case "_id":
 								// _id is generated, cannot check for exact value so check it is not zero value
-								assert.IsType(t, bsonprimitive.ObjectID{}, field.Value)
-								actualElem = append(actualElem, bson.E{"_id", bsonprimitive.ObjectID{}})
+								assert.IsType(t, bson.ObjectID{}, field.Value)
+								actualElem = append(actualElem, bson.E{"_id", bson.ObjectID{}})
 							default:
 								actualElem = append(actualElem, field)
 							}
@@ -396,8 +395,8 @@ func TestUpdateCommandUpsert(tt *testing.T) {
 						switch elem.Value.(type) {
 						case string:
 							comparableDoc = append(comparableDoc, bson.E{"_id", ""})
-						case bsonprimitive.ObjectID:
-							comparableDoc = append(comparableDoc, bson.E{"_id", bsonprimitive.ObjectID{}})
+						case bson.ObjectID:
+							comparableDoc = append(comparableDoc, bson.E{"_id", bson.ObjectID{}})
 						default:
 							require.Fail(tt, "The _id field should be of a string type or primitive.ObjectID")
 						}
