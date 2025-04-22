@@ -60,6 +60,15 @@ To link to file in a different directory, specify the relative file path.
 [file in a different directory](../basic-operations/read.md)
 ```
 
+When referencing files such as configuration files, specs, or internal definitions on GitHub, ensure that the link is to a release branch, not the `main` branch.
+This is important because the `main` branch may change frequently, and links to it may break.
+
+For example, if you want to link to the FerretDB Data API OpenAPI 3.0 specification, use the following link:
+
+```text
+[FerretDB Data API OpenAPI 3.0 specification](https://raw.githubusercontent.com/FerretDB/FerretDB/refs/tags/v2.1.0/internal/dataapi/api/openapi.json)
+```
+
 ## Images
 
 Please store all images under `blog` or `docs` in the `static/img` folder.
