@@ -17,9 +17,6 @@ package handler
 import (
 	"context"
 
-	"github.com/FerretDB/wire/wirebson"
-	"github.com/jackc/pgx/v5"
-
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
@@ -29,7 +26,13 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgCollMod(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	doc, err := req.OpMsg.Document()
+	spec, err := req.OpMsg.RawDocument()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
+	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -43,25 +46,21 @@ func (h *Handler) msgCollMod(connCtx context.Context, req *middleware.Request) (
 		return nil, err
 	}
 
-	collName, err := getRequiredParam[string](doc, doc.Command())
+	collName, err := getRequiredParam[string](doc, "collMod")
 	if err != nil {
 		return nil, err
 	}
 
-	spec, err := req.OpMsg.DocumentRaw()
+	conn, err := h.Pool.Acquire()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	defer conn.Release()
+
+	page, err := documentdb_api.CollMod(connCtx, conn.Conn(), h.L, dbName, collName, spec)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var res wirebson.RawDocument
-
-	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
-		res, err = documentdb_api.CollMod(connCtx, conn, h.L, dbName, collName, spec)
-		return err
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseMsg(page)
 }

@@ -184,7 +184,7 @@ func unmarshalExplain(b []byte) (*wirebson.Document, error) {
 	return convertJSON(plans[0]).(*wirebson.Document), nil
 }
 
-// convertJSON transforms decoded JSON map[string]any value into [*wirebson.Document].
+// convertJSON transforms decoded JSON map[string]any value into bson.Document.
 func convertJSON(value any) any {
 	switch value := value.(type) {
 	case map[string]any:

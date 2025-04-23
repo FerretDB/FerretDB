@@ -30,10 +30,11 @@ linters-settings:
           - pkg: github.com/jackc/pgx/v4
             desc: use `github.com/jackc/pgx/v5` package instead
 
-          - pkg: go.mongodb.org/mongo-driver/bson
-            desc: use `go.mongodb.org/mongo-driver/v2/bson` package instead
-          - pkg: go.mongodb.org/mongo-driver/mongo
-            desc: use `go.mongodb.org/mongo-driver/v2/mongo` package instead
+          # TODO https://github.com/FerretDB/FerretDB/issues/4798
+          # - pkg: go.mongodb.org/mongo-driver/bson
+          #   desc: use `go.mongodb.org/mongo-driver/v2/bson` package instead
+          # - pkg: go.mongodb.org/mongo-driver/mongo
+          #   desc: use `go.mongodb.org/mongo-driver/v2/mongo` package instead
 
           # - pkg: github.com/xdg-go/scram
           #   desc: use `github.com/FerretDB/FerretDB/v2/internal/util/scram` package instead
@@ -82,17 +83,29 @@ linters-settings:
 
       # integration tests use a different configuration file
       - p: ^\Qbson.E\E$
-        pkg: ^\Qgo.mongodb.org/mongo-driver/v2/bson\E$
-        msg: Use `*wirebson.Document` or `*wirebson.Array` instead.
+        pkg: ^\Qgo.mongodb.org/mongo-driver/bson\E$
+        msg: Use `*bson.Document` or `*bson.Array` instead.
+      - p: ^\Qprimitive.E\E$
+        pkg: ^\Qgo.mongodb.org/mongo-driver/bson/primitive\E$
+        msg: Use `*bson.Document` or `*bson.Array` instead.
       - p: ^\Qbson.D\E$
-        pkg: ^\Qgo.mongodb.org/mongo-driver/v2/bson\E$
-        msg: Use `*wirebson.Document` instead.
+        pkg: ^\Qgo.mongodb.org/mongo-driver/bson\E$
+        msg: Use `*bson.Document` instead.
+      - p: ^\Qprimitive.D\E$
+        pkg: ^\Qgo.mongodb.org/mongo-driver/bson/primitive\E$
+        msg: Use `*bson.Document` instead.
       - p: ^\Qbson.M\E$
-        pkg: ^\Qgo.mongodb.org/mongo-driver/v2/bson\E$
-        msg: Use `*wirebson.Document` instead.
+        pkg: ^\Qgo.mongodb.org/mongo-driver/bson\E$
+        msg: Use `*bson.Document` instead.
+      - p: ^\Qprimitive.M\E$
+        pkg: ^\Qgo.mongodb.org/mongo-driver/bson/primitive\E$
+        msg: Use `*bson.Document` instead.
       - p: ^\Qbson.A\E$
-        pkg: ^\Qgo.mongodb.org/mongo-driver/v2/bson\E$
-        msg: Use `*wirebson.Array` instead.
+        pkg: ^\Qgo.mongodb.org/mongo-driver/bson\E$
+        msg: Use `*bson.Array` instead.
+      - p: ^\Qprimitive.A\E$
+        pkg: ^\Qgo.mongodb.org/mongo-driver/bson/primitive\E$
+        msg: Use `*bson.Array` instead.
     exclude-godoc-examples: true
     analyze-types: true
   gci:
@@ -263,7 +276,3 @@ issues:
     # we don't want to introduce that constant
     - linters: [goconst]
       text: "^string `_id` has \\d+ occurrences, make it a constant"
-
-    - linters: [forbidigo]
-      path: "\\Qferretdb/ferretdb_test.go"
-      text: "\\Quse of `bson.D` forbidden"
