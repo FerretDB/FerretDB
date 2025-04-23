@@ -19,7 +19,6 @@ linters-settings:
     check-blank: false
     disable-default-exclusions: false
     exclude-functions:
-      # TODO https://github.com/FerretDB/FerretDB/issues/4798
       - (*go.mongodb.org/mongo-driver/mongo.Cursor).Close
   errorlint:
     # see caveats at https://github.com/polyfloyd/go-errorlint#fmterrorf-wrapping-verb
@@ -175,10 +174,7 @@ issues:
   exclude-use-default: false
   exclude-rules:
     # that's a valid usage of bson.D / bson.E
-    # TODO https://github.com/FerretDB/FerretDB/issues/4798
     - linters: [govet]
-      text: "\\Qcomposites: go.mongodb.org/mongo-driver/bson/primitive.E struct literal uses unkeyed fields"
+      text: "composites: go.mongodb.org/mongo-driver/bson/primitive.E struct literal uses unkeyed fields"
     - linters: [govet]
-      text: "\\Qcomposites: go.mongodb.org/mongo-driver/bson.E struct literal uses unkeyed fields"
-    - linters: [govet]
-      text: "\\Qcomposites: go.mongodb.org/mongo-driver/v2/bson.E struct literal uses unkeyed fields"
+      text: "composites: go.mongodb.org/mongo-driver/bson.E struct literal uses unkeyed fields"

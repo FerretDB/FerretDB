@@ -13,9 +13,6 @@
 // limitations under the License.
 
 // Package bson provides stubs for testing.
-//
-// We should remove this package.
-// TODO https://github.com/FerretDB/FerretDB/issues/5088
 package bson
 
 type AnyDocument interface{}
