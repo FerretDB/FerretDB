@@ -69,25 +69,25 @@ This command will start a container with FerretDB, pre-packaged PostgreSQL with 
 
 With that container running, you can:
 
-- Connect to it with any MongoDB client application using MongoDB URI.
+- Connect to it with any MongoDB client application using the MongoDB URI below:
 
   ```text
   mongodb://<username>:<password>@127.0.0.1:27017/
   ```
 
-- Connect to it using MongoDB Shell by just running the command below.
+- Connect to it using the MongoDB Shell by just running the command below:
 
   ```sh
   mongosh mongodb://<username>:<password>@127.0.0.1:27017/
   ```
 
-  If you don't have it installed locally, you can run the command below.
+  If you don't have it installed locally, you can run the command below:
 
   ```sh
   docker exec -it ferretdb mongosh mongodb://<username>:<password>@127.0.0.1:27017/
   ```
 
-- For PostgreSQL, connect to it by running the command below.
+- For PostgreSQL, connect to it by running the command below:
 
   ```sh
   docker exec -it ferretdb psql -U <username> postgres
