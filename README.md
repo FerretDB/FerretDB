@@ -72,29 +72,10 @@ that don't have those problems.
 
 With that container running, you can:
 
-- Connect to it with any MongoDB client application using the MongoDB URI below:
-
-  ```text
-  mongodb://<username>:<password>@127.0.0.1:27017/
-  ```
-
-- Connect to it using the MongoDB Shell by just running the command below:
-
-  ```sh
-  mongosh mongodb://<username>:<password>@127.0.0.1:27017/
-  ```
-
-  If you don't have it installed locally, you can run the command below:
-
-  ```sh
-  docker exec -it ferretdb mongosh mongodb://<username>:<password>@127.0.0.1:27017/
-  ```
-
-- For PostgreSQL, connect to it by running the command below:
-
-  ```sh
-  docker exec -it ferretdb psql -U <username> postgres
-  ```
+- Connect to it with any MongoDB client application using the MongoDB URI `mongodb://<username>:<password>@127.0.0.1:27017/`.
+- Connect to it using the MongoDB Shell by just running `mongosh`.
+  If you don't have it installed locally, you can run `docker exec -it ferretdb mongosh`.
+- For PostgreSQL, connect to it by running `docker exec -it ferretdb psql -U <username> postgres`.
 
 You can stop the container with `docker stop ferretdb`.
 
