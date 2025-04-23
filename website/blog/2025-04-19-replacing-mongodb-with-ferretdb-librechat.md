@@ -30,6 +30,9 @@ This guide shows how to run LibreChat with FerretDB as the database, either by c
 
 ## How to use FerretDB with LibreChat
 
+Ensure to have a running instance of LibreChat before proceeding with this guide.
+See the [LibreChat documentation](https://www.librechat.ai/docs/quick_start/local_setup) for installation instructions.
+
 LibreChat can use FerretDB as its database in two ways:
 
 ### Option 1: Connect to an existing FerretDB instance
