@@ -291,7 +291,7 @@ Also, we should use driver methods as much as possible instead of testing comman
 In most cases, helpers such as `AssertEqualDocuments` are used to compare `bson.D` documents.
 The differences in field order, types, missing fields and others should be reported.
 If differences are expected such as `version` field, only the field key can be used for `bson.D` document comparison.
-Use of (deprecated) `bson.D.Map()` or converting `bson.D` to other types using helpers should be avoided when possible.
+Converting `bson.D` to other types using helpers should be avoided when possible.
 The bar for adding new helpers is very high.
 Please check all existing ones.
 
