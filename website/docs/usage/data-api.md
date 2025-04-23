@@ -30,7 +30,7 @@ Make sure to provide your authentication credential in the request headers or as
 ## Using the Data API
 
 The Data API supports standard MongoDB operations like `insert`, `find`, `update`, and `delete`.
-It follows the [Data API OpenAPI 3.0 specification defined here](https://github.com/FerretDB/FerretDB/blob/main/internal/dataapi/api/openapi.json).
+It follows the [Data API OpenAPI 3.0 specification defined here](https://github.com/FerretDB/FerretDB/blob/refs/tags/v2.2.0/internal/dataapi/api/openapi.json).
 
 ### Insert a document
 
