@@ -409,7 +409,7 @@ func GetKey(t testing.TB, doc bson.D, key string) any {
 	}
 
 	t.Fatalf("key %q not found in document %+v", key, doc)
-	return nil
+	panic("not reached")
 }
 
 // RemoveKey returns a copy of the document with the given key removed,
