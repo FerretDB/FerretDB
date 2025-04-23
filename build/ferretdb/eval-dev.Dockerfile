@@ -103,19 +103,17 @@ EOF
 FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-ferretdb AS eval-dev
 
 RUN --mount=type=cache,sharing=locked,target=/var/cache/apt <<EOF
-mkdir /tmp/cover
-chown postgres:postgres /tmp/cover
-
 apt install -y curl supervisor
 curl -L https://pgp.mongodb.com/server-7.0.asc | apt-key add -
 echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/debian bookworm/mongodb-org/7.0 main" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list
 apt update
 apt install -y mongodb-mongosh
+
+mkdir /tmp/cover
 EOF
 
 COPY --from=eval-dev-build /src/bin/ferretdb /usr/local/bin/ferretdb
 
-# TODO https://github.com/FerretDB/FerretDB/issues/5043
 COPY --from=eval-dev-build /src/build/ferretdb/evaluation/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY --from=eval-dev-build /src/build/ferretdb/evaluation/entrypoint.sh /usr/local/bin/entrypoint.sh
 

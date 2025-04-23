@@ -104,7 +104,6 @@ EOF
 
 COPY --from=eval-build /src/bin/ferretdb /usr/local/bin/ferretdb
 
-# TODO https://github.com/FerretDB/FerretDB/issues/5043
 COPY --from=eval-build /src/build/ferretdb/evaluation/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY --from=eval-build /src/build/ferretdb/evaluation/entrypoint.sh /usr/local/bin/entrypoint.sh
 
