@@ -4,8 +4,6 @@ go 1.24.1
 
 toolchain go1.24.2
 
-replace github.com/FerretDB/wire => ../../wire
-
 tool (
 	github.com/FerretDB/FerretDB/v2/tools/checkcomments
 	github.com/FerretDB/FerretDB/v2/tools/checkdocs
@@ -39,7 +37,7 @@ require (
 require (
 	dario.cat/mergo v1.0.1 // indirect
 	github.com/AlekSi/pointer v1.2.0 // indirect
-	github.com/FerretDB/wire v0.0.23 // indirect
+	github.com/FerretDB/wire v0.0.24 // indirect
 	github.com/Ladicle/tabwriter v1.0.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.3.1 // indirect

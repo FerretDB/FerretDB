@@ -4,11 +4,9 @@ go 1.24
 
 toolchain go1.24.2
 
-replace github.com/FerretDB/wire => ../wire
-
 require (
 	github.com/AlekSi/pointer v1.2.0
-	github.com/FerretDB/wire v0.0.23
+	github.com/FerretDB/wire v0.0.24
 	github.com/alecthomas/kong v1.10.0
 	github.com/arl/statsviz v0.6.0
 	github.com/google/uuid v1.6.0
