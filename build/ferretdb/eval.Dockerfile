@@ -95,9 +95,6 @@ EOF
 FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-ferretdb AS eval
 
 RUN --mount=type=cache,sharing=locked,target=/var/cache/apt <<EOF
-mkdir /state
-chown postgres:postgres /state
-
 apt install -y curl supervisor
 curl -L https://pgp.mongodb.com/server-7.0.asc | apt-key add -
 echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/debian bookworm/mongodb-org/7.0 main" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list

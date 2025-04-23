@@ -103,8 +103,8 @@ EOF
 FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-ferretdb AS eval-dev
 
 RUN --mount=type=cache,sharing=locked,target=/var/cache/apt <<EOF
-mkdir /tmp/cover /state
-chown postgres:postgres /tmp/cover /state
+mkdir /tmp/cover
+chown postgres:postgres /tmp/cover
 
 apt install -y curl supervisor
 curl -L https://pgp.mongodb.com/server-7.0.asc | apt-key add -
