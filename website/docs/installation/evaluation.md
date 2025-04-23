@@ -15,7 +15,7 @@ Run this command to start FerretDB and PostgreSQL with DocumentDB extension,
 make sure to update `<username>` and `<password>`:
 
 ```sh
-docker run -d --rm --name ferretdb -p 27017:27017 --platform linux/amd64 \
+docker run -d --name ferretdb -p 27017:27017 --platform linux/amd64 \
   -e POSTGRES_USER=<username> \
   -e POSTGRES_PASSWORD=<password> \
   -v ./data:/var/lib/postgresql/data \
@@ -23,6 +23,7 @@ docker run -d --rm --name ferretdb -p 27017:27017 --platform linux/amd64 \
 ```
 
 This command will start a container with FerretDB, pre-packaged PostgreSQL with DocumentDB extension, and MongoDB Shell for quick testing and experiments.
+The data will be preserved after the container restarts in the `./data` directory of the host.
 
 With that container running, you can:
 
