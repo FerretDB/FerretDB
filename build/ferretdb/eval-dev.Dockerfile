@@ -103,19 +103,17 @@ EOF
 FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-ferretdb AS eval-dev
 
 RUN --mount=type=cache,sharing=locked,target=/var/cache/apt <<EOF
-mkdir /tmp/cover /tmp/state
-chown postgres:postgres /tmp/cover /tmp/state
-
 apt install -y curl supervisor
 curl -L https://pgp.mongodb.com/server-7.0.asc | apt-key add -
 echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/debian bookworm/mongodb-org/7.0 main" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list
 apt update
 apt install -y mongodb-mongosh
+
+mkdir /tmp/cover
 EOF
 
 COPY --from=eval-dev-build /src/bin/ferretdb /usr/local/bin/ferretdb
 
-# TODO https://github.com/FerretDB/FerretDB/issues/5043
 COPY --from=eval-dev-build /src/build/ferretdb/evaluation/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY --from=eval-dev-build /src/build/ferretdb/evaluation/entrypoint.sh /usr/local/bin/entrypoint.sh
 
@@ -124,21 +122,17 @@ ENTRYPOINT ["entrypoint.sh"]
 HEALTHCHECK --interval=1m --timeout=5s --retries=1 --start-period=30s --start-interval=5s \
   CMD ["/usr/local/bin/ferretdb", "ping"]
 
+VOLUME /state
 EXPOSE 27017 27018 8088
 
 ENV GOCOVERDIR=/tmp/cover
 ENV GORACE=halt_on_error=1,history_size=2
 
-# FIXME
-# do not allow "trust" authentication for local connections while initializing
-# ENV POSTGRES_INITDB_ARGS="--auth=scram-sha-256"
-
-ENV FERRETDB_STATE_DIR=/tmp/state
-
 # don't forget to update documentation if you change defaults
 ENV FERRETDB_LISTEN_ADDR=:27017
 # ENV FERRETDB_LISTEN_TLS=:27018
 ENV FERRETDB_DEBUG_ADDR=:8088
+ENV FERRETDB_STATE_DIR=/state
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
