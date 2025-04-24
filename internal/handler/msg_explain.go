@@ -33,10 +33,10 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgExplain implements `explain` command.
+// msgExplain implements `explain` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgExplain(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+func (h *Handler) msgExplain(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -184,7 +184,7 @@ func unmarshalExplain(b []byte) (*wirebson.Document, error) {
 	return convertJSON(plans[0]).(*wirebson.Document), nil
 }
 
-// convertJSON transforms decoded JSON map[string]any value into bson.Document.
+// convertJSON transforms decoded JSON map[string]any value into [*wirebson.Document].
 func convertJSON(value any) any {
 	switch value := value.(type) {
 	case map[string]any:
