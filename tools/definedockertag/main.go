@@ -13,6 +13,8 @@
 // limitations under the License.
 
 // Package main contains tool for defining Docker image tags on CI.
+//
+//nolint:goconst // "ferretdb" means different things
 package main
 
 import (
