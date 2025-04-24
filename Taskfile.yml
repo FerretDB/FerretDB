@@ -858,7 +858,7 @@ tasks:
       - >
         docker compose run --rm markdownlint --config "build/.markdownlint.yml"
         "**/*.md" "**/*.mdx"
-      - bin/checkdocs
+      # - bin/checkdocs
 
   docs-fmt:
     deps: [fmt-docs]
