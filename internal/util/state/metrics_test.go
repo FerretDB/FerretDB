@@ -56,7 +56,7 @@ func TestMetrics(t *testing.T) {
 			`
 				# HELP ferretdb_up FerretDB instance state.
 				# TYPE ferretdb_up gauge
-				ferretdb_up{backend_name="Test",backend_version="0.0.1",branch=%q,commit=%q,debug="%t",dirty="%t",package="unknown",telemetry="enabled",update_available="false",uuid=%q,version=%q} 1
+				ferretdb_up{backend_name="Test",backend_version="0.0.1",branch=%q,commit=%q,debug="%t",dirty="%t",package="build-host",telemetry="enabled",update_available="false",uuid=%q,version=%q} 1
 			`,
 			info.Branch, info.Commit, info.DebugBuild, info.Dirty, uuid, info.Version,
 		)
@@ -76,7 +76,7 @@ func TestMetrics(t *testing.T) {
 			`
 				# HELP ferretdb_up FerretDB instance state.
 				# TYPE ferretdb_up gauge
-				ferretdb_up{backend_name="Test",backend_version="0.0.1",branch=%q,commit=%q,debug="%t",dirty="%t",package="unknown",telemetry="enabled",update_available="false",version=%q} 1
+				ferretdb_up{backend_name="Test",backend_version="0.0.1",branch=%q,commit=%q,debug="%t",dirty="%t",package="build-host",telemetry="enabled",update_available="false",version=%q} 1
 			`,
 			info.Branch, info.Commit, info.DebugBuild, info.Dirty, info.Version,
 		)
