@@ -117,32 +117,18 @@ func define(getenv githubactions.GetenvFunc) (*result, error) {
 
 			var tags []string
 
-			switch major {
-			case "1":
-				if prerelease == "" {
-					tags = []string{
-						major,
-						major + "." + minor,
-						major + "." + minor + "." + patch,
-						"latest",
-					}
-				} else {
-					tags = []string{major + "." + minor + "." + patch + "-" + prerelease}
-				}
-
-			case "2":
-				// add all tags except latest while v2 is not GA
+			if prerelease == "" {
 				tags = []string{
 					major,
 					major + "." + minor,
 					major + "." + minor + "." + patch,
 				}
-				if prerelease != "" {
-					tags = append(tags, major+"."+minor+"."+patch+"-"+prerelease)
-				}
 
-			default:
-				err = fmt.Errorf("unhandled major version %q", major)
+				if major == "2" {
+					tags = append(tags, "latest")
+				}
+			} else {
+				tags = []string{major + "." + minor + "." + patch + "-" + prerelease}
 			}
 
 			res = defineForTag(owner, repo, tags)
@@ -157,6 +143,10 @@ func define(getenv githubactions.GetenvFunc) (*result, error) {
 
 	if err != nil {
 		return nil, err
+	}
+
+	if res == nil {
+		panic("both res and err are nil")
 	}
 
 	slices.Sort(res.allInOneImages)
@@ -217,6 +207,9 @@ func defineForBranch(owner, repo, branch string) (*result, error) {
 		developmentImages: []string{
 			fmt.Sprintf("ghcr.io/%s/%s-dev:%s", owner, repo, branch),
 		},
+		productionImages: []string{
+			fmt.Sprintf("ghcr.io/%s/%s-dev:%s-prod", owner, repo, branch),
+		},
 	}
 
 	// forks don't have Quay.io and Docker Hub orgs
@@ -231,9 +224,11 @@ func defineForBranch(owner, repo, branch string) (*result, error) {
 
 	res.allInOneImages = append(res.allInOneImages, fmt.Sprintf("quay.io/ferretdb/all-in-one:%s", branch))
 	res.developmentImages = append(res.developmentImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-dev:%s", branch))
+	res.productionImages = append(res.productionImages, fmt.Sprintf("quay.io/ferretdb/ferretdb-dev:%s-prod", branch))
 
 	res.allInOneImages = append(res.allInOneImages, fmt.Sprintf("ferretdb/all-in-one:%s", branch))
 	res.developmentImages = append(res.developmentImages, fmt.Sprintf("ferretdb/ferretdb-dev:%s", branch))
+	res.productionImages = append(res.productionImages, fmt.Sprintf("ferretdb/ferretdb-dev:%s-prod", branch))
 
 	return res, nil
 }
@@ -280,17 +275,17 @@ func setResults(action *githubactions.Action, res *result) {
 
 	for _, image := range res.allInOneImages {
 		u := imageURL(image)
-		fmt.Fprintf(w, "\tAll-in-one\t[`%s`](%s)\t\n", image, u)
+		_, _ = fmt.Fprintf(w, "\tAll-in-one\t[`%s`](%s)\t\n", image, u)
 	}
 
 	for _, image := range res.developmentImages {
 		u := imageURL(image)
-		fmt.Fprintf(w, "\tDevelopment\t[`%s`](%s)\t\n", image, u)
+		_, _ = fmt.Fprintf(w, "\tDevelopment\t[`%s`](%s)\t\n", image, u)
 	}
 
 	for _, image := range res.productionImages {
 		u := imageURL(image)
-		fmt.Fprintf(w, "\tProduction\t[`%s`](%s)\t\n", image, u)
+		_, _ = fmt.Fprintf(w, "\tProduction\t[`%s`](%s)\t\n", image, u)
 	}
 
 	_ = w.Flush()
