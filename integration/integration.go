@@ -398,6 +398,20 @@ func AssertEqualAltWriteError(t testing.TB, expected mongo.WriteError, altMessag
 	return assert.Equal(t, expected, a)
 }
 
+// GetKey returns the value of the existing key from the document.
+func GetKey(t testing.TB, doc bson.D, key string) any {
+	t.Helper()
+
+	for _, field := range doc {
+		if field.Key == key {
+			return field.Value
+		}
+	}
+
+	t.Fatalf("key %q not found in document %+v", key, doc)
+	panic("not reached")
+}
+
 // RemoveKey returns a copy of the document with the given key removed,
 // and the value of that key (that could be nil if the key was not found).
 func RemoveKey(t testing.TB, doc bson.D, key string) (bson.D, any) {
@@ -465,8 +479,7 @@ func CollectIDs(t testing.TB, docs []bson.D) []any {
 
 	ids := make([]any, len(docs))
 	for i, doc := range docs {
-		id, ok := doc.Map()["_id"]
-		require.True(t, ok)
+		id := GetKey(t, doc, "_id")
 		ids[i] = id
 	}
 
