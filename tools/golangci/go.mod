@@ -2,9 +2,9 @@
 
 module github.com/FerretDB/FerretDB/tools/golangci
 
-go 1.23
+go 1.24
 
-toolchain go1.23.5
+toolchain go1.24.2
 
 require github.com/golangci/golangci-lint v1.63.4
 
