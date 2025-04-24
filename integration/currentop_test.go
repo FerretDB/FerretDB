@@ -388,5 +388,5 @@ func inProgress(tb testing.TB, ctx context.Context, adminDB *mongo.Database, n i
 
 	require.Fail(tb, "no in-progress operation found")
 
-	panic("unreachable")
+	panic("not reached")
 }

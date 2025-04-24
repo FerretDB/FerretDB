@@ -383,7 +383,6 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 		resHeader.OpCode = wire.OpCodeMsg
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/1997
 		var doc *wirebson.Document
 		if doc, err = msg.Section0(); err == nil {
 			command = doc.Command()

@@ -16,23 +16,27 @@ package handler
 
 import (
 	"context"
+	"log/slog"
+
+	"github.com/FerretDB/wire/wirebson"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // msgFindAndModify implements `findAndModify` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgFindAndModify(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.RawDocument()
+	spec, err := req.OpMsg.DocumentRaw()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
-	doc, err := spec.Decode()
+	doc, err := req.OpMsg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -46,13 +50,19 @@ func (h *Handler) msgFindAndModify(connCtx context.Context, req *middleware.Requ
 		return nil, err
 	}
 
-	conn, err := h.Pool.Acquire()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+	// TODO https://github.com/microsoft/documentdb/issues/148
+	if v := doc.Get("bypassEmptyTsReplacement"); v != nil {
+		h.L.WarnContext(connCtx, "bypassEmptyTsReplacement is not supported by DocumentDB yet", slog.Any("value", v))
+		doc.Remove("bypassEmptyTsReplacement")
+		spec = must.NotFail(doc.Encode())
 	}
-	defer conn.Release()
 
-	res, _, err := documentdb_api.FindAndModify(connCtx, conn.Conn(), h.L, dbName, spec)
+	var res wirebson.RawDocument
+
+	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
+		res, _, err = documentdb_api.FindAndModify(connCtx, conn, h.L, dbName, spec)
+		return err
+	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
