@@ -1,6 +1,6 @@
 ---
 # New or experimental linters that should pass (or be reconfigured)
-# for new FerretDB and tools code (compared to `origin/main`).
+# for new FerretDB and tools code (compared to `origin/main-v1`).
 
 run:
   timeout: 3m
@@ -174,7 +174,7 @@ issues:
   max-issues-per-linter: 0
   max-same-issues: 0
 
-  new-from-rev: origin/main
+  new-from-rev: origin/main-v1
   # whole-files: true
 
   exclude-use-default: false
