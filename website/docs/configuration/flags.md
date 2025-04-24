@@ -9,6 +9,14 @@ You can always see the complete list by using `--help` flag.
 To make user experience cloud native, every flag has its environment variable equivalent.
 There is no configuration file.
 
+However, you can use a bash script to configure and run FerretDB. Here's an example:
+
+```bash
+#!/bin/sh
+export FERRETDB_POSTGRESQL_URL=xxx
+exec ferretdb
+```
+
 :::info
 Some default values are overridden in [our Docker image](../installation/ferretdb/docker.md).
 :::
