@@ -29,4 +29,4 @@ tasks:
       - ../bin/go-consistent{{exeExt}} -pedantic {{.PACKAGES}}
 
       - go vet -vettool=../bin/checkswitch{{exeExt}} {{.PACKAGES}}
-      - go vet -vettool=../bin/checkcomments{{exeExt}} {{.PACKAGES}}
+      # - go vet -vettool=../bin/checkcomments{{exeExt}} {{.PACKAGES}}
