@@ -10,4 +10,5 @@ gen:
 	cat client-cert.pem client-key.pem > client.pem
 	mkcert -cert-file server-cert.pem -key-file server-key.pem $(HOSTS)
 	cat server-cert.pem server-key.pem > server.pem
+	mv rootCA.pem rootCA-cert.pem
 	mkcert -uninstall
