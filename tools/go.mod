@@ -4,8 +4,6 @@ go 1.24.1
 
 toolchain go1.24.2
 
-// replace github.com/FerretDB/wire => ../../wire
-
 tool (
 	github.com/FerretDB/FerretDB/v2/tools/checkcomments
 	github.com/FerretDB/FerretDB/v2/tools/checkdocs
