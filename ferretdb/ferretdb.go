@@ -70,6 +70,8 @@ type Config struct {
 
 	// EnabledTelemetry set the telemetry enable or not.
 	// If empty, the telemetry is enabled by default.
+	// If empty in embedded FerretDB, the telemetry is undecided by default.
+	// refer to https://docs.ferretdb.io/telemetry/#configuration
 	EnabledTelemetry *bool
 }
 
@@ -84,13 +86,6 @@ func New(config *Config) (*FerretDB, error) {
 	version.Get().Package = "embedded"
 
 	sp, err := state.NewProviderDir(config.StateDir)
-	if err == nil {
-		// TODO https://github.com/FerretDB/FerretDB/issues/4750
-		err = sp.Update(func(s *state.State) {
-			s.TelemetryLocked = true
-		})
-	}
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to set up state provider: %w", err)
 	}
