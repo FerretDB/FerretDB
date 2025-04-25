@@ -26,22 +26,30 @@ The index specification document specifies the fields to be indexed, the index n
 
 ```js
 db.runCommand({
-  createIndexes: "<string>",
+  createIndexes: '<collection_name>', // string
   indexes: [
     {
-      key: { "<field>": <int32 or string>,
-        ...
-        // Additional fields can go here
-       },
-      name: "<string>",
-      unique: <boolean>, // Optional for unique indexes
-      partialFilterExpression: <document>, // Optional for partial indexes
-      expireAfterSeconds: <int32> // Optional for TTL indexes
-      sparse: <boolean> // Optional for sparse indexes
-      cosmosSearchOptions: <document> // Optional for vector indexes
-    },
-    ...,
-    // Additional index specification documents can go here
+      key: {
+        '<field1>': 1, // ascending
+        '<field2>': -1, // descending
+        '<field3>': 'text' // or other supported type
+        // Add more fields as needed
+      },
+      name: '<index_name>', // string
+      unique: true, // Optional
+      partialFilterExpression: {
+        '<field>': { $gte: '<value>' }
+      }, // Optional
+      expireAfterSeconds: 3600, // Optional
+      sparse: true, // Optional
+      cosmosSearchOptions: {
+        kind: 'vector-diskann',
+        dimensions: 3,
+        similarity: 'COS'
+        // Add vector index options here
+      } // Optional
+    }
+    // Add more index specifications here
   ]
 })
 ```
