@@ -16,6 +16,8 @@ However, you can use a bash script to configure and run FerretDB. Here's an exam
 export FERRETDB_POSTGRESQL_URL=xxx
 exec ferretdb
 ```
+This approach avoids long command lines and improves clarity.
+Note: The use of exec is important—it replaces the shell with the FerretDB process, allowing it to correctly receive and handle termination signals (like SIGTERM). This is particularly important when running FerretDB as PID 1 in containers, ensuring a clean and graceful shutdown.
 
 :::info
 Some default values are overridden in [our Docker image](../installation/ferretdb/docker.md).
