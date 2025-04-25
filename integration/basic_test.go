@@ -88,8 +88,7 @@ func TestInsertFind(t *testing.T) {
 
 	for _, expected := range shareddata.Docs(providers...) {
 		expected := expected.(bson.D)
-		id, ok := expected.Map()["_id"]
-		require.True(t, ok)
+		id := GetKey(t, expected, "_id")
 
 		t.Run(fmt.Sprint(id), func(t *testing.T) {
 			t.Parallel()
