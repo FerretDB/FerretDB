@@ -8,7 +8,10 @@ slug: /compatible-applications
 import React from 'react';
 import { categorizedApps } from './applications.js';
 
+<!-- markdownlint-disable MD033 -->
+
 export const Grid = ({ apps }) => (
+
   <div style={{ maxWidth: '800px', margin: '0 auto' }}>
     <div
       style={{
@@ -83,3 +86,5 @@ Explore officially tested integrations with FerretDB.
 ## Other
 
 <Grid apps={categorizedApps["Other"]} />
+
+<!-- markdownlint-enable MD033 -->
