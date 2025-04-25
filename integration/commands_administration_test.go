@@ -1885,7 +1885,7 @@ func TestServerStatusCommand(t *testing.T) {
 			expected := bson.D{
 				{"version", info.Version},
 				{"gitVersion", info.Commit},
-				{"debug", false},
+				{"debug", true},
 				{"package", info.Package},
 				{"postgresql", version.PostgreSQL},
 				{"documentdb", version.DocumentDB},
@@ -2155,7 +2155,7 @@ func TestServerStatusCommandMetrics(t *testing.T) {
 				{"ferretdb", bson.D{
 					{"version", info.Version},
 					{"gitVersion", info.Commit},
-					{"debug", false},
+					{"debug", true},
 					{"package", info.Package},
 					{"postgresql", version.PostgreSQL},
 					{"documentdb", version.DocumentDB},
@@ -2337,7 +2337,7 @@ func TestServerStatusCommandFreeMonitoring(t *testing.T) {
 				{"ferretdb", bson.D{
 					{"version", info.Version},
 					{"gitVersion", info.Commit},
-					{"debug", false},
+					{"debug", true},
 					{"package", info.Package},
 					{"postgresql", version.PostgreSQL},
 					{"documentdb", version.DocumentDB},
