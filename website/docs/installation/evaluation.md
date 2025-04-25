@@ -11,7 +11,7 @@ We provide evaluation images that come with FerretDB and PostgreSQL with Documen
 
 You'll need [Docker](https://docs.docker.com/get-docker/) installed to run it.
 
-Run this command to start FerretDB and PostgreSQL with DocumentDB extension,
+Run this command to start FerretDB and PostgreSQL with DocumentDB extension;
 make sure to update `<username>` and `<password>`:
 
 ```sh
