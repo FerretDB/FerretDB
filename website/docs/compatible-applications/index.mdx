@@ -1,0 +1,85 @@
+---
+sidebar_position: 1
+slug: /compatible-applications
+---
+
+# Compatible Applications
+
+import React from 'react';
+import { categorizedApps } from './applications.js';
+
+export const Grid = ({ apps }) => (
+  <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+        gap: '1.5rem',
+        marginTop: '1rem',
+        justifyContent: 'center', // helps prevent single item stretch
+      }}
+    >
+      {apps.map(({ name, logo, link }) => (
+        <a
+          key={name}
+          href={link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="card"
+          style={{
+            padding: '1rem',
+            textAlign: 'center',
+            textDecoration: 'none',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            height: '100%',
+          }}
+        >
+          <img
+            src={logo}
+            alt={`${name} logo`}
+            style={{ width: '40px', height: '40px', marginBottom: '1rem' }}
+          />
+          <b>{name}</b>
+        </a>
+      ))}
+    </div>
+  </div>
+);
+
+Explore officially tested integrations with FerretDB.
+
+<div style={{ marginTop: '3rem' }} />
+
+## GUI / Client Tools
+
+<Grid apps={categorizedApps["GUI / Client Tools"]} />
+
+## Deployment Platforms
+
+<Grid apps={categorizedApps["Deployment Platforms"]} />
+
+## Database Backends
+
+<Grid apps={categorizedApps["Database Backends"]} />
+
+## Monitoring / Observability
+
+<Grid apps={categorizedApps["Monitoring / Observability"]} />
+
+## Data Migration
+
+<Grid apps={categorizedApps["Data Migration"]} />
+
+## Authentication / Security
+
+<Grid apps={categorizedApps["Authentication / Security"]} />
+
+## Frameworks / SDKs
+
+<Grid apps={categorizedApps["Frameworks / SDKs"]} />
+
+## Other
+
+<Grid apps={categorizedApps["Other"]} />

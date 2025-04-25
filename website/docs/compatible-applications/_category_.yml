@@ -1,0 +1,9 @@
+---
+label: Compatible applications
+position: 1.5
+link:
+  # type: generated-index
+  # slug: /configuration
+  description: >
+    This section provides a list of applications that are compatible with
+    FerretDB.
