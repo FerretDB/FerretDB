@@ -67,6 +67,10 @@ type Config struct {
 
 	// Defaults to [io.Discard], effectively disabling logging.
 	LogOutput io.Writer
+
+	// EnabledTelemetry set the telemetry enable or not.
+	// If empty, the telemetry is enabled by default.
+	EnabledTelemetry *bool
 }
 
 // FerretDB represents an instance of embedded FerretDB implementation.
@@ -114,16 +118,17 @@ func New(config *Config) (*FerretDB, error) {
 	lm := connmetrics.NewListenerMetrics()
 
 	tr, err := telemetry.NewReporter(&telemetry.NewReporterOpts{
-		URL:            "https://beacon.ferretdb.com/",
-		Dir:            config.StateDir,
-		F:              new(telemetry.Flag),
-		DNT:            os.Getenv("DO_NOT_TRACK"),
-		ExecName:       os.Args[0],
-		P:              sp,
-		ConnMetrics:    lm.ConnMetrics,
-		L:              logging.WithName(logger, "telemetry"),
-		UndecidedDelay: time.Hour,
-		ReportInterval: 24 * time.Hour,
+		URL:              "https://beacon.ferretdb.com/",
+		Dir:              config.StateDir,
+		F:                new(telemetry.Flag),
+		DNT:              os.Getenv("DO_NOT_TRACK"),
+		ExecName:         os.Args[0],
+		EnabledTelemetry: config.EnabledTelemetry,
+		P:                sp,
+		ConnMetrics:      lm.ConnMetrics,
+		L:                logging.WithName(logger, "telemetry"),
+		UndecidedDelay:   time.Hour,
+		ReportInterval:   24 * time.Hour,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create telemetry reporter: %w", err)
