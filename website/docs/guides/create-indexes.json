@@ -1,5 +1,32 @@
 {
-  "1-create-unique-indexes": {
+  "1-create-simple-index": {
+    "request": {
+      "createIndexes": "books",
+      "indexes": [
+        {
+          "key": {
+            "title": {
+              "$numberInt": "1"
+            }
+          },
+          "name": "title_index"
+        }
+      ]
+    },
+    "response": {
+      "numIndexesBefore": {
+        "$numberInt": "1"
+      },
+      "numIndexesAfter": {
+        "$numberInt": "2"
+      },
+      "createdCollectionAutomatically": true,
+      "ok": {
+        "$numberDouble": "1.0"
+      }
+    }
+  },
+  "2-create-unique-index": {
     "request": {
       "createIndexes": "books",
       "indexes": [
@@ -27,7 +54,7 @@
       }
     }
   },
-  "2-create-compound-indexes": {
+  "3-create-compound-index": {
     "request": {
       "createIndexes": "books",
       "indexes": [
@@ -57,7 +84,7 @@
       }
     }
   },
-  "3-create-partial-indexes": {
+  "4-create-partial-index": {
     "request": {
       "createIndexes": "books",
       "indexes": [

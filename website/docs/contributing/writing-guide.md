@@ -88,7 +88,21 @@ Rather than use relative paths, we strongly suggest the following approach, sinc
 
 Always specify the language in Markdown code blocks.
 
-For MongoDB shell commands, use `js` language.
+### MongoDB shell commands and results
+
+#### Documentation
+
+For our documentation, we use the CTS tool to test and validate the code snippets for the MongoDB shell commands and responses.
+All MongoDB shell commands and responses should be written in the `website/docs/guides/` folder in extended JSON format.
+See this [example](../guides/create-indexes.json) for reference.
+
+The CTS tool will be responsible for generating the formatted code snippets which can be imported into MDX files.
+Run `task docs` to generate the formatted code snippets.
+The generated code snippets will be stored in `.js` files under `website/docs/guides/requests/<extended-json-file-name>` and `website/docs/guides/responses/<extended-json-file-name>` folders.
+
+#### Blog posts
+
+For blog posts, please use `js` language for MongoDB shell commands.
 Our tooling will automatically reformat those blocks.
 
 ```js
@@ -112,6 +126,10 @@ response = [
   }
 ]
 ```
+
+### Other code blocks
+
+The following formatting instructions apply for both documentation and blog posts.
 
 Use `sql` for SQL queries.
 Use `text` for the `psql` output and in other cases.

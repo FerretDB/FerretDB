@@ -3,83 +3,103 @@ sidebar_position: 1
 description: Create one or more indexes on a collection to improve query performance and enable certain query features.
 ---
 
-# `createIndexes` Command
+# `createIndexes` command
 
 import CodeBlock from '@theme/CodeBlock';
-import CreateUniqueIndex from '!!raw-loader!../../guides/requests/create-indexes/1-create-unique-indexes.js';
-import CreateCompoundIndex from '!!raw-loader!../../guides/requests/create-indexes/2-create-compound-indexes.js';
-import CreatePartialIndex from '!!raw-loader!../../guides/requests/create-indexes/3-create-partial-indexes.js';
+import CreateIndex from '!!raw-loader!../../guides/requests/create-indexes/1-create-simple-index.js';
+import CreateUniqueIndex from '!!raw-loader!../../guides/requests/create-indexes/2-create-unique-index.js';
+import CreateCompoundIndex from '!!raw-loader!../../guides/requests/create-indexes/3-create-compound-index.js';
+import CreatePartialIndex from '!!raw-loader!../../guides/requests/create-indexes/4-create-partial-index.js';
 
 <!-- Category for Command "Administrative, Diagnostic, and Utility Commands" should be organized per folder as present in the compatibility document -->
 
 <!-- Short description of the command and its usage. -->
 
-Creates one or more indexes on the specified collection.
-
-Indexes improve query performance and enable certain query features (e.g., uniqueness, sorting, partial matches).
+Create one or more indexes on a given collection to improve query performance or enable certain query features (e.g., full-text, vector, and TTL indexes).
 
 <!-- Syntax structure of the command -->
 
 <!-- markdownlint-disable MD033 -->
 
+This command accepts a collection name and an array of index specification documents.
+The index specification document specifies the fields to be indexed, the index name, and other options such as uniqueness, partial filter expressions, and expiration times for TTL indexes.
+
 ```js
 db.runCommand({
-  createIndexes: <collection>,
+  createIndexes: "<string>",
   indexes: [
     {
-      key: <index specification>,
-      name: <index name>,
-      unique: <boolean>,
-      partialFilterExpression: <filter expression>,
-      expireAfterSeconds: <integer>
+      key: { "<field>": <int32 or string>,
+        ...
+        // Additional fields can go here
+       },
+      name: "<string>",
+      unique: <boolean>, // Optional for unique indexes
+      partialFilterExpression: <document>, // Optional for partial indexes
+      expireAfterSeconds: <int32> // Optional for TTL indexes
+      sparse: <boolean> // Optional for sparse indexes
+      cosmosSearchOptions: <document> // Optional for vector indexes
     },
-    // ... more index specifications
+    ...,
+    // Additional index specification documents can go here
   ]
 })
 ```
 
-This command accepts a list of index specifications and applies them to a given collection.
+<!-- majorly fields such as arguments, modifers, stage, operators, parameters, options supported by the command in a table (if necessary or available). Takes in the following parameters: -->
 
-<!-- majorly options such as arguments,modieifers, stage, operators, parameters, options supported by the command in a table (if necessary or available). Takes in the following parameters: -->
+| Field                     | Type     | Description                                                                                                                                                                                                           |
+| ------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `createIndexes`           | string   | The name of the collection.                                                                                                                                                                                           |
+| `indexes`                 | array    | An array of index specification documents. Each document defines an index.                                                                                                                                            |
+| `key`                     | document | A single document that contains the field(s) to index and their sort order or type (`1`, `-1`, `"text"`, `cosmosSearch` for vector indexes, etc).                                                                     |
+| `name`                    | string   | A required name for the index. Must be unique to the collection.                                                                                                                                                      |
+| `unique`                  | boolean  | Ensures all values are unique for the indexed field if set to `true`.                                                                                                                                                 |
+| `partialFilterExpression` | document | Restricts index to documents matching the condition.                                                                                                                                                                  |
+| `expireAfterSeconds`      | int32    | For TTL indexes. Automatically deletes documents after set time.                                                                                                                                                      |
+| `sparse`                  | boolean  | Only indexes documents that contain the indexed field if set to `true`.                                                                                                                                               |
+| `cosmosSearchOptions`     | document | Specifies the configuration parameters (`kind`, `similarity`, `dimensions`, etc.) for the vector index to suit your specific use case. [See vector index parameters for more details](../../guides/vector-search.mdx) |
 
-| Argument/Parameter        | Type    | Description                                                                  |
-| ------------------------- | ------- | ---------------------------------------------------------------------------- |
-| `createIndexes`           | string  | The name of the collection on which to create the index.                     |
-| `indexes`                 | array   | An array of index specification objects. Each object defines one index.      |
-| `key`                     | object  | The fields to index and their sort order or type (`1`, `-1`, `"text"`, etc). |
-| `name`                    | string  | A required name for the index. Must be unique per collection.                |
-| `unique`                  | bool    | Optional. If `true`, ensures all values are unique for the indexed field.    |
-| `partialFilterExpression` | object  | Optional. Restricts index to documents matching the condition.               |
-| `expireAfterSeconds`      | integer | Optional. For TTL indexes. Automatically deletes documents after set time.   |
+## Example usage
 
-## Example Usage
+The following examples demonstrate how to create different types of indexes.
 
-### 1. Create a Unique Index on `isbn`
+### Create an index
 
-<CodeBlock language="js">{CreateUniqueIndex}</CodeBlock>
+This example creates a simple index on the `title` field in the `books` collection.
 
-This ensures that each book in the `books` collection has a unique ISBN, preventing duplicates across editions or entries.
+<CodeBlock language="js">{CreateIndex}</CodeBlock>
 
-### 2. Create Compound Index on `publication.date` and `analytics.average_rating`
+### Create compound index
+
+This example creates a compound index on the `publication.date` and `analytics.average_rating` fields in the `books` collection.
 
 <CodeBlock language="js">{CreateCompoundIndex}</CodeBlock>
 
-This compound index can improve performance when filtering or sorting books by their publication date and average rating — for example, fetching recent highly rated books.
+### Create a unique index
 
-### 3. Create a Partial Index for Available E-books in India
+This example creates a unique index on the `isbn` field in the `books` collection to ensure that each book has a unique ISBN.
+
+<CodeBlock language="js">{CreateUniqueIndex}</CodeBlock>
+
+### Create a partial index
+
+Let's create a partial index on the `books` collection where the book is released in India and available in E-book format.
 
 <CodeBlock language="js">{CreatePartialIndex}</CodeBlock>
 
-This index only applies to documents where the book is released in India and available in E-book format, reducing index size and improving targeted query performance.
+## Limitations or constraints
 
-## Additional Information
+<!-- If there are any known limitations or contraints, list them here -->
 
-Please find advanced index creation examples here:
+## Additional information
+
+<!-- Include and link to other related materials or information here -->
+
+Please find other advanced index creation examples below:
 
 - [Vector Indexes](../../guides/vector-search.mdx)
 - [TTL Indexes](../../guides/ttl-indexes.mdx)
 - [Full-Text Indexes](../../guides/full-text-search.mdx)
-
-## Limitations or Constraints
 
 <!-- markdownlint-enable MD033 -->
