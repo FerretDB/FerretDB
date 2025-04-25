@@ -109,8 +109,7 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 					allDocs := FindAll(t, ctx, targetCollection)
 
 					for _, doc := range allDocs {
-						id, ok := doc.Map()["_id"]
-						require.True(t, ok)
+						id := GetKey(t, doc, "_id")
 
 						t.Run(fmt.Sprint(id), func(tt *testing.T) {
 							tt.Helper()
