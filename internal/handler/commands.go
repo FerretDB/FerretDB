@@ -33,7 +33,9 @@ type command struct {
 	// handler processes this command.
 	//
 	// The passed context is canceled when the client disconnects.
-	handler middleware.HandleFunc
+	//
+	// Currently, it is the same as [middleware.HandleFunc], but it does not have to be.
+	handler func(context.Context, *middleware.Request) (*middleware.Response, error)
 
 	// Help is shown in the `listCommands` command output.
 	// If empty, that command is hidden, but still can be used.
