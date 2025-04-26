@@ -27,11 +27,11 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgCreateUser implements `createUser` command.
+// msgCreateUser implements `createUser` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgCreateUser(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.RawDocument()
+func (h *Handler) msgCreateUser(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, err := req.OpMsg.DocumentRaw()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

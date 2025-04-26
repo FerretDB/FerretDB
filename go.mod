@@ -6,7 +6,7 @@ toolchain go1.24.2
 
 require (
 	github.com/AlekSi/pointer v1.2.0
-	github.com/FerretDB/wire v0.0.19
+	github.com/FerretDB/wire v0.0.24
 	github.com/alecthomas/kong v1.10.0
 	github.com/arl/statsviz v0.6.0
 	github.com/google/uuid v1.6.0
@@ -19,7 +19,7 @@ require (
 	github.com/prometheus/common v0.63.0
 	github.com/stretchr/testify v1.10.0
 	github.com/xdg-go/scram v1.1.2
-	go.mongodb.org/mongo-driver/v2 v2.1.1-0.20250407150314-cd295b66f41d
+	go.mongodb.org/mongo-driver/v2 v2.2.0
 	go.opentelemetry.io/otel v1.35.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.35.0
 	go.opentelemetry.io/otel/sdk v1.35.0
@@ -52,6 +52,7 @@ require (
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
+	go.mongodb.org/mongo-driver v1.17.3 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.35.0 // indirect
 	go.opentelemetry.io/otel/metric v1.35.0 // indirect
