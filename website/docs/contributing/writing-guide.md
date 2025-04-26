@@ -131,6 +131,24 @@ response = [
 
 The following formatting instructions apply for both documentation and blog posts.
 
+For MongoDB command syntax or pseudocode expressions, use `js` language and enusre the code snippet is written in valid `js` syntax.
+
+For example:
+
+```js
+db.runCommand({
+  find: 'collection_name',
+  filter: {
+    field1: 'value1',
+    field2: 123,
+    field3: true,
+    field4: { $in: ['value2', 'value3'] },
+    field5: { $gt: 10 }
+  },
+  projection: { field1: 1, field2: 0 }
+})
+```
+
 Use `sql` for SQL queries.
 Use `text` for the `psql` output and in other cases.
 
