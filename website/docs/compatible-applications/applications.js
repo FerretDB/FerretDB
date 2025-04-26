@@ -53,7 +53,7 @@ export const categorizedApps = {
     {
       name: 'Tembo',
       logo: '/img/integrations/tembo.svg',
-      link: 'https://blog.ferretdb.io/run-ferretdb-on-tembo-managed-postgres/'
+      link: 'https://blog.ferretdb.io/run-mongodb-workloads-ferretdb-tembo/'
     },
     {
       name: 'Aiven for PostgreSQL',
@@ -66,7 +66,7 @@ export const categorizedApps = {
     {
       name: 'StackGres',
       logo: '/img/integrations/stackgres.svg',
-      link: 'https://blog.ferretdb.io/deploy-ferretdb-stackgres/'
+      link: 'https://blog.ferretdb.io/run-ferretdb-on-stackgres/'
     },
     {
       name: 'CloudNativePG',
@@ -81,20 +81,13 @@ export const categorizedApps = {
     {
       name: 'Percona Distribution for PostgreSQL',
       logo: '/img/integrations/percona.svg',
-      link: 'https://blog.ferretdb.io/run-ferretdb-percona-postgres-operator/'
+      link: 'https://blog.ferretdb.io/deploy-ferretdb-kubernetes-taikun-cloudworks/#install-percona-postgresql-operator'
     },
     {
       name: 'Neon',
       logo: '/img/integrations/neon.svg',
-      link: 'https://blog.ferretdb.io/running-ferretdb-on-neon-serverless-postgres/'
+      link: 'https://blog.ferretdb.io/ferretdb-neon-add-mongodb-compatibility/'
     },
-    {
-      name: 'SQLite',
-      logo: '/img/integrations/sqlite.svg',
-      link: 'https://blog.ferretdb.io/how-ferretdb-supports-sqlite/'
-    },
-    { name: 'PGEdge', logo: '/img/integrations/pgedge.svg', link: '#' },
-    { name: 'Yugabyte', logo: '/img/integrations/yugabyte.svg', link: '#' }
   ],
   'Monitoring / Observability': [
     {
@@ -108,14 +101,9 @@ export const categorizedApps = {
       link: 'https://blog.ferretdb.io/monitor-ferretdb-performance-using-coroot/'
     },
     {
-      name: 'Prometheus',
-      logo: '/img/integrations/prometheus.svg',
-      link: 'https://blog.ferretdb.io/prometheus-monitoring-ferretdb/'
-    },
-    {
       name: 'OpenTelemetry',
       logo: '/img/integrations/opentelemetry.svg',
-      link: 'https://blog.ferretdb.io/observability-ferretdb-opentelemetry/'
+      link: 'https://blog.ferretdb.io/otel-context-propagation-in-ferretdb/'
     }
   ],
   'Data Migration': [
@@ -131,11 +119,6 @@ export const categorizedApps = {
       logo: '/img/integrations/openziti.svg',
       link: 'https://blog.ferretdb.io/run-ferretdb-securely-using-openziti/'
     },
-    {
-      name: 'CLA Assistant',
-      logo: '/img/integrations/cla-assistant.svg',
-      link: 'https://blog.ferretdb.io/using-cla-assistant-with-ferretdb/'
-    }
   ],
   'Frameworks / SDKs': [
     {
@@ -145,16 +128,6 @@ export const categorizedApps = {
     }
   ],
   Other: [
-    {
-      name: 'Docker',
-      logo: '/img/integrations/docker.svg',
-      link: 'https://blog.ferretdb.io/how-to-start-ferretdb-locally-with-docker/'
-    },
-    {
-      name: 'Tigris Data',
-      logo: '/img/integrations/tigris.svg',
-      link: 'https://blog.ferretdb.io/compare-ferretdb-tigris/'
-    },
     {
       name: 'Illa Cloud',
       logo: '/img/integrations/illa-cloud.svg',
