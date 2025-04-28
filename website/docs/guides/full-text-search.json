@@ -89,7 +89,24 @@
       }
     }
   },
-  "4-compound-text-index": {
+  "4-drop-text-index": {
+    "request": {
+      "dropIndexes": "books-2",
+      "index": "summary_text_index",
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "ok": {
+        "$numberDouble": "0.0"
+      },
+      "errmsg": "[response.go:63 middleware.ResponseMsg] [op_msg.go:55 wire.NewOpMsg] [op_msg.go:85 wire.(*OpMsg).check] [raw_document.go:68 wirebson.RawDocument.DecodeDeep] [raw_document.go:78 wirebson.RawDocument.decode] [decode.go:65 wirebson.FindRaw] len(b) = 69, dl = 1313821506: wirebson: short input",
+      "code": {
+        "$numberInt": "1"
+      },
+      "codeName": "InternalError"
+    }
+  },
+  "5-compound-text-index": {
     "request": {
       "createIndexes": "books-2",
       "indexes": [
@@ -104,14 +121,16 @@
       "$db": "{{.Database}}"
     },
     "response": {
+      "numIndexesBefore": {
+        "$numberInt": "1"
+      },
+      "numIndexesAfter": {
+        "$numberInt": "2"
+      },
+      "createdCollectionAutomatically": false,
       "ok": {
-        "$numberDouble": "0.0"
-      },
-      "errmsg": "Expected exactly one text index. Requested index: { \"v\" : 2, \"key\" : { \"title\" : \"text\", \"summary\" : \"text\" }, \"name\" : \"title_summary_text_index\" }, existing index: { \"v\" : 2, \"key\" : { \"summary\" : \"text\" }, \"name\" : \"summary_text_index\" }",
-      "code": {
-        "$numberInt": "17194"
-      },
-      "codeName": "ExactlyOneTextIndex"
+        "$numberDouble": "1.0"
+      }
     }
   },
   "5-relevance-score": {
