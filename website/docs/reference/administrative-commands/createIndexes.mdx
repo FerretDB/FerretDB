@@ -3,7 +3,7 @@ sidebar_position: 1
 description: Create one or more indexes on a collection to improve query performance and enable certain query features.
 ---
 
-# `createIndexes` command
+# `createIndexes`
 
 import CodeBlock from '@theme/CodeBlock';
 import CreateIndex from '!!raw-loader!../../guides/requests/create-indexes/1-create-simple-index.js';
@@ -32,7 +32,7 @@ db.runCommand({
       key: {
         '<field1>': 1, // ascending
         '<field2>': -1, // descending
-        '<field3>': 'text' // or other supported type
+        '<field3>': 'text' // for full-text search
         // Add more fields as needed
       },
       name: '<index_name>', // string
@@ -96,7 +96,7 @@ Let's create a partial index on the `books` collection where the book is release
 
 <CodeBlock language="js">{CreatePartialIndex}</CodeBlock>
 
-## Limitations or constraints
+<!--  ## Limitations or constraints -->
 
 <!-- If there are any known limitations or contraints, list them here -->
 
@@ -104,7 +104,7 @@ Let's create a partial index on the `books` collection where the book is release
 
 <!-- Include and link to other related materials or information here -->
 
-Please find other advanced index creation examples below:
+Please find other usages of `createIndexes` below:
 
 - [Vector Indexes](../../guides/vector-search.mdx)
 - [TTL Indexes](../../guides/ttl-indexes.mdx)
