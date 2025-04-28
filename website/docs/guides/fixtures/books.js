@@ -87,7 +87,7 @@ db.books.insertMany([
     },
     digital_metadata: { download_link: 'https://www.gutenberg.org/ebooks/2701', formats: ['PDF', 'EPUB', 'MOBI'] },
     summary:
-      'Ishmael recounts his journey aboard the whaling ship Pequod under the leadership of the obsessed Captain Ahab, who is driven to exact revenge on the legendary white whale, Moby Dick. The novel delves into themes of human struggle against nature and the destructive power of obsession.'
+      'Ishmael recounts his journey aboard the whaling ship Pequod under the leadership of the obsessed Captain Ahab, who is obsessed with hunting the legendary white whale, Moby Dick. The novel delves into themes of human struggle against nature and the destructive power of obsession.'
   },
   {
     _id: 'frankenstein_1818',
