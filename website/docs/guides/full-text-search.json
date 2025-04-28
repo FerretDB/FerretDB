@@ -90,6 +90,7 @@
     }
   },
   "4-drop-text-index": {
+	"$comment": "Index is effectively dropped, although the output is broken because of https://github.com/FerretDB/FerretDB/issues/4730. TODO: use this code in the blogpost where it mentions that index should be dropped.",
     "request": {
       "dropIndexes": "books-2",
       "index": "summary_text_index",
