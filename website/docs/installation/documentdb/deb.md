@@ -28,9 +28,21 @@ Ensure to replace `/path/to/documentdb.deb` with the actual path and filename of
 Once installed, update your `postgresql.conf` to load the extension libraries on startup into the default `postgres` database.
 Add the following lines to `postgresql.conf`:
 
+<!-- Keep in sync with https://github.com/FerretDB/documentdb/blob/ferretdb/ferretdb_packaging/10-preload.sh -->
+
 ```text
-shared_preload_libraries = 'pg_cron,pg_documentdb_core,pg_documentdb'
-cron.database_name       = 'postgres'
+shared_preload_libraries                      = 'pg_cron,pg_documentdb_core,pg_documentdb'
+cron.database_name                            = 'postgres'
+
+documentdb.enableLetAndCollationForQueryMatch = true
+documentdb.enableNowSystemVariable            = true
+documentdb.enableSortbyIdPushDownToPrimaryKey = true
+
+documentdb.enableSchemaValidation             = true
+documentdb.enableBypassDocumentValidation     = true
+
+documentdb.enableUserCrud                     = true
+documentdb.maxUserLimit                       = 100
 ```
 
 Ensure to restart PostgreSQL for the changes to take effect.

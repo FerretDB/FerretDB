@@ -88,8 +88,7 @@ func TestInsertFind(t *testing.T) {
 
 	for _, expected := range shareddata.Docs(providers...) {
 		expected := expected.(bson.D)
-		id, ok := expected.Map()["_id"]
-		require.True(t, ok)
+		id := GetKey(t, expected, "_id")
 
 		t.Run(fmt.Sprint(id), func(t *testing.T) {
 			t.Parallel()
@@ -581,7 +580,7 @@ func TestDebugCommandErrors(t *testing.T) {
 		}
 		AssertMatchesCommandError(t, expected, res.Err())
 
-		msg := `(InternalError) [msg_ferretdebugerror.go:68 handler.(*Handler).MsgFerretDebugError] lazy error`
+		msg := `(InternalError) [msg_ferretdebugerror.go:68 handler.(*Handler).msgFerretDebugError] lazy error`
 		assert.EqualError(t, res.Err(), msg)
 
 		var doc bson.D
