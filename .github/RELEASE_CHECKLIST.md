@@ -4,7 +4,8 @@
 
 1. [Release DocumentDB](https://github.com/FerretDB/documentdb/blob/ferretdb/.github/RELEASE_CHECKLIST.md).
 2. Update DocumentDB image tags to point to release in:
-   - [evaluation image](../build/ferretdb/evaluation.Dockerfile);
+   - [eval image](../build/ferretdb/eval.Dockerfile);
+   - [eval-dev image](../build/ferretdb/eval-dev.Dockerfile);
    - [local image](../build/deps/postgres-documentdb.Dockerfile).
 3. Update constants in [`documentdb.go`](../build/version/documentdb.go).
 4. Check DocumentDB images tags in documentation (where we specify full tags).
@@ -44,12 +45,15 @@
    - https://hub.docker.com/r/ferretdb/ferretdb/tags
    - https://hub.docker.com/r/ferretdb/ferretdb-dev/tags
    - https://hub.docker.com/r/ferretdb/ferretdb-eval/tags
+   - https://hub.docker.com/r/ferretdb/ferretdb-eval-dev/tags
    - https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb
    - https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb-dev
    - https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb-eval
+   - https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb-eval-dev
    - https://quay.io/repository/ferretdb/ferretdb?tab=tags
    - https://quay.io/repository/ferretdb/ferretdb-dev?tab=tags
    - https://quay.io/repository/ferretdb/ferretdb-eval?tab=tags
+   - https://quay.io/repository/ferretdb/ferretdb-eval-dev?tab=tags
 5. Close milestone in issues.
 6. Publish release on GitHub.
 7. Announce it on Slack.
