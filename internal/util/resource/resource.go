@@ -22,25 +22,24 @@ import (
 	runtimedebug "runtime/debug"
 	"runtime/pprof"
 	"sync"
-	"sync/atomic"
 	"unsafe"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
 )
 
-// Token should be a field of a tracked object.
+// Token is a field of a tracked object, holding the cleanup and message.
 //
-// Contains a byte field to ensure unique memory addresses, as Go spec states
-// "Two distinct zero-size variables may have the same address in memory".
-// Also stores cleanup handle for proper resource management.
+// The cleanup is used to stop scheduled cleanups when Untrack is called,
+// and the message contains debug information that will be shown in panic
+// if the object is not properly finalized.
 type Token struct {
-	cleanup atomic.Pointer[runtime.Cleanup]
-	token   byte
+	cleanup *runtime.Cleanup
+	msg     string
 }
 
 // NewToken returns a new Token.
 func NewToken() *Token {
-	return &Token{token: *new(byte)}
+	return new(Token)
 }
 
 // profilesM protects access to profiles.
@@ -54,7 +53,6 @@ func profileName(obj any) string {
 // Track tracks the lifetime of an object until Untrack is called on it.
 //
 // Obj should be a pointer to a struct with a field "token" of type *Token.
-// Uses generics to provide type safety.
 func Track[T any](obj *T, token *Token) {
 	checkArgs(obj, token)
 
@@ -81,18 +79,17 @@ func Track[T any](obj *T, token *Token) {
 	// because otherwise profile will hold a reference to obj and cleanup will never run
 	p.Add(token, 1)
 
-	msg := fmt.Sprintf("%T has not been finalized", obj)
+	token.msg = fmt.Sprintf("%T has not been finalized", obj)
 	if devbuild.Enabled {
-		msg += "\nObject created by " + string(runtimedebug.Stack())
+		token.msg += "\nObject created by " + string(runtimedebug.Stack())
 	}
 
 	c := runtime.AddCleanup(obj, func(msg string) {
 		panic(msg)
-	}, msg,
+	}, token.msg,
 	)
 
-	// Assign cleanup-handler to current token so Untrack can Stop() it later.
-	token.cleanup.Store(&c)
+	token.cleanup = &c
 }
 
 // Untrack stops tracking the lifetime of an object.
@@ -108,9 +105,10 @@ func Untrack[T any](obj *T, token *Token) {
 
 	p.Remove(token)
 
-	// Look up the handle by token and Stop() it to cancel the scheduled cleanup.
-	if h := token.cleanup.Swap(nil); h != nil {
+	// Look up the cleanup by token and Stop() it to cancel the scheduled cleanup.
+	if h := token.cleanup; h != nil {
 		h.Stop()
+		token.cleanup = nil
 	}
 }
 

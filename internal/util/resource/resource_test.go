@@ -15,10 +15,10 @@
 package resource
 
 import (
+	"os"
 	"runtime"
 	"runtime/pprof"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -31,9 +31,9 @@ type TestTrackObject struct {
 func runGC(t *testing.T) {
 	t.Helper()
 
-	for i := 0; i < 8; i++ {
+	for i := 0; i < 3; i++ {
 		runtime.GC()
-		time.Sleep(10 * time.Millisecond)
+		runtime.Gosched()
 	}
 }
 
@@ -49,18 +49,12 @@ func entryCount(t *testing.T, obj any) int {
 	return 0
 }
 
-func TestTrackProfileEntryAdded(t *testing.T) {
+func TestTrackNoCleanupWhileReachable(t *testing.T) {
 	obj := &TestTrackObject{token: NewToken()}
 	Track(obj, obj.token)
 	t.Cleanup(func() { Untrack(obj, obj.token) })
 
 	assert.Equal(t, 1, entryCount(t, obj), "profile should have exactly one entry")
-}
-
-func TestTrackNoCleanupWhileReachable(t *testing.T) {
-	obj := &TestTrackObject{token: NewToken()}
-	Track(obj, obj.token)
-	t.Cleanup(func() { Untrack(obj, obj.token) })
 
 	// GC should not run cleanup because obj is still reachable.
 	runGC(t)
@@ -71,7 +65,12 @@ func TestTrackNoCleanupWhileReachable(t *testing.T) {
 }
 
 func TestTrackCleanupRunsWhenAbandoned(t *testing.T) {
-	t.Skip("cleanup panic occurs in another goroutine; needs sub‑process test")
+	// This test crashes the process via a panic raised during runtime cleanup.
+	// It should manually be tested,
+	// should occur panic with 'TestTrackObject has not been finalized'
+	if os.Getenv("FERRETDB_TEST_MANUAL") != "true" {
+		t.Skip("set FERRETDB_TEST_MANUAL=true to run cleanup panic test")
+	}
 
 	obj := &TestTrackObject{token: NewToken()}
 	Track(obj, obj.token)
@@ -80,6 +79,8 @@ func TestTrackCleanupRunsWhenAbandoned(t *testing.T) {
 	obj = nil
 
 	runGC(t)
+
+	t.Fatalf("expected cleanup panic did not occur")
 }
 
 func TestUntrackProfileEntryRemoved(t *testing.T) {
@@ -92,9 +93,9 @@ func TestUntrackProfileEntryRemoved(t *testing.T) {
 	token := obj.token
 	runtime.KeepAlive(obj)
 	obj = nil
+
 	// Object already unassigned from memory so cleanup is not necessary
 	runGC(t)
 
-	// Fixed field name to match implementation (cleanup not cleanupHandler)
-	assert.Nil(t, token.cleanup.Load(), "cleanup handle should be nil after Untrack")
+	assert.Nil(t, token.cleanup, "cleanup handle should be nil after Untrack")
 }
