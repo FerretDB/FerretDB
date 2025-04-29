@@ -14,7 +14,8 @@ db.runCommand({
         },
         returnStoredSource: true
       }
-    }
+    },
+    { $project: { title: 1, authors: 1, summary: 1, vector: 1 } }
   ],
   cursor: {},
   $db: 'db'
