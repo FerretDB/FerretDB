@@ -1,4 +1,11 @@
 ---
+aleksi:
+  name: Alexey Palazhchenko
+  title: Co-Founder, CTO
+  url: https://www.linkedin.com/in/alexeypalazhchenko/
+  image_url: https://github.com/AlekSi.png
+  page: true
+
 alex:
   name: Alexander Fashakin
   title: FerretDB Team
@@ -6,18 +13,18 @@ alex:
   image_url: https://github.com/fashander.png
   page: true
 
-peter:
-  name: Peter Farkas
-  title: Co-Founder, CEO
-  url: https://www.linkedin.com/in/farkasp/
-  image_url: https://github.com/ptrfarkas.png
+alvaro:
+  name: Álvaro Hernández
+  title: Founder and CEO @ OnGres
+  url: https://www.linkedin.com/in/ahachete
+  image_url: https://stackgres.io/img/team/alvaro.jpg
   page: true
 
-aleksi:
-  name: Alexey Palazhchenko
-  title: Co-Founder, CTO
-  url: https://www.linkedin.com/in/alexeypalazhchenko/
-  image_url: https://github.com/AlekSi.png
+artem:
+  name: Artem Ervits
+  title: Solutions Engineer at CockroachDB
+  url: https://www.linkedin.com/in/artemervits
+  image_url: img/blog/artem-ervits.jpeg
   page: true
 
 chi:
@@ -27,9 +34,73 @@ chi:
   image_url: https://github.com/chilagrow.png
   page: true
 
+dmitry:
+  name: Dmitry Eremenko
+  page: true
+
 elena:
   name: Elena Grahovac
   title: FerretDB Team
   url: https://www.linkedin.com/in/grahovac/
   image_url: https://github.com/rumyantseva.png
+  page: true
+
+farkasp:
+  name: Peter Farkas
+  title: Co-Founder, CEO
+  url: https://www.linkedin.com/in/farkasp/
+  image_url: https://github.com/ptrfarkas.png
+  page: true
+
+julian:
+  name: Julian König
+  title: Senior Developer at j&s-soft GmbH
+  image_url: /img/blog/julian.jpeg
+  page: true
+
+maciek:
+  name: Maciek Urbanski
+  title: Senior Platform Engineer at Elotl
+  url: https://www.linkedin.com/in/maciekurbanski/
+  image_url: /img/blog/maciek-urbanski.jpg
+  page: true
+
+marcin:
+  name: Marcin Gwóźdź
+  title: Director of Strategic Alliances at FerretDB
+  url: https://www.linkedin.com/in/marcin-gwóźdź-277abaa9
+  image_url: /img/blog/marcin-gwozdz.jpeg
+  page: true
+
+michael:
+  name: Michael Feygelman
+  title: Senior Project and Community Manager for enmeshed at j&s-soft GmbH
+  url: https://www.linkedin.com/in/%F0%9F%92%A1michael-feygelman%F0%9F%92%A1-1590aa1a4/
+  image_url: /img/blog/michael-feygelman.jpeg
+  page: true
+
+mike:
+  name: Mike Biondi
+  title: Engineering Manager of Cloud Native at Vultr
+  image_url: /img/blog/mike-biondi.jpeg
+  page: true
+
+patryk:
+  name: Patryk Kwiatek
+  page: true
+
+pavel:
+  name: Pavel Odintsov
+  title: Co-founder and CTO at FastNetMon
+  image_url: /img/blog/pavel-odintsov.jpeg
+  page: true
+
+peter:
+  name: Peter Benei
+  page: true
+
+samay:
+  name: Samay Sharma
+  title: Chief Technology Officer at Tembo
+  image_url: /img/blog/samay-sharma.jpeg
   page: true

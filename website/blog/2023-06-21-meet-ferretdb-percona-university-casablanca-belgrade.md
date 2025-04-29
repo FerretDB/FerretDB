@@ -1,7 +1,7 @@
 ---
 slug: meet-ferretdb-percona-university-casablanca-belgrade
 title: 'Meet FerretDB at Percona University in Casablanca and Belgrade'
-author: Peter Benei
+authors: [peter]
 description: >
   FerretDB joins Percona University to bring a truly open-source MongoDB alternative to the Casablanca, Morocco, and Belgrade, Serbia database community.
 image: /img/blog/percona-university.jpg

@@ -1,7 +1,7 @@
 ---
 slug: ferretdb-1-0-ga-opensource-mongodb-alternative
 title: Announcing FerretDB 1.0 GA - a truly Open Source MongoDB alternative
-authors: [peter]
+authors: [farkasp]
 description: >
   After many months of development, FerretDB is now production-ready. We are excited to announce the general availability of FerretDB v1.0.
 image: /img/blog/ferretdb-v1.0.jpg
