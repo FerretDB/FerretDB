@@ -13,7 +13,7 @@ However, you can use a bash script to configure and run FerretDB. Here's an exam
 
 ```bash
 #!/bin/sh
-export FERRETDB_POSTGRESQL_URL=xxx
+export FERRETDB_POSTGRESQL_URL='postgres://postgres:mysecretpassword@localhost:5432/ferretdb'
 exec ferretdb
 ```
 This approach avoids long command lines and improves clarity.
