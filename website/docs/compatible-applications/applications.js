@@ -34,108 +34,124 @@ export const categorizedApps = {
   'Deployment Platforms': [
     {
       name: 'Acorn',
-      logo: '/img/integrations/acorn.svg',
+      logo: '/img/integrations/abstract-logo.png',
       link: 'https://blog.ferretdb.io/how-to-package-and-deploy-ferretdb-with-acorn/'
     },
     {
       name: 'Elestio',
-      logo: '/img/integrations/elestio.svg',
+      logo: '/img/integrations/abstract-logo.png',
       link: 'https://blog.ferretdb.io/easily-deploy-managed-ferretdb-elestio/'
     },
-    { name: 'LeafCloud', logo: '/img/integrations/leafcloud.svg', link: '#' },
-    { name: 'Vultr', logo: '/img/integrations/vultr.svg', link: 'https://blog.ferretdb.io/deploy-ferretdb-on-vultr/' },
-    { name: 'Taikun CloudWorks', logo: '/img/integrations/taikun.svg', link: '#' },
+    {
+      name: 'LeafCloud',
+      logo: '/img/integrations/abstract-logo.png',
+      link: 'https://blog.ferretdb.io/deploy-run-ferretdb-leafcloud/'
+    },
+    {
+      name: 'Vultr',
+      logo: '/img/integrations/abstract-logo.png',
+      link: 'https://blog.ferretdb.io/deploy-ferretdb-on-vultr/'
+    },
+    {
+      name: 'Taikun CloudWorks',
+      logo: '/img/integrations/abstract-logo.png',
+      link: 'https://blog.ferretdb.io/deploy-ferretdb-kubernetes-taikun-cloudworks/'
+    },
     {
       name: 'KubeDB',
-      logo: '/img/integrations/kubedb.svg',
+      logo: '/img/integrations/abstract-logo.png',
       link: 'https://blog.ferretdb.io/deploy-ferretdb-in-kubernetes-using-kubedb-managed-postgres/'
     },
     {
       name: 'Tembo',
-      logo: '/img/integrations/tembo.svg',
+      logo: '/img/integrations/abstract-logo.png',
       link: 'https://blog.ferretdb.io/run-mongodb-workloads-ferretdb-tembo/'
     },
     {
       name: 'Aiven for PostgreSQL',
-      logo: '/img/integrations/aiven.svg',
+      logo: '/img/integrations/abstract-logo.png',
       link: 'https://blog.ferretdb.io/run-mongodb-workloads-aiven-postgresql/'
     },
-    { name: 'Ubicloud Managed Postgres', logo: '/img/integrations/ubicould.svg', link: '#' }
+    {
+      name: 'Ubicloud Managed Postgres',
+      logo: '/img/integrations/abstract-logo.png',
+      link: 'https://blog.ferretdb.io/add-mongodb-compatibility-ubicloud-managed-postgres/'
+    }
   ],
   'Database Backends': [
     {
       name: 'StackGres',
-      logo: '/img/integrations/stackgres.svg',
+      logo: '/img/integrations/abstract-logo.png',
       link: 'https://blog.ferretdb.io/run-ferretdb-on-stackgres/'
     },
     {
       name: 'CloudNativePG',
-      logo: '/img/integrations/cloudnativepg.svg',
+      logo: '/img/integrations/abstract-logo.png',
       link: 'https://blog.ferretdb.io/run-ferretdb-cloudnativepg-kubernetes/'
     },
     {
       name: 'CyberTec Postgres',
-      logo: '/img/integrations/cybertec.svg',
+      logo: '/img/integrations/abstract-logo.png',
       link: 'https://blog.ferretdb.io/run-ferretdb-cybertec-postgres-kubernetes/'
     },
     {
       name: 'Percona Distribution for PostgreSQL',
-      logo: '/img/integrations/percona.svg',
+      logo: '/img/integrations/abstract-logo.png',
       link: 'https://blog.ferretdb.io/deploy-ferretdb-kubernetes-taikun-cloudworks/#install-percona-postgresql-operator'
     },
     {
       name: 'Neon',
-      logo: '/img/integrations/neon.svg',
+      logo: '/img/integrations/abstract-logo.png',
       link: 'https://blog.ferretdb.io/ferretdb-neon-add-mongodb-compatibility/'
-    },
+    }
   ],
   'Monitoring / Observability': [
     {
       name: 'Grafana',
-      logo: '/img/integrations/grafana.svg',
+      logo: '/img/integrations/abstract-logo.png',
       link: 'https://blog.ferretdb.io/grafana-monitoring-ferretdb/'
     },
     {
       name: 'Coroot',
-      logo: '/img/integrations/coroot.svg',
+      logo: '/img/integrations/abstract-logo.png',
       link: 'https://blog.ferretdb.io/monitor-ferretdb-performance-using-coroot/'
     },
     {
       name: 'OpenTelemetry',
-      logo: '/img/integrations/opentelemetry.svg',
+      logo: '/img/integrations/abstract-logo.png',
       link: 'https://blog.ferretdb.io/otel-context-propagation-in-ferretdb/'
     }
   ],
   'Data Migration': [
     {
       name: 'dsync',
-      logo: '/img/integrations/dsync.svg',
+      logo: '/img/integrations/abstract-logo.png',
       link: 'https://blog.ferretdb.io/migrate-mongodb-data-ferretdb-dsync/'
     }
   ],
   'Authentication / Security': [
     {
       name: 'OpenZiti',
-      logo: '/img/integrations/openziti.svg',
+      logo: '/img/integrations/abstract-logo.png',
       link: 'https://blog.ferretdb.io/run-ferretdb-securely-using-openziti/'
-    },
+    }
   ],
   'Frameworks / SDKs': [
     {
       name: 'Meteor.js',
-      logo: '/img/integrations/meteor.svg',
+      logo: '/img/integrations/abstract-logo.png',
       link: 'https://blog.ferretdb.io/ferretdb-meteor-mongodb-alternative/'
     }
   ],
   Other: [
     {
       name: 'Illa Cloud',
-      logo: '/img/integrations/illa-cloud.svg',
+      logo: '/img/integrations/abstract-logo.png',
       link: 'https://blog.ferretdb.io/build-internal-apps-illa-cloud-ferretdb/'
     },
     {
       name: 'FastNetMon',
-      logo: '/img/integrations/fastnetmon.svg',
+      logo: '/img/integrations/abstract-logo.png',
       link: 'https://blog.ferretdb.io/fastnetmon-picked-ferretdb-saas-offering/'
     }
   ]

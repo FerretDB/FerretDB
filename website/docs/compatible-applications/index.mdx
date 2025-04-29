@@ -19,7 +19,7 @@ export const Grid = ({ apps }) => (
         gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
         gap: '1.5rem',
         marginTop: '1rem',
-        justifyContent: 'center', // helps prevent single item stretch
+        justifyContent: 'center',
       }}
     >
       {apps.map(({ name, logo, link }) => (
@@ -30,6 +30,8 @@ export const Grid = ({ apps }) => (
           rel="noopener noreferrer"
           className="card"
           style={{
+            maxWidth: '160px',
+            maxHeight: '160px',
             padding: '1rem',
             textAlign: 'center',
             textDecoration: 'none',
@@ -59,32 +61,12 @@ Explore officially tested integrations with FerretDB.
 
 <Grid apps={categorizedApps["GUI / Client Tools"]} />
 
-## Deployment Platforms
-
-<Grid apps={categorizedApps["Deployment Platforms"]} />
-
-## Database Backends
-
-<Grid apps={categorizedApps["Database Backends"]} />
-
-## Monitoring / Observability
-
-<Grid apps={categorizedApps["Monitoring / Observability"]} />
-
 ## Data Migration
 
 <Grid apps={categorizedApps["Data Migration"]} />
 
-## Authentication / Security
+## Postgres Operators
 
-<Grid apps={categorizedApps["Authentication / Security"]} />
-
-## Frameworks / SDKs
-
-<Grid apps={categorizedApps["Frameworks / SDKs"]} />
-
-## Other
-
-<Grid apps={categorizedApps["Other"]} />
+<Grid apps={categorizedApps["Database Backends"]} />
 
 <!-- markdownlint-enable MD033 -->
