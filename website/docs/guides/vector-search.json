@@ -1,5 +1,5 @@
 {
-  "2-hnsw-index": {
+  "1-hnsw-index": {
     "request": {
       "createIndexes": "books",
       "indexes": [
@@ -38,7 +38,7 @@
       }
     }
   },
-  "3-hnsw-search": {
+  "2-hnsw-search": {
     "request": {
       "aggregate": "books",
       "pipeline": [
@@ -225,7 +225,7 @@
       }
     }
   },
-  "4-drop-hnsw-index": {
+  "3-drop-hnsw-index": {
     "request": {
       "dropIndexes": "books",
       "index": "vector_hnsw_index",
@@ -330,6 +330,22 @@
             },
             "returnStoredSource": true
           }
+        },
+        {
+          "$project": {
+            "title": {
+              "$numberInt": "1"
+            },
+            "authors": {
+              "$numberInt": "1"
+            },
+            "summary": {
+              "$numberInt": "1"
+            },
+            "vector": {
+              "$numberInt": "1"
+            }
+          }
         }
       ],
       "cursor": {},
@@ -351,104 +367,6 @@
                 "nationality": "British"
               }
             ],
-            "genres": [
-              "Science Fiction",
-              "Horror",
-              "Classic"
-            ],
-            "publication": {
-              "date": "1818-01-01T00:00:00Z",
-              "publisher": {
-                "name": "Lackington, Hughes, Harding, Mavor \u0026 Jones",
-                "location": {
-                  "city": "London",
-                  "country": "United Kingdom",
-                  "geolocation": {
-                    "type": "Point",
-                    "coordinates": [
-                      {
-                        "$numberDouble": "-0.1276"
-                      },
-                      {
-                        "$numberDouble": "51.5072"
-                      }
-                    ]
-                  }
-                }
-              }
-            },
-            "languages": [
-              "English"
-            ],
-            "availability": [
-              {
-                "country": "United Kingdom",
-                "format": [
-                  "Paperback",
-                  "Hardcover",
-                  "E-book"
-                ],
-                "released": true,
-                "release_date": "1818-01-01T00:00:00Z"
-              }
-            ],
-            "isbn": "978-0199537150",
-            "pages": {
-              "$numberInt": "336"
-            },
-            "price": {
-              "value": {
-                "$numberDouble": "10.99"
-              },
-              "currency": "USD"
-            },
-            "keywords": [
-              "Victor Frankenstein",
-              "Monster",
-              "Creation"
-            ],
-            "reviews": [
-              {
-                "user": "science_geek",
-                "rating": {
-                  "$numberInt": "5"
-                },
-                "comment": "A chilling exploration of ambition and consequence."
-              }
-            ],
-            "textual_analysis": {
-              "description": "A dark tale of scientific ambition and its unintended consequences.",
-              "themes": [
-                "Ambition",
-                "Morality",
-                "Isolation"
-              ]
-            },
-            "analytics": {
-              "average_rating": {
-                "$numberDouble": "4.7"
-              },
-              "ratings_count": {
-                "$numberInt": "1200"
-              },
-              "sales": {
-                "units_sold": {
-                  "$numberInt": "600000"
-                },
-                "countries": [
-                  "United Kingdom",
-                  "United States"
-                ]
-              }
-            },
-            "digital_metadata": {
-              "download_link": "https://www.gutenberg.org/ebooks/84",
-              "formats": [
-                "PDF",
-                "EPUB",
-                "MOBI"
-              ]
-            },
             "summary": "Victor Frankenstein creates life through unorthodox scientific methods but is horrified by his creation. As his creature seeks acceptance, the novel explores themes of responsibility, alienation, and the ethical limits of scientific experimentation.",
             "vector": [
               {
@@ -487,12 +405,7 @@
               {
                 "$numberDouble": "-0.0017921233084052801"
               }
-            ],
-            "__cosmos_meta__": {
-              "score": {
-                "$numberDouble": "0.41035310451664064"
-              }
-            }
+            ]
           },
           {
             "_id": "moby_dick_1851",
@@ -503,104 +416,6 @@
                 "nationality": "American"
               }
             ],
-            "genres": [
-              "Adventure",
-              "Classic",
-              "Sea Story"
-            ],
-            "publication": {
-              "date": "1851-11-14T00:00:00Z",
-              "publisher": {
-                "name": "Harper \u0026 Brothers",
-                "location": {
-                  "city": "New York",
-                  "country": "United States",
-                  "geolocation": {
-                    "type": "Point",
-                    "coordinates": [
-                      {
-                        "$numberDouble": "-74.006"
-                      },
-                      {
-                        "$numberDouble": "40.7128"
-                      }
-                    ]
-                  }
-                }
-              }
-            },
-            "languages": [
-              "English"
-            ],
-            "availability": [
-              {
-                "country": "United States",
-                "format": [
-                  "Paperback",
-                  "Hardcover",
-                  "E-book"
-                ],
-                "released": true,
-                "release_date": "2001-05-01T00:00:00Z"
-              }
-            ],
-            "isbn": "978-1503280786",
-            "pages": {
-              "$numberInt": "378"
-            },
-            "price": {
-              "value": {
-                "$numberDouble": "15.99"
-              },
-              "currency": "USD"
-            },
-            "keywords": [
-              "Captain Ahab",
-              "Whaling",
-              "Revenge"
-            ],
-            "reviews": [
-              {
-                "user": "sailor_sam",
-                "rating": {
-                  "$numberInt": "5"
-                },
-                "comment": "A thrilling adventure on the high seas."
-              }
-            ],
-            "textual_analysis": {
-              "description": "A thrilling tale of obsession and revenge at sea.",
-              "themes": [
-                "Obsession",
-                "Revenge",
-                "Fate"
-              ]
-            },
-            "analytics": {
-              "average_rating": {
-                "$numberDouble": "4.3"
-              },
-              "ratings_count": {
-                "$numberInt": "800"
-              },
-              "sales": {
-                "units_sold": {
-                  "$numberInt": "500000"
-                },
-                "countries": [
-                  "United States",
-                  "United Kingdom"
-                ]
-              }
-            },
-            "digital_metadata": {
-              "download_link": "https://www.gutenberg.org/ebooks/2701",
-              "formats": [
-                "PDF",
-                "EPUB",
-                "MOBI"
-              ]
-            },
             "summary": "Ishmael recounts his journey aboard the whaling ship Pequod under the leadership of the obsessed Captain Ahab, who is obsessed with hunting the legendary white whale, Moby Dick. The novel delves into themes of human struggle against nature and the destructive power of obsession.",
             "vector": [
               {
@@ -639,12 +454,7 @@
               {
                 "$numberDouble": "-0.0778273269534111"
               }
-            ],
-            "__cosmos_meta__": {
-              "score": {
-                "$numberDouble": "0.3082035602275991"
-              }
-            }
+            ]
           }
         ]
       },
