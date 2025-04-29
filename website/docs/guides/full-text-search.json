@@ -56,12 +56,12 @@
           {
             "_id": "pride_prejudice_1813",
             "title": "Pride and Prejudice",
-			"authors": [
-			  {
-				"name": "Jane Austen",
-				"nationality": "British"
-			  }
-			],
+            "authors": [
+              {
+                "name": "Jane Austen",
+                "nationality": "British"
+              }
+            ],
             "summary": "This novel portrays the life and challenges of Elizabeth Bennet as she navigates societal expectations, class prejudice, and romance. The book explores the evolving relationship between Elizabeth and Mr. Darcy, shedding light on the virtues of understanding and self-awareness."
           }
         ]
@@ -72,7 +72,7 @@
     }
   },
   "4-drop-text-index": {
-	"$comment": "Index is effectively dropped, although the output is broken because of https://github.com/FerretDB/FerretDB/issues/4730. TODO: use this code in the blogpost where it mentions that index should be dropped.",
+    "$comment": "Index is effectively dropped, although the output is broken because of https://github.com/FerretDB/FerretDB/issues/4730. TODO: use this code in the blogpost where it mentions that index should be dropped.",
     "request": {
       "dropIndexes": "books",
       "index": "summary_text_index",
@@ -155,12 +155,12 @@
           {
             "_id": "moby_dick_1851",
             "title": "Moby Dick",
-			"authors": [
-			  {
-				"name": "Herman Melville",
-				"nationality": "American"
-			  }
-			],
+            "authors": [
+              {
+                "name": "Herman Melville",
+                "nationality": "American"
+              }
+            ],
             "summary": "Ishmael recounts his journey aboard the whaling ship Pequod under the leadership of the obsessed Captain Ahab, who is obsessed with hunting the legendary white whale, Moby Dick. The novel delves into themes of human struggle against nature and the destructive power of obsession.",
             "score": {
               "$numberDouble": "3.0"
