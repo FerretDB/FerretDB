@@ -1,5 +1,5 @@
 {
-  "2-create-text-index": {
+  "1-create-text-index": {
     "request": {
       "createIndexes": "books",
       "indexes": [
@@ -25,7 +25,7 @@
       }
     }
   },
-  "3-basic-text-search": {
+  "2-basic-text-search": {
     "request": {
       "find": "books",
       "filter": {
@@ -71,7 +71,7 @@
       }
     }
   },
-  "4-drop-text-index": {
+  "3-drop-text-index": {
     "request": {
       "dropIndexes": "books",
       "index": "summary_text_index",
@@ -88,7 +88,7 @@
       "codeName": "InternalError"
     }
   },
-  "5-compound-text-index": {
+  "4-compound-text-index": {
     "request": {
       "createIndexes": "books",
       "indexes": [
