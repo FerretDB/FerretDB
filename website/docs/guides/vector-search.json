@@ -92,9 +92,9 @@
               }
             }
           }
-        }
-      ],
-      "projection": {
+        },
+		{
+      "$project": {
         "title": {
           "$numberInt": "1"
         },
@@ -107,7 +107,9 @@
         "vector": {
           "$numberInt": "1"
         }
-      },
+      }
+		}
+      ],
       "cursor": {},
       "$db": "{{.Database}}"
     },
