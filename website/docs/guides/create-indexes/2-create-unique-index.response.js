@@ -1,1 +1,1 @@
-response = { numIndexesBefore: 1, numIndexesAfter: 2, createdCollectionAutomatically: true, ok: Double(1) }
+response = { createdCollectionAutomatically: false, numIndexesBefore: 2, numIndexesAfter: 3, ok: Double(1) }

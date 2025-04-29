@@ -14,13 +14,13 @@
       ]
     },
     "response": {
+      "createdCollectionAutomatically": true,
       "numIndexesBefore": {
         "$numberInt": "1"
       },
       "numIndexesAfter": {
         "$numberInt": "2"
       },
-      "createdCollectionAutomatically": true,
       "ok": {
         "$numberDouble": "1.0"
       }
@@ -42,13 +42,13 @@
       ]
     },
     "response": {
+      "createdCollectionAutomatically": false,
       "numIndexesBefore": {
-        "$numberInt": "1"
-      },
-      "numIndexesAfter": {
         "$numberInt": "2"
       },
-      "createdCollectionAutomatically": true,
+      "numIndexesAfter": {
+        "$numberInt": "3"
+      },
       "ok": {
         "$numberDouble": "1.0"
       }
@@ -60,11 +60,11 @@
       "indexes": [
         {
           "key": {
-            "publication.date": {
-              "$numberInt": "1"
-            },
             "analytics.average_rating": {
               "$numberInt": "-1"
+            },
+            "publication.date": {
+              "$numberInt": "1"
             }
           },
           "name": "pub_date_rating_idx"
@@ -72,13 +72,13 @@
       ]
     },
     "response": {
+      "createdCollectionAutomatically": false,
       "numIndexesBefore": {
-        "$numberInt": "1"
+        "$numberInt": "3"
       },
       "numIndexesAfter": {
-        "$numberInt": "2"
+        "$numberInt": "4"
       },
-      "createdCollectionAutomatically": true,
       "ok": {
         "$numberDouble": "1.0"
       }
@@ -107,13 +107,13 @@
       ]
     },
     "response": {
+      "createdCollectionAutomatically": false,
       "numIndexesBefore": {
-        "$numberInt": "1"
+        "$numberInt": "4"
       },
       "numIndexesAfter": {
-        "$numberInt": "2"
+        "$numberInt": "5"
       },
-      "createdCollectionAutomatically": true,
       "ok": {
         "$numberDouble": "1.0"
       }
