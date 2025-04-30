@@ -61,7 +61,7 @@ func (h *Handler) msgDropIndexes(connCtx context.Context, req *middleware.Reques
 	}
 	defer conn.Release()
 
-	res, err := documentdb_api.DropIndexes(connCtx, conn.Conn(), h.L, dbName, spec, nil)
+	res, err := documentdb_api.DropIndexes(connCtx, conn.Conn(), h.L, dbName, spec)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

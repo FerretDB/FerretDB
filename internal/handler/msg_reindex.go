@@ -112,7 +112,7 @@ func (h *Handler) msgReIndex(connCtx context.Context, req *middleware.Request) (
 		"index", "*", // drops all but default _id index
 	).Encode())
 
-	dropRes, err := documentdb_api.DropIndexes(connCtx, conn.Conn(), h.L, dbName, dropSpec, nil)
+	dropRes, err := documentdb_api.DropIndexes(connCtx, conn.Conn(), h.L, dbName, dropSpec)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
