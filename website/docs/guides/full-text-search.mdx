@@ -58,15 +58,15 @@ This command creates a full-text index on the `summary` field in a `books` colle
 
 Insert the following documents into the `books` collection:
 
-<CodeBlock language="js">{MyDataSet}</CodeBlock>
+<!-- TODO: insert books.js fixture -->
 
 ### Performing a full-text search
 
-Let's run a basic full-text search query to find all documents that contain the word "drama" in the `summary` field.
+Let's run a basic full-text search query to find all documents that contain the word "romance" in the `summary` field.
 
 <CodeBlock language="js">{SearchQuery}</CodeBlock>
 
-This query returns all documents where the `summary` field contains the word "drama".
+This query returns all documents where the `summary` field contains the word "romance".
 
 <CodeBlock language="js">{TextSearchResponse}</CodeBlock>
 
@@ -74,6 +74,8 @@ This query returns all documents where the `summary` field contains the word "dr
 
 Compound text index creates an index on multiple fields.
 Ensure to drop the existing index before creating a new one.
+
+<!-- TODO: refer to 3-drop-text-index.request.js to drop the index -->
 
 Let's create a compound text index on the `title` and `summary` fields.
 
