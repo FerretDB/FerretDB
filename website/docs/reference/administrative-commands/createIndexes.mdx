@@ -36,18 +36,33 @@ db.runCommand({
         // Add more fields as needed
       },
       name: '<index_name>', // string
-      unique: true, // Optional
+      unique: false, // Optional
       partialFilterExpression: {
         '<field>': { $gte: '<value>' }
       }, // Optional
-      expireAfterSeconds: 3600, // Optional
-      sparse: true, // Optional
+      sparse: false // Optional
+    },
+    // Text index for full-text search
+    {
+      key: { '<field>': 'text' },
+      name: 'text_index_name'
+    },
+
+    // TTL index for automatic expiry
+    {
+      key: { '<timestamp_field>': 1 },
+      name: '<ttl_index_name>',
+      expireAfterSeconds: 3600 // time to expiry in seconds
+    },
+    // Vector index
+    {
+      key: { '<vector_field>': 'cosmosSearch' },
+      name: '<vector_index_name>',
       cosmosSearchOptions: {
         kind: 'vector-hnsw',
         dimensions: 3,
         similarity: 'COS'
-        // Add vector index options here
-      } // Optional
+      }
     }
     // Add more index specifications here
   ]
@@ -96,9 +111,15 @@ Let's create a partial index on the `books` collection where the book is release
 
 <CodeBlock language="js">{CreatePartialIndex}</CodeBlock>
 
-<!--  ## Limitations or constraints -->
+## Limitations or constraints
 
 <!-- If there are any known limitations or contraints, list them here -->
+
+- `partialFilterExpression` and `sparse` options cannot be used together in the same index specification. If both are specified, the command will fail with an error.
+- `sparse` or `text` options cannot be used together with `unique` options in the same index specification.
+- Vector indexes are standalone indexes and cannot be combined with other index types in the same index specification.
+- `partialFilterExpression` can be used together with TTL indexes.
+- `hidden` indexes are not supported yet.
 
 ## Additional information
 
