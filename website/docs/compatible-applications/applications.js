@@ -2,7 +2,7 @@ export const categorizedApps = {
   'GUI / Client Tools': [
     {
       name: 'Mingo',
-      logo: '/img/integrations/mingo.png',
+      logo: '/img/integrations/abstract-logo.png',
       link: 'https://blog.ferretdb.io/using-mingo-analyze-visualize-ferretdb-data/'
     },
     {
