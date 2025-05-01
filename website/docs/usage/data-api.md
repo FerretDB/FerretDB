@@ -112,7 +112,10 @@ Make sure to set the `{{baseURL}}` variable to the URL you configured for the Da
 You can also set up environment variables in Postman for the `<username>` and `<password>` to avoid hardcoding them in the requests.
 See the [Postman documentation](https://learning.postman.com/docs/sending-requests/variables/environment-variables/) for more information on how to set up environment variables.
 
-Below are examples of the `insertOne` and `find` endpoints in Postman after importing the OpenAPI spec.
+Image below shows an example of the `insertOne` endpoint in Postman:
 
 ![Insert a single document](/img/docs/insert-one.jpg)
+
+Image below shows an example of the `findOne` endpoint in Postman:
+
 ![Find a single document](/img/docs/find-one.jpg)
