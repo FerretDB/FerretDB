@@ -83,7 +83,11 @@ A vector index definition can take the following parameters, depending on the ki
 
 In the following sections, we will demonstrate how to create and use vector indexes by inserting the following documents with vector embeddings into a collection:
 
-<!-- TODO: insert books.js fixture -->
+Insert the following documents into the `books` collection by downloading the `books.js` from [books.js](./fixtures/books.js). Once downloaded, you can use `mongosh` to insert the documents into your database by running the following command:
+
+```bash
+mongosh --file books.js
+```
 
 The `vector` field represents the vector embeddings generated for the `summary` field using the [SentenceTransformer("all-MiniLM-L6-v2") model](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2).
 You can use any embedding model to generate the vectors.
