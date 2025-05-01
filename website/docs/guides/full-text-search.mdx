@@ -57,10 +57,10 @@ To create a text index, use the `createIndex` command with the field you want to
 
 This command creates a full-text index on the `summary` field in a `books` collection.
 
-Insert the following documents into the `books` collection by downloading the `books.js` from [books.js](./fixtures/books.js). Once downloaded, you can use `mongosh` to insert the documents into your database by running the following command:
+Insert the sample dataset, by downloading the [books.js](./fixtures/books.js). Once downloaded, you can use `mongosh` to insert the documents into your database by running the following command:
 
 ```bash
-mongosh --file books.js
+mongosh --file books.js <mongodb_uri>
 ```
 
 ### Performing a full-text search
