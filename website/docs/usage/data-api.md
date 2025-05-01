@@ -10,7 +10,7 @@ The Data API is integrated directly into FerretDB – it's not a standalone serv
 
 ## Enable the Data API
 
-To access the FerretDB Data API, set the environment variable or flag (`FERRETDB_LISTEN_DATA_API_ADDR`/`--listen-data-api-addr`) to the desired address and port when starting FerretDB.
+To access the FerretDB Data API, set the [environment variable or flag](../configuration/flags.md) (`FERRETDB_LISTEN_DATA_API_ADDR`/`--listen-data-api-addr`) to the desired address and port when starting FerretDB.
 
 Suppose you want to run the Data API on port `8080` and your FerretDB instance is running locally on `localhost:27017`, set the environment variable or flag as `FERRETDB_LISTEN_DATA_API_ADDR=:8080` or `--listen-data-api-addr=:8080`.
 
