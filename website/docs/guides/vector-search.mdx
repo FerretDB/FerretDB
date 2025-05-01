@@ -88,7 +88,7 @@ Insert the sample dataset, by downloading the [books.js](./fixtures/books.js). O
 mongosh --file books.js <mongodb_uri>
 ```
 
-The `vector` field represents the vector embeddings generated for the `summary` field using the [SentenceTransformer("all-MiniLM-L6-v2") model](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2).
+The field that we're mostly going to focus on is `vector`, which represents the vector embeddings generated for the `summary` field using the [SentenceTransformer("all-MiniLM-L6-v2") model](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2).
 You can use any embedding model to generate the vectors.
 
 <Tabs groupId="kind">
