@@ -29,10 +29,10 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgReIndex implements `reIndex` command.
+// msgReIndex implements `reIndex` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgReIndex(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+func (h *Handler) msgReIndex(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
