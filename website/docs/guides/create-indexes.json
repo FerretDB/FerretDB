@@ -15,7 +15,7 @@
       "$db": "{{.Database}}"
     },
     "response": {
-      "createdCollectionAutomatically": true,
+      "createdCollectionAutomatically": false,
       "numIndexesBefore": {
         "$numberInt": "1"
       },
