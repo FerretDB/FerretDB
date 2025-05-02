@@ -8,10 +8,9 @@ description: Learn about vector search parameters and capabilities in FerretDB.
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import CodeBlock from '@theme/CodeBlock';
-import MyDataSet from '!!raw-loader!./vector-search/1-insert-vector.request.js';
-import HNSWIndex from '!!raw-loader!./vector-search/2-hnsw-index.request.js';
-import HSNWSearch from '!!raw-loader!./vector-search/3-hnsw-search.request.js';
-import HNSWSearchResponse from '!!raw-loader!./vector-search/3-hnsw-search.response.js';
+import HNSWIndex from '!!raw-loader!./vector-search/1-hnsw-index.request.js';
+import HSNWSearch from '!!raw-loader!./vector-search/2-hnsw-search.request.js';
+import HNSWSearchResponse from '!!raw-loader!./vector-search/2-hnsw-search.response.js';
 import IVFIndex from '!!raw-loader!./vector-search/4-ivf-index.request.js';
 import IVFSearch from '!!raw-loader!./vector-search/5-ivf-search.request.js';
 import IVFSearchResponse from '!!raw-loader!./vector-search/5-ivf-search.response.js';
@@ -82,11 +81,14 @@ A vector index definition can take the following parameters, depending on the ki
 
 ### Index creation example
 
-In the following sections, we will demonstrate how to create and use vector indexes by inserting the following documents with vector embeddings into a collection:
+In the following sections, we will demonstrate how to create and use vector indexes.
+Insert the sample dataset, by downloading the [books.js](./fixtures/books.js). Once downloaded, you can use `mongosh` to insert the documents into your database by running the following command:
 
-<CodeBlock language="js">{MyDataSet}</CodeBlock>
+```bash
+mongosh --file books.js <mongodb_uri>
+```
 
-The `vector` field represents the vector embeddings generated for the `summary` field using the [SentenceTransformer("all-MiniLM-L6-v2") model](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2).
+The field that we're mostly going to focus on is `vector`, which represents the vector embeddings generated for the `summary` field using the [SentenceTransformer("all-MiniLM-L6-v2") model](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2).
 You can use any embedding model to generate the vectors.
 
 <Tabs groupId="kind">
