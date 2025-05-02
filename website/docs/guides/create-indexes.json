@@ -106,7 +106,8 @@
             }
           }
         }
-      ]
+      ],
+      "$db": "{{.Database}}"
     },
     "response": {
       "createdCollectionAutomatically": false,
