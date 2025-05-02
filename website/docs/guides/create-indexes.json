@@ -70,7 +70,8 @@
           },
           "name": "pub_date_rating_idx"
         }
-      ]
+      ],
+      "$db": "{{.Database}}"
     },
     "response": {
       "createdCollectionAutomatically": false,
