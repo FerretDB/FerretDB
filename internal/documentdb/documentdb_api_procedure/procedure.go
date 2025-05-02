@@ -12,4 +12,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package documentdb_api_procedure contains manually wrapped procedures of documentdb_api.
+// The separate package is used to prevent file from being deleted by genwrap.
+// TODO https://github.com/microsoft/documentdb/issues/49
 package documentdb_api_procedure
+
+import (
+	"context"
+	"log/slog"
+
+	"github.com/FerretDB/wire/wirebson"
+	"github.com/jackc/pgx/v5"
+	"go.opentelemetry.io/otel"
+	oteltrace "go.opentelemetry.io/otel/trace"
+
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb/bsonhex"
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
+)
+
+// DropIndexes is a wrapper for
+//
+//	documentdb_api.drop_indexes(p_database_name text, p_arg documentdb_core.bson, INOUT retval documentdb_core.bson DEFAULT NULL).
+func DropIndexes(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, arg wirebson.RawDocument, retVal wirebson.RawDocument) (outRetVal wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.drop_indexes", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "CALL documentdb_api.drop_indexes($1, $2::bytea, $3::bytea)", databaseName, arg, retVal)
+
+	var b []byte
+
+	if err = row.Scan(&b); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api.drop_indexes", l)
+
+		return
+	}
+
+	outRetVal, err = bsonhex.Decode(b)
+
+	return
+}

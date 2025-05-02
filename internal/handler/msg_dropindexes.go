@@ -17,7 +17,7 @@ package handler
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api_procedure"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
@@ -61,7 +61,7 @@ func (h *Handler) msgDropIndexes(connCtx context.Context, req *middleware.Reques
 	}
 	defer conn.Release()
 
-	res, err := documentdb_api.DropIndexes(connCtx, conn.Conn(), h.L, dbName, spec, nil)
+	res, err := documentdb_api_procedure.DropIndexes(connCtx, conn.Conn(), h.L, dbName, spec, nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
