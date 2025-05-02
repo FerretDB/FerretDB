@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package documentdb_api_procedure contains manually wrapped procedures of documentdb_api.
-// The separate package is used to prevent file from being deleted by genwrap.
+// The separate package is used to prevent this file from being deleted by genwrap.
 // TODO https://github.com/microsoft/documentdb/issues/49
 package documentdb_api_procedure
 
@@ -33,6 +33,8 @@ import (
 // DropIndexes is a wrapper for
 //
 //	documentdb_api.drop_indexes(p_database_name text, p_arg documentdb_core.bson, INOUT retval documentdb_core.bson DEFAULT NULL).
+//
+//nolint:lll // copied from generated code
 func DropIndexes(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, arg wirebson.RawDocument, retVal wirebson.RawDocument) (outRetVal wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.drop_indexes", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
