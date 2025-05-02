@@ -16,18 +16,28 @@
 package bsonhex
 
 import (
+	"bytes"
 	"encoding/hex"
+	"fmt"
 
 	"github.com/FerretDB/wire/wirebson"
 )
 
-// Decode converts BSONHEX to the format expected by [wirebson.RawDocument]
-// by stripping the first 7 bytes (BSONHEX) and decodes the rest.
+// bsonHexPrefix is the prefix for BSONHEX type.
+var bsonHexPrefix = []byte{'B', 'S', 'O', 'N', 'H', 'E', 'X'}
+
+// Decode converts BSONHEX to the format expected by [wirebson.RawDocument].
 // Usage of `::bytea` in PostgreSQL is the preferred approach.
 func Decode(src []byte) (wirebson.RawDocument, error) {
-	dst := make([]byte, hex.DecodedLen(len(src)-7))
+	if !bytes.HasPrefix(src, bsonHexPrefix) {
+		return nil, fmt.Errorf("expected 'BSONHEX' prefix, got %q", src[:7])
+	}
 
-	if _, err := hex.Decode(dst, src[7:]); err != nil {
+	b := bytes.TrimPrefix(src, bsonHexPrefix)
+
+	dst := make([]byte, hex.DecodedLen(len(b)))
+
+	if _, err := hex.Decode(dst, b); err != nil {
 		return nil, err
 	}
 
