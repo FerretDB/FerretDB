@@ -15,11 +15,15 @@
 package bsonhex
 
 import (
+	"encoding/hex"
+	"fmt"
+
 	"github.com/FerretDB/wire/wirebson"
 )
 
 // Decode converts BSONHEX to the format expected by [wirebson.RawDocument].
+// stripping the first 7 bytes (BSONHEX) and decoding the rest.
 // Use this when `::bytea` usage in PostgreSQL is not possible such as procedure output.
 func Decode(bhex []byte) (wirebson.RawDocument, error) {
-	return bhex, nil
+	return hex.DecodeString(fmt.Sprintf("%s", bhex[7:]))
 }
