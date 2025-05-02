@@ -30,7 +30,7 @@ var bsonHexPrefix = []byte{'B', 'S', 'O', 'N', 'H', 'E', 'X'}
 // Usage of `::bytea` in PostgreSQL is the preferred approach.
 func Decode(src []byte) (wirebson.RawDocument, error) {
 	if !bytes.HasPrefix(src, bsonHexPrefix) {
-		return nil, fmt.Errorf("expected 'BSONHEX' prefix, got %q", src[:7])
+		return nil, fmt.Errorf("unsupported binary format %q", src[:7])
 	}
 
 	b := bytes.TrimPrefix(src, bsonHexPrefix)

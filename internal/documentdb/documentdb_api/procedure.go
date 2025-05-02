@@ -12,10 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package documentdb_api_procedure contains manually wrapped procedures of documentdb_api.
-// The separate package is used to prevent this file from being deleted by genwrap.
-// TODO https://github.com/microsoft/documentdb/issues/49
-package documentdb_api_procedure
+package documentdb_api
 
 import (
 	"context"
@@ -33,6 +30,8 @@ import (
 // DropIndexes is a wrapper for
 //
 //	documentdb_api.drop_indexes(p_database_name text, p_arg documentdb_core.bson, INOUT retval documentdb_core.bson DEFAULT NULL).
+//
+// TODO https://github.com/microsoft/documentdb/issues/49
 //
 //nolint:lll // copied from generated code
 func DropIndexes(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, arg wirebson.RawDocument, retVal wirebson.RawDocument) (outRetVal wirebson.RawDocument, err error) {
