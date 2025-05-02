@@ -48,7 +48,9 @@ func DropIndexes(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseNa
 		return
 	}
 
-	outRetVal, err = bsonhex.Decode(b)
+	if outRetVal, err = bsonhex.Decode(b); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api.drop_indexes", l)
+	}
 
 	return
 }
