@@ -40,7 +40,8 @@
           "name": "unique_isbn_idx",
           "unique": true
         }
-      ]
+      ],
+      "$db": "{{.Database}}"
     },
     "response": {
       "createdCollectionAutomatically": false,
