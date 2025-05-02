@@ -132,7 +132,7 @@ response = [
 
 The following formatting instructions apply for both documentation and blog posts.
 
-For MongoDB command syntax or pseudocode expressions, use `js` language and enusre the code snippet is written in valid `js` syntax.
+For MongoDB command syntax or pseudocode expressions, use `js` language and ensure the code snippet is written in valid `js` syntax.
 
 For example:
 
