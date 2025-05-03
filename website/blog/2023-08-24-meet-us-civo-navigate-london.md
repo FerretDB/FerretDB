@@ -1,7 +1,7 @@
 ---
 slug: meet-us-civo-navigate-london
 title: 'Meet us at Civo Navigate in London'
-authors: [peter]
+authors: [peterbenei]
 description: >
   We are super excited to join Civo Navigate as an attendee, speaker, and also as a proud sponsor of the event.
 image: /img/blog/civo-navigate.jpg

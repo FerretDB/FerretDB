@@ -45,7 +45,7 @@ elena:
   image_url: https://github.com/rumyantseva.png
   page: true
 
-farkasp:
+peter:
   name: Peter Farkas
   title: Co-Founder, CEO
   url: https://www.linkedin.com/in/farkasp/
@@ -75,7 +75,6 @@ marcin:
 michael:
   name: Michael Feygelman
   title: Senior Project and Community Manager for enmeshed at j&s-soft GmbH
-  url: https://www.linkedin.com/in/%F0%9F%92%A1michael-feygelman%F0%9F%92%A1-1590aa1a4/
   image_url: /img/blog/michael-feygelman.jpeg
   page: true
 
@@ -95,7 +94,7 @@ pavel:
   image_url: /img/blog/pavel-odintsov.jpeg
   page: true
 
-peter:
+peterbenei:
   name: Peter Benei
   page: true
 

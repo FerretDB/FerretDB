@@ -1,7 +1,7 @@
 ---
 slug: mangodb-has-a-new-name-and-the-momentum-is-stronger-than-ever-meet-ferretdb
 title: MangoDB has a new name, and the momentum is stronger than ever. Meet FerretDB!
-authors: [farkasp]
+authors: [peter]
 description: Just over a month ago, the unveiling of our new project - MangoDB, a truly open source MongoDB replacement, was met with overwhelming interest from within the Open Source community.
 image: /img/blog/blog-img-v02.jpg
 tags: [open source, document databases, mongodb compatible]

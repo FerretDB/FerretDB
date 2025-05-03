@@ -1,7 +1,7 @@
 ---
 slug: ferretdb-v2-ga-open-source-mongodb-alternative-ready-for-production
 title: 'FerretDB 2.0 GA: Open Source MongoDB alternative, ready for production'
-authors: [farkasp, aleksi]
+authors: [peter, aleksi]
 description: >
   We are thrilled to announce the general availability (GA) of FerretDB v2.0,
   a groundbreaking release that delivers a high-performance,
