@@ -66,7 +66,5 @@ func (h *Handler) msgDropIndexes(connCtx context.Context, req *middleware.Reques
 		return nil, lazyerrors.Error(err)
 	}
 
-	// this currently fails due to
-	// TODO https://github.com/FerretDB/FerretDB/issues/4730
 	return middleware.ResponseMsg(res)
 }
