@@ -236,19 +236,6 @@ func TestConvert(t *testing.T) {
 				QueryRowArgs: "database, countSpec",
 				ScanArgs:     "&outDocument",
 			},
-			"drop_indexes": {
-				FuncName:    "DropIndexes",
-				SQLFuncName: "documentdb_api.drop_indexes",
-				IsProcedure: true,
-				SQLArgs:     "$1, $2::bytea, $3::bytea",
-				SQLReturns:  "retval::bytea",
-				Comment: `documentdb_api.drop_indexes(p_database_name text, p_arg documentdb_core.bson, ` +
-					`INOUT retval documentdb_core.bson DEFAULT NULL)`,
-				Params:       "databaseName string, arg wirebson.RawDocument, retVal wirebson.RawDocument",
-				Returns:      "outRetVal wirebson.RawDocument",
-				ScanArgs:     "&outRetVal",
-				QueryRowArgs: "databaseName, arg, retVal",
-			},
 		},
 		"documentdb_core": {
 			"bsonquery_compare": {
