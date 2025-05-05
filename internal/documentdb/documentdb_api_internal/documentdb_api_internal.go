@@ -2254,20 +2254,6 @@ func Bsonstddevsamp(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymo
 	return
 }
 
-// BuildIndexConcurrently is a wrapper for
-//
-//	documentdb_api_internal.build_index_concurrently(p_job_index integer).
-func BuildIndexConcurrently(ctx context.Context, conn *pgx.Conn, l *slog.Logger, jobIndex int32) (err error) {
-	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.build_index_concurrently", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
-	defer span.End()
-
-	row := conn.QueryRow(ctx, "CALL documentdb_api_internal.build_index_concurrently($1)", jobIndex)
-	if err = row.Scan(); err != nil {
-		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.build_index_concurrently", l)
-	}
-	return
-}
-
 // CheckBuildIndexStatus is a wrapper for
 //
 //	documentdb_api_internal.check_build_index_status(p_arg documentdb_core.bson, OUT retval documentdb_core.bson, OUT ok boolean, OUT complete boolean).
@@ -2460,20 +2446,6 @@ func DbStatsWorker(ctx context.Context, conn *pgx.Conn, l *slog.Logger, collecti
 	row := conn.QueryRow(ctx, "SELECT db_stats_worker::bytea FROM documentdb_api_internal.db_stats_worker($1)", collectionIds)
 	if err = row.Scan(&outDbStatsWorker); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.db_stats_worker", l)
-	}
-	return
-}
-
-// DeleteExpiredRows is a wrapper for
-//
-//	documentdb_api_internal.delete_expired_rows(p_batch_size integer DEFAULT '-1').
-func DeleteExpiredRows(ctx context.Context, conn *pgx.Conn, l *slog.Logger, batchSize int32) (err error) {
-	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.delete_expired_rows", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
-	defer span.End()
-
-	row := conn.QueryRow(ctx, "CALL documentdb_api_internal.delete_expired_rows($1)", batchSize)
-	if err = row.Scan(); err != nil {
-		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.delete_expired_rows", l)
 	}
 	return
 }
