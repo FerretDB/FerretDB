@@ -84,13 +84,15 @@ func New(config *Config) (*FerretDB, error) {
 	version.Get().Package = "embedded"
 
 	sp, err := state.NewProviderDir(config.StateDir)
-	// TODO https://github.com/FerretDB/FerretDB/issues/4750
-	err = sp.Update(func(s *state.State) {
-		s.LatestVersion = version.Get().Version
-	})
+	if err == nil {
+		// TODO https://github.com/FerretDB/FerretDB/issues/4750
+		err = sp.Update(func(s *state.State) {
+			s.LatestVersion = version.Get().Version
+		})
 
-	if err != nil {
-		return nil, fmt.Errorf("failed to set up state provider: %w", err)
+		if err != nil {
+			return nil, fmt.Errorf("failed to set up state provider: %w", err)
+		}
 	}
 
 	// Note that the current implementation requires `*logging.Handler` in the `getLog` command implementation.
@@ -116,11 +118,16 @@ func New(config *Config) (*FerretDB, error) {
 	lm := connmetrics.NewListenerMetrics()
 
 	flag := new(telemetry.Flag)
+
 	if config.EnabledTelemetry != nil {
 		if *config.EnabledTelemetry {
-			flag.UnmarshalText([]byte("true"))
+			err = flag.UnmarshalText([]byte("true"))
 		} else {
-			flag.UnmarshalText([]byte("false"))
+			err = flag.UnmarshalText([]byte("false"))
+		}
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal telemetry flag: %w", err)
 		}
 	}
 
