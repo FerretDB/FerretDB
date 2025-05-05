@@ -83,17 +83,16 @@ type Reporter struct {
 
 // NewReporterOpts represents reporter options.
 type NewReporterOpts struct {
-	URL              string
-	Dir              string
-	F                *Flag
-	DNT              string
-	ExecName         string
-	EnabledTelemetry *bool
-	P                *state.Provider
-	ConnMetrics      *connmetrics.ConnMetrics
-	L                *slog.Logger
-	UndecidedDelay   time.Duration
-	ReportInterval   time.Duration
+	URL            string
+	Dir            string
+	F              *Flag
+	DNT            string
+	ExecName       string
+	P              *state.Provider
+	ConnMetrics    *connmetrics.ConnMetrics
+	L              *slog.Logger
+	UndecidedDelay time.Duration
+	ReportInterval time.Duration
 }
 
 // NewReporter creates a new reporter.
@@ -106,7 +105,7 @@ func NewReporter(opts *NewReporterOpts) (*Reporter, error) {
 		return nil, fmt.Errorf("dir is required")
 	}
 
-	t, locked, err := initialState(opts.F, opts.DNT, opts.ExecName, opts.P.Get().Telemetry, opts.EnabledTelemetry, opts.L)
+	t, locked, err := initialState(opts.F, opts.DNT, opts.ExecName, opts.P.Get().Telemetry, opts.L)
 	if err != nil {
 		return nil, err
 	}

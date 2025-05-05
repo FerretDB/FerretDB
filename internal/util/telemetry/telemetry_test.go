@@ -28,14 +28,13 @@ func TestState(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		flag             string
-		dnt              string
-		execName         string
-		prev             *bool
-		enabledTelemetry *bool
-		state            *bool
-		locked           bool
-		err              string
+		flag     string
+		dnt      string
+		execName string
+		prev     *bool
+		state    *bool
+		locked   bool
+		err      string
 	}{
 		"default": {},
 		"prev": {
@@ -52,11 +51,6 @@ func TestState(t *testing.T) {
 			dnt:    "1",
 			state:  pointer.ToBool(false),
 			locked: true,
-		},
-		"enabledTelemetry": {
-			enabledTelemetry: pointer.ToBool(false),
-			state:            pointer.ToBool(false),
-			locked:           true,
 		},
 		"invalidDnt": {
 			dnt: "foo",
@@ -79,7 +73,7 @@ func TestState(t *testing.T) {
 
 			logger := testutil.Logger(t)
 
-			state, locked, err := initialState(&f, tc.dnt, tc.execName, tc.prev, tc.enabledTelemetry, logger)
+			state, locked, err := initialState(&f, tc.dnt, tc.execName, tc.prev, logger)
 			if tc.err != "" {
 				assert.EqualError(t, err, tc.err)
 				return

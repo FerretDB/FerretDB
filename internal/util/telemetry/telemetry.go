@@ -63,9 +63,7 @@ func (s *Flag) UnmarshalText(text []byte) error {
 //
 // The second returned value is true if the telemetry state should be locked, because of
 // setting telemetry via a command-line flag, an environment variable, or a filename.
-func initialState(f *Flag, dnt string, execName string, prev *bool,
-	enabledTelemetry *bool, l *slog.Logger,
-) (state *bool, locked bool, err error) {
+func initialState(f *Flag, dnt string, execName string, prev *bool, l *slog.Logger) (state *bool, locked bool, err error) {
 	// https://consoledonottrack.com is not entirely clear about accepted values.
 	// Assume that "1", "t", "true", etc. mean that telemetry should be disabled,
 	// and other valid values, including "0" and empty string, mean undecided.
@@ -83,12 +81,6 @@ func initialState(f *Flag, dnt string, execName string, prev *bool,
 
 	if strings.Contains(strings.ToLower(execName), "donottrack") {
 		l.Info(fmt.Sprintf("Telemetry is disabled by %q executable name", execName))
-		state = pointer.ToBool(false)
-		locked = true
-	}
-
-	if enabledTelemetry != nil && !pointer.GetBool(enabledTelemetry) {
-		l.Info("Telemetry is disabled by enabledTelemetry config")
 		state = pointer.ToBool(false)
 		locked = true
 	}
