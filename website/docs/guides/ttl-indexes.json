@@ -14,7 +14,8 @@
             "$numberInt": "60"
           }
         }
-      ]
+      ],
+      "$db": "{{.Database}}"
     },
     "response": {
       "numIndexesBefore": {
@@ -23,7 +24,7 @@
       "numIndexesAfter": {
         "$numberInt": "2"
       },
-      "createdCollectionAutomatically": true,
+      "createdCollectionAutomatically": false,
       "ok": {
         "$numberDouble": "1.0"
       }
@@ -45,7 +46,8 @@
             }
           }
         }
-      ]
+      ],
+      "$db": "{{.Database}}"
     },
     "response": {
       "n": {
