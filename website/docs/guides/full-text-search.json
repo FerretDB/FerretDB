@@ -78,14 +78,10 @@
       "$db": "{{.Database}}"
     },
     "response": {
-      "ok": {
-        "$numberDouble": "0.0"
+      "nIndexesWas": {
+        "$numberLong": "2"
       },
-      "errmsg": "[response.go:63 middleware.ResponseMsg] [op_msg.go:55 wire.NewOpMsg] [op_msg.go:85 wire.(*OpMsg).check] [raw_document.go:68 wirebson.RawDocument.DecodeDeep] [raw_document.go:78 wirebson.RawDocument.decode] [decode.go:65 wirebson.FindRaw] len(b) = 69, dl = 1313821506: wirebson: short input",
-      "code": {
-        "$numberInt": "1"
-      },
-      "codeName": "InternalError"
+      "ok": true
     }
   },
   "4-compound-text-index": {
