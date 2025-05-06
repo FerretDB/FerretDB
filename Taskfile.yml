@@ -751,9 +751,11 @@ tasks:
     deps: [fmt-docs]
 
   docs-gen:
+    desc: "Generate documentation examples using CTS tool"
     cmds:
       - bin/opendocdb-cts fmt --dir=website/docs/guides
       - bin/opendocdb-cts convert --dir=website/docs/guides website/docs/guides --db=db
+      - task: fmt-docs
 
   cts:
     desc: "Run CTS tests against FerretDB"
@@ -762,9 +764,8 @@ tasks:
 
   docs:
     desc: "Format, lint and build documentation"
+    deps: [docs-gen]
     cmds:
-      - task: docs-gen
-      - task: fmt-docs
       - docker compose run --rm docusaurus-docs build
 
   blog:
