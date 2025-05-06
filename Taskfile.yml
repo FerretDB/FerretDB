@@ -488,7 +488,7 @@ tasks:
         vars:
           FILE: ferretdb/eval-dev
           TARGET: eval-dev
-          PLATFORM: linux/amd64 # no DocumentDB for linux/arm64 yet
+          PLATFORM: linux/amd64,linux/arm64
           OUTPUT: type=image,push=true
     requires:
       vars: [DOCKER_IMAGES]
@@ -501,7 +501,7 @@ tasks:
         vars:
           FILE: ferretdb/eval
           TARGET: eval
-          PLATFORM: linux/amd64 # no DocumentDB for linux/arm64 yet
+          PLATFORM: linux/amd64,linux/arm64
           OUTPUT: type=image,push=true
     requires:
       vars: [DOCKER_IMAGES]
