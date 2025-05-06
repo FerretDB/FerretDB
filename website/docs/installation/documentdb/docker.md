@@ -25,7 +25,7 @@ to ensure consistency across deployments.
 For more information on the best FerretDB image to use, see the [DocumentDB release notes](https://github.com/FerretDB/documentdb/releases/).
 :::
 
-### Install production image
+### Run production image
 
 FerretDB requires a user credential (username and password) and `postgres` database to be initialized and must already exist before a connection can be set up.
 See [Set up PostgreSQL connection](../../security/authentication.md#set-up-postgresql-connection) for more details.
@@ -60,7 +60,7 @@ See [Set up PostgreSQL connection](../../security/authentication.md#set-up-postg
 
 3. See [FerretDB Docker installation](../ferretdb/docker.md) for more details on connecting to FerretDB.
 
-### Install development image
+### Run development image
 
 The development image for PostgreSQL with DocumentDB extension
 [`ghcr.io/ferretdb/postgres-documentdb-dev`](https://ghcr.io/ferretdb/postgres-documentdb-dev)
@@ -74,7 +74,9 @@ Before [updating to a new FerretDB release](../ferretdb/docker.md#updating-to-a-
 
 The following steps are critical to ensuring a successful update.
 
-Edit your Compose file to point to the latest DocumentDB production image tag as shown in the DocumentDB release notes, for example `17-0.103.0-ferretdb-2.2.0`, then run:
+Edit your Compose file to use the latest DocumentDB production image tag.
+You can find the correct tag in the DocumentDB release notes (for example: `17-0.103.0-ferretdb-2.2.0`).
+Then run:
 
 ```sh
 docker compose pull <documentdb-container-name>

@@ -34,7 +34,7 @@ Ensure to [enable telemetry](../../telemetry.md) to receive notifications on the
 For more information on the best DocumentDB version to use, see the [corresponding release notes for the FerretDB version](https://github.com/FerretDB/FerretDB/releases/).
 :::
 
-### Install production image
+### Run production image
 
 The following steps describe a quick local setup:
 
@@ -100,7 +100,7 @@ Find out more about:
 
 - [getting logs](../../configuration/observability.md#docker-logs).
 
-### Install development image
+### Run development image
 
 The development image
 [`ghcr.io/ferretdb/ferretdb-dev:2`](https://ghcr.io/ferretdb/ferretdb-dev:2)
