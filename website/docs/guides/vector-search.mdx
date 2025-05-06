@@ -8,11 +8,11 @@ description: Learn about vector search parameters and capabilities in FerretDB.
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import CodeBlock from '@theme/CodeBlock';
-import HNSWIndex from '!!raw-loader!./vector-search/1-hnsw-index.request.js';
-import HSNWSearch from '!!raw-loader!./vector-search/2-hnsw-search.request.js';
+import HNSWIndexRequest from '!!raw-loader!./vector-search/1-hnsw-index.request.js';
+import HNSWSearchRequest from '!!raw-loader!./vector-search/2-hnsw-search.request.js';
 import HNSWSearchResponse from '!!raw-loader!./vector-search/2-hnsw-search.response.js';
-import IVFIndex from '!!raw-loader!./vector-search/4-ivf-index.request.js';
-import IVFSearch from '!!raw-loader!./vector-search/5-ivf-search.request.js';
+import IVFIndexRequest from '!!raw-loader!./vector-search/4-ivf-index.request.js';
+import IVFSearchRequest from '!!raw-loader!./vector-search/5-ivf-search.request.js';
 import IVFSearchResponse from '!!raw-loader!./vector-search/5-ivf-search.response.js';
 
 Vector search is a technique for retrieving contextual and semantically related items based on the similarity of their vector representations.
@@ -84,7 +84,7 @@ A vector index definition can take the following parameters, depending on the ki
 In the following sections, we will demonstrate how to create and use vector indexes.
 Insert the sample dataset, by downloading the [books.js](./fixtures/books.js). Once downloaded, you can use `mongosh` to insert the documents into your database by running the following command:
 
-```bash
+```sh
 mongosh --file books.js <mongodb_uri>
 ```
 
@@ -97,7 +97,7 @@ You can use any embedding model to generate the vectors.
 
 To create an HNSW index, set the `kind` field to `vector-hnsw` when creating the vector index.
 
-<CodeBlock language="js">{HNSWIndex}</CodeBlock>
+<CodeBlock language="js">{HNSWIndexRequest}</CodeBlock>
 
 </TabItem>
 
@@ -105,7 +105,7 @@ To create an HNSW index, set the `kind` field to `vector-hnsw` when creating the
 
 To create an IVF index, set the `kind` field to `vector-ivf` when creating the vector index.
 
-<CodeBlock language="js">{IVFIndex}</CodeBlock>
+<CodeBlock language="js">{IVFIndexRequest}</CodeBlock>
 
 </TabItem>
 
@@ -156,7 +156,7 @@ A typical vector search query includes the query vector, the path to the field c
 Using the same embedding model used for generating the vectors, a query vector is generated for `An exciting tale of adventure and exploration at sea`.
 Next, a vector search is performed on the `vector` field in the `books` collection to find the two nearest neighbors of the query vector.
 
-<CodeBlock language="js">{HSNWSearch}</CodeBlock>
+<CodeBlock language="js">{HNSWSearchRequest}</CodeBlock>
 
 The query returns the two nearest neighbors of the query vector.
 
@@ -169,7 +169,7 @@ The query returns the two nearest neighbors of the query vector.
 Using the embeddings model used for generating the vectors, a query vector is generated for `"A science fiction tale exploring the boundaries of human knowledge"`.
 The following aggregation query performs a vector search on the `vector` field in the `books` collection:
 
-<CodeBlock language="js">{IVFSearch}</CodeBlock>
+<CodeBlock language="js">{IVFSearchRequest}</CodeBlock>
 
 By setting `returnStoredSource: true`, the query returns the similarity score along with matching documents.
 Otherwise, only the similarity score is returned, and the actual document content is excluded.
