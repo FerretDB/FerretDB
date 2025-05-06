@@ -17,7 +17,7 @@ The rest are covered below.
 All Docker images include a [`HEALTHCHECK` instruction](https://docs.docker.com/reference/dockerfile/#healthcheck)
 that behaves like a [readiness probe](../../configuration/observability.md#probes).
 
-## Production image
+## Installation
 
 Our production image
 [`ghcr.io/ferretdb/ferretdb:2.1.0`](https://ghcr.io/ferretdb/ferretdb:2.1.0)
@@ -34,7 +34,7 @@ Ensure to [enable telemetry](../../telemetry.md) to receive notifications on the
 For more information on the best DocumentDB version to use, see the [corresponding release notes for the FerretDB version](https://github.com/FerretDB/FerretDB/releases/).
 :::
 
-### PostgreSQL setup with Docker Compose
+### Install production image
 
 The following steps describe a quick local setup:
 
@@ -100,7 +100,7 @@ Find out more about:
 
 - [getting logs](../../configuration/observability.md#docker-logs).
 
-## Development image
+### Install development image
 
 The development image
 [`ghcr.io/ferretdb/ferretdb-dev:2`](https://ghcr.io/ferretdb/ferretdb-dev:2)
@@ -109,3 +109,15 @@ contains the
 of FerretDB, and is recommended for debugging problems.
 It includes additional debugging features that make it significantly slower.
 For this reason, it is not recommended for production use.
+
+## Updating to a new FerretDB release
+
+Before updating your FerretDB instance, make sure to install the matching DocumentDB image first (See the DocumentDB release notes to find the newest `postgres-documentdb` image that best suits the FerretDB release.)
+Our [DocumentDB update guide](../documentdb/docker.md#updating-to-a-new-documentdb-release) covers the steps critical for a successful update.
+
+Once DocumentDB is updated, edit your Docker compose file to point to the latest FerretDB production image tag as shown in the FerretDB release notes, for example `2.2.0`, then run:
+
+```sh
+docker compose pull <ferretdb-container-name>
+docker compose up -d <ferretdb-container-name>
+```

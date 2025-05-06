@@ -68,9 +68,9 @@ is recommended for debugging problems.
 It includes additional debugging features that make it significantly slower.
 For this reason, it is not recommended for production use.
 
-## Update production image
+## Updating to a new DocumentDB release
 
-Before updating to a new FerretDB release, it is critical to install the matching DocumentDB image first.
+Before [updating to a new FerretDB release](../ferretdb/docker.md#updating-to-a-new-ferretdb-release), it is critical to install the matching DocumentDB image first.
 
 The following steps are critical to ensuring a successful update.
 
