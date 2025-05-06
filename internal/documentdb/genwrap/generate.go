@@ -89,10 +89,6 @@ type templateData struct {
 // go functions for querying DocumentDB API.
 func Generate(schemaRoutines map[string]map[string]templateData) error {
 	for schema, routines := range schemaRoutines {
-		if err := os.RemoveAll(schema); err != nil {
-			return err
-		}
-
 		if err := os.MkdirAll(schema, 0o777); err != nil {
 			return err
 		}
