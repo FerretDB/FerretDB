@@ -938,6 +938,20 @@ func BsonExpressionGet(ctx context.Context, conn *pgx.Conn, l *slog.Logger, docu
 	return
 }
 
+// BsonExpressionGet1 is a wrapper for
+//
+//	documentdb_api_internal.bson_expression_get(document documentdb_core.bson, expressionspec documentdb_core.bson, isnullonempty boolean, variablespec documentdb_core.bson, collationstring text, OUT bson_expression_get documentdb_core.bson).
+func BsonExpressionGet1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, expressionSpec wirebson.RawDocument, isnullonempty bool, variableSpec wirebson.RawDocument, collationstring string) (outBsonExpressionGet wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_expression_get", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_expression_get::bytea FROM documentdb_api_internal.bson_expression_get($1::bytea, $2::bytea, $3, $4::bytea, $5)", document, expressionSpec, isnullonempty, variableSpec, collationstring)
+	if err = row.Scan(&outBsonExpressionGet); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_expression_get", l)
+	}
+	return
+}
+
 // BsonExpressionMap is a wrapper for
 //
 //	documentdb_api_internal.bson_expression_map(document documentdb_core.bson, sourcearrayname text, expressionspec documentdb_core.bson, isnullonempty boolean, variablespec documentdb_core.bson, OUT bson_expression_map documentdb_core.bson).
@@ -988,6 +1002,20 @@ func BsonExpressionPartitionGet1(ctx context.Context, conn *pgx.Conn, l *slog.Lo
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT bson_expression_partition_get::bytea FROM documentdb_api_internal.bson_expression_partition_get($1::bytea, $2::bytea, $3, $4::bytea)", document, expressionSpec, isnullonempty, variableSpec)
+	if err = row.Scan(&outBsonExpressionPartitionGet); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_expression_partition_get", l)
+	}
+	return
+}
+
+// BsonExpressionPartitionGet12 is a wrapper for
+//
+//	documentdb_api_internal.bson_expression_partition_get(document documentdb_core.bson, expressionspec documentdb_core.bson, isnullonempty boolean, variablespec documentdb_core.bson, collationstring text, OUT bson_expression_partition_get documentdb_core.bson).
+func BsonExpressionPartitionGet12(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, expressionSpec wirebson.RawDocument, isnullonempty bool, variableSpec wirebson.RawDocument, collationstring string) (outBsonExpressionPartitionGet wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_expression_partition_get", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_expression_partition_get::bytea FROM documentdb_api_internal.bson_expression_partition_get($1::bytea, $2::bytea, $3, $4::bytea, $5)", document, expressionSpec, isnullonempty, variableSpec, collationstring)
 	if err = row.Scan(&outBsonExpressionPartitionGet); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_expression_partition_get", l)
 	}
@@ -2254,20 +2282,6 @@ func Bsonstddevsamp(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymo
 	return
 }
 
-// BuildIndexConcurrently is a wrapper for
-//
-//	documentdb_api_internal.build_index_concurrently(p_job_index integer).
-func BuildIndexConcurrently(ctx context.Context, conn *pgx.Conn, l *slog.Logger, jobIndex int32) (err error) {
-	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.build_index_concurrently", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
-	defer span.End()
-
-	row := conn.QueryRow(ctx, "CALL documentdb_api_internal.build_index_concurrently($1)", jobIndex)
-	if err = row.Scan(); err != nil {
-		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.build_index_concurrently", l)
-	}
-	return
-}
-
 // CheckBuildIndexStatus is a wrapper for
 //
 //	documentdb_api_internal.check_build_index_status(p_arg documentdb_core.bson, OUT retval documentdb_core.bson, OUT ok boolean, OUT complete boolean).
@@ -2460,20 +2474,6 @@ func DbStatsWorker(ctx context.Context, conn *pgx.Conn, l *slog.Logger, collecti
 	row := conn.QueryRow(ctx, "SELECT db_stats_worker::bytea FROM documentdb_api_internal.db_stats_worker($1)", collectionIds)
 	if err = row.Scan(&outDbStatsWorker); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.db_stats_worker", l)
-	}
-	return
-}
-
-// DeleteExpiredRows is a wrapper for
-//
-//	documentdb_api_internal.delete_expired_rows(p_batch_size integer DEFAULT '-1').
-func DeleteExpiredRows(ctx context.Context, conn *pgx.Conn, l *slog.Logger, batchSize int32) (err error) {
-	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.delete_expired_rows", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
-	defer span.End()
-
-	row := conn.QueryRow(ctx, "CALL documentdb_api_internal.delete_expired_rows($1)", batchSize)
-	if err = row.Scan(); err != nil {
-		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.delete_expired_rows", l)
 	}
 	return
 }

@@ -55,7 +55,6 @@ and volume is mounted from `./server-certs` of Docker host to `/etc/certs` of Do
 services:
   postgres:
     image: ghcr.io/ferretdb/postgres-documentdb:17
-    platform: linux/amd64
     environment:
       - POSTGRES_USER=username
       - POSTGRES_PASSWORD=password

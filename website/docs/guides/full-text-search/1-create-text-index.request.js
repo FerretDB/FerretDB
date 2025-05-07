@@ -3,10 +3,9 @@ db.runCommand({
   indexes: [
     {
       key: {
-        'reservation.date': 1
+        summary: 'text'
       },
-      name: 'reservation_ttl',
-      expireAfterSeconds: 60
+      name: 'summary_text_index'
     }
   ]
 })
