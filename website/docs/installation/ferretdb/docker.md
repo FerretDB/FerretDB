@@ -5,13 +5,13 @@ description: How to set up FerretDB using Docker
 
 # Docker
 
-We provide three Docker images for various deployments:
+We provide Docker images for various deployments:
 
-- **an evaluation image**: for quick testing and experiments
-- **a development image**: for debugging problems
-- **a production image**: for all other cases
+- Evaluation images for quick testing and experiments.
+- Production image for stable and optimized deployments.
+- Development image for debugging problems.
 
-An evaluation image is documented [separately](../evaluation.md).
+The evaluation images are documented [separately](../evaluation.md).
 The rest are covered below.
 
 All Docker images include a [`HEALTHCHECK` instruction](https://docs.docker.com/reference/dockerfile/#healthcheck)
@@ -45,8 +45,7 @@ The following steps describe a quick local setup:
    ```yaml
    services:
      postgres:
-       image: ghcr.io/ferretdb/postgres-documentdb:17-0.102.0-ferretdb-2.1.0
-       platform: linux/amd64
+       image: ghcr.io/ferretdb/postgres-documentdb:17-0.103.0-ferretdb-2.2.0
        restart: on-failure
        environment:
          - POSTGRES_USER=username

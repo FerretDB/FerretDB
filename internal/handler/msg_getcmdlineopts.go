@@ -24,11 +24,11 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgGetCmdLineOpts implements `getCmdLineOpts` command.
+// msgGetCmdLineOpts implements `getCmdLineOpts` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgGetCmdLineOpts(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
-	spec, err := req.RawDocument()
+func (h *Handler) msgGetCmdLineOpts(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -37,7 +37,7 @@ func (h *Handler) MsgGetCmdLineOpts(connCtx context.Context, req *middleware.Msg
 		return nil, err
 	}
 
-	return middleware.Response(wirebson.MustDocument(
+	return middleware.ResponseMsg(wirebson.MustDocument(
 		"argv", must.NotFail(wirebson.NewArray("ferretdb")),
 		"parsed", must.NotFail(wirebson.NewDocument()),
 		"ok", float64(1),

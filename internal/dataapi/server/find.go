@@ -55,13 +55,13 @@ func (s *Server) Find(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resMsg, err := s.handler.Commands()["find"].Handler(ctx, msg)
+	resMsg, err := s.handler.Handle(ctx, msg)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
-	resRaw := must.NotFail(resMsg.RawDocument())
+	resRaw := must.NotFail(resMsg.OpMsg.RawDocument())
 	cursor := must.NotFail(resRaw.Decode()).Get("cursor").(wirebson.AnyDocument)
 
 	res := must.NotFail(wirebson.NewDocument(

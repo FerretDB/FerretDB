@@ -21,102 +21,40 @@ import (
 	"testing"
 
 	"github.com/FerretDB/wire/wirebson"
+	"github.com/FerretDB/wire/wiretest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-
-	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
 )
 
-//go:generate ../bin/stringer -linecomment -type compatTestCaseResultType
+//go:generate ../bin/stringer -linecomment -type CompatTestCaseResultType
 
-// compatTestCaseResultType represents compatibility test case result type.
+// CompatTestCaseResultType represents compatibility test case result type.
 //
 // It is used to avoid errors with invalid queries making tests pass.
-type compatTestCaseResultType int
+type CompatTestCaseResultType int
 
 const (
 	// Test case should return non-empty result at least for one collection/provider.
-	nonEmptyResult compatTestCaseResultType = iota
+	NonEmptyResult CompatTestCaseResultType = iota
 
 	// Test case should return empty result for all collections/providers.
-	emptyResult
+	EmptyResult
 )
 
 // convert converts given driver value ([bson.D], [bson.A], etc) to FerretDB's bson package value.
+//
+// Deprecated: use [wirebson.FromDriver] instead.
 func convert(t testing.TB, v any) any {
-	t.Helper()
-
-	switch v := v.(type) {
-	// composite types
-	case primitive.D:
-		doc := wirebson.MakeDocument(len(v))
-		for _, e := range v {
-			err := doc.Add(e.Key, convert(t, e.Value))
-			require.NoError(t, err)
-		}
-
-		return doc
-
-	case primitive.A:
-		arr := wirebson.MakeArray(len(v))
-		for _, e := range v {
-			err := arr.Add(convert(t, e))
-			require.NoError(t, err)
-		}
-
-		return arr
-
-	// scalar types (in the same order as in bson package)
-	case float64:
-		return v
-	case string:
-		return v
-	case primitive.Binary:
-		return wirebson.Binary{
-			Subtype: wirebson.BinarySubtype(v.Subtype),
-			B:       v.Data,
-		}
-	case primitive.ObjectID:
-		return wirebson.ObjectID(v)
-	case bool:
-		return v
-	case primitive.DateTime:
-		return v.Time()
-	case nil:
-		return wirebson.Null
-	case primitive.Regex:
-		return wirebson.Regex{
-			Pattern: v.Pattern,
-			Options: v.Options,
-		}
-	case int32:
-		return v
-	case primitive.Timestamp:
-		return wirebson.Timestamp(uint64(v.T)<<32 | uint64(v.I))
-	case int64:
-		return v
-	case primitive.Decimal128:
-		h, l := v.GetBytes()
-
-		return wirebson.Decimal128{
-			H: h,
-			L: l,
-		}
-
-	default:
-		t.Fatalf("unexpected type %T", v)
-		panic("not reached")
-	}
+	return wiretest.FromDriver(t, v)
 }
 
-// fixCluster removes document fields that are specific for MongoDB running in a cluster.
-func fixCluster(t testing.TB, doc *wirebson.Document) {
+// FixCluster removes document fields that are specific for MongoDB running in a cluster.
+func FixCluster(t testing.TB, doc *wirebson.Document) {
 	t.Helper()
 
 	doc.Remove("$clusterTime")
@@ -194,7 +132,7 @@ func fixActualUpdateN(t testing.TB, actual *wirebson.Document) {
 func fixExpected(t testing.TB, expected *wirebson.Document) {
 	t.Helper()
 
-	fixCluster(t, expected)
+	FixCluster(t, expected)
 	fixOrder(t, expected)
 }
 
@@ -202,12 +140,12 @@ func fixExpected(t testing.TB, expected *wirebson.Document) {
 func fixActual(t testing.TB, actual *wirebson.Document) {
 	t.Helper()
 
-	fixCluster(t, actual)
+	FixCluster(t, actual)
 	fixOrder(t, actual)
 	fixActualUpdateN(t, actual)
 }
 
-// convertDocument converts given driver's document to FerretDB's *bson.Document.
+// convertDocument converts given driver's document to FerretDB's [*wirebson.Document].
 func convertDocument(t testing.TB, doc bson.D) *wirebson.Document {
 	t.Helper()
 
@@ -219,7 +157,7 @@ func convertDocument(t testing.TB, doc bson.D) *wirebson.Document {
 	return v.(*wirebson.Document)
 }
 
-// convertDocuments converts given driver's documents slice to FerretDB's []*bson.Document.
+// convertDocuments converts given driver's documents slice to FerretDB's []*wirebson.Document.
 func convertDocuments(t testing.TB, docs []bson.D) []*wirebson.Document {
 	t.Helper()
 
@@ -241,7 +179,7 @@ func AssertEqualDocuments(t testing.TB, expected, actual bson.D) bool {
 	fixExpected(t, expectedDoc)
 	fixActual(t, actualDoc)
 
-	return testutil.AssertEqual(t, expectedDoc, actualDoc)
+	return wiretest.AssertEqual(t, expectedDoc, actualDoc)
 }
 
 // AssertEqualDocumentsSlice asserts that two document slices are equal in a way that is useful for tests.
@@ -259,7 +197,7 @@ func AssertEqualDocumentsSlice(t testing.TB, expected, actual []bson.D) bool {
 		fixActual(t, d)
 	}
 
-	return testutil.AssertEqualSlices(t, expectedDocs, actualDocs)
+	return wiretest.AssertEqualSlices(t, expectedDocs, actualDocs)
 }
 
 // AssertEqualCommandError asserts that the expected error is the same as the actual (ignoring the Raw part).
@@ -460,6 +398,20 @@ func AssertEqualAltWriteError(t testing.TB, expected mongo.WriteError, altMessag
 	return assert.Equal(t, expected, a)
 }
 
+// GetKey returns the value of the existing key from the document.
+func GetKey(t testing.TB, doc bson.D, key string) any {
+	t.Helper()
+
+	for _, field := range doc {
+		if field.Key == key {
+			return field.Value
+		}
+	}
+
+	t.Fatalf("key %q not found in document %+v", key, doc)
+	panic("not reached")
+}
+
 // RemoveKey returns a copy of the document with the given key removed,
 // and the value of that key (that could be nil if the key was not found).
 func RemoveKey(t testing.TB, doc bson.D, key string) (bson.D, any) {
@@ -527,8 +479,7 @@ func CollectIDs(t testing.TB, docs []bson.D) []any {
 
 	ids := make([]any, len(docs))
 	for i, doc := range docs {
-		id, ok := doc.Map()["_id"]
-		require.True(t, ok)
+		id := GetKey(t, doc, "_id")
 		ids[i] = id
 	}
 

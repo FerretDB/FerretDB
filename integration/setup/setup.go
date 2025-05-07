@@ -49,6 +49,8 @@ var (
 
 	compatURLF = flag.String("compat-url", "", "compat system's (MongoDB) URL for compatibility tests; if empty, they are skipped")
 
+	otelTracesURLF = flag.String("otel-traces-url", "http://127.0.0.1:4318/v1/traces", "OpenTelemetry OTLP/HTTP traces endpoint URL")
+
 	noXFailF = flag.Bool("no-xfail", false, "Disallow expected failures")
 
 	benchDocsF = flag.Int("bench-docs", 1000, "benchmarks: number of documents to generate per iteration")
@@ -95,7 +97,7 @@ type SetupOpts struct {
 
 	// PoolSize ensures that MongoDB driver uses exactly this number of connections for operations
 	// (not counting extra connections for monitoring that are mostly idle).
-	// Zero value disabled explicit pool configuration.
+	// Zero value disables explicit pool configuration.
 	PoolSize int
 
 	// DisableOtel disable OpenTelemetry monitoring for MongoDB driver.

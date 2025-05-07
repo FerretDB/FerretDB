@@ -52,13 +52,13 @@ func (s *Server) Aggregate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resMsg, err := s.handler.Commands()["aggregate"].Handler(ctx, msg)
+	resMsg, err := s.handler.Handle(ctx, msg)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
-	resRaw := must.NotFail(resMsg.RawDocument())
+	resRaw := must.NotFail(resMsg.OpMsg.RawDocument())
 	cursor := must.NotFail(resRaw.Decode()).Get("cursor").(wirebson.AnyDocument)
 	firstBatch := must.NotFail(cursor.Decode()).Get("firstBatch").(wirebson.AnyArray)
 

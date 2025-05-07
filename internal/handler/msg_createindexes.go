@@ -29,23 +29,23 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgCreateIndexes implements `createIndexes` command.
+// msgCreateIndexes implements `createIndexes` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgCreateIndexes(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
-	spec, err := req.RawDocument()
+func (h *Handler) msgCreateIndexes(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
-	}
-
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
-		return nil, err
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
 	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+		return nil, err
 	}
 
 	dbName, err := getRequiredParam[string](doc, "$db")
@@ -73,7 +73,7 @@ func (h *Handler) MsgCreateIndexes(connCtx context.Context, req *middleware.MsgR
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.Response(res)
+	return middleware.ResponseMsg(res)
 }
 
 // createIndexes calls DocumentDB API to create indexes, decodes and maps embedded error to command error if any.

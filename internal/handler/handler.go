@@ -24,6 +24,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/session"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
@@ -50,7 +51,7 @@ const (
 
 // Handler provides a set of methods to process clients' requests sent over wire protocol.
 //
-// MsgXXX methods handle OP_MSG commands.
+// The methods msgXXX handle OP_MSG commands.
 // CmdQuery handles a limited subset of OP_QUERY messages.
 //
 // Handler instance is shared between all client connections.
@@ -132,6 +133,30 @@ func (h *Handler) Run(ctx context.Context) {
 	}
 }
 
+// Handle processes a request.
+func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	switch {
+	case req.OpMsg != nil:
+		doc, err := req.OpMsg.Section0()
+		if err != nil {
+			return nil, err
+		}
+
+		msgCmd := doc.Command()
+
+		cmd, ok := h.commands[msgCmd]
+		if ok && cmd.handler != nil {
+			return cmd.handler(ctx, req)
+		}
+
+		return notFound(msgCmd)(ctx, req)
+	case req.OpQuery != nil:
+		return h.CmdQuery(ctx, req)
+	default:
+		panic("unsupported request")
+	}
+}
+
 // Describe implements [prometheus.Collector].
 func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
 	h.Pool.Describe(ch)
@@ -143,3 +168,8 @@ func (h *Handler) Collect(ch chan<- prometheus.Metric) {
 	h.Pool.Collect(ch)
 	h.s.Collect(ch)
 }
+
+// check interfaces
+var (
+	_ middleware.HandleFunc = (*Handler)(nil).Handle
+)

@@ -25,16 +25,16 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgPing implements `ping` command.
+// msgPing implements `ping` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgPing(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
-	spec, err := req.RawDocument()
+func (h *Handler) msgPing(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	doc, err := req.OpMsg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
@@ -46,7 +46,7 @@ func (h *Handler) MsgPing(connCtx context.Context, req *middleware.MsgRequest) (
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.Response(wirebson.MustDocument(
+	return middleware.ResponseMsg(wirebson.MustDocument(
 		"ok", float64(1),
 	))
 }

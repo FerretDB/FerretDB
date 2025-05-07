@@ -29,22 +29,23 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgReIndex implements `reIndex` command.
+// msgReIndex implements `reIndex` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgReIndex(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
-	spec, err := req.RawDocument()
+func (h *Handler) msgReIndex(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
-		return nil, err
-	}
-
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
 	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+		return nil, err
 	}
 
 	dbName, err := getRequiredParam[string](doc, "$db")
@@ -116,8 +117,6 @@ func (h *Handler) MsgReIndex(connCtx context.Context, req *middleware.MsgRequest
 		return nil, lazyerrors.Error(err)
 	}
 
-	// this currently fails due to
-	// TODO https://github.com/FerretDB/FerretDB/issues/4730
 	dropDoc, err := dropRes.DecodeDeep()
 	if err != nil {
 		h.L.DebugContext(connCtx, "MsgReIndex: failed to decode DropIndexes response", logging.Error(err))
@@ -159,7 +158,7 @@ func (h *Handler) MsgReIndex(connCtx context.Context, req *middleware.MsgRequest
 
 	indexesAfter := listDoc.Get("cursor").(*wirebson.Document).Get("firstBatch").(*wirebson.Array)
 
-	return middleware.Response(wirebson.MustDocument(
+	return middleware.ResponseMsg(wirebson.MustDocument(
 		"nIndexesWas", int32(indexesBefore.Len()),
 		"nIndexes", createDoc.Get("numIndexesAfter"),
 		"indexes", indexesAfter,

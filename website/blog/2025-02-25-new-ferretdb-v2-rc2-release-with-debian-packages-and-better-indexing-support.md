@@ -16,7 +16,7 @@ improved logging, and better indexing support.
 
 <!--truncate-->
 
-After we released [the first release candidate of FerretDB v2](https://blog.ferretdb.io/ferretdb-releases-v2-faster-more-compatible-mongodb-alternative/),
+After we released [the first release candidate of FerretDB v2](2025-01-23-ferretdb-releases-v2-faster-more-compatible-mongodb-alternative.md),
 we received lots of amazing feedback and shoutouts from the community.
 So many of our users have been impressed with its overall performance improvements and range of compatible features,
 including vector search, full-text search, replication, and better aggregation pipeline support, among others.

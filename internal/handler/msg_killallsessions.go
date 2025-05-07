@@ -23,21 +23,22 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgKillAllSessions implements `killAllSessions` command.
+// msgKillAllSessions implements `killAllSessions` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgKillAllSessions(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
-	spec, err := req.RawDocument()
+func (h *Handler) msgKillAllSessions(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
 	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
@@ -58,7 +59,7 @@ func (h *Handler) MsgKillAllSessions(connCtx context.Context, req *middleware.Ms
 			_ = h.Pool.KillCursor(connCtx, cursorID)
 		}
 
-		return middleware.Response(wirebson.MustDocument(
+		return middleware.ResponseMsg(wirebson.MustDocument(
 			"ok", float64(1),
 		))
 	}
@@ -69,7 +70,7 @@ func (h *Handler) MsgKillAllSessions(connCtx context.Context, req *middleware.Ms
 		_ = h.Pool.KillCursor(connCtx, cursorID)
 	}
 
-	return middleware.Response(wirebson.MustDocument(
+	return middleware.ResponseMsg(wirebson.MustDocument(
 		"ok", float64(1),
 	))
 }

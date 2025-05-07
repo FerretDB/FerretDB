@@ -62,13 +62,13 @@ func (s *Server) UpdateMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resMsg, err := s.handler.Commands()["update"].Handler(ctx, msg)
+	resMsg, err := s.handler.Handle(ctx, msg)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
-	resDoc := must.NotFail(must.NotFail(resMsg.RawDocument()).Decode())
+	resDoc := must.NotFail(must.NotFail(resMsg.OpMsg.RawDocument()).Decode())
 
 	res := must.NotFail(wirebson.NewDocument(
 		"matchedCount", resDoc.Get("n"),

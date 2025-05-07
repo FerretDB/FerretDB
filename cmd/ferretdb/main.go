@@ -25,6 +25,7 @@ import (
 	"math"
 	"os"
 	"runtime"
+	runtimedebug "runtime/debug"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -66,7 +67,8 @@ var cli struct {
 
 	Version bool `default:"false" help:"Print version to stdout and exit." env:"-"`
 
-	PostgreSQLURL string `name:"postgresql-url" default:"postgres://127.0.0.1:5432/postgres" help:"PostgreSQL URL." group:"PostgreSQL"`
+	PostgreSQLURL     string `name:"postgresql-url"      default:"postgres://127.0.0.1:5432/postgres"                                                                   help:"PostgreSQL URL." group:"PostgreSQL"`
+	PostgreSQLURLFile []byte `name:"postgresql-url-file" help:"Path to a file containing the PostgreSQL connection URL. If non-empty, this overrides --postgresql-url." group:"PostgreSQL"     type:"filecontent"`
 
 	Listen struct {
 		Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address for MongoDB protocol."`
@@ -108,9 +110,9 @@ var cli struct {
 	Telemetry telemetry.Flag `default:"undecided" help:"${help_telemetry}" group:"Miscellaneous"`
 
 	Dev struct {
-		ReplSetName string `default:"" help:"Replica set name." hidden:""`
-
-		RecordsDir string `hidden:""`
+		Version     bool   `hidden:""`
+		ReplSetName string `hidden:""`
+		RecordsDir  string `hidden:""`
 
 		Telemetry struct {
 			URL            string        `default:"https://beacon.ferretdb.com/" hidden:""`
@@ -283,6 +285,18 @@ func run() {
 
 	info := version.Get()
 
+	if cli.Dev.Version {
+		e := json.NewEncoder(os.Stdout)
+		e.SetIndent("", "  ")
+		must.NoError(e.Encode(info))
+
+		buildInfo, ok := runtimedebug.ReadBuildInfo()
+		must.BeTrue(ok)
+		must.NoError(e.Encode(buildInfo))
+
+		return
+	}
+
 	if p := cli.Dev.Telemetry.Package; p != "" {
 		info.Package = p
 	}
@@ -301,6 +315,10 @@ func run() {
 
 	// safe to always enable
 	runtime.SetBlockProfileRate(10000)
+
+	if len(cli.PostgreSQLURLFile) > 0 {
+		cli.PostgreSQLURL = strings.TrimSpace(string(cli.PostgreSQLURLFile))
+	}
 
 	stateProvider, err := state.NewProviderDir(cli.StateDir)
 	if err != nil {
@@ -417,7 +435,7 @@ func run() {
 		}()
 	}
 
-	metrics := connmetrics.NewListenerMetrics()
+	lm := connmetrics.NewListenerMetrics()
 
 	{
 		wg.Add(1)
@@ -427,14 +445,14 @@ func run() {
 
 			l := logging.WithName(logger, "telemetry")
 
-			r, e := telemetry.NewReporter(&telemetry.NewReporterOpts{
+			tr, e := telemetry.NewReporter(&telemetry.NewReporterOpts{
 				URL:            cli.Dev.Telemetry.URL,
 				Dir:            cli.StateDir,
 				F:              &cli.Telemetry,
 				DNT:            os.Getenv("DO_NOT_TRACK"),
 				ExecName:       os.Args[0],
 				P:              stateProvider,
-				ConnMetrics:    metrics.ConnMetrics,
+				ConnMetrics:    lm.ConnMetrics,
 				L:              l,
 				UndecidedDelay: cli.Dev.Telemetry.UndecidedDelay,
 				ReportInterval: cli.Dev.Telemetry.ReportInterval,
@@ -443,7 +461,7 @@ func run() {
 				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create telemetry reporter", logging.Error(e))
 			}
 
-			r.Run(ctx)
+			tr.Run(ctx)
 		}()
 	}
 
@@ -475,7 +493,7 @@ func run() {
 		ReplSetName: cli.Dev.ReplSetName,
 
 		L:             logging.WithName(logger, "handler"),
-		ConnMetrics:   metrics.ConnMetrics,
+		ConnMetrics:   lm.ConnMetrics,
 		StateProvider: stateProvider,
 	}
 
@@ -487,7 +505,7 @@ func run() {
 
 	lis, err := clientconn.Listen(&clientconn.ListenerOpts{
 		Handler: h,
-		Metrics: metrics,
+		Metrics: lm,
 		Logger:  logger,
 
 		TCP:  tcpAddr,

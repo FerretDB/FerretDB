@@ -29,22 +29,23 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
-// MsgSASLContinue implements `saslContinue` command.
+// msgSASLContinue implements `saslContinue` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgSASLContinue(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
-	spec, err := req.RawDocument()
+func (h *Handler) msgSASLContinue(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
-		return nil, err
-	}
-
+	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
 	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+		return nil, err
 	}
 
 	res, err := h.saslContinue(connCtx, doc)
@@ -52,7 +53,7 @@ func (h *Handler) MsgSASLContinue(connCtx context.Context, req *middleware.MsgRe
 		return nil, err
 	}
 
-	return middleware.Response(res)
+	return middleware.ResponseMsg(res)
 }
 
 // saslContinue continues and finishes SCRAM conversation.

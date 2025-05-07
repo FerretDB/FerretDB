@@ -26,20 +26,17 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgDelete implements `delete` command.
+// msgDelete implements `delete` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgDelete(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
-	spec, seq := req.RawSections()
-
-	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
-		return nil, err
-	}
-
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
-	doc, err := spec.Decode()
+func (h *Handler) msgDelete(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	doc, spec, seq, err := req.OpMsg.Sections()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+		return nil, err
 	}
 
 	dbName, err := getRequiredParam[string](doc, "$db")
@@ -57,5 +54,5 @@ func (h *Handler) MsgDelete(connCtx context.Context, req *middleware.MsgRequest)
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.Response(mongoerrors.MapWriteErrors(connCtx, res))
+	return middleware.ResponseMsg(mongoerrors.MapWriteErrors(connCtx, res))
 }

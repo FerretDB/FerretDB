@@ -55,7 +55,10 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "FerretDB/FerretDB",
 			},
 			expected: &result{
-				evaluationImages: []string{
+				evalDevImages: []string{
+					"ghcr.io/ferretdb/ferretdb-eval-dev:pr-define-docker-tag",
+				},
+				evalImages: []string{
 					"ghcr.io/ferretdb/ferretdb-eval:pr-define-docker-tag",
 				},
 				developmentImages: []string{
@@ -73,7 +76,10 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
 			},
 			expected: &result{
-				evaluationImages: []string{
+				evalDevImages: []string{
+					"ghcr.io/otherorg/otherrepo-eval-dev:pr-define-docker-tag",
+				},
+				evalImages: []string{
 					"ghcr.io/otherorg/otherrepo-eval:pr-define-docker-tag",
 				},
 				developmentImages: []string{
@@ -92,7 +98,10 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "FerretDB/FerretDB",
 			},
 			expected: &result{
-				evaluationImages: []string{
+				evalDevImages: []string{
+					"ghcr.io/ferretdb/ferretdb-eval-dev:pr-mongo-go-driver-29d768e",
+				},
+				evalImages: []string{
 					"ghcr.io/ferretdb/ferretdb-eval:pr-mongo-go-driver-29d768e",
 				},
 				developmentImages: []string{
@@ -110,7 +119,10 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
 			},
 			expected: &result{
-				evaluationImages: []string{
+				evalDevImages: []string{
+					"ghcr.io/otherorg/otherrepo-eval-dev:pr-mongo-go-driver-29d768e",
+				},
+				evalImages: []string{
 					"ghcr.io/otherorg/otherrepo-eval:pr-mongo-go-driver-29d768e",
 				},
 				developmentImages: []string{
@@ -129,7 +141,10 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "FerretDB/FerretDB",
 			},
 			expected: &result{
-				evaluationImages: []string{
+				evalDevImages: []string{
+					"ghcr.io/ferretdb/ferretdb-eval-dev:pr-define-docker-tag",
+				},
+				evalImages: []string{
 					"ghcr.io/ferretdb/ferretdb-eval:pr-define-docker-tag",
 				},
 				developmentImages: []string{
@@ -147,7 +162,10 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
 			},
 			expected: &result{
-				evaluationImages: []string{
+				evalDevImages: []string{
+					"ghcr.io/otherorg/otherrepo-eval-dev:pr-define-docker-tag",
+				},
+				evalImages: []string{
 					"ghcr.io/otherorg/otherrepo-eval:pr-define-docker-tag",
 				},
 				developmentImages: []string{
@@ -166,7 +184,12 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "FerretDB/FerretDB",
 			},
 			expected: &result{
-				evaluationImages: []string{
+				evalDevImages: []string{
+					"ferretdb/ferretdb-eval-dev:main",
+					"ghcr.io/ferretdb/ferretdb-eval-dev:main",
+					"quay.io/ferretdb/ferretdb-eval-dev:main",
+				},
+				evalImages: []string{
 					"ferretdb/ferretdb-eval:main",
 					"ghcr.io/ferretdb/ferretdb-eval:main",
 					"quay.io/ferretdb/ferretdb-eval:main",
@@ -193,7 +216,10 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
 			},
 			expected: &result{
-				evaluationImages: []string{
+				evalDevImages: []string{
+					"ghcr.io/otherorg/otherrepo-eval-dev:main",
+				},
+				evalImages: []string{
 					"ghcr.io/otherorg/otherrepo-eval:main",
 				},
 				developmentImages: []string{
@@ -215,7 +241,12 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "FerretDB/FerretDB",
 			},
 			expected: &result{
-				evaluationImages: []string{
+				evalDevImages: []string{
+					"ferretdb/ferretdb-eval-dev:main-v1",
+					"ghcr.io/ferretdb/ferretdb-eval-dev:main-v1",
+					"quay.io/ferretdb/ferretdb-eval-dev:main-v1",
+				},
+				evalImages: []string{
 					"ferretdb/ferretdb-eval:main-v1",
 					"ghcr.io/ferretdb/ferretdb-eval:main-v1",
 					"quay.io/ferretdb/ferretdb-eval:main-v1",
@@ -242,7 +273,10 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
 			},
 			expected: &result{
-				evaluationImages: []string{
+				evalDevImages: []string{
+					"ghcr.io/otherorg/otherrepo-eval-dev:main-v1",
+				},
+				evalImages: []string{
 					"ghcr.io/otherorg/otherrepo-eval:main-v1",
 				},
 				developmentImages: []string{
@@ -264,7 +298,12 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "FerretDB/FerretDB",
 			},
 			expected: &result{
-				evaluationImages: []string{
+				evalDevImages: []string{
+					"ferretdb/ferretdb-eval-dev:releases-2.1",
+					"ghcr.io/ferretdb/ferretdb-eval-dev:releases-2.1",
+					"quay.io/ferretdb/ferretdb-eval-dev:releases-2.1",
+				},
+				evalImages: []string{
 					"ferretdb/ferretdb-eval:releases-2.1",
 					"ghcr.io/ferretdb/ferretdb-eval:releases-2.1",
 					"quay.io/ferretdb/ferretdb-eval:releases-2.1",
@@ -291,7 +330,10 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
 			},
 			expected: &result{
-				evaluationImages: []string{
+				evalDevImages: []string{
+					"ghcr.io/otherorg/otherrepo-eval-dev:releases-2.1",
+				},
+				evalImages: []string{
 					"ghcr.io/otherorg/otherrepo-eval:releases-2.1",
 				},
 				developmentImages: []string{
@@ -313,7 +355,12 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "FerretDB/FerretDB",
 			},
 			expected: &result{
-				evaluationImages: []string{
+				evalDevImages: []string{
+					"ferretdb/ferretdb-eval-dev:1.26.0-beta",
+					"ghcr.io/ferretdb/ferretdb-eval-dev:1.26.0-beta",
+					"quay.io/ferretdb/ferretdb-eval-dev:1.26.0-beta",
+				},
+				evalImages: []string{
 					"ferretdb/ferretdb-eval:1.26.0-beta",
 					"ghcr.io/ferretdb/ferretdb-eval:1.26.0-beta",
 					"quay.io/ferretdb/ferretdb-eval:1.26.0-beta",
@@ -340,7 +387,10 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
 			},
 			expected: &result{
-				evaluationImages: []string{
+				evalDevImages: []string{
+					"ghcr.io/otherorg/otherrepo-eval-dev:1.26.0-beta",
+				},
+				evalImages: []string{
 					"ghcr.io/otherorg/otherrepo-eval:1.26.0-beta",
 				},
 				developmentImages: []string{
@@ -357,61 +407,30 @@ func TestDefine(t *testing.T) {
 				"GITHUB_BASE_REF":   "",
 				"GITHUB_EVENT_NAME": "push",
 				"GITHUB_HEAD_REF":   "",
-				"GITHUB_REF_NAME":   "v2.0.0-rc.1",
+				"GITHUB_REF_NAME":   "v2.1.0-beta.1",
 				"GITHUB_REF_TYPE":   "tag",
 				"GITHUB_REPOSITORY": "FerretDB/FerretDB",
 			},
 			expected: &result{
-				evaluationImages: []string{
-					"ferretdb/ferretdb-eval:2",
-					"ferretdb/ferretdb-eval:2.0",
-					"ferretdb/ferretdb-eval:2.0.0",
-					"ferretdb/ferretdb-eval:2.0.0-rc.1",
-					"ferretdb/ferretdb-eval:latest",
-					"ghcr.io/ferretdb/ferretdb-eval:2",
-					"ghcr.io/ferretdb/ferretdb-eval:2.0",
-					"ghcr.io/ferretdb/ferretdb-eval:2.0.0",
-					"ghcr.io/ferretdb/ferretdb-eval:2.0.0-rc.1",
-					"ghcr.io/ferretdb/ferretdb-eval:latest",
-					"quay.io/ferretdb/ferretdb-eval:2",
-					"quay.io/ferretdb/ferretdb-eval:2.0",
-					"quay.io/ferretdb/ferretdb-eval:2.0.0",
-					"quay.io/ferretdb/ferretdb-eval:2.0.0-rc.1",
-					"quay.io/ferretdb/ferretdb-eval:latest",
+				evalDevImages: []string{
+					"ferretdb/ferretdb-eval-dev:2.1.0-beta.1",
+					"ghcr.io/ferretdb/ferretdb-eval-dev:2.1.0-beta.1",
+					"quay.io/ferretdb/ferretdb-eval-dev:2.1.0-beta.1",
+				},
+				evalImages: []string{
+					"ferretdb/ferretdb-eval:2.1.0-beta.1",
+					"ghcr.io/ferretdb/ferretdb-eval:2.1.0-beta.1",
+					"quay.io/ferretdb/ferretdb-eval:2.1.0-beta.1",
 				},
 				developmentImages: []string{
-					"ferretdb/ferretdb-dev:2",
-					"ferretdb/ferretdb-dev:2.0",
-					"ferretdb/ferretdb-dev:2.0.0",
-					"ferretdb/ferretdb-dev:2.0.0-rc.1",
-					"ferretdb/ferretdb-dev:latest",
-					"ghcr.io/ferretdb/ferretdb-dev:2",
-					"ghcr.io/ferretdb/ferretdb-dev:2.0",
-					"ghcr.io/ferretdb/ferretdb-dev:2.0.0",
-					"ghcr.io/ferretdb/ferretdb-dev:2.0.0-rc.1",
-					"ghcr.io/ferretdb/ferretdb-dev:latest",
-					"quay.io/ferretdb/ferretdb-dev:2",
-					"quay.io/ferretdb/ferretdb-dev:2.0",
-					"quay.io/ferretdb/ferretdb-dev:2.0.0",
-					"quay.io/ferretdb/ferretdb-dev:2.0.0-rc.1",
-					"quay.io/ferretdb/ferretdb-dev:latest",
+					"ferretdb/ferretdb-dev:2.1.0-beta.1",
+					"ghcr.io/ferretdb/ferretdb-dev:2.1.0-beta.1",
+					"quay.io/ferretdb/ferretdb-dev:2.1.0-beta.1",
 				},
 				productionImages: []string{
-					"ferretdb/ferretdb:2",
-					"ferretdb/ferretdb:2.0",
-					"ferretdb/ferretdb:2.0.0",
-					"ferretdb/ferretdb:2.0.0-rc.1",
-					"ferretdb/ferretdb:latest",
-					"ghcr.io/ferretdb/ferretdb:2",
-					"ghcr.io/ferretdb/ferretdb:2.0",
-					"ghcr.io/ferretdb/ferretdb:2.0.0",
-					"ghcr.io/ferretdb/ferretdb:2.0.0-rc.1",
-					"ghcr.io/ferretdb/ferretdb:latest",
-					"quay.io/ferretdb/ferretdb:2",
-					"quay.io/ferretdb/ferretdb:2.0",
-					"quay.io/ferretdb/ferretdb:2.0.0",
-					"quay.io/ferretdb/ferretdb:2.0.0-rc.1",
-					"quay.io/ferretdb/ferretdb:latest",
+					"ferretdb/ferretdb:2.1.0-beta.1",
+					"ghcr.io/ferretdb/ferretdb:2.1.0-beta.1",
+					"quay.io/ferretdb/ferretdb:2.1.0-beta.1",
 				},
 			},
 		},
@@ -420,31 +439,22 @@ func TestDefine(t *testing.T) {
 				"GITHUB_BASE_REF":   "",
 				"GITHUB_EVENT_NAME": "push",
 				"GITHUB_HEAD_REF":   "",
-				"GITHUB_REF_NAME":   "v2.0.0-rc.1",
+				"GITHUB_REF_NAME":   "v2.1.0-beta.1",
 				"GITHUB_REF_TYPE":   "tag",
 				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
 			},
 			expected: &result{
-				evaluationImages: []string{
-					"ghcr.io/otherorg/otherrepo-eval:2",
-					"ghcr.io/otherorg/otherrepo-eval:2.0",
-					"ghcr.io/otherorg/otherrepo-eval:2.0.0",
-					"ghcr.io/otherorg/otherrepo-eval:2.0.0-rc.1",
-					"ghcr.io/otherorg/otherrepo-eval:latest",
+				evalDevImages: []string{
+					"ghcr.io/otherorg/otherrepo-eval-dev:2.1.0-beta.1",
+				},
+				evalImages: []string{
+					"ghcr.io/otherorg/otherrepo-eval:2.1.0-beta.1",
 				},
 				developmentImages: []string{
-					"ghcr.io/otherorg/otherrepo-dev:2",
-					"ghcr.io/otherorg/otherrepo-dev:2.0",
-					"ghcr.io/otherorg/otherrepo-dev:2.0.0",
-					"ghcr.io/otherorg/otherrepo-dev:2.0.0-rc.1",
-					"ghcr.io/otherorg/otherrepo-dev:latest",
+					"ghcr.io/otherorg/otherrepo-dev:2.1.0-beta.1",
 				},
 				productionImages: []string{
-					"ghcr.io/otherorg/otherrepo:2",
-					"ghcr.io/otherorg/otherrepo:2.0",
-					"ghcr.io/otherorg/otherrepo:2.0.0",
-					"ghcr.io/otherorg/otherrepo:2.0.0-rc.1",
-					"ghcr.io/otherorg/otherrepo:latest",
+					"ghcr.io/otherorg/otherrepo:2.1.0-beta.1",
 				},
 			},
 		},
@@ -459,7 +469,18 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "FerretDB/FerretDB",
 			},
 			expected: &result{
-				evaluationImages: []string{
+				evalDevImages: []string{
+					"ferretdb/ferretdb-eval-dev:1",
+					"ferretdb/ferretdb-eval-dev:1.26",
+					"ferretdb/ferretdb-eval-dev:1.26.0",
+					"ghcr.io/ferretdb/ferretdb-eval-dev:1",
+					"ghcr.io/ferretdb/ferretdb-eval-dev:1.26",
+					"ghcr.io/ferretdb/ferretdb-eval-dev:1.26.0",
+					"quay.io/ferretdb/ferretdb-eval-dev:1",
+					"quay.io/ferretdb/ferretdb-eval-dev:1.26",
+					"quay.io/ferretdb/ferretdb-eval-dev:1.26.0",
+				},
+				evalImages: []string{
 					"ferretdb/ferretdb-eval:1",
 					"ferretdb/ferretdb-eval:1.26",
 					"ferretdb/ferretdb-eval:1.26.0",
@@ -504,7 +525,12 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
 			},
 			expected: &result{
-				evaluationImages: []string{
+				evalDevImages: []string{
+					"ghcr.io/otherorg/otherrepo-eval-dev:1",
+					"ghcr.io/otherorg/otherrepo-eval-dev:1.26",
+					"ghcr.io/otherorg/otherrepo-eval-dev:1.26.0",
+				},
+				evalImages: []string{
 					"ghcr.io/otherorg/otherrepo-eval:1",
 					"ghcr.io/otherorg/otherrepo-eval:1.26",
 					"ghcr.io/otherorg/otherrepo-eval:1.26.0",
@@ -532,7 +558,21 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "FerretDB/FerretDB",
 			},
 			expected: &result{
-				evaluationImages: []string{
+				evalDevImages: []string{
+					"ferretdb/ferretdb-eval-dev:2",
+					"ferretdb/ferretdb-eval-dev:2.0",
+					"ferretdb/ferretdb-eval-dev:2.0.0",
+					"ferretdb/ferretdb-eval-dev:latest",
+					"ghcr.io/ferretdb/ferretdb-eval-dev:2",
+					"ghcr.io/ferretdb/ferretdb-eval-dev:2.0",
+					"ghcr.io/ferretdb/ferretdb-eval-dev:2.0.0",
+					"ghcr.io/ferretdb/ferretdb-eval-dev:latest",
+					"quay.io/ferretdb/ferretdb-eval-dev:2",
+					"quay.io/ferretdb/ferretdb-eval-dev:2.0",
+					"quay.io/ferretdb/ferretdb-eval-dev:2.0.0",
+					"quay.io/ferretdb/ferretdb-eval-dev:latest",
+				},
+				evalImages: []string{
 					"ferretdb/ferretdb-eval:2",
 					"ferretdb/ferretdb-eval:2.0",
 					"ferretdb/ferretdb-eval:2.0.0",
@@ -586,7 +626,13 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
 			},
 			expected: &result{
-				evaluationImages: []string{
+				evalDevImages: []string{
+					"ghcr.io/otherorg/otherrepo-eval-dev:2",
+					"ghcr.io/otherorg/otherrepo-eval-dev:2.0",
+					"ghcr.io/otherorg/otherrepo-eval-dev:2.0.0",
+					"ghcr.io/otherorg/otherrepo-eval-dev:latest",
+				},
+				evalImages: []string{
 					"ghcr.io/otherorg/otherrepo-eval:2",
 					"ghcr.io/otherorg/otherrepo-eval:2.0",
 					"ghcr.io/otherorg/otherrepo-eval:2.0.0",
@@ -638,7 +684,12 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "FerretDB/FerretDB",
 			},
 			expected: &result{
-				evaluationImages: []string{
+				evalDevImages: []string{
+					"ferretdb/ferretdb-eval-dev:main",
+					"ghcr.io/ferretdb/ferretdb-eval-dev:main",
+					"quay.io/ferretdb/ferretdb-eval-dev:main",
+				},
+				evalImages: []string{
 					"ferretdb/ferretdb-eval:main",
 					"ghcr.io/ferretdb/ferretdb-eval:main",
 					"quay.io/ferretdb/ferretdb-eval:main",
@@ -665,7 +716,10 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
 			},
 			expected: &result{
-				evaluationImages: []string{
+				evalDevImages: []string{
+					"ghcr.io/otherorg/otherrepo-eval-dev:main",
+				},
+				evalImages: []string{
 					"ghcr.io/otherorg/otherrepo-eval:main",
 				},
 				developmentImages: []string{
@@ -687,7 +741,12 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "FerretDB/FerretDB",
 			},
 			expected: &result{
-				evaluationImages: []string{
+				evalDevImages: []string{
+					"ferretdb/ferretdb-eval-dev:main",
+					"ghcr.io/ferretdb/ferretdb-eval-dev:main",
+					"quay.io/ferretdb/ferretdb-eval-dev:main",
+				},
+				evalImages: []string{
 					"ferretdb/ferretdb-eval:main",
 					"ghcr.io/ferretdb/ferretdb-eval:main",
 					"quay.io/ferretdb/ferretdb-eval:main",
@@ -714,7 +773,10 @@ func TestDefine(t *testing.T) {
 				"GITHUB_REPOSITORY": "OtherOrg/OtherRepo",
 			},
 			expected: &result{
-				evaluationImages: []string{
+				evalDevImages: []string{
+					"ghcr.io/otherorg/otherrepo-eval-dev:main",
+				},
+				evalImages: []string{
 					"ghcr.io/otherorg/otherrepo-eval:main",
 				},
 				developmentImages: []string{
@@ -777,8 +839,11 @@ func TestResults(t *testing.T) {
 	action := githubactions.New(githubactions.WithGetenv(getenv), githubactions.WithWriter(&stdout))
 
 	result := &result{
-		evaluationImages: []string{
-			"ferretdb/ferretdb-eval:2.1.0",
+		evalDevImages: []string{
+			"ferretdb/ferretdb-eval-dev:2.1.0",
+		},
+		evalImages: []string{
+			"ferretdb/ferretdb-eval:2",
 		},
 		developmentImages: []string{
 			"ghcr.io/ferretdb/ferretdb-dev:2",
@@ -791,22 +856,24 @@ func TestResults(t *testing.T) {
 	setResults(action, result)
 
 	expectedStdout := strings.ReplaceAll(`
- |Type        |Image                                                                                  |
- |----        |-----                                                                                  |
- |Evaluation  |['ferretdb/ferretdb-eval:2.1.0'](https://hub.docker.com/r/ferretdb/ferretdb-eval/tags) |
- |Development |['ghcr.io/ferretdb/ferretdb-dev:2'](https://ghcr.io/ferretdb/ferretdb-dev:2)           |
- |Production  |['quay.io/ferretdb/ferretdb:latest'](https://quay.io/ferretdb/ferretdb:latest)         |
+ |Type                   |Image                                                                                          |
+ |----                   |-----                                                                                          |
+ |Evaluation Development |['ferretdb/ferretdb-eval-dev:2.1.0'](https://hub.docker.com/r/ferretdb/ferretdb-eval-dev/tags) |
+ |Evaluation             |['ferretdb/ferretdb-eval:2'](https://hub.docker.com/r/ferretdb/ferretdb-eval/tags)             |
+ |Development            |['ghcr.io/ferretdb/ferretdb-dev:2'](https://ghcr.io/ferretdb/ferretdb-dev:2)                   |
+ |Production             |['quay.io/ferretdb/ferretdb:latest'](https://quay.io/ferretdb/ferretdb:latest)                 |
 
 `[1:], "'", "`",
 	)
 	assert.Equal(t, expectedStdout, stdout.String(), "stdout does not match")
 
 	expectedSummary := strings.ReplaceAll(`
- |Type        |Image                                                                                  |
- |----        |-----                                                                                  |
- |Evaluation  |['ferretdb/ferretdb-eval:2.1.0'](https://hub.docker.com/r/ferretdb/ferretdb-eval/tags) |
- |Development |['ghcr.io/ferretdb/ferretdb-dev:2'](https://ghcr.io/ferretdb/ferretdb-dev:2)           |
- |Production  |['quay.io/ferretdb/ferretdb:latest'](https://quay.io/ferretdb/ferretdb:latest)         |
+ |Type                   |Image                                                                                          |
+ |----                   |-----                                                                                          |
+ |Evaluation Development |['ferretdb/ferretdb-eval-dev:2.1.0'](https://hub.docker.com/r/ferretdb/ferretdb-eval-dev/tags) |
+ |Evaluation             |['ferretdb/ferretdb-eval:2'](https://hub.docker.com/r/ferretdb/ferretdb-eval/tags)             |
+ |Development            |['ghcr.io/ferretdb/ferretdb-dev:2'](https://ghcr.io/ferretdb/ferretdb-dev:2)                   |
+ |Production             |['quay.io/ferretdb/ferretdb:latest'](https://quay.io/ferretdb/ferretdb:latest)                 |
 
 `[1:], "'", "`",
 	)
@@ -815,8 +882,11 @@ func TestResults(t *testing.T) {
 	assert.Equal(t, expectedSummary, string(b), "summary does not match")
 
 	expectedOutput := `
-evaluation_images<<_GitHubActionsFileCommandDelimeter_
-ferretdb/ferretdb-eval:2.1.0
+eval_dev_images<<_GitHubActionsFileCommandDelimeter_
+ferretdb/ferretdb-eval-dev:2.1.0
+_GitHubActionsFileCommandDelimeter_
+eval_images<<_GitHubActionsFileCommandDelimeter_
+ferretdb/ferretdb-eval:2
 _GitHubActionsFileCommandDelimeter_
 development_images<<_GitHubActionsFileCommandDelimeter_
 ghcr.io/ferretdb/ferretdb-dev:2

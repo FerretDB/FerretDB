@@ -15,69 +15,9 @@
 // Package middleware provides wrappers for command handlers.
 package middleware
 
-import (
-	"context"
+import "context"
 
-	"github.com/FerretDB/wire"
-	"github.com/FerretDB/wire/wirebson"
-
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
-)
-
-// MsgRequest represents incoming request from the client.
-// It may come from the wire protocol connection or from the Data API server.
-type MsgRequest struct {
-	*wire.OpMsg
-}
-
-// MsgResponse represent outgoing response to the client.
-type MsgResponse struct {
-	*wire.OpMsg
-}
-
-// QueryRequest is a deprecated request message type.
-// It is still used by commands including `hello` and `isMaster`.
-type QueryRequest struct {
-	*wire.OpQuery
-}
-
-// ReplyResponse is a deprecated response message type used for the response to [QueryRequest].
-type ReplyResponse struct {
-	*wire.OpReply
-}
-
-// Middleware represents functions for handling incoming requests.
-type Middleware interface {
-	HandleOpMsg(next MsgHandlerFunc) MsgHandlerFunc
-	HandleOpReply(next QueryHandlerFunc) QueryHandlerFunc
-}
-
-// Response constructs a [*MsgResponse] from a single document.
-func Response(doc wirebson.AnyDocument) (*MsgResponse, error) {
-	msg, err := wire.NewOpMsg(doc)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &MsgResponse{OpMsg: msg}, nil
-}
-
-// Reply constructs a [*ReplyResponse] from a single document.
-func Reply(doc wirebson.AnyDocument) (*ReplyResponse, error) {
-	reply, err := wire.NewOpReply(doc)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &ReplyResponse{OpReply: reply}, nil
-}
-
-// MsgHandlerFunc represents a function/method that processes a single OP_MSG command.
+// HandleFunc represents a function/method that processes a single request.
 //
 // The passed context is canceled when the client disconnects.
-type MsgHandlerFunc func(ctx context.Context, req *MsgRequest) (resp *MsgResponse, err error)
-
-// QueryHandlerFunc represents a function/method that processes a single OP_QUERY command.
-//
-// The passed context is canceled when the client disconnects.
-type QueryHandlerFunc func(ctx context.Context, req *QueryRequest) (resp *ReplyResponse, err error)
+type HandleFunc func(ctx context.Context, req *Request) (resp *Response, err error)

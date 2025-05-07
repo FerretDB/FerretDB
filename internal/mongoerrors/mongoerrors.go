@@ -25,7 +25,7 @@ import (
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.opentelemetry.io/otel"
 	otelcodes "go.opentelemetry.io/otel/codes"
 	oteltrace "go.opentelemetry.io/otel/trace"
@@ -117,14 +117,18 @@ func Make(ctx context.Context, err error, arg string, l *slog.Logger) *Error {
 	var code Code
 
 	switch pg.Code {
+	case pgerrcode.QueryCanceled:
+		code = ErrMaxTimeMSExpired
+
 	case pgerrcode.ConnectionFailure:
 		// mainly for tests
 		l.ErrorContext(ctx, "Connection failure", slog.String("arg", arg), slog.String("error", goString(err)))
 		code = ErrInternalError
-	}
 
-	if len(pg.Code) == 5 && pg.Code[0] == 'M' {
-		code = pgCodes[pg.Code]
+	default:
+		if len(pg.Code) == 5 && pg.Code[0] == 'M' {
+			code = pgCodes[pg.Code]
+		}
 	}
 
 	if code == 0 {

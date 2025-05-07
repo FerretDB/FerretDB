@@ -114,7 +114,7 @@ func TestCurrentOpGetMore(tt *testing.T) {
 	require.NotNil(t, lsid, wirebson.LogMessageIndent(getMoreOp))
 
 	// command contains MongoDB specific fields
-	fixCluster(t, command)
+	FixCluster(t, command)
 	err = getMoreOp.Replace("command", command)
 	require.NoError(t, err)
 
@@ -146,7 +146,7 @@ func TestCurrentOpGetMore(tt *testing.T) {
 	err = res.Replace("inprog", wirebson.MustArray(getMoreOp))
 	require.NoError(t, err)
 
-	fixCluster(t, res)
+	FixCluster(t, res)
 
 	expected := wirebson.MustDocument(
 		"inprog", wirebson.MustArray(wirebson.MustDocument(
@@ -245,7 +245,7 @@ func TestCurrentOpExplain(tt *testing.T) {
 	require.NotNil(t, lsid, wirebson.LogMessageIndent(op))
 
 	// command contains MongoDB specific fields
-	fixCluster(t, command)
+	FixCluster(t, command)
 	err = op.Replace("command", command)
 	require.NoError(t, err)
 
@@ -277,7 +277,7 @@ func TestCurrentOpExplain(tt *testing.T) {
 	err = res.Replace("inprog", wirebson.MustArray(op))
 	require.NoError(t, err)
 
-	fixCluster(t, res)
+	FixCluster(t, res)
 
 	expected := wirebson.MustDocument(
 		"inprog", wirebson.MustArray(wirebson.MustDocument(
@@ -388,5 +388,5 @@ func inProgress(tb testing.TB, ctx context.Context, adminDB *mongo.Database, n i
 
 	require.Fail(tb, "no in-progress operation found")
 
-	panic("unreachable")
+	panic("not reached")
 }

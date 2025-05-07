@@ -33,22 +33,23 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgExplain implements `explain` command.
+// msgExplain implements `explain` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgExplain(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
-	spec, err := req.RawDocument()
+func (h *Handler) msgExplain(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
-		return nil, err
-	}
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
 	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+		return nil, err
 	}
 
 	dbName, err := getRequiredParam[string](doc, "$db")
@@ -165,7 +166,7 @@ func (h *Handler) MsgExplain(connCtx context.Context, req *middleware.MsgRequest
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.Response(res)
+	return middleware.ResponseMsg(res)
 }
 
 // unmarshalExplain unmarshalls the plan from EXPLAIN postgreSQL command.
@@ -183,7 +184,7 @@ func unmarshalExplain(b []byte) (*wirebson.Document, error) {
 	return convertJSON(plans[0]).(*wirebson.Document), nil
 }
 
-// convertJSON transforms decoded JSON map[string]any value into bson.Document.
+// convertJSON transforms decoded JSON map[string]any value into [*wirebson.Document].
 func convertJSON(value any) any {
 	switch value := value.(type) {
 	case map[string]any:

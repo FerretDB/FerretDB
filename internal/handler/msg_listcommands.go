@@ -26,11 +26,11 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgListCommands implements `listCommands` command.
+// msgListCommands implements `listCommands` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgListCommands(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
-	spec, err := req.RawDocument()
+func (h *Handler) msgListCommands(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -41,18 +41,18 @@ func (h *Handler) MsgListCommands(connCtx context.Context, req *middleware.MsgRe
 
 	cmdList := must.NotFail(wirebson.NewDocument())
 
-	for _, name := range slices.Sorted(maps.Keys(h.Commands())) {
-		cmd := h.Commands()[name]
-		if cmd.Help == "" {
+	for _, name := range slices.Sorted(maps.Keys(h.commands)) {
+		help := h.commands[name].Help
+		if help == "" {
 			continue
 		}
 
 		must.NoError(cmdList.Add(name, must.NotFail(wirebson.NewDocument(
-			"help", cmd.Help,
+			"help", help,
 		))))
 	}
 
-	return middleware.Response(wirebson.MustDocument(
+	return middleware.ResponseMsg(wirebson.MustDocument(
 		"commands", cmdList,
 		"ok", float64(1),
 	))

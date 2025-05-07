@@ -24,11 +24,11 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgStartSession implements `startSession` command.
+// msgStartSession implements `startSession` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgStartSession(connCtx context.Context, req *middleware.MsgRequest) (*middleware.MsgResponse, error) {
-	spec, err := req.RawDocument()
+func (h *Handler) msgStartSession(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	spec, err := req.OpMsg.RawDocument()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -39,7 +39,7 @@ func (h *Handler) MsgStartSession(connCtx context.Context, req *middleware.MsgRe
 
 	sessionID := h.s.NewSession(connCtx)
 
-	return middleware.Response(wirebson.MustDocument(
+	return middleware.ResponseMsg(wirebson.MustDocument(
 		"id", wirebson.MustDocument(
 			"id", wirebson.Binary{Subtype: wirebson.BinaryUUID, B: sessionID[:]},
 		),
