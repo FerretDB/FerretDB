@@ -74,7 +74,7 @@ Before [updating to a new FerretDB release](../ferretdb/docker.md#updating-to-a-
 
 The following steps are critical to ensuring a successful update.
 
-Edit your Compose file to use the latest DocumentDB production image tag.
+Edit your Compose file to use the matching DocumentDB image tag.
 You can find the correct tag in the DocumentDB release notes (for example: `17-0.103.0-ferretdb-2.2.0`).
 Then run:
 

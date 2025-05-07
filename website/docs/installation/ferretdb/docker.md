@@ -111,8 +111,8 @@ For this reason, it is not recommended for production use.
 
 ## Updating to a new FerretDB release
 
-Before updating your FerretDB instance, make sure to install the matching DocumentDB image first (See the DocumentDB release notes to find the newest `postgres-documentdb` image that best suits the FerretDB release.)
-Our [DocumentDB update guide](../documentdb/docker.md#updating-to-a-new-documentdb-release) covers the steps critical for a successful update.
+Before updating your FerretDB instance, make sure to update to the matching DocumentDB image first.
+Following the [DocumentDB update guide](../documentdb/docker.md#updating-to-a-new-documentdb-release) is critical for a successful update.
 
 Once DocumentDB is updated, edit your Docker compose file to point to the latest FerretDB production image tag as shown in the FerretDB release notes, for example `2.2.0`, then run:
 
