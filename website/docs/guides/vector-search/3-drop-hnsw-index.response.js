@@ -1,1 +1,4 @@
-response = { ok: true, nIndexesWas: Long(2) }
+response = {
+  ok: true,
+  nIndexesWas: Long(2)
+}

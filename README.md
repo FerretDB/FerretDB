@@ -59,7 +59,7 @@ and [contributing guidelines](CONTRIBUTING.md).
 Run this command to start FerretDB with PostgreSQL, make sure to update `<username>` and `<password>`:
 
 ```sh
-docker run -d --rm --name ferretdb -p 27017:27017 --platform linux/amd64 \
+docker run -d --rm --name ferretdb -p 27017:27017 \
   -e POSTGRES_USER=<username> \
   -e POSTGRES_PASSWORD=<password> \
   ghcr.io/ferretdb/ferretdb-eval:2
