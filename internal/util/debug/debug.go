@@ -116,6 +116,7 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 	))
 
 	http.HandleFunc("/debug/archive", archiveHandler(l))
+	http.Handle("/debug/archive.zip", http.RedirectHandler("/debug/archive", 303))
 
 	svOpts := []statsviz.Option{
 		statsviz.Root("/debug/graphs"),

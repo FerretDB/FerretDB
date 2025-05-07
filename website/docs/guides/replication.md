@@ -94,7 +94,6 @@ Here's the `docker-compose.yml` file:
 services:
   postgres_primary:
     image: ghcr.io/ferretdb/postgres-documentdb:17
-    platform: linux/amd64
     container_name: postgres_primary
     environment:
       - POSTGRES_USER=user
@@ -108,7 +107,6 @@ services:
 
   postgres_replica:
     image: ghcr.io/ferretdb/postgres-documentdb:17
-    platform: linux/amd64
     container_name: postgres_replica
     environment:
       - POSTGRES_USER=user
