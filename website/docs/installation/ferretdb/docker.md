@@ -40,8 +40,6 @@ The following steps describe a quick local setup:
 
 1. Store the following in the `docker-compose.yml` file:
 
-   <!-- TODO https://github.com/FerretDB/FerretDB/issues/4726 -->
-
    ```yaml
    services:
      postgres:
