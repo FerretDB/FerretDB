@@ -1,1 +1,1 @@
-db.runCommand({ dropIndexes: 'books', index: 'summary_text_index' })
+db.runCommand({ dropIndexes: 'books', index: 'summary_text_index', $db: 'db' })

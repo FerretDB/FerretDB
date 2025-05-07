@@ -17,5 +17,6 @@ db.runCommand({
     },
     { $project: { title: 1, author: { $first: '$authors.name' }, summary: 1, vector: 1 } }
   ],
-  cursor: {}
+  cursor: {},
+  $db: 'db'
 })

@@ -1,1 +1,1 @@
-db.runCommand({ dropIndexes: 'books', index: 'vector_hnsw_index' })
+db.runCommand({ dropIndexes: 'books', index: 'vector_hnsw_index', $db: 'db' })
