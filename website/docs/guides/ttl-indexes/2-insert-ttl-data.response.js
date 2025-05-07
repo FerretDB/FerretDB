@@ -1,1 +1,4 @@
-response = { n: 1, ok: Double(1) }
+response = {
+  n: 1,
+  ok: Double(1)
+}

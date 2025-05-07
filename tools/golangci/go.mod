@@ -4,7 +4,7 @@ module github.com/FerretDB/FerretDB/v2/tools/golangci
 
 go 1.24
 
-toolchain go1.24.2
+toolchain go1.24.3
 
 tool github.com/golangci/golangci-lint/cmd/golangci-lint
 

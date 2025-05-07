@@ -6,10 +6,15 @@ response = {
       {
         _id: 'moby_dick_1851',
         title: 'Moby Dick',
-        author: 'Herman Melville',
+        authors: [
+          {
+            name: 'Herman Melville',
+            nationality: 'American'
+          }
+        ],
         summary:
-          'The narrative follows Ishmael and his voyage aboard the whaling ship Pequod, commanded by Captain Ahab, who is obsessed with hunting the elusive white whale, Moby Dick.',
-        score: 3
+          'Ishmael recounts his journey aboard the whaling ship Pequod under the leadership of the obsessed Captain Ahab, who is obsessed with hunting the legendary white whale, Moby Dick. The novel delves into themes of human struggle against nature and the destructive power of obsession.',
+        score: Double(3)
       }
     ]
   },
