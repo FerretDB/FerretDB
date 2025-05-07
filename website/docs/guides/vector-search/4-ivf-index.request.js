@@ -6,6 +6,5 @@ db.runCommand({
       key: { vector: 'cosmosSearch' },
       cosmosSearchOptions: { kind: 'vector-ivf', similarity: 'COS', dimensions: 12, numLists: 3 }
     }
-  ],
-  $db: 'db'
+  ]
 })
