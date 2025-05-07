@@ -86,8 +86,9 @@ docker compose up -d <documentdb-container-name>
 Next, from within your `postgres` database, upgrade the DocumentDB extension by running:
 
 ```sh
-docker run --rm -e PGPASSWORD=<password> ghcr.io/ferretdb/postgres-documentdb:<tag> \
-  psql -h <host> -U <username> -d postgres -c 'ALTER EXTENSION documentdb UPDATE;'
+
+docker compose exec <documentdb-container-name> \
+  psql -U <username> -d postgres -c 'ALTER EXTENSION documentdb UPDATE;'
 ```
 
 Replace `<documentdb-container-name>`, `<username>`, `<password>`, and `<host>` as needed.
