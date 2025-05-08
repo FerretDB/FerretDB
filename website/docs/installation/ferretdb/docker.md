@@ -40,13 +40,10 @@ The following steps describe a quick local setup:
 
 1. Store the following in the `docker-compose.yml` file:
 
-   <!-- TODO https://github.com/FerretDB/FerretDB/issues/4726 -->
-
    ```yaml
    services:
      postgres:
        image: ghcr.io/ferretdb/postgres-documentdb:17-0.103.0-ferretdb-2.2.0
-       platform: linux/amd64
        restart: on-failure
        environment:
          - POSTGRES_USER=username
