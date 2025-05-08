@@ -66,3 +66,5 @@
 4. Update DocumentDB image tags to point back to development version.
 5. Update DocumentDB images tags in the current documentation (where we specify full tags)
    to point to the next (non-existing) version.
+6. Update URLs with `/refs/tags/` in them in the current documentation
+   to point to the next (non-existing) version.
