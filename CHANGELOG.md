@@ -2,6 +2,43 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v1.24.1](https://github.com/FerretDB/FerretDB/releases/tag/v1.24.1) (2025-05-08)
+
+### Fixed Bugs 🐛
+
+- Fix stats for MySQL backend by @chuangjinglu in https://github.com/FerretDB/FerretDB/pull/4598
+
+### Documentation 📄
+
+- Add Cozystack to README by @tym83 in https://github.com/FerretDB/FerretDB/pull/4563
+- Update Mermaid diagrams by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/4582
+- Remove old docs and fix linking to the rest by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4654
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4678
+- Update URLs for FerretDB v1 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4677
+- Reformat with settings from v2 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4686
+
+### Other Changes 🤖
+
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4564
+- Bump Go version by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4599
+- Port tools from v2 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4602
+- Add separate CI job for defining Docker tags by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4607
+- Update `definedockertag` logic and use it by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4603
+- Update handling of all-in-one Docker images by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4608
+- `pngcrush` images by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4623
+- Add workaround for Trivy failures by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4631
+- Bump Go by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4687
+- Fix linters for v1 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5101
+- Fix Docker tags for pre-release git tags by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5100
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5134
+
+### New Contributors
+
+- @tym83 made their first contribution in https://github.com/FerretDB/FerretDB/pull/4563
+- @chuangjinglu made their first contribution in https://github.com/FerretDB/FerretDB/pull/4598
+
+[All commits](https://github.com/FerretDB/FerretDB/compare/v1.24.0...v1.24.1).
+
 ## [v1.24.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.24.0) (2024-08-28)
 
 ### What's Changed
