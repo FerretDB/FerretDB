@@ -113,7 +113,6 @@ response = [
 ]
 ```
 
-Use `json` for documents and JSON-like data that are not MongoDB shell commands or results.
 Use `sql` for SQL queries.
 Use `text` for the `psql` output and in other cases.
 
