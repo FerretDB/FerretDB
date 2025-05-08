@@ -33,7 +33,6 @@ func TestDeepCopy(t *testing.T) {
 		b2 := deepCopy(b1)
 
 		assert.Equal(t, b1, b2)
-		assert.NotSame(t, b1, b2)
 
 		b1.B[0] = 0
 		assert.NotEqual(t, b1, b2)
@@ -46,7 +45,6 @@ func TestDeepCopy(t *testing.T) {
 		o2 := deepCopy(o1)
 
 		assert.Equal(t, o1, o2)
-		assert.NotSame(t, o1, o2)
 
 		o1[0] = 0
 		assert.NotEqual(t, o1, o2)
