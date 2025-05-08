@@ -88,8 +88,6 @@ That way, the replica can be set up using the base backup of the primary Postgre
 
 Here's the `docker-compose.yml` file:
 
-<!-- TODO https://github.com/FerretDB/FerretDB/issues/4726 -->
-
 ```yaml
 services:
   postgres_primary:

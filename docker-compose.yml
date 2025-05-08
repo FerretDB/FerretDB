@@ -7,7 +7,6 @@ services:
       context: ./build/deps
       dockerfile: postgres-documentdb.Dockerfile
     container_name: ferretdb_postgres
-    platform: linux/amd64
     command: >
       postgres
       -c log_min_duration_statement=1000ms

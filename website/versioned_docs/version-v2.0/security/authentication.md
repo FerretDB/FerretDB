@@ -122,8 +122,6 @@ FerretDB requires a `postgres` database to be initialized for setting up the con
 
 For example, the following Docker compose file initializes the PostgreSQL server with the user credentials and connects FerretDB to PostgreSQL:
 
-<!-- TODO https://github.com/FerretDB/FerretDB/issues/4726 -->
-
 ```yaml
 services:
   postgres:
