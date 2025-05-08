@@ -1,5 +1,20 @@
 {
-  "1-insert-data": {
+  "1-drop-books-collection": {
+    "request": {
+      "drop": "books",
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "nIndexesWas": {
+        "$numberInt": "1"
+      },
+      "ns": "{{.Database}}.books",
+      "ok": {
+        "$numberDouble": "1.0"
+      }
+    }
+  },
+  "2-insert-data": {
     "request": {
       "insert": "books",
       "documents": [
@@ -40,14 +55,15 @@
       "$db": "{{.Database}}"
     },
     "response": {
-      "acknowledged": true,
-      "insertedIds": ["pride_prejudice_1813", "moby_dick_1851", "frankenstein_1818"],
+      "n": {
+        "$numberInt": "3"
+      },
       "ok": {
         "$numberDouble": "1.0"
       }
     }
   },
-  "2-create-text-index": {
+  "3-create-text-index": {
     "request": {
       "createIndexes": "books",
       "indexes": [
@@ -73,7 +89,7 @@
       }
     }
   },
-  "3-basic-text-search": {
+  "4-basic-text-search": {
     "request": {
       "find": "books",
       "filter": {
@@ -119,7 +135,7 @@
       }
     }
   },
-  "4-drop-text-index": {
+  "5-drop-text-index": {
     "request": {
       "dropIndexes": "books",
       "index": "summary_text_index",
@@ -132,7 +148,7 @@
       "ok": true
     }
   },
-  "5-compound-text-index": {
+  "6-compound-text-index": {
     "request": {
       "createIndexes": "books",
       "indexes": [
@@ -159,7 +175,7 @@
       }
     }
   },
-  "6-relevance-score": {
+  "7-relevance-score": {
     "request": {
       "find": "books",
       "filter": {

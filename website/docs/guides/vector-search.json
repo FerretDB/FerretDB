@@ -1,5 +1,20 @@
 {
-  "1-insert-data": {
+  "1-drop-books-collection": {
+    "request": {
+      "drop": "books",
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "nIndexesWas": {
+        "$numberInt": "1"
+      },
+      "ns": "{{.Database}}.books",
+      "ok": {
+        "$numberDouble": "1.0"
+      }
+    }
+  },
+  "2-insert-data": {
     "request": {
       "insert": "books",
       "documents": [
@@ -154,14 +169,15 @@
       "$db": "{{.Database}}"
     },
     "response": {
-      "acknowledged": true,
-      "insertedIds": ["pride_prejudice_1813", "moby_dick_1851", "frankenstein_1818"],
+      "n": {
+        "$numberInt": "3"
+      },
       "ok": {
         "$numberDouble": "1.0"
       }
     }
   },
-  "2-hnsw-index": {
+  "3-hnsw-index": {
     "request": {
       "createIndexes": "books",
       "indexes": [
@@ -200,7 +216,7 @@
       }
     }
   },
-  "3-hnsw-search": {
+  "4-hnsw-search": {
     "request": {
       "aggregate": "books",
       "pipeline": [
@@ -377,7 +393,7 @@
       }
     }
   },
-  "4-drop-hnsw-index": {
+  "5-drop-hnsw-index": {
     "request": {
       "dropIndexes": "books",
       "index": "vector_hnsw_index",
@@ -390,7 +406,7 @@
       }
     }
   },
-  "5-ivf-index": {
+  "6-ivf-index": {
     "request": {
       "createIndexes": "books",
       "indexes": [
@@ -426,7 +442,7 @@
       }
     }
   },
-  "6-ivf-search": {
+  "7-ivf-search": {
     "request": {
       "aggregate": "books",
       "pipeline": [
