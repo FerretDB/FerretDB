@@ -43,7 +43,7 @@ The following steps describe a quick local setup:
    ```yaml
    services:
      postgres:
-       image: ghcr.io/ferretdb/postgres-documentdb:17-0.103.0-ferretdb-2.2.0
+       image: ghcr.io/ferretdb/postgres-documentdb:17-0.104.0-ferretdb-2.4.0
        restart: on-failure
        environment:
          - POSTGRES_USER=username
@@ -112,7 +112,7 @@ For this reason, it is not recommended for production use.
 Before updating your FerretDB instance, make sure to update to the matching DocumentDB image first.
 Following the [DocumentDB update guide](../documentdb/docker.md#updating-to-a-new-version) is critical for a successful update.
 
-Once DocumentDB is updated, edit your Docker compose file to point to the latest FerretDB production image tag as shown in the FerretDB release notes, for example `2.2.0`, then run:
+Once DocumentDB is updated, edit your Docker compose file to point to the latest FerretDB production image tag as shown in the FerretDB release notes, for example `2.3.0`, then run:
 
 ```sh
 docker compose pull <ferretdb-container-name>

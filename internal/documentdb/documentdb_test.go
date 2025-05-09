@@ -65,7 +65,7 @@ func TestNewPool(t *testing.T) {
 		assert.NoError(t, newErr)
 		assert.NoError(t, pingErr)
 
-		assert.Equal(t, version.PostgreSQL, sp.Get().PostgreSQLVersion, "version.PostgreSQL wasn't updated")
+		assert.Equal(t, version.PostgreSQLTest, sp.Get().PostgreSQLVersion, "version.PostgreSQL wasn't updated")
 		assert.Equal(t, version.DocumentDB, sp.Get().DocumentDBVersion, "version.DocumentDB wasn't updated")
 	})
 

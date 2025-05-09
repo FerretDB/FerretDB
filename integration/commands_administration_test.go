@@ -1887,7 +1887,7 @@ func TestServerStatusCommand(t *testing.T) {
 				{"gitVersion", info.Commit},
 				{"debug", true},
 				{"package", info.Package},
-				{"postgresql", version.PostgreSQL},
+				{"postgresql", version.PostgreSQLTest},
 				{"documentdb", version.DocumentDB},
 			}
 			AssertEqualDocuments(t, expected, ferretdb)
@@ -2157,7 +2157,7 @@ func TestServerStatusCommandMetrics(t *testing.T) {
 					{"gitVersion", info.Commit},
 					{"debug", true},
 					{"package", info.Package},
-					{"postgresql", version.PostgreSQL},
+					{"postgresql", version.PostgreSQLTest},
 					{"documentdb", version.DocumentDB},
 				}},
 				{"freeMonitoring", bson.D{{"state", "undecided"}}},
@@ -2339,7 +2339,7 @@ func TestServerStatusCommandFreeMonitoring(t *testing.T) {
 					{"gitVersion", info.Commit},
 					{"debug", true},
 					{"package", info.Package},
-					{"postgresql", version.PostgreSQL},
+					{"postgresql", version.PostgreSQLTest},
 					{"documentdb", version.DocumentDB},
 				}},
 				{"freeMonitoring", bson.D{{"state", tc.expectedStatus}}},
