@@ -11,7 +11,7 @@ We provide two Docker images for setting up PostgreSQL with DocumentDB extension
 - Production image for stable and optimized deployments.
 - Development image for debugging problems.
 
-## Production image for PostgreSQL with DocumentDB extension
+## Installation
 
 The production image for PostgreSQL with DocumentDB extension
 [`ghcr.io/ferretdb/postgres-documentdb:17-0.103.0-ferretdb-2.2.0`](https://ghcr.io/ferretdb/postgres-documentdb:17-0.103.0-ferretdb-2.2.0)
@@ -25,7 +25,7 @@ to ensure consistency across deployments.
 For more information on the best FerretDB image to use, see the [DocumentDB release notes](https://github.com/FerretDB/documentdb/releases/).
 :::
 
-### Running the image
+### Run production image
 
 FerretDB requires a user credential (username and password) and `postgres` database to be initialized and must already exist before a connection can be set up.
 See [Set up PostgreSQL connection](../../security/authentication.md#set-up-postgresql-connection) for more details.
@@ -60,10 +60,60 @@ See [Set up PostgreSQL connection](../../security/authentication.md#set-up-postg
 
 3. See [FerretDB Docker installation](../ferretdb/docker.md) for more details on connecting to FerretDB.
 
-## Development image for PostgreSQL with DocumentDB extension
+### Run development image
 
 The development image for PostgreSQL with DocumentDB extension
 [`ghcr.io/ferretdb/postgres-documentdb-dev`](https://ghcr.io/ferretdb/postgres-documentdb-dev)
 is recommended for debugging problems.
 It includes additional debugging features that make it significantly slower.
 For this reason, it is not recommended for production use.
+
+## Updating to a new version
+
+Before [updating to a new FerretDB release](../ferretdb/docker.md#updating-to-a-new-version), it is critical to install the matching DocumentDB image first.
+
+The following steps are critical to ensuring a successful update.
+
+Edit your Compose file to use the matching DocumentDB image tag.
+You can find the correct tag in the DocumentDB release notes (for example: `17-0.103.0-ferretdb-2.2.0`).
+Then run:
+
+```sh
+docker compose pull <documentdb-container-name>
+docker compose up -d <documentdb-container-name>
+```
+
+Next, from within your `postgres` database, upgrade the DocumentDB extension by running:
+
+```sh
+docker compose exec <documentdb-container-name> \
+  psql -U <username> -d postgres -c 'ALTER EXTENSION documentdb UPDATE;'
+```
+
+Replace `<documentdb-container-name>`, `<username>`, `<password>`, and `<host>` with the appropriate values for your setup.
+
+For more details, refer to the [Docker Compose documentation](https://docs.docker.com/compose/) and the [PostgreSQL documentation](https://www.postgresql.org/docs/).
+After the extension update, verify or update `postgresql.conf` settings to ensure the following configurations are present:
+
+```sh
+docker compose exec -T  <documentdb-container-name> \
+  psql -U <username> -d postgres <<EOF
+ALTER SYSTEM SET shared_preload_libraries = 'pg_cron','pg_documentdb_core','pg_documentdb';
+ALTER SYSTEM SET cron.database_name = 'postgres';
+ALTER SYSTEM SET documentdb.enableLetAndCollationForQueryMatch = true;
+ALTER SYSTEM SET documentdb.enableNowSystemVariable = true;
+ALTER SYSTEM SET documentdb.enableSortbyIdPushDownToPrimaryKey = true;
+ALTER SYSTEM SET documentdb.enableSchemaValidation = true;
+ALTER SYSTEM SET documentdb.enableBypassDocumentValidation = true;
+ALTER SYSTEM SET documentdb.enableUserCrud = true;
+ALTER SYSTEM SET documentdb.maxUserLimit = 100;
+EOF
+```
+
+Restart the container to apply changes:
+
+```sh
+docker compose restart <documentdb-container-name>
+```
+
+Once the DocumentDB update is ready, follow the FerretDB update process to update FerretDB.
