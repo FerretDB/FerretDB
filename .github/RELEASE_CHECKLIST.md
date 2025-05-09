@@ -22,7 +22,7 @@
 10. Run `task docs-version VERSION=X.Y`.
     Update `versions` and `createRedirects` in `docusaurus.config.js`.
     Remove the oldest version from `versioned_docs`, `versioned_sidebars`, `versions.json`.
-11. Run `task docs-fmt`.
+11. Run `task docs`.
 12. Commit and push changes to the PR.
 13. Merge PR, pull and check `git status`.
 
