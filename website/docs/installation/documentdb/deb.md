@@ -59,7 +59,7 @@ You can now go ahead and set up FerretDB by following [this installation guide](
 
 ## Updating to a new version
 
-Before [updating to a new FerretDB release](../ferretdb/docker.md#updating-to-a-new-version), it is critical to install the matching DocumentDB image first.
+Before [updating to a new FerretDB release](../ferretdb/docker.md#updating-to-a-new-version), it is critical to install the matching DocumentDB package first.
 
 The following steps are critical to ensuring a successful update.
 

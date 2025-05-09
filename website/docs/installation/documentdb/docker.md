@@ -86,7 +86,6 @@ docker compose up -d <documentdb-container-name>
 Next, from within your `postgres` database, upgrade the DocumentDB extension by running:
 
 ```sh
-
 docker compose exec <documentdb-container-name> \
   psql -U <username> -d postgres -c 'ALTER EXTENSION documentdb UPDATE;'
 ```
@@ -115,25 +114,5 @@ Restart the container to apply changes:
 ```sh
 docker compose restart <documentdb-container-name>
 ```
-
-If you're running DocumentDB directly with `docker run`, you can achieve the same by adding a `-v` flag to bind your local config file:
-
-```sh
-docker run -d \
-  --restart on-failure \
-  -e POSTGRES_USER=<username> \
-  -e POSTGRES_PASSWORD=<password> \
-  -e POSTGRES_DB=postgres \
-  -v ./data:/var/lib/postgresql/data \
-  -v ./postgresql.custom.conf:/var/lib/postgresql/data/postgresql.conf \
-  -p 5432:5432 \
-  ghcr.io/ferretdb/postgres-documentdb:<tag>
-```
-
-Make sure to replace `<tag>` with the latest version of DocumentDB.
-
-:::tip
-The recommended values may change with new DocumentDB versions; always double‑check the release notes.
-:::
 
 Once the DocumentDB update is ready, follow the FerretDB update process to update FerretDB.
