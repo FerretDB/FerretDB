@@ -1,0 +1,3 @@
+db.runCommand({
+  drop: 'books'
+})
