@@ -16,7 +16,7 @@ package version
 
 const (
 	// PostgreSQL is a version of PostgreSQL this version of FerretDB is compatible with.
-	PostgreSQL = "PostgreSQL 17.5 (Debian 17.5-1.pgdg120+1) on aarch64-unknown-linux-gnu, " +
+	PostgreSQL = "PostgreSQL 17.5 (Debian 17.5-1.pgdg120+1) on x86_64-pc-linux-gnu, " +
 		"compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit"
 
 	// DocumentDB is a version of DocumentDB this version of FerretDB is compatible with.
