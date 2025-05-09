@@ -10,7 +10,7 @@ tags: [release]
 
 ![FerretDB v2.2.0: `arm64` architecture support and more](/img/blog/ferretdb-v2.2.0.jpg)
 
-FerretDB v2.2.0 is now available.
+FerretDB v2.2.0 is now available!
 
 <!--truncate-->
 
