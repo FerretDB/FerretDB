@@ -3,7 +3,7 @@ slug: ferretdb-v220-arm-architecture-support
 title: 'FerretDB v2.2.0: `arm64` architecture support and more'
 authors: [alex]
 description: >
-  FerretDB v2.2.0 introduces `arm64` architecture support, new evaluation image, documentation updates, and bug fixes.
+  FerretDB v2.2.0 introduces `arm64` architecture support, changes to the evaluation image, and several improvements across the codebase and documentation.
 image: /img/blog/ferretdb-v2.2.0.jpg
 tags: [release]
 ---
@@ -14,12 +14,15 @@ FerretDB v2.2.0 is now available.
 
 <!--truncate-->
 
-This release provides full support for `arm64` architecture for both FerretDB and DocumentDB, updates to the evaluation image, and several improvements across the codebase and documentation.
-
-We've also introduced new upgrade instructions to assist users moving to newer versions of FerretDB and DocumentDB.
-For detailed steps, refer to [our installation guide](https://docs.ferretdb.io/installation/ferretdb/docker/).
+This release provides full support for `arm64` architecture for both FerretDB and DocumentDB, changes to the evaluation image, and several improvements across the codebase and documentation.
 
 Below is a summary of what's new in this version.
+
+## Update guide
+
+We added new update instructions to assist users moving to newer versions of FerretDB and DocumentDB.
+For updating Docker images, refer to [our installation guide](https://docs.ferretdb.io/installation/ferretdb/docker/#updating-to-a-new-version).
+For updating Debian packages, see [our installation guide](https://docs.ferretdb.io/installation/ferretdb/deb/#updating-to-a-new-version).
 
 ## Full `arm64` support
 
