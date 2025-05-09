@@ -67,6 +67,10 @@ type Config struct {
 
 	// Defaults to [io.Discard], effectively disabling logging.
 	LogOutput io.Writer
+
+	// EnabledTelemetry set the telemetry enable or not.
+	// If empty, the telemetry is undecided by default.
+	EnabledTelemetry *bool
 }
 
 // FerretDB represents an instance of embedded FerretDB implementation.
@@ -83,12 +87,11 @@ func New(config *Config) (*FerretDB, error) {
 	if err == nil {
 		// TODO https://github.com/FerretDB/FerretDB/issues/4750
 		err = sp.Update(func(s *state.State) {
-			s.TelemetryLocked = true
+			s.LatestVersion = version.Get().Version
 		})
-	}
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to set up state provider: %w", err)
+		if err != nil {
+			return nil, fmt.Errorf("failed to set up state provider: %w", err)
+		}
 	}
 
 	// Note that the current implementation requires `*logging.Handler` in the `getLog` command implementation.
@@ -113,10 +116,24 @@ func New(config *Config) (*FerretDB, error) {
 
 	lm := connmetrics.NewListenerMetrics()
 
+	flag := new(telemetry.Flag)
+
+	if config.EnabledTelemetry != nil {
+		if *config.EnabledTelemetry {
+			err = flag.UnmarshalText([]byte("true"))
+		} else {
+			err = flag.UnmarshalText([]byte("false"))
+		}
+
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal telemetry flag: %w", err)
+		}
+	}
+
 	tr, err := telemetry.NewReporter(&telemetry.NewReporterOpts{
 		URL:            "https://beacon.ferretdb.com/",
 		Dir:            config.StateDir,
-		F:              new(telemetry.Flag),
+		F:              flag,
 		DNT:            os.Getenv("DO_NOT_TRACK"),
 		ExecName:       os.Args[0],
 		P:              sp,
