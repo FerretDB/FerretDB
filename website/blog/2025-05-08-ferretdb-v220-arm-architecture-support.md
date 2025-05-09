@@ -1,14 +1,14 @@
 ---
 slug: ferretdb-v220-arm-architecture-support
-title: 'FerretDB v2.2.0: `arm64` architecture support and more'
+title: 'FerretDB v2.2.0: ARM64 architecture support and more'
 authors: [alex]
 description: >
-  FerretDB v2.2.0 introduces `arm64` architecture support, changes to the evaluation image, and several improvements across the codebase and documentation.
+  FerretDB v2.2.0 introduces ARM64 architecture support, changes to the evaluation image, and several improvements across the codebase and documentation.
 image: /img/blog/ferretdb-v2.2.0.jpg
 tags: [release]
 ---
 
-![FerretDB v2.2.0: `arm64` architecture support and more](/img/blog/ferretdb-v2.2.0.jpg)
+![FerretDB v2.2.0: ARM64 architecture support and more](/img/blog/ferretdb-v2.2.0.jpg)
 
 FerretDB v2.2.0 is now available!
 
@@ -21,8 +21,8 @@ Below is a summary of what's new in this version.
 ## Update guide
 
 We added new update instructions to assist users moving to newer versions of FerretDB and DocumentDB.
-For updating Docker images, refer to [our installation guide](https://docs.ferretdb.io/installation/ferretdb/docker/#updating-to-a-new-version).
-For updating Debian packages, see [our installation guide](https://docs.ferretdb.io/installation/ferretdb/deb/#updating-to-a-new-version).
+For updating Docker images, refer to [the Docker update guide](https://docs.ferretdb.io/installation/ferretdb/docker/#updating-to-a-new-version).
+For updating Debian packages, see [the Debian update guide](https://docs.ferretdb.io/installation/ferretdb/deb/#updating-to-a-new-version).
 
 ## Full `arm64` support
 
@@ -33,7 +33,7 @@ This broadens compatibility for users on ARM-based systems, ensuring smoother de
 
 We now provide two evaluation images:
 
-- `ferretdb-eval-dev`: The existing evaluation image, which uses development builds of FerretDB and DocumentDB, has been renamed to `ferretdb-eval-dev`.
+- `ferretdb-eval-dev`: The existing evaluation image, previously named `ferretdb-eval`, which uses development builds of FerretDB and DocumentDB, has been renamed to `ferretdb-eval-dev`.
   It remains intended for debugging purposes.
 - `ferretdb-eval`: A new image built with production builds of FerretDB and DocumentDB, recommended for evaluation and testing purposes.
 
@@ -46,9 +46,7 @@ We've expanded and updated our documentation to assist with smoother deployments
 New guides are now available for [deploying both FerretDB](https://docs.ferretdb.io/installation/ferretdb/kubernetes/) and [PostgreSQL with DocumentDB extension](https://docs.ferretdb.io/installation/documentdb/kubernetes/) in Kubernetes environments.
 
 Our documentation now includes a guide on setting up the FerretDB Data API, which allows users to interact with FerretDB using a RESTful API.
-See the [Data API documentation](https://docs.ferretdb.io/usages/data-api/) for more information.
-
-In an effort to improve our documentation, some of our guides have been tested and verified against CTS (Compatibility Test Suite) to ensure we provide accurate and user-friendly documentation.
+See the [Data API documentation](https://docs.ferretdb.io/usage/data-api/) for more information.
 
 ## Other changes
 
