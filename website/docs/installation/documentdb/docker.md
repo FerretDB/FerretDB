@@ -90,8 +90,13 @@ docker compose exec <documentdb-container-name> \
   psql -U <username> -d postgres -c 'ALTER EXTENSION documentdb UPDATE;'
 ```
 
-Replace `<documentdb-container-name>`, `<username>`, `<password>`, and `<host>` as needed.
+Replace `<documentdb-container-name>`, `<username>`, `<password>`, and `<host>` with the appropriate values for your setup.
+- `<documentdb-container-name>`: The name of your DocumentDB container as defined in your Docker Compose file.
+- `<username>`: The PostgreSQL username with sufficient privileges to execute the commands.
+- `<password>`: The password for the specified PostgreSQL user.
+- `<host>`: The hostname or IP address of the PostgreSQL server (usually `localhost` or the container name if using Docker networking).
 
+For more details, refer to the [Docker Compose documentation](https://docs.docker.com/compose/) and the [PostgreSQL documentation](https://www.postgresql.org/docs/).
 After the extension update, verify or update `postgresql.conf` settings to ensure the following configurations are present:
 
 ```sh
