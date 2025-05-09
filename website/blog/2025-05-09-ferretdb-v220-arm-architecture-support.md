@@ -59,5 +59,9 @@ Thank you to everyone who contributed to this release!
 
 Be sure to check out [our GitHub](https://github.com/FerretDB) and [website](https://www.ferretdb.com) for more information on how to download, contribute, or explore enterprise solutions.
 
+Curious about the story behind FerretDB and why we chose PostgreSQL as the database backend?
+[Check out this episode of the Talking Postgres podcast](https://talkingpostgres.com/episodes/how-i-got-started-with-ferretdb-why-we-chose-postgres-with-peter-farkas), where FerretDB CEO, Peter Farkas, shares insights into the project's origins and technical choices.
+The conversation covers everything from early inspiration (including a trek to K2 base camp) to open source principles and FerretDB's integration with the open source DocumentDB extension from Microsoft
+
 Have any questions or feedback?
 Join us on [our community channels](https://docs.ferretdb.io/#community).
