@@ -118,3 +118,5 @@ Once DocumentDB is updated, edit your Docker compose file to point to the latest
 docker compose pull <ferretdb-container-name>
 docker compose up -d <ferretdb-container-name>
 ```
+
+Ensure to replace `<ferretdb-container-name>` with the actual name of your FerretDB container.
