@@ -107,10 +107,10 @@ of FerretDB, and is recommended for debugging problems.
 It includes additional debugging features that make it significantly slower.
 For this reason, it is not recommended for production use.
 
-## Updating to a new FerretDB release
+## Updating to a new version
 
 Before updating your FerretDB instance, make sure to update to the matching DocumentDB image first.
-Following the [DocumentDB update guide](../documentdb/docker.md#updating-to-a-new-documentdb-release) is critical for a successful update.
+Following the [DocumentDB update guide](../documentdb/docker.md#updating-to-a-new-version) is critical for a successful update.
 
 Once DocumentDB is updated, edit your Docker compose file to point to the latest FerretDB production image tag as shown in the FerretDB release notes, for example `2.2.0`, then run:
 

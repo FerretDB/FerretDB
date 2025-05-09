@@ -68,9 +68,9 @@ is recommended for debugging problems.
 It includes additional debugging features that make it significantly slower.
 For this reason, it is not recommended for production use.
 
-## Updating to a new DocumentDB release
+## Updating to a new version
 
-Before [updating to a new FerretDB release](../ferretdb/docker.md#updating-to-a-new-ferretdb-release), it is critical to install the matching DocumentDB image first.
+Before [updating to a new FerretDB release](../ferretdb/docker.md#updating-to-a-new-version), it is critical to install the matching DocumentDB image first.
 
 The following steps are critical to ensuring a successful update.
 
@@ -93,29 +93,21 @@ docker compose exec <documentdb-container-name> \
 
 Replace `<documentdb-container-name>`, `<username>`, `<password>`, and `<host>` as needed.
 
-After the extension update, update `postgresql.conf` settings using a mounted config to ensure the following configurations are present.
-First, create a local file (e.g., `postgresql.custom.conf`) with the following content:
+After the extension update, verify or update `postgresql.conf` settings to ensure the following configurations are present:
 
-```text
-shared_preload_libraries = 'pg_cron,pg_documentdb_core,pg_documentdb'
-cron.database_name       = 'postgres'
-
-documentdb.enableLetAndCollationForQueryMatch = true
-documentdb.enableNowSystemVariable            = true
-documentdb.enableSortbyIdPushDownToPrimaryKey = true
-
-documentdb.enableSchemaValidation             = true
-documentdb.enableBypassDocumentValidation     = true
-
-documentdb.enableUserCrud                     = true
-documentdb.maxUserLimit                       = 100
-```
-
-Then, mount the config in the DocumentDB container of your Compose file:
-
-```yaml
-volumes:
-  - ./postgresql.custom.conf:/var/lib/postgresql/data/postgresql.conf # add this line
+```sh
+docker compose exec -T  <documentdb-container-name> \
+  psql -U <username> -d postgres <<EOF
+ALTER SYSTEM SET shared_preload_libraries = 'pg_cron','pg_documentdb_core','pg_documentdb';
+ALTER SYSTEM SET cron.database_name = 'postgres';
+ALTER SYSTEM SET documentdb.enableLetAndCollationForQueryMatch = true;
+ALTER SYSTEM SET documentdb.enableNowSystemVariable = true;
+ALTER SYSTEM SET documentdb.enableSortbyIdPushDownToPrimaryKey = true;
+ALTER SYSTEM SET documentdb.enableSchemaValidation = true;
+ALTER SYSTEM SET documentdb.enableBypassDocumentValidation = true;
+ALTER SYSTEM SET documentdb.enableUserCrud = true;
+ALTER SYSTEM SET documentdb.maxUserLimit = 100;
+EOF
 ```
 
 Restart the container to apply changes:

@@ -43,10 +43,10 @@ Find out more about:
 
 - [getting logs](../../configuration/observability.md#logging).
 
-## Updating to a new FerretDB release
+## Updating to a new version
 
 Before updating to a new FerretDB version, make sure to update to the matching DocumentDB package first.
-Following the [DocumentDB update guide](../documentdb/docker.md#updating-to-a-new-documentdb-release) is critical for a successful update.
+Following the [DocumentDB update guide](../documentdb/docker.md#updating-to-a-new-version) is critical for a successful update.
 
 Download the new `.deb` package from the release page.
 Then, install the new package using `dpkg`:
