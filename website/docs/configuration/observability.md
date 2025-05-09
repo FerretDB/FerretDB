@@ -57,7 +57,7 @@ The format and level can be adjusted by [configuration flags](flags.md#miscellan
 
 ### Docker logs
 
-If Docker was launched with [our quick local setup with Docker Compose](../installation/ferretdb/docker.md#postgresql-setup-with-docker-compose),
+If Docker was launched with [our quick local setup with Docker Compose](../installation/ferretdb/docker.md#run-production-image),
 the following command can be used to fetch the logs.
 
 ```sh
