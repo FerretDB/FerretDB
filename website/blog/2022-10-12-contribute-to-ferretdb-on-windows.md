@@ -1,7 +1,7 @@
 ---
 slug: contribute-to-ferretdb-on-windows
 title: How to start contributing to FerretDB on Windows
-author: Dmitry Eremenko
+authors: [dmitry]
 description: In this post, you'll find out how to properly configure and set up your Windows OS, avoid typical Windows environment issues, and start contributing to FerretDB.
 image: /img/blog/image4-1024x683.jpg
 tags: [tutorial, product]

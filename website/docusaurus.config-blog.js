@@ -60,8 +60,7 @@ const config = {
 
           onInlineTags: "throw",
           onUntruncatedBlogPosts: "throw",
-          // TODO https://github.com/FerretDB/FerretDB/issues/4587
-          // onInlineAuthors: "throw",
+          onInlineAuthors: "throw",
 
           blogSidebarTitle: "All posts",
           blogSidebarCount: "ALL",

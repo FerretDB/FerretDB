@@ -1,15 +1,7 @@
 ---
 slug: community-matters-fireside-chat-cockroachdb
 title: 'Community Matters: Fireside Chat with Artem Ervits, CockroachDB'
-authors:
-  - name: Marcin Gwóźdź
-    title: Director of Strategic Alliances at FerretDB
-    url: https://www.linkedin.com/in/marcin-gwóźdź-277abaa9
-    image_url: /img/blog/marcin-gwozdz.jpeg
-  - name: Artem Ervits
-    title: Solutions Engineer at CockroachDB
-    url: https://www.linkedin.com/in/artemervits
-    image_url: /img/blog/artem-ervits.jpeg
+authors: [marcin, artem]
 description: >
   We sat down with one of our earliest users, Artem Ervits from CockroachDB to discuss about open source, the database community, and what he thinks of FerretDB.
 image: /img/blog/community-call-cockroachdb.jpg
