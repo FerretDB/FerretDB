@@ -3,66 +3,60 @@ slug: ferretdb-v220-arm-architecture-support
 title: 'FerretDB v2.2.0: `arm64` architecture support and more'
 authors: [alex]
 description: >
-  FerretDB v2.2.0 introduces ARM architecture support, new evaluation image, documentation updates, and bug fixes.
+  FerretDB v2.2.0 introduces `arm64` architecture support, new evaluation image, documentation updates, and bug fixes.
 image: /img/blog/ferretdb-v2.2.0.jpg
 tags: [release]
 ---
 
-![FerretDB v2.2.0: ARM architecture support and more](/img/blog/ferretdb-v2.2.0.jpg)
+![FerretDB v2.2.0: `arm64` architecture support and more](/img/blog/ferretdb-v2.2.0.jpg)
 
-We are pleased to announce the release of FerretDB v2.2.0.
+FerretDB v2.2.0 is now available.
 
 <!--truncate-->
 
-This release provides full support for `arm64` architecture for both FerretDB and DocumentDB, new evaluation image with production-ready settings, and multiple improvements across the codebase and documentation.
+This release provides full support for `arm64` architecture for both FerretDB and DocumentDB, updates to the evaluation image, and several improvements across the codebase and documentation.
 
-Below is a detailed breakdown of what's new in this version.
+We've also introduced new upgrade instructions to assist users moving to newer versions of FerretDB and DocumentDB.
+For detailed steps, refer to [our installation guide](https://docs.ferretdb.io/installation/ferretdb/docker/).
 
-## New features
+Below is a summary of what's new in this version.
 
-### Full `arm64` support
+## Full `arm64` support
 
-Support for `arm64` architecture is one of the most requested features in FerretDB v2.
-We are happy to announce that FerretDB and DocumentDB now offer full `arm64` support, broadening compatibility for users on ARM-based systems.
-This update ensures smoother deployments and better performance on platforms like AWS Graviton and Apple Silicon.
+One of the most requested enhancements, full `arm64` support, is now available for both FerretDB and DocumentDB.
+This broadens compatibility for users on ARM-based systems, ensuring smoother deployments and better performance on platforms like AWS Graviton and Apple Silicon.
 
-## New evaluation image
+## Evaluation images
 
-A new FerretDB evaluation (`ferretdb-eval`) Docker image has been introduced, built with production-ready settings for easier evaluation and testing.
-Having a separate image allows users to quickly test FerretDB without needing to set up a production environment.
-We still provide the `ferretdb-eval-dev` image for debugging purposes, which includes features that make it slower.
+We now provide two evaluation images:
 
-See the [installation guide](https://docs.ferretdb.io/installation/evaluation/) for more details on how to use the new evaluation image.
+- `ferretdb-eval-dev`: The existing evaluation image, which uses development builds of FerretDB and DocumentDB, has been renamed to `ferretdb-eval-dev`.
+  It remains intended for debugging purposes.
+- `ferretdb-eval`: A new image built with production builds of FerretDB and DocumentDB, recommended for evaluation and testing purposes.
 
-## Enhancements
-
-In addition to the new evalution image, several updates have been made to our Docker images.
-Docker tags have been refined to handle pre-release `git` tags more reliably.
-Health checks and supervision have been enhanced to improve container stability and maintainability.
-The `state` directory now uses Docker volumes by default, which should help with data persistence.
+For setup instructions and additional details, [see the evaluation installation guide](https://docs.ferretdb.io/installation/evaluation/).
 
 ## Documentation updates
 
-We've expanded and refined our documentation to assist with smoother installation and update.
+We've expanded and updated our documentation to assist with smoother deployments and updates.
 
-A new [Kubernetes Installation guide has been added for FerretDB](https://docs.ferretdb.io/installation/ferretdb/kubernetes/) and [PostgreSQL with DocumentDB extension](https://docs.ferretdb.io/installation/documentdb/kubernetes/) to make it easier to deploy FerretDB in Kubernetes environments.
-
-We also added new instructions to help users easily update to new versions of FerretDB – [see our documentation for more](https://docs.ferretdb.io/installation/ferretdb/docker/).
+New guides are now available for [deploying both FerretDB](https://docs.ferretdb.io/installation/ferretdb/kubernetes/) and [PostgreSQL with DocumentDB extension](https://docs.ferretdb.io/installation/documentdb/kubernetes/) in Kubernetes environments.
 
 Our documentation now includes a guide on setting up the FerretDB Data API, which allows users to interact with FerretDB using a RESTful API.
-Check out the [Data API documentation](https://docs.ferretdb.io/usages/data-api/) for more information.
+See the [Data API documentation](https://docs.ferretdb.io/usages/data-api/) for more information.
 
 In an effort to improve our documentation, some of our guides have been tested and verified against CTS (Compatibility Test Suite) to ensure we provide accurate and user-friendly documentation.
 
-## New contributors
+## Other changes
 
-A range of smaller tweaks and dependency updates were added to improve overall stability.
-See our release notes for the [complete list of all changes](https://github.com/FerretDB/FerretDB/releases/tag/v2.2.0).
+This release also includes a range of maintenance and stability improvements, such as dependency updates, minor codebase tweaks, and infrastructure changes.
+See our release notes for the [full list of all changes](https://github.com/FerretDB/FerretDB/releases/tag/v2.2.0).
 
-We're excited to welcome a new contributor: [@vardbabayan](https://github.com/vardbabayan) made their first contribution, helping to rename binaries and packages.
+We also welcome a new contributor: [@vardbabayan](https://github.com/vardbabayan), who contributed by renaming binaries and packages.
+
 Thank you to everyone who contributed to this release!
 
-Ensure to check out our [our GitHub](https://github.com/FerretDB) and [website](https://www.ferretdb.com) for more information on how to download, contribute, or explore enterprise solutions.
+Be sure to check out [our GitHub](https://github.com/FerretDB) and [website](https://www.ferretdb.com) for more information on how to download, contribute, or explore enterprise solutions.
 
-Have any questions?
-Reach out to us on [our community channels](https://docs.ferretdb.io/#community).
+Have any questions or feedback?
+Join us on [our community channels](https://docs.ferretdb.io/#community).
