@@ -2,6 +2,91 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v2.2.0](https://github.com/FerretDB/FerretDB/releases/tag/v2.2.0) (2025-05-09)
+
+This version works best with
+[DocumentDB v0.103.0-ferretdb-2.2.0](https://github.com/FerretDB/documentdb/releases/tag/v0.103.0-ferretdb-2.2.0).
+
+### New Features 🎉
+
+- Add full arm64 support by @AlekSi, @chilagrow in https://github.com/FerretDB/FerretDB/pull/5113
+- Rename old `ferretdb-eval` image to `ferretdb-eval-dev` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5040
+- Provide `ferretdb-eval` Docker image with production build by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5051
+- Supervise services in evaluation images by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5041
+- Use volume for `state` directory by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5083
+
+### Enhancements 🛠
+
+- Rename binaries and packages by @vardbabayan in https://github.com/FerretDB/FerretDB/pull/5078
+- Decode `dropIndexes` response by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5117
+
+### Documentation 📄
+
+- Update DocumentDB debian packages by @Fashander in https://github.com/FerretDB/FerretDB/pull/4959
+- Add Kubernetes installation guide by @Fashander in https://github.com/FerretDB/FerretDB/pull/4971
+- Add blog post on FerretDB and CNPG by @Fashander in https://github.com/FerretDB/FerretDB/pull/4998
+- Update Docker images by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5015
+- Add blog post on migrating to FerretDB with dsync by @Fashander in https://github.com/FerretDB/FerretDB/pull/5033
+- Use &#34;PostgreSQL with DocumentDB extension&#34; phrase by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5050
+- Backport Kubernetes docs to 2.1 by @Fashander in https://github.com/FerretDB/FerretDB/pull/5053
+- Rename and move code files in guides by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5057
+- Update redirects by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5060
+- Update OpenAPI spec description by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5062
+- Document Data API usage by @Fashander in https://github.com/FerretDB/FerretDB/pull/5063
+- Backport `.deb` installation guide by @Fashander in https://github.com/FerretDB/FerretDB/pull/5066
+- Unconvert syntax examples in documentation by @noisersup in https://github.com/FerretDB/FerretDB/pull/5072
+- Reformat linter by @Fashander in https://github.com/FerretDB/FerretDB/pull/5075
+- Update evaluation Docker image documentation by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5076
+- Document required features by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5086
+- Document update process for new releases by @Fashander in https://github.com/FerretDB/FerretDB/pull/5124
+- Remove old TODOs by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5132
+
+### Other Changes 🤖
+
+- Remove MongoDB driver v1 by @KrishnaSindhur in https://github.com/FerretDB/FerretDB/pull/4961
+- Hook CTS tool into documentation building by @noisersup in https://github.com/FerretDB/FerretDB/pull/4990
+- Do not send zero values to telemetry by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5016
+- Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5020
+- Update deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5024
+- Minor tweaks for proxy code by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5025
+- Move tests for sessions by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5026
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5027
+- Merge Msg and Query into a single type by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5032
+- Make proxy handler implement an interface by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5036
+- Move `findAndModify` integration tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5037
+- Update wire by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5042
+- Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5045
+- Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5054
+- Implement handler `Handle` function by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5055
+- Use new `wire` helpers by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5056
+- Fix docker health check on evaluation image by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5067
+- Define docker tags for `ferretdb-eval` image by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5068
+- Use `Handle` function in Data API by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5069
+- Use `Handle` function in `clientconn` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5070
+- Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5074
+- Skip `bypassEmptyTsReplacement` parameters for now by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5080
+- Reorgonize cts output files by @noisersup in https://github.com/FerretDB/FerretDB/pull/5082
+- Unexport handlers by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5084
+- Use new `wire` helpers by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5094
+- Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5096
+- Fix Docker tags for pre-release git tags by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5099
+- Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5115
+- Hook CTS into CI by @noisersup in https://github.com/FerretDB/FerretDB/pull/5120
+- Run CTS tests against Full Text Search guide examples by @noisersup in https://github.com/FerretDB/FerretDB/pull/5121
+- Run CTS tests against Vector Search guide examples by @noisersup in https://github.com/FerretDB/FerretDB/pull/5122
+- Run CTS tests against TTL Indexes guide examples by @noisersup in https://github.com/FerretDB/FerretDB/pull/5123
+- Remove `$db` parameter from generated mongosh requests by @noisersup in https://github.com/FerretDB/FerretDB/pull/5125
+- Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5141
+- Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5142
+- Prepare v2.2.0 release by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5138
+
+### New Contributors
+
+- @vardbabayan made their first contribution in https://github.com/FerretDB/FerretDB/pull/5078
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/73?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v2.1.0...v2.2.0).
+
 ## [v2.1.0](https://github.com/FerretDB/FerretDB/releases/tag/v2.1.0) (2025-04-03)
 
 This version works only with
