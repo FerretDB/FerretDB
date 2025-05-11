@@ -5,11 +5,16 @@
 
   db.coll.drop();
 
-  db.coll.insertOne({a: 'a'.repeat(2000)});
+  const l = 1939;
+  // const l = 1938;
+
+  const v = 'x'.repeat(l);
+
+  db.coll.insertOne({v: v});
 
   const actual = db.coll.findOneAndDelete({});
 
-  assert.eq('a'.repeat(2000), actual.a);
+  assert.eq(v, actual.v);
 
   print("test.js passed!");
 })();
