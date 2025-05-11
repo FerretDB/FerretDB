@@ -22,7 +22,7 @@
 10. Run `task docs-version VERSION=X.Y`.
     Update `versions` and `createRedirects` in `docusaurus.config.js`.
     Remove the oldest version from `versioned_docs`, `versioned_sidebars`, `versions.json`.
-11. Run `task docs-fmt`.
+11. Run `task docs`.
 12. Commit and push changes to the PR.
 13. Merge PR, pull and check `git status`.
 
@@ -65,4 +65,6 @@
 3. Bump the latest version on https://beacon.ferretdb.com and https://beacon.ferretdb.io.
 4. Update DocumentDB image tags to point back to development version.
 5. Update DocumentDB images tags in the current documentation (where we specify full tags)
+   to point to the next (non-existing) version.
+6. Update URLs with `/refs/tags/` in them in the current documentation
    to point to the next (non-existing) version.
