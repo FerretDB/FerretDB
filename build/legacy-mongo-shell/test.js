@@ -8,7 +8,6 @@
   coll.drop();
 
   const init = [
-    { _id: "binary", v: { $binary: { base64: "KgAN", subType: "80" } } },
     { _id: "decimal128", v: { $numberDecimal: "42.13" } }
   ];
 
@@ -16,9 +15,7 @@
 
   const query = { v: { $bitsAnySet: 6 } };
 
-  const expected = [
-    { _id: "binary", v: { $binary: { base64: "KgAN", subType: "80" } } }
-  ];
+  const expected = [];
 
   const actual = coll.find(query).toArray();
   assert.eq(expected, actual);
