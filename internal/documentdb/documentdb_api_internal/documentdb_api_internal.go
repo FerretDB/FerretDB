@@ -576,22 +576,8 @@ func BsonDollarMergeAddObjectId1(ctx context.Context, conn *pgx.Conn, l *slog.Lo
 
 // BsonDollarMergeDocuments is a wrapper for
 //
-//	documentdb_api_internal.bson_dollar_merge_documents(document documentdb_core.bson, pathspec documentdb_core.bson, OUT bson_dollar_merge_documents documentdb_core.bson).
-func BsonDollarMergeDocuments(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument) (outBsonDollarMergeDocuments wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_dollar_merge_documents", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
-	defer span.End()
-
-	row := conn.QueryRow(ctx, "SELECT bson_dollar_merge_documents::bytea FROM documentdb_api_internal.bson_dollar_merge_documents($1::bytea, $2::bytea)", document, pathSpec)
-	if err = row.Scan(&outBsonDollarMergeDocuments); err != nil {
-		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_dollar_merge_documents", l)
-	}
-	return
-}
-
-// BsonDollarMergeDocuments1 is a wrapper for
-//
 //	documentdb_api_internal.bson_dollar_merge_documents(document documentdb_core.bson, pathspec documentdb_core.bson, overridearray boolean, OUT bson_dollar_merge_documents documentdb_core.bson).
-func BsonDollarMergeDocuments1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument, overridearray bool) (outBsonDollarMergeDocuments wirebson.RawDocument, err error) {
+func BsonDollarMergeDocuments(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument, overridearray bool) (outBsonDollarMergeDocuments wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_dollar_merge_documents", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
@@ -2996,16 +2982,16 @@ func RumBsonTextPathOptions(ctx context.Context, conn *pgx.Conn, l *slog.Logger,
 	return
 }
 
-// ScheduleBackgroundIndexBuildWorkers is a wrapper for
+// ScheduleBackgroundIndexBuildJobs is a wrapper for
 //
-//	documentdb_api_internal.schedule_background_index_build_workers(p_max_num_active_user_index_builds integer DEFAULT (current_setting(('documentdb', p_user_index_build_schedule integer DEFAULT (current_setting(('documentdb').
-func ScheduleBackgroundIndexBuildWorkers(ctx context.Context, conn *pgx.Conn, l *slog.Logger, maxNumActiveUserIndexBuilds int32, userIndexBuildSchedule int32) (err error) {
-	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.schedule_background_index_build_workers", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+//	documentdb_api_internal.schedule_background_index_build_jobs(p_force_override boolean DEFAULT false).
+func ScheduleBackgroundIndexBuildJobs(ctx context.Context, conn *pgx.Conn, l *slog.Logger, forceOverride bool) (err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.schedule_background_index_build_jobs", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_internal.schedule_background_index_build_workers($1, $2)", maxNumActiveUserIndexBuilds, userIndexBuildSchedule)
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_internal.schedule_background_index_build_jobs($1)", forceOverride)
 	if err = row.Scan(); err != nil {
-		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.schedule_background_index_build_workers", l)
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.schedule_background_index_build_jobs", l)
 	}
 	return
 }
