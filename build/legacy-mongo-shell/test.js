@@ -16,7 +16,7 @@
   coll.insertMany(init);
 
 
-	let expected = [];
+	let expected = [{ "_id" : "decimal128", "v" : NumberDecimal("42.13") }];
 	let actual = coll.find({ v: { $bitsAnySet: 6 }}).toArray();
 	assert.eq(expected, actual);
 
