@@ -8,7 +8,7 @@
   coll.drop();
 
   const init = [
-    { _id: "decimal128", v: 42.13 }
+    { _id: "decimal128", v: NumberDecimal("42.13") }
   ];
 
   coll.insertMany(init);
