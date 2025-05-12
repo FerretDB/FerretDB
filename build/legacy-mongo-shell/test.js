@@ -8,17 +8,25 @@
   coll.drop();
 
   const init = [
-    { _id: "decimal128", v: NumberDecimal("42.13") }
+    { _id: "decimal128", v: NumberDecimal("42.13") },
+    { _id: "decimal128-inf", v: NumberDecimal("Infinity") },
+    { _id: "decimal128-nan", v: NumberDecimal("NaN") },
   ];
 
   coll.insertMany(init);
 
-  const query = { v: { $bitsAnySet: 6 } };
 
-  const expected = [];
+	let expected = [];
+	let actual = coll.find({ v: { $bitsAnySet: 6 }}).toArray();
+	assert.eq(expected, actual);
 
-  const actual = coll.find(query).toArray();
-  assert.eq(expected, actual);
+	expected = [];
+	actual = coll.find({ v: { $bitsAnyClear: 6 }}).toArray();
+	assert.eq(expected, actual);
+
+	expected = [];
+	actual = coll.find({ v: { $bitsAllClear: 6 }}).toArray();
+	assert.eq(expected, actual);
 
   print("test.js passed!");
 })();
