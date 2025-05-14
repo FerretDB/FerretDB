@@ -135,7 +135,8 @@
           "name": "sparse_price_index",
           "sparse": true
         }
-      ]
+      ],
+      "$db": "{{.Database}}"
     },
     "response": {
       "numIndexesBefore": {
