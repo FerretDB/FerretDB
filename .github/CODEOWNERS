@@ -1,10 +1,10 @@
 # https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 # Order is important; the last matching pattern takes the most precedence.
 
-*               @AlekSi @chilagrow
+*               @chilagrow
 
-/website/       @AlekSi @Fashander
+/website/       @Fashander
 
 # @AlekSi for engineering, @ptrfarkas for marketing.
 # See also Mergify configuration.
-/website/blog/  @AlekSi @ptrfarkas
+/website/blog/  @ptrfarkas
