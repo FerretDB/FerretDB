@@ -26,15 +26,15 @@ The index specification document specifies the fields to be indexed, the index n
 
 <!-- majorly fields such as arguments, modifers, stage, operators, parameters, options supported by the command in a table (if necessary or available). Takes in the following parameters: -->
 
-| Field                     | Type     | Description                                                                                                                                                                                                           |
-| ------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `createIndexes`           | string   | The name of the collection.                                                                                                                                                                                           |
-| `indexes`                 | array    | An array of index specification documents. Each document defines an index.                                                                                                                                            |
-| `key`                     | document | A single document that contains the field(s) to index and their sort order or type (`1`, `-1`, `"text"`, `cosmosSearch` for vector indexes, etc).                                                                     |
-| `name`                    | string   | A required name for the index. Must be unique to the collection.                                                                                                                                                      |
-| `unique`                  | boolean  | Ensures all values are unique for the indexed field if set to `true`.                                                                                                                                                 |
-| `partialFilterExpression` | document | Restricts index to documents matching the condition.                                                                                                                                                                  |
-| `sparse`                  | boolean  | Only indexes documents that contain the indexed field if set to `true`.                                                                                                                                               |
+| Field                     | Type     | Description                                                                                                                                       |
+| ------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `createIndexes`           | string   | The name of the collection.                                                                                                                       |
+| `indexes`                 | array    | An array of index specification documents. Each document defines an index.                                                                        |
+| `key`                     | document | A single document that contains the field(s) to index and their sort order or type (`1`, `-1`, `"text"`, `cosmosSearch` for vector indexes, etc). |
+| `name`                    | string   | A required name for the index. Must be unique to the collection.                                                                                  |
+| `unique`                  | boolean  | Ensures all values are unique for the indexed field if set to `true`.                                                                             |
+| `partialFilterExpression` | document | Restricts index to documents matching the condition.                                                                                              |
+| `sparse`                  | boolean  | Only indexes documents that contain the indexed field if set to `true`.                                                                           |
 
 ## Example usage
 
@@ -52,7 +52,7 @@ db.runCommand({
   indexes: [
     {
       key: {
-        '<field1>': 1, // ascending
+        '<field1>': 1 // ascending
       }
     }
   ]
@@ -76,7 +76,7 @@ db.runCommand({
         '<field1>': 1, // ascending
         '<field2>': -1 // descending
       },
-      name: '<compound_index_name>', // string
+      name: '<compound_index_name>' // string
     }
   ]
 })
