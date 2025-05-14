@@ -1,6 +1,6 @@
 response = {
   numIndexesBefore: 1,
   numIndexesAfter: 2,
-  createdCollectionAutomatically: true,
+  createdCollectionAutomatically: false,
   ok: Double(1)
 }
