@@ -121,7 +121,7 @@ See this [example](../guides/create-indexes.json) for reference.
 The code snippet prefix `1-` (found in `1-<file-name>.json` file) in ascending order is used to enforce the order in the documentation and their execution within the CTS tool.
 
 The CTS tool will be responsible for generating the formatted code snippets which can be imported into MDX files.
-Run `task docs` to generate the formatted code snippets.
+Run `task docs-gen` to generate the formatted code snippets.
 The generated code snippets will be stored in `.js` files under `website/docs/guides/<extended-json-file-name>` directory.
 
 #### Blog posts
@@ -154,24 +154,6 @@ response = [
 ### Other code blocks
 
 The following formatting instructions apply for both documentation and blog posts.
-
-For MongoDB command syntax or pseudocode expressions, use `js` language and ensure the code snippet is written in valid `js` syntax.
-
-For example:
-
-```js
-db.runCommand({
-  find: 'collection_name',
-  filter: {
-    field1: 'value1',
-    field2: 123,
-    field3: true,
-    field4: { $in: ['value2', 'value3'] },
-    field5: { $gt: 10 }
-  },
-  projection: { field1: 1, field2: 0 }
-})
-```
 
 Use `sql` for SQL queries.
 
