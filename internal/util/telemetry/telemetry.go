@@ -85,7 +85,7 @@ func initialState(f *Flag, dnt string, execName string, prev *bool, l *slog.Logg
 		locked = true
 	}
 
-	// telemetry state is disabled and locked via flag, dnt env or binary name
+	// telemetry state is disabled and locked via flag, config, dnt env or binary name
 	if state != nil {
 		// check for conflicts
 		if f.v != nil && *f.v {
