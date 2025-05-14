@@ -53,8 +53,7 @@ db.runCommand({
   indexes: [
     {
       key: {
-        '<field1>': 1 // ascending
-      }
+        '<field1>': 1
     }
   ]
 })
@@ -74,10 +73,9 @@ db.runCommand({
   indexes: [
     {
       key: {
-        '<field1>': 1, // ascending
-        '<field2>': -1 // descending
-      },
-      name: '<compound_index_name>' // string
+        '<field1>': 1,
+        '<field2>': -1
+      name: '<compound_index_name>'
     }
   ]
 })
@@ -97,10 +95,10 @@ db.runCommand({
   indexes: [
     {
       key: {
-        '<field>': 1 // ascending
+        '<field>': 1
       },
-      name: '<unique_index_name>', // string
-      unique: true // boolean
+      name: '<unique_index_name>',
+      unique: true
     }
   ]
 })
@@ -120,12 +118,12 @@ db.runCommand({
   indexes: [
     {
       key: {
-        '<field>': 1 // ascending
+        '<field>': 1
       },
-      name: '<partial_index_name>', // string
+      name: '<partial_index_name>',
       partialFilterExpression: {
         '<field>': { <operator>: '<value>' }
-      } // Optional
+      }
     }
   ]
 })
@@ -145,10 +143,10 @@ db.runCommand({
   indexes: [
     {
       key: {
-        '<field>': 1 // ascending
+        '<field>': 1
       },
-      name: '<sparse_index_name>', // string
-      sparse: true // boolean
+      name: '<sparse_index_name>',
+      sparse: true
     }
   ]
 })
