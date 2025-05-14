@@ -10,6 +10,7 @@ import CreateIndex from '!!raw-loader!../../guides/create-indexes/1-create-simpl
 import CreateUniqueIndex from '!!raw-loader!../../guides/create-indexes/2-create-unique-index.request.js';
 import CreateCompoundIndex from '!!raw-loader!../../guides/create-indexes/3-create-compound-index.request.js';
 import CreatePartialIndex from '!!raw-loader!../../guides/create-indexes/4-create-partial-index.request.js';
+import CreateSparseIndex from '!!raw-loader!../../guides/create-indexes/5-create-sparse-index.request.js';
 
 <!-- Category for Command "Administrative, Diagnostic, and Utility Commands" should be organized per folder as present in the compatibility document -->
 
@@ -30,7 +31,7 @@ The index specification document specifies the fields to be indexed, the index n
 | ------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `createIndexes`           | string   | The name of the collection.                                                                                                                       |
 | `indexes`                 | array    | An array of index specification documents. Each document defines an index.                                                                        |
-| `key`                     | document | A single document that contains the field(s) to index and their sort order or type (`1`, `-1`, `"text"`, `cosmosSearch` for vector indexes, etc). |
+| `key`                     | document | A single document that contains the field(s) to index and their sort order or type (`1`, `-1`, `text`, `cosmosSearch` for vector indexes, etc). |
 | `name`                    | string   | A required name for the index. Must be unique to the collection.                                                                                  |
 | `unique`                  | boolean  | Ensures all values are unique for the indexed field if set to `true`.                                                                             |
 | `partialFilterExpression` | document | Restricts index to documents matching the condition.                                                                                              |
@@ -40,7 +41,7 @@ The index specification document specifies the fields to be indexed, the index n
 
 The following examples demonstrate how to create different types of indexes.
 
-### Create an index
+### Simple index
 
 The simplest way to create an index is to use the `createIndexes` command with the `key` field (the field(s) to be indexed) and their sort order (`1` for ascending, `-1` for descending).
 
@@ -63,7 +64,7 @@ This example creates a simple index on the `title` field in the `books` collecti
 
 <CodeBlock language="js">{CreateIndex}</CodeBlock>
 
-### Create compound index
+### Compound index
 
 Compound indexes enables multiple fields to be indexed together, as shown in the syntax below:
 
@@ -86,7 +87,7 @@ The example below creates a compound index on the `publication.date` and `analyt
 
 <CodeBlock language="js">{CreateCompoundIndex}</CodeBlock>
 
-### Create a unique index
+### Unique index
 
 Unique indexes ensure that your indexed fields only contain unique values, without duplicates.
 
@@ -109,7 +110,7 @@ This example creates a unique index on the `isbn` field in the `books` collectio
 
 <CodeBlock language="js">{CreateUniqueIndex}</CodeBlock>
 
-### Create a partial index
+### Partial index
 
 A partial index is similar to a regular index, however, it only indexes a fraction of documents in a collection based on a specified filter condition.
 
@@ -133,6 +134,29 @@ db.runCommand({
 Let's create a partial index on the `books` collection only for books published after the year 2000.
 
 <CodeBlock language="js">{CreatePartialIndex}</CodeBlock>
+
+### Sparse index
+
+Sparse indexes only sets an index on documents with the specified field, even if the field is not present in all documents.
+
+```js
+db.runCommand({
+  createIndexes: '<collection_name>',
+  indexes: [
+    {
+      key: {
+        '<field>': 1 // ascending
+      },
+      name: '<sparse_index_name>', // string
+      sparse: true // boolean
+    }
+  ]
+})
+```
+
+For example, if you want to create a sparse index on the `books` collection for the `price` field, you can do so as follows:
+
+<CodeBlock language="js">{CreateSparseIndex}</CodeBlock>
 
 ## Implementation notes and constraints
 

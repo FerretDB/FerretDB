@@ -121,5 +121,33 @@
         "$numberDouble": "1.0"
       }
     }
+  },
+  "5-create-sparse-index": {
+    "request": {
+      "createIndexes": "books",
+      "indexes": [
+        {
+          "key": {
+            "price": {
+              "$numberInt": "1"
+            }
+          },
+          "name": "sparse_price_index",
+          "sparse": true
+        }
+      ]
+    },
+    "response": {
+      "numIndexesBefore": {
+        "$numberInt": "1"
+      },
+      "numIndexesAfter": {
+        "$numberInt": "2"
+      },
+      "createdCollectionAutomatically": true,
+      "ok": {
+        "$numberDouble": "1.0"
+      }
+    }
   }
 }
