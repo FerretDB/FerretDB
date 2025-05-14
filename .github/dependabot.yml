@@ -4,6 +4,7 @@
 
 version: 2
 
+# Most configurations are duplicated to add main-v1 branch.
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -12,6 +13,19 @@ updates:
     open-pull-requests-limit: 20
     groups:
       github-actions:
+        patterns: ["*"]
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "01:42"
+  - package-ecosystem: "github-actions"
+    target-branch: "main-v1"
+    directory: "/"
+    labels: ["deps", "not ready"]
+    assignees: [AlekSi]
+    open-pull-requests-limit: 20
+    groups:
+      github-actions-v1:
         patterns: ["*"]
     schedule:
       interval: "weekly"
@@ -31,12 +45,39 @@ updates:
       day: "wednesday"
       time: "01:42"
   - package-ecosystem: "docker"
+    target-branch: "main-v1"
+    directory: "/build/ferretdb"
+    labels: ["deps", "not ready"]
+    assignees: [AlekSi]
+    open-pull-requests-limit: 20
+    groups:
+      build-docker-v1:
+        patterns: ["*"]
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "01:42"
+
+  - package-ecosystem: "docker"
     directory: "/build/deps"
     labels: ["deps", "not ready"]
     assignees: [AlekSi]
     open-pull-requests-limit: 20
     groups:
       build-deps:
+        patterns: ["*"]
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "01:42"
+  - package-ecosystem: "docker"
+    target-branch: "main-v1"
+    directory: "/build/deps"
+    labels: ["deps", "not ready"]
+    assignees: [AlekSi]
+    open-pull-requests-limit: 20
+    groups:
+      build-deps-v1:
         patterns: ["*"]
     schedule:
       interval: "weekly"
@@ -56,6 +97,20 @@ updates:
       day: "wednesday"
       time: "01:42"
   - package-ecosystem: "gomod"
+    target-branch: "main-v1"
+    directory: "/"
+    labels: ["deps", "not ready"]
+    assignees: [AlekSi]
+    open-pull-requests-limit: 20
+    groups:
+      ferretdb-v1:
+        patterns: ["*"]
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "01:42"
+
+  - package-ecosystem: "gomod"
     directory: "/integration"
     labels: ["deps", "not ready"]
     assignees: [AlekSi]
@@ -67,6 +122,20 @@ updates:
       interval: "weekly"
       day: "wednesday"
       time: "01:42"
+  - package-ecosystem: "gomod"
+    target-branch: "main-v1"
+    directory: "/integration"
+    labels: ["deps", "not ready"]
+    assignees: [AlekSi]
+    open-pull-requests-limit: 20
+    groups:
+      integration-v1:
+        patterns: ["*"]
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "01:42"
+
   - package-ecosystem: "gomod"
     directory: "/tools"
     labels: ["deps", "not ready"]
@@ -80,6 +149,20 @@ updates:
       day: "wednesday"
       time: "01:42"
   - package-ecosystem: "gomod"
+    target-branch: "main-v1"
+    directory: "/tools"
+    labels: ["deps", "not ready"]
+    assignees: [AlekSi]
+    open-pull-requests-limit: 20
+    groups:
+      tools-v1:
+        patterns: ["*"]
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "01:42"
+
+  - package-ecosystem: "gomod"
     directory: "/tools/golangci"
     labels: ["deps", "not ready"]
     assignees: [AlekSi]
@@ -91,7 +174,21 @@ updates:
       interval: "weekly"
       day: "wednesday"
       time: "01:42"
+  - package-ecosystem: "gomod"
+    target-branch: "main-v1"
+    directory: "/tools/golangci"
+    labels: ["deps", "not ready"]
+    assignees: [AlekSi]
+    open-pull-requests-limit: 20
+    groups:
+      golangci-v1:
+        patterns: ["*"]
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "01:42"
 
+  # no submodules in main-v1
   - package-ecosystem: "gitsubmodule"
     directory: "/"
     labels: ["deps", "not ready"]
