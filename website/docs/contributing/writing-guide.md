@@ -116,8 +116,8 @@ Always specify the language in Markdown code blocks.
 #### Documentation
 
 For our documentation, we use the CTS tool to test and validate the code snippets for the MongoDB shell commands and responses.
-All MongoDB shell commands and responses should be written in the `website/docs/guides/` folder in extended JSON format.
-See this [example](../guides/create-indexes.json) for reference.
+Related MongoDB shell commands and responses should reside in the same directory as the documentation file in extended JSON format.
+See this [TTL indexes example](https://raw.githubusercontent.com/FerretDB/FerretDB/refs/tags/v2.3.0/website/docs/guides/ttl-indexes.json) for reference.
 The code snippet prefix `1-` (found in `1-<file-name>.json` file) in ascending order is used to enforce the order in the documentation and their execution within the CTS tool.
 
 The CTS tool will be responsible for generating the formatted code snippets which can be imported into MDX files.
