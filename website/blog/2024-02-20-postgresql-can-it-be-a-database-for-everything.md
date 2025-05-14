@@ -1,14 +1,7 @@
 ---
 slug: postgresql-can-it-be-a-database-for-everything
 title: 'PostgreSQL - can it be a database for everything?'
-authors:
-  - name: Marcin Gwóźdź
-    title: Director of Strategic Alliances at FerretDB
-    url: https://www.linkedin.com/in/marcin-gwóźdź-277abaa9
-    image_url: /img/blog/marcin-gwozdz.jpeg
-  - name: Samay Sharma
-    title: Chief Technology Officer at Tembo
-    image_url: /img/blog/samay-sharma.jpeg
+authors: [marcin, samay]
 description: >
   We recently had the opportunity to speak with the Tembo team and ask about their thoughts on the PostgreSQL ecosystem, how it can be a database for everything, and how FerretDB can be used with Tembo.
 image: /img/blog/ferretdb-tembo-qa.jpg

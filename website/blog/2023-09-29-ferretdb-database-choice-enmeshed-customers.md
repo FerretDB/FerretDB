@@ -1,17 +1,7 @@
 ---
 slug: ferretdb-database-choice-enmeshed-customers
 title: 'Why is FerretDB a database of choice for enmeshed customers?'
-authors:
-  - name: Marcin Gwóźdź
-    title: Director of Strategic Alliances at FerretDB
-    url: https://www.linkedin.com/in/marcin-gwóźdź-277abaa9
-    image_url: /img/blog/marcin-gwozdz.jpeg
-  - name: Julian König
-    title: Senior Developer at j&s-soft GmbH
-    image_url: /img/blog/julian.jpeg
-  - name: Michael Feygelman
-    title: Senior Project and Community Manager for enmeshed at j&s-soft GmbH
-    image_url: /img/blog/michael-feygelman.jpeg
+authors: [marcin, julian, michael]
 description: >
   We had a discussion with Julian König and Michael Feygelman from the enmeshed team on why they chose FerretDB, open source software, and avoiding vendor lock-ins.
 image: /img/blog/ferretdb-enmeshed.png
