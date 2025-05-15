@@ -83,7 +83,7 @@ services:
       - MONGO_URI=mongodb://<username>:<password>@ferretdb:27017/LibreChat
 
   postgres:
-    image: ghcr.io/ferretdb/postgres-documentdb:17-0.102.0-ferretdb-2.1.0
+    image: ghcr.io/ferretdb/postgres-documentdb:17-0.103.0-ferretdb-2.2.0
     platform: linux/amd64
     restart: on-failure
     environment:
@@ -94,7 +94,7 @@ services:
       - ./data:/var/lib/postgresql/data
 
   ferretdb:
-    image: ghcr.io/ferretdb/ferretdb:2.1.0
+    image: ghcr.io/ferretdb/ferretdb:2.2.0
     restart: on-failure
     ports:
       - 27017:27017
