@@ -15,7 +15,7 @@
       "$db": "{{.Database}}"
     },
     "response": {
-      "createdCollectionAutomatically": false,
+      "createdCollectionAutomatically": true,
       "numIndexesBefore": {
         "$numberInt": "1"
       },
@@ -140,10 +140,10 @@
     },
     "response": {
       "numIndexesBefore": {
-        "$numberInt": "1"
+        "$numberInt": "5"
       },
       "numIndexesAfter": {
-        "$numberInt": "2"
+        "$numberInt": "6"
       },
       "createdCollectionAutomatically": false,
       "ok": {
