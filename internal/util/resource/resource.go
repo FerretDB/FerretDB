@@ -27,14 +27,11 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
 )
 
-// Token is a field of a tracked object, holding the cleanup and message.
+// Token is a field of a tracked object, holding the cleanup.
 //
-// The cleanup is used to stop scheduled cleanups when Untrack is called,
-// and the message contains debug information that will be shown in panic
-// if the object is not properly finalized.
+// The cleanup is used to stop scheduled cleanups when Untrack is called.
 type Token struct {
 	cleanup *runtime.Cleanup
-	msg     string
 }
 
 // NewToken returns a new Token.
@@ -79,14 +76,14 @@ func Track[T any](obj *T, token *Token) {
 	// because otherwise profile will hold a reference to obj and cleanup will never run
 	p.Add(token, 1)
 
-	token.msg = fmt.Sprintf("%T has not been finalized", obj)
+	var errMsg = fmt.Sprintf("%T has not been finalized", obj)
 	if devbuild.Enabled {
-		token.msg += "\nObject created by " + string(runtimedebug.Stack())
+		errMsg += "\nObject created by " + string(runtimedebug.Stack())
 	}
 
 	c := runtime.AddCleanup(obj, func(msg string) {
 		panic(msg)
-	}, token.msg,
+	}, errMsg,
 	)
 
 	token.cleanup = &c
