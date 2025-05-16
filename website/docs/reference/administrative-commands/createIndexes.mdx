@@ -74,6 +74,8 @@ db.runCommand({
 })
 ```
 
+The table below describes the fields and options available for the `createIndexes` command.
+
 <!-- majorly fields such as arguments, modifiers, stage, operators, parameters, options supported by the command in a table (if necessary or available). Takes in the following parameters: -->
 
 | Field                     | Type     | Description                                                                                                                                     |
@@ -82,9 +84,9 @@ db.runCommand({
 | `indexes`                 | array    | An array of index specification documents. Each document defines an index.                                                                      |
 | `key`                     | document | A single document that contains the field(s) to index and their sort order or type (`1`, `-1`, `text`, `cosmosSearch` for vector indexes, etc). |
 | `name`                    | string   | A required name for the index. Must be unique to the collection.                                                                                |
-| `unique`                  | boolean  | Ensures all values are unique for the indexed field if set to `true`.                                                                           |
-| `partialFilterExpression` | document | Restricts index to documents matching the condition.                                                                                            |
-| `sparse`                  | boolean  | Only indexes documents that contain the indexed field if set to `true`.                                                                         |
+| `unique`                  | boolean  | Optional. Ensures all values are unique for the indexed field if set to `true`.                                                                           |
+| `partialFilterExpression` | document | Optional. Restricts index to documents matching the condition.                                                                                            |
+| `sparse`                  | boolean  | Optional. Only indexes documents that contain the indexed field if set to `true`.                                                                         |
 
 ## Example usage
 
@@ -110,21 +112,6 @@ The example below creates a compound index on the `publication.date` and `analyt
 
 Unique indexes ensure that your indexed fields only contain unique values, without duplicates.
 
-```js
-db.runCommand({
-  createIndexes: '<collection_name>',
-  indexes: [
-    {
-      key: {
-        '<field>': 1
-      },
-      name: '<unique_index_name>',
-      unique: true
-    }
-  ]
-})
-```
-
 This example creates a unique index on the `isbn` field in the `books` collection to ensure that each book has a unique ISBN.
 
 <CodeBlock language="js">{CreateUniqueIndex}</CodeBlock>
@@ -139,9 +126,9 @@ Let's create a partial index on the `books` collection only for books published 
 
 ### Sparse index
 
-Sparse indexes only index documents with the specified field, even if the field is not present in all documents.
+Sparse indexes only apply on documents with the specified index field. Documents without the indexed field are not included in the index.
 
-For example, if you want to create a sparse index on the `books` collection for the `price` field, you can do so as follows:
+For example, if you want to create a sparse index on the `books` collection for documents that include the `price` field, you can do so as follows:
 
 <CodeBlock language="js">{CreateSparseIndex}</CodeBlock>
 
