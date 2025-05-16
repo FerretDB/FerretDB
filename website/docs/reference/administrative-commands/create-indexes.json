@@ -1,0 +1,154 @@
+{
+  "1-create-simple-index": {
+    "request": {
+      "createIndexes": "books",
+      "indexes": [
+        {
+          "key": {
+            "title": {
+              "$numberInt": "1"
+            }
+          },
+          "name": "title_index"
+        }
+      ],
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "createdCollectionAutomatically": true,
+      "numIndexesBefore": {
+        "$numberInt": "1"
+      },
+      "numIndexesAfter": {
+        "$numberInt": "2"
+      },
+      "ok": {
+        "$numberDouble": "1.0"
+      }
+    }
+  },
+  "2-create-unique-index": {
+    "request": {
+      "createIndexes": "books",
+      "indexes": [
+        {
+          "key": {
+            "isbn": {
+              "$numberInt": "1"
+            }
+          },
+          "name": "unique_isbn_idx",
+          "unique": true
+        }
+      ],
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "createdCollectionAutomatically": false,
+      "numIndexesBefore": {
+        "$numberInt": "2"
+      },
+      "numIndexesAfter": {
+        "$numberInt": "3"
+      },
+      "ok": {
+        "$numberDouble": "1.0"
+      }
+    }
+  },
+  "3-create-compound-index": {
+    "request": {
+      "createIndexes": "books",
+      "indexes": [
+        {
+          "key": {
+            "analytics.average_rating": {
+              "$numberInt": "-1"
+            },
+            "publication.date": {
+              "$numberInt": "1"
+            }
+          },
+          "name": "pub_date_rating_idx"
+        }
+      ],
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "createdCollectionAutomatically": false,
+      "numIndexesBefore": {
+        "$numberInt": "3"
+      },
+      "numIndexesAfter": {
+        "$numberInt": "4"
+      },
+      "ok": {
+        "$numberDouble": "1.0"
+      }
+    }
+  },
+  "4-create-partial-index": {
+    "request": {
+      "createIndexes": "books",
+      "indexes": [
+        {
+          "key": {
+            "publisher": {
+              "$numberInt": "1"
+            }
+          },
+          "name": "publisher_recent_idx",
+          "partialFilterExpression": {
+            "publication.year": {
+              "$gte": {
+                "$numberInt": "2000"
+              }
+            }
+          }
+        }
+      ],
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "createdCollectionAutomatically": false,
+      "numIndexesBefore": {
+        "$numberInt": "4"
+      },
+      "numIndexesAfter": {
+        "$numberInt": "5"
+      },
+      "ok": {
+        "$numberDouble": "1.0"
+      }
+    }
+  },
+  "5-create-sparse-index": {
+    "request": {
+      "createIndexes": "books",
+      "indexes": [
+        {
+          "key": {
+            "price": {
+              "$numberInt": "1"
+            }
+          },
+          "name": "sparse_price_index",
+          "sparse": true
+        }
+      ],
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "numIndexesBefore": {
+        "$numberInt": "5"
+      },
+      "numIndexesAfter": {
+        "$numberInt": "6"
+      },
+      "createdCollectionAutomatically": false,
+      "ok": {
+        "$numberDouble": "1.0"
+      }
+    }
+  }
+}
