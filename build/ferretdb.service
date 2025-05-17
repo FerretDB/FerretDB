@@ -21,7 +21,8 @@ Restart=on-failure
 
 # Configure the FerretDB service with `systemctl edit ferretdb`.
 # For more configuration options check https://docs.ferretdb.io/configuration/flags/
-
+# Warning! Don't put your postgres password in this file.
+# Use FERRETDB_POSTGRESQL_URL_FILE to point to another file with chmod 600
 Environment=FERRETDB_POSTGRESQL_URL=postgres://127.0.0.1:5432/postgres \
             FERRETDB_STATE_DIR=%S/ferretdb \
             FERRETDB_LISTEN_UNIX=%t/ferretdb/ferretdb.sock \
