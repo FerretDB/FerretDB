@@ -1,2 +1,2 @@
 #!/bin/sh
-adduser --system --no-create-home --group --disabled-password --quiet ferretd
+adduser --system --no-create-home --group --disabled-password --quiet ferretdb
