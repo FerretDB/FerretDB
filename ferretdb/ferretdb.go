@@ -89,7 +89,7 @@ func New(config *Config) (*FerretDB, error) {
 	}
 	// TODO https://github.com/FerretDB/FerretDB/issues/4750
 	err = sp.Update(func(s *state.State) {
-		s.LatestVersion = version.Get().Version
+		s.TelemetryLocked = true
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to set up state provider: %w", err)
