@@ -76,7 +76,7 @@ func Track[T any](obj *T, token *Token) {
 	// because otherwise profile will hold a reference to obj and cleanup will never run
 	p.Add(token, 1)
 
-	var errMsg = fmt.Sprintf("%T has not been finalized", obj)
+	errMsg := fmt.Sprintf("%T has not been finalized", obj)
 	if devbuild.Enabled {
 		errMsg += "\nObject created by " + string(runtimedebug.Stack())
 	}
