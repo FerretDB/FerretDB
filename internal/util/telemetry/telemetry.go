@@ -43,6 +43,12 @@ type Flag struct {
 	v *bool
 }
 
+func NewFlag(flag *bool) *Flag {
+	return &Flag{
+		v: flag,
+	}
+}
+
 // UnmarshalText is used by Kong to parse a flag value.
 func (s *Flag) UnmarshalText(text []byte) error {
 	v, err := parseValue(string(text))
