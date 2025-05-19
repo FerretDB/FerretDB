@@ -1,0 +1,7 @@
+---
+label: Integrations
+position: 8
+link:
+  type: generated-index
+  description: >
+    A section on third-party tools and applications compatible with FerretDB
