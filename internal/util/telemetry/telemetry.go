@@ -43,6 +43,7 @@ type Flag struct {
 	v *bool
 }
 
+// NewFlag creates a new Flag.
 func NewFlag(flag *bool) *Flag {
 	return &Flag{
 		v: flag,
