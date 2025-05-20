@@ -87,13 +87,6 @@ func New(config *Config) (*FerretDB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to set up state provider: %w", err)
 	}
-	// TODO https://github.com/FerretDB/FerretDB/issues/4750
-	err = sp.Update(func(s *state.State) {
-		s.TelemetryLocked = true
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to set up state provider: %w", err)
-	}
 
 	// Note that the current implementation requires `*logging.Handler` in the `getLog` command implementation.
 	// TODO https://github.com/FerretDB/FerretDB/issues/4750
