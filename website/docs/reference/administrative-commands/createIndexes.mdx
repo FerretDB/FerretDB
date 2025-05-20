@@ -31,44 +31,15 @@ db.runCommand({
   indexes: [
     {
       key: {
-        '<field1>': 1 // ascending
+        '<field1>': <index_type>, // 1 for ascending, -1 for descending
+        '<field2>': <index_type> // optional
       },
-      name: '<simple_index_name>'
-    },
-
-    {
-      key: {
-        '<field1>': 1, // ascending
-        '<field2>': -1, // descending
-        '<fieldN>': 1 // ascending
-      },
-      name: '<compound_index_name>'
-    },
-
-    {
-      key: {
-        '<field>': 1 // ascending
-      },
-      name: '<unique_index_name>',
-      unique: true
-    },
-
-    {
-      key: {
-        '<field>': 1 // ascending
-      },
-      name: '<partial_index_name>',
+      name: '<index_name>',
+      unique: <boolean> // optional,
       partialFilterExpression: {
         '<field>': { '<operator>': '<value>' }
-      }
-    },
-
-    {
-      key: {
-        '<field>': 1 // ascending
-      },
-      name: '<sparse_index_name>',
-      sparse: true
+      }, // optional
+      sparse: <boolean> // optional
     }
   ]
 })
@@ -82,13 +53,13 @@ The table below describes the fields and options available for the `createIndexe
 | ------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `createIndexes`           | string   | The name of the collection.                                                                                                                     |
 | `indexes`                 | array    | An array of index specification documents. Each document defines an index.                                                                      |
-| `key`                     | document | A single document that contains the field(s) to index and their sort order or type (`1`, `-1`, `text`, `cosmosSearch` for vector indexes, etc). |
+| `key`                     | document | A single document that contains the field(s) to index and their sort order or index type (e.g. `1`, `-1`, `text` for full-text indexes, and `cosmosSearch` for vector indexes). |
 | `name`                    | string   | A required name for the index. Must be unique to the collection.                                                                                |
 | `unique`                  | boolean  | Optional. Ensures all values are unique for the indexed field if set to `true`.                                                                 |
 | `partialFilterExpression` | document | Optional. Restricts index to documents matching the condition.                                                                                  |
 | `sparse`                  | boolean  | Optional. Only indexes documents that contain the indexed field if set to `true`.                                                               |
 
-## Example usage
+## Example
 
 The following examples demonstrate how to create different types of indexes.
 
