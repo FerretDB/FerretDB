@@ -17,5 +17,6 @@ response = {
       }
     ]
   },
-  ok: Double(1)
+  ok: Double(1),
+  createdCollectionAutomatically: false
 }
