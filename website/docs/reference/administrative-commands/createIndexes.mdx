@@ -18,7 +18,7 @@ import CreateSparseIndex from '!!raw-loader!./create-indexes/5-create-sparse-ind
 
 Create one or more indexes on a given collection to improve query performance or enable certain query features (e.g., full-text, vector, and TTL indexes).
 
-<!-- Syntax structure of the command here if there are no variations, types, or usage examples to command. Otherwise, use syntax inside subcategories-->
+<!-- Syntax structure of the command here if there are no unique variations, types, or usage examples to command. Otherwise, use syntax inside subcategories-->
 
 <!-- markdownlint-disable MD033 -->
 
@@ -47,17 +47,17 @@ db.runCommand({
 
 The table below describes the fields and options available for the `createIndexes` command.
 
-<!-- majorly fields such as arguments, modifiers, stage, operators, parameters, options supported by the command in a table (if necessary or available). Takes in the following parameters: -->
+<!-- Explain fields such as arguments, modifiers, stage, operators, parameters, options supported by the command in a table format if more than a single item (if necessary or available): -->
 
-| Field                     | Type     | Description                                                                                                                                     |
-| ------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `createIndexes`           | string   | The name of the collection.                                                                                                                     |
-| `indexes`                 | array    | An array of index specification documents. Each document defines an index.                                                                      |
+| Field                     | Type     | Description                                                                                                                                                               |
+| ------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `createIndexes`           | string   | The name of the collection.                                                                                                                                               |
+| `indexes`                 | array    | An array of index specification documents. Each document defines an index.                                                                                                |
 | `key`                     | document | A single document that contains the field(s) to index and their sort order or type (e.g. `1`, `-1`, `text` for full-text indexes, and `cosmosSearch` for vector indexes). |
-| `name`                    | string   | A required name for the index. Must be unique to the collection.                                                                                |
-| `unique`                  | boolean  | Optional. Ensures all values are unique for the indexed field if set to `true`.                                                                 |
-| `partialFilterExpression` | document | Optional. Restricts index to documents matching the condition.                                                                                  |
-| `sparse`                  | boolean  | Optional. Only indexes documents that contain the indexed field if set to `true`.                                                               |
+| `name`                    | string   | A required name for the index. Must be unique to the collection.                                                                                                          |
+| `unique`                  | boolean  | Optional. Ensures all values are unique for the indexed field if set to `true`.                                                                                           |
+| `partialFilterExpression` | document | Optional. Restricts index to documents matching the condition.                                                                                                            |
+| `sparse`                  | boolean  | Optional. Only indexes documents that contain the indexed field if set to `true`.                                                                                         |
 
 ## Example
 
