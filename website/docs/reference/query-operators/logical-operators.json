@@ -1,0 +1,291 @@
+{
+  "1-drop-collection": {
+    "request": {
+      "drop": "books",
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "nIndexesWas": {
+        "$numberInt": "1"
+      },
+      "ns": "{{.Database}}.books",
+      "ok": {
+        "$numberDouble": "1.0"
+      }
+    }
+  },
+  "2-insert-dataset": {
+    "request": {
+      "insert": "books",
+      "$db": "{{.Database}}",
+      "documents": [
+        {
+          "_id": "pride_prejudice_1813",
+          "title": "Pride and Prejudice",
+          "authors": [
+            {
+              "name": "Jane Austen",
+              "nationality": "British"
+            }
+          ],
+          "genres": ["Romance", "Classic", "Historical Fiction"],
+          "rating": {
+            "$numberDouble": "4.5"
+          }
+        },
+        {
+          "_id": "moby_dick_1851",
+          "title": "Moby Dick",
+          "authors": [
+            {
+              "name": "Herman Melville",
+              "nationality": "American"
+            }
+          ],
+          "genres": ["Adventure", "Classic", "Sea Story"],
+          "rating": {
+            "$numberDouble": "4.3"
+          }
+        },
+        {
+          "_id": "clean_code_2008",
+          "title": "Clean Code: A Handbook of Agile Software Craftsmanship",
+          "authors": [
+            {
+              "name": "Robert C. Martin",
+              "nationality": "American"
+            }
+          ],
+          "genres": ["Computer Science", "Software Engineering", "Programming"],
+          "rating": {
+            "$numberDouble": "4.7"
+          }
+        }
+      ]
+    },
+    "response": {
+      "n": {
+        "$numberInt": "3"
+      },
+      "ok": {
+        "$numberDouble": "1.0"
+      },
+      "createdCollectionAutomatically": false
+    }
+  },
+  "3-and-operator": {
+    "request": {
+      "find": "books",
+      "$db": "{{.Database}}",
+      "filter": {
+        "$and": [
+          {
+            "authors.nationality": "British"
+          },
+          {
+            "rating": {
+              "$gte": {
+                "$numberDouble": "4.5"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "response": {
+      "cursor": {
+        "id": {
+          "$numberLong": "0"
+        },
+        "ns": "{{.Database}}.books",
+        "firstBatch": [
+          {
+            "_id": "pride_prejudice_1813",
+            "title": "Pride and Prejudice",
+            "authors": [
+              {
+                "name": "Jane Austen",
+                "nationality": "British"
+              }
+            ],
+            "genres": ["Romance", "Classic", "Historical Fiction"],
+            "rating": {
+              "$numberDouble": "4.5"
+            }
+          }
+        ]
+      },
+      "ok": {
+        "$numberDouble": "1.0"
+      },
+      "createdCollectionAutomatically": false
+    }
+  },
+  "4-or-operator": {
+    "request": {
+      "find": "books",
+      "$db": "{{.Database}}",
+      "filter": {
+        "$or": [
+          {
+            "authors.nationality": "British"
+          },
+          {
+            "rating": {
+              "$gte": {
+                "$numberDouble": "4.5"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "response": {
+      "cursor": {
+        "id": {
+          "$numberLong": "0"
+        },
+        "ns": "{{.Database}}.books",
+        "firstBatch": [
+          {
+            "_id": "pride_prejudice_1813",
+            "title": "Pride and Prejudice",
+            "authors": [
+              {
+                "name": "Jane Austen",
+                "nationality": "British"
+              }
+            ],
+            "genres": ["Romance", "Classic", "Historical Fiction"],
+            "rating": {
+              "$numberDouble": "4.5"
+            }
+          },
+          {
+            "_id": "clean_code_2008",
+            "title": "Clean Code: A Handbook of Agile Software Craftsmanship",
+            "authors": [
+              {
+                "name": "Robert C. Martin",
+                "nationality": "American"
+              }
+            ],
+            "genres": ["Computer Science", "Software Engineering", "Programming"],
+            "rating": {
+              "$numberDouble": "4.7"
+            }
+          }
+        ]
+      },
+      "ok": {
+        "$numberDouble": "1.0"
+      },
+      "createdCollectionAutomatically": false
+    }
+  },
+  "5-not-operator": {
+    "request": {
+      "find": "books",
+      "$db": "{{.Database}}",
+      "filter": {
+        "rating": {
+          "$not": {
+            "$lt": {
+              "$numberDouble": "4.5"
+            }
+          }
+        }
+      }
+    },
+    "response": {
+      "cursor": {
+        "id": {
+          "$numberLong": "0"
+        },
+        "ns": "{{.Database}}.books",
+        "firstBatch": [
+          {
+            "_id": "pride_prejudice_1813",
+            "title": "Pride and Prejudice",
+            "authors": [
+              {
+                "name": "Jane Austen",
+                "nationality": "British"
+              }
+            ],
+            "genres": ["Romance", "Classic", "Historical Fiction"],
+            "rating": {
+              "$numberDouble": "4.5"
+            }
+          },
+          {
+            "_id": "clean_code_2008",
+            "title": "Clean Code: A Handbook of Agile Software Craftsmanship",
+            "authors": [
+              {
+                "name": "Robert C. Martin",
+                "nationality": "American"
+              }
+            ],
+            "genres": ["Computer Science", "Software Engineering", "Programming"],
+            "rating": {
+              "$numberDouble": "4.7"
+            }
+          }
+        ]
+      },
+      "ok": {
+        "$numberDouble": "1.0"
+      },
+      "createdCollectionAutomatically": false
+    }
+  },
+  "6-nor-operator": {
+    "request": {
+      "find": "books",
+      "$db": "{{.Database}}",
+      "filter": {
+        "$nor": [
+          {
+            "authors.nationality": "British"
+          },
+          {
+            "rating": {
+              "$gte": {
+                "$numberDouble": "4.5"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "response": {
+      "cursor": {
+        "id": {
+          "$numberLong": "0"
+        },
+        "ns": "{{.Database}}.books",
+        "firstBatch": [
+          {
+            "_id": "moby_dick_1851",
+            "title": "Moby Dick",
+            "authors": [
+              {
+                "name": "Herman Melville",
+                "nationality": "American"
+              }
+            ],
+            "genres": ["Adventure", "Classic", "Sea Story"],
+            "rating": {
+              "$numberDouble": "4.3"
+            }
+          }
+        ]
+      },
+      "ok": {
+        "$numberDouble": "1.0"
+      },
+      "createdCollectionAutomatically": false
+    }
+  }
+}
