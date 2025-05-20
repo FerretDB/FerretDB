@@ -1,0 +1,60 @@
+---
+sidebar_position: 4
+description: Returns documents that do not match any of the provided query expressions.
+---
+
+# `$nor` Operator
+
+import CodeBlock from '@theme/CodeBlock';
+import Dataset from '!!raw-loader!./logical-operators/2-insert-dataset.request.js';
+import NorOperatorRequest from '!!raw-loader!./logical-operators/6-nor-operator.request.js';
+import NorOperatorResponse from '!!raw-loader!./logical-operators/6-nor-operator.response.js';
+
+The `$nor` operator combines multiple query expressions and returns all documents that do not match any of the specified query expressions.
+
+The operator accepts an array of query expressions as shown below, and no expression must be satisfied for a document to be included in the result set.
+
+```js
+db.runCommand({
+  find: '<collection_name>',
+  filter: {
+    $nor: [
+      { <query-expression1> },
+      { <query-expression2> }
+    ]
+  }
+})
+```
+
+A query expression can be any valid query such as `{ <field>: <value> }`, `{ <field>: { <operator>: <value> } }`, `{ <field>: /<pattern>/ }`, etc.
+
+## Example
+
+The following examples demonstrate how to use the `$nor` operator in queries using documents in the following `books` collection:
+
+<!-- markdownlint-disable MD033 -->
+
+<CodeBlock language="js">{Dataset}</CodeBlock>
+
+### Filter documents with multiple query expressions
+
+Using the books collection, return all documents where the author is not `British` AND the rating is not greater than or equal to `4.5`.
+
+<CodeBlock language="js">{NorOperatorRequest}</CodeBlock>
+
+The `$nor` operator returns all documents that do not match any of the query expressions.
+In this case, it returns `moby_dick_1851` since it does not match either of the query expressions.
+
+<CodeBlock language="js">{NorOperatorResponse}</CodeBlock>
+
+## Implementation notes and constraints
+
+## Additional information
+
+Please find other logical operators in the following sections:
+
+- [`$or`](./or.mdx)
+- [`$and`](./and.mdx)
+- [`$not`](./not.mdx)
+
+<!-- markdownlint-enable MD033 -->

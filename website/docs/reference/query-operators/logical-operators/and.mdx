@@ -1,0 +1,64 @@
+---
+sidebar_position: 1
+description: Combines multiple query expressions and outputs documents that match all expressions.
+---
+
+# `$and` Operator
+
+import CodeBlock from '@theme/CodeBlock';
+import Dataset from '!!raw-loader!./logical-operators/2-insert-dataset.request.js';
+import AndOperatorRequest from '!!raw-loader!./logical-operators/3-and-operator.request.js';
+import AndOperatorResponse from '!!raw-loader!./logical-operators/3-and-operator.response.js';
+
+The `$and` operator combines multiple query expressions and returns documents that match all the expressions.
+
+The operator accepts an array of query expressions as shown below, and all expressions must be satisfied for a document to be included in the result set.
+
+```js
+db.runCommand({
+  find: '<collection_name>',
+  filter: {
+    $and: [
+      { <query-expression1> },
+      { <query-expression2> }
+    ]
+  }
+})
+```
+
+A query expression can be any valid query such as `{ <field>: <value> }`, `{ <field>: { <operator>: <value> } }`, `{ <field>: /<pattern>/ }`, etc.
+
+## Example
+
+The following examples demonstrate how to use the `$and` operator in queries using documents in the following `books` collection:
+
+<!-- markdownlint-disable MD033 -->
+
+<CodeBlock language="js">{Dataset}</CodeBlock>
+
+### Filter documents with multiple query expressions
+
+Using the `books` collection, return all documents where the author is `British` AND rating is greater or equal to 4.5.
+
+<CodeBlock language="js">{AndOperatorRequest}</CodeBlock>
+
+The AND operation returns `pride_prejudice_1813` as the document that matches both expressions.
+
+<CodeBlock language="js">{AndOperatorResponse}</CodeBlock>
+
+Even though `clean_code_2008` matches the second query expression in the earlier example, it is not returned since it does not match the first one.
+
+## Implementation notes and constraints
+
+- The `$and` operator cannot be used directly as a top-level aggregation stage; it must be used within a query context like `$match`.
+- For array fields, ensure that the query expressions are structured to match the elements within the array, or use `$elemMatch` for more complex queries.
+
+## Additional information
+
+Please find other logical operators in the following sections:
+
+- [`$or`](./or.mdx)
+- [`$not`](./not.mdx)
+- [`$nor`](./nor.mdx)
+
+<!-- markdownlint-enable MD033 -->

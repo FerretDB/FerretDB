@@ -1,0 +1,62 @@
+---
+sidebar_position: 2
+description: Combines multiple query expressions and outputs documents that match at least one expression.
+---
+
+# `$or` Operator
+
+import CodeBlock from '@theme/CodeBlock';
+import Dataset from '!!raw-loader!./logical-operators/2-insert-dataset.request.js';
+import OrOperatorRequest from '!!raw-loader!./logical-operators/4-or-operator.request.js';
+import OrOperatorResponse from '!!raw-loader!./logical-operators/4-or-operator.response.js';
+
+The `$or` operator Combines multiple query expressions and returns documents that match at least one expression.
+
+The operator accepts an array of query expressions as shown below, and one expression must be satisfied for a document to be included in the result set.
+
+```js
+db.runCommand({
+  find: '<collection_name>',
+  filter: {
+    $or: [
+      { <query-expression1> },
+      { <query-expression2> }
+    ]
+  }
+})
+```
+
+A query expression can be any valid query such as `{ <field>: <value> }`, `{ <field>: { <operator>: <value> } }`, `{ <field>: /<pattern>/ }`, etc.
+
+## Example
+
+The following examples demonstrate how to use the `$or` operator in queries using documents in the following `books` collection:
+
+<!-- markdownlint-disable MD033 -->
+
+<CodeBlock language="js">{Dataset}</CodeBlock>
+
+### Filter documents with multiple query expressions
+
+Using the books collection, return all documents where the author is `British` OR the rating is greater or equal to `4.5`.
+
+<CodeBlock language="js">{OrOperatorRequest}</CodeBlock>
+
+This returns both `pride_prejudice_1813` and `clean_code_2008` since they match at least one of the query expressions.
+
+<CodeBlock language="js">{OrOperatorResponse}</CodeBlock>
+
+## Implementation notes and constraints
+
+- The `$or` operator cannot be used directly as a top-level aggregation stage; it must be used within a query context like `$match`.
+- For array fields, ensure that the query expressions are structured to match the elements within the array, or use `$elemMatch` for more complex queries.
+
+## Additional information
+
+Please find other logical operators in the following sections:
+
+- [`$and`](./and.mdx)
+- [`$not`](./not.mdx)
+- [`$nor`](./nor.mdx)
+
+<!-- markdownlint-enable MD033 -->
