@@ -69,8 +69,7 @@
       },
       "ok": {
         "$numberDouble": "1.0"
-      },
-      "createdCollectionAutomatically": false
+      }
     }
   },
   "3-and-operator": {
@@ -117,8 +116,7 @@
       },
       "ok": {
         "$numberDouble": "1.0"
-      },
-      "createdCollectionAutomatically": false
+      }
     }
   },
   "4-or-operator": {
@@ -179,8 +177,7 @@
       },
       "ok": {
         "$numberDouble": "1.0"
-      },
-      "createdCollectionAutomatically": false
+      }
     }
   },
   "5-not-operator": {
@@ -236,8 +233,7 @@
       },
       "ok": {
         "$numberDouble": "1.0"
-      },
-      "createdCollectionAutomatically": false
+      }
     }
   },
   "6-nor-operator": {
@@ -284,8 +280,7 @@
       },
       "ok": {
         "$numberDouble": "1.0"
-      },
-      "createdCollectionAutomatically": false
+      }
     }
   }
 }
