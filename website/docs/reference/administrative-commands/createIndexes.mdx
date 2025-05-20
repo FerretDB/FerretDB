@@ -53,7 +53,7 @@ The table below describes the fields and options available for the `createIndexe
 | ------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `createIndexes`           | string   | The name of the collection.                                                                                                                     |
 | `indexes`                 | array    | An array of index specification documents. Each document defines an index.                                                                      |
-| `key`                     | document | A single document that contains the field(s) to index and their sort order or index type (e.g. `1`, `-1`, `text` for full-text indexes, and `cosmosSearch` for vector indexes). |
+| `key`                     | document | A single document that contains the field(s) to index and their sort order or type (e.g. `1`, `-1`, `text` for full-text indexes, and `cosmosSearch` for vector indexes). |
 | `name`                    | string   | A required name for the index. Must be unique to the collection.                                                                                |
 | `unique`                  | boolean  | Optional. Ensures all values are unique for the indexed field if set to `true`.                                                                 |
 | `partialFilterExpression` | document | Optional. Restricts index to documents matching the condition.                                                                                  |
