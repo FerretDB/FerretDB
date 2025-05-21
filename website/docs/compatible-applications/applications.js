@@ -1,11 +1,6 @@
 export const categorizedApps = {
   'GUI / Client Tools': [
     {
-      name: 'Mingo',
-      logo: '/img/integrations/abstract-logo.png',
-      link: 'https://blog.ferretdb.io/using-mingo-analyze-visualize-ferretdb-data/'
-    },
-    {
       name: 'Compass',
       logo: '/img/integrations/abstract-logo.png',
       link: 'https://docs.ferretdb.io/usage/integrations/overview/#gui-applications'
@@ -21,22 +16,12 @@ export const categorizedApps = {
       link: 'https://blog.ferretdb.io/using-ferretdb-with-studio-3t/'
     },
     {
-      name: 'PgManage',
-      logo: '/img/integrations/abstract-logo.png',
-      link: 'https://blog.ferretdb.io/pgmanage-postgresql-gui-admin-ferretdb/'
-    },
-    {
       name: 'MajorM',
       logo: '/img/integrations/abstract-logo.png',
       link: 'https://blog.ferretdb.io/query-filter-ferretdb-with-majorm/'
     }
   ],
   'Deployment Platforms': [
-    {
-      name: 'Acorn',
-      logo: '/img/integrations/abstract-logo.png',
-      link: 'https://blog.ferretdb.io/how-to-package-and-deploy-ferretdb-with-acorn/'
-    },
     {
       name: 'Elestio',
       logo: '/img/integrations/abstract-logo.png',
@@ -80,29 +65,9 @@ export const categorizedApps = {
   ],
   'Database Backends': [
     {
-      name: 'StackGres',
-      logo: '/img/integrations/abstract-logo.png',
-      link: 'https://blog.ferretdb.io/run-ferretdb-on-stackgres/'
-    },
-    {
       name: 'CloudNativePG',
       logo: '/img/integrations/abstract-logo.png',
       link: 'https://blog.ferretdb.io/run-ferretdb-cloudnativepg-kubernetes/'
-    },
-    {
-      name: 'CyberTec Postgres',
-      logo: '/img/integrations/abstract-logo.png',
-      link: 'https://blog.ferretdb.io/run-ferretdb-cybertec-postgres-kubernetes/'
-    },
-    {
-      name: 'Percona Distribution for PostgreSQL',
-      logo: '/img/integrations/abstract-logo.png',
-      link: 'https://blog.ferretdb.io/deploy-ferretdb-kubernetes-taikun-cloudworks/#install-percona-postgresql-operator'
-    },
-    {
-      name: 'Neon',
-      logo: '/img/integrations/abstract-logo.png',
-      link: 'https://blog.ferretdb.io/ferretdb-neon-add-mongodb-compatibility/'
     }
   ],
   'Monitoring / Observability': [
