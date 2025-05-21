@@ -3,7 +3,7 @@ sidebar_position: 1
 slug: /compatible-applications
 ---
 
-# Compatible Applications
+# Compatible applications
 
 import React from 'react';
 import { categorizedApps } from './applications.js';
@@ -53,7 +53,7 @@ export const Grid = ({ apps }) => (
   </div>
 );
 
-Explore officially tested integrations with FerretDB.
+Explore officially tested applications compatible with FerretDB.
 
 <div style={{ marginTop: '3rem' }} />
 
@@ -61,12 +61,22 @@ Explore officially tested integrations with FerretDB.
 
 <Grid apps={categorizedApps["GUI / Client Tools"]} />
 
+## Monitoring / Observability
+
+<Grid apps={categorizedApps["Monitoring / Observability"]} />
+
 ## Data Migration
 
 <Grid apps={categorizedApps["Data Migration"]} />
 
+## Deployment Platforms/ Orchestration
+
+<Grid apps={categorizedApps["Deployment Platforms"]} />
+
 ## Postgres Operators
 
 <Grid apps={categorizedApps["Database Backends"]} />
+
+If you have any questions or suggestions, please reach out to us on any of our [community channels](../introduction.md#community).
 
 <!-- markdownlint-enable MD033 -->
