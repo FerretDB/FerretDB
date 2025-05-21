@@ -38,6 +38,7 @@ type UpdateParams struct {
 
 	Ordered                  bool            `ferretdb:"ordered,ignored"`
 	BypassDocumentValidation bool            `ferretdb:"bypassDocumentValidation,ignored"`
+	BypassEmptyTsReplacement bool            `ferretdb:"bypassEmptyTsReplacement,ignored"`
 	WriteConcern             *types.Document `ferretdb:"writeConcern,ignored"`
 	LSID                     any             `ferretdb:"lsid,ignored"`
 	TxnNumber                int64           `ferretdb:"txnNumber,ignored"`
