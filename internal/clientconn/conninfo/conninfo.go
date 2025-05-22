@@ -47,7 +47,7 @@ func New() *ConnInfo {
 	return res
 }
 
-// Close closes ConnInfo and untracks it.
+// Close untracks ConnInfo.
 func (ci *ConnInfo) Close() {
 	resource.Untrack(ci, ci.token)
 }
