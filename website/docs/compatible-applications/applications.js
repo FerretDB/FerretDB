@@ -24,7 +24,7 @@ export const categorizedApps = {
       name: 'Mingo',
       logo: '/img/integrations/mingo-logo.png',
       link: 'https://blog.ferretdb.io/using-mingo-analyze-visualize-ferretdb-data/'
-    },
+    }
   ],
   'Deployment Platforms': [
     {
