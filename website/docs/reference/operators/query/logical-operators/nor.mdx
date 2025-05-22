@@ -19,14 +19,18 @@ db.runCommand({
   find: '<collection_name>',
   filter: {
     $nor: [
-      { <query-expression1> },
-      { <query-expression2> }
+      { <query_expression1> },
+      { <query_expression2> }
     ]
   }
 })
 ```
 
-A query expression can be any valid query such as `{ <field>: <value> }`, `{ <field>: { <operator>: <value> } }`, `{ <field>: /<pattern>/ }`, etc.
+A query expression can be any valid query such as:
+
+- `{ <field>: <value> }`
+- `{ <field>: { <operator>: <value> } }`
+- `{ <field>: /<pattern>/ }`
 
 ## Example
 
@@ -38,7 +42,7 @@ The following examples demonstrate how to use the `$nor` operator in queries usi
 
 ### Filter documents with multiple query expressions
 
-Using the books collection, return all documents where the author is not `British` AND the rating is not greater than or equal to `4.5`.
+Using the books collection, return all documents where the author is not `British` AND the rating is less than `4.5` using the `$nor` operator.
 
 <CodeBlock language="js">{NorOperatorRequest}</CodeBlock>
 
@@ -46,6 +50,10 @@ The `$nor` operator returns all documents that do not match any of the query exp
 In this case, it returns `moby_dick_1851` since it does not match either of the query expressions.
 
 <CodeBlock language="js">{NorOperatorResponse}</CodeBlock>
+
+### Implementation notes and constraints
+
+- It matches all documents that fail to satisfy all specified conditions, even if the field is missing or null.
 
 ## Additional information
 

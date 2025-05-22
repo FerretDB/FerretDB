@@ -18,12 +18,19 @@ The operator accepts a single query expression as shown below, and all documents
 db.runCommand({
   find: '<collection_name>',
   filter: {
-    $not: { <query-expression> }
+    rating: {
+      $not: { <query_expression> }
+    }
   }
 })
 ```
 
-A query expression can be any valid query such as `{ <field>: <value> }`, `{ <field>: { <operator>: <value> } }`, `{ <field>: /<pattern>/ }`, etc.
+A query expression for the `$not` operator must be be combined with another operator or a regular expression, such as:
+
+- `{ <field>: { <operator>: <value> } }`
+- `{ <field>: /<pattern>/ }`
+
+It cannot be used with direct values or as a top-level operator.
 
 ## Example
 
@@ -33,7 +40,7 @@ The following examples demonstrate how to use the `$not` operator in queries usi
 
 <CodeBlock language="js">{Dataset}</CodeBlock>
 
-### Filter documents that do not match a query expression
+### Filter documents that do not match a specific expression
 
 Using the books collection, return all documents where the rating is not less than `4.5`.
 
@@ -43,6 +50,11 @@ The `$not` operator negates the query expression, so it returns all documents wh
 In this case, it returns `pride_prejudice_1813` and `clean_code_2008`.
 
 <CodeBlock language="js">{NotOperatorResponse}</CodeBlock>
+
+### Implementation notes and constraints
+
+- The `$not` operator cannot be used directly as a top-level operator independently and must be used to negate another operator like `$eq`, `$gt`, `$lt`, etc., or a regular expression.
+- It matches all documents that do not satisfy the specified condition, even if the field is missing or null.
 
 ## Additional information
 

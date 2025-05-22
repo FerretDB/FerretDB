@@ -19,14 +19,18 @@ db.runCommand({
   find: '<collection_name>',
   filter: {
     $and: [
-      { <query-expression1> },
-      { <query-expression2> }
+      { <query_expression1> },
+      { <query_expression2> }
     ]
   }
 })
 ```
 
-A query expression can be any valid query such as `{ <field>: <value> }`, `{ <field>: { <operator>: <value> } }`, `{ <field>: /<pattern>/ }`, etc.
+A query expression can be any valid query such as:
+
+- `{ <field>: <value> }`
+- `{ <field>: { <operator>: <value> } }`
+- `{ <field>: /<pattern>/ }`
 
 ## Example
 

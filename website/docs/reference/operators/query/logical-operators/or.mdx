@@ -10,7 +10,7 @@ import Dataset from '!!raw-loader!./logical-operators/2-insert-dataset.request.j
 import OrOperatorRequest from '!!raw-loader!./logical-operators/4-or-operator.request.js';
 import OrOperatorResponse from '!!raw-loader!./logical-operators/4-or-operator.response.js';
 
-The `$or` operator Combines multiple query expressions and returns documents that match at least one expression.
+The `$or` operator combines multiple query expressions and returns documents that match at least one expression.
 
 The operator accepts an array of query expressions as shown below, and one expression must be satisfied for a document to be included in the result set.
 
@@ -19,14 +19,18 @@ db.runCommand({
   find: '<collection_name>',
   filter: {
     $or: [
-      { <query-expression1> },
-      { <query-expression2> }
+      { <query_expression1> },
+      { <query_expression2> }
     ]
   }
 })
 ```
 
-A query expression can be any valid query such as `{ <field>: <value> }`, `{ <field>: { <operator>: <value> } }`, `{ <field>: /<pattern>/ }`, etc.
+A query expression can be any valid query such as:
+
+- `{ <field>: <value> }`
+- `{ <field>: { <operator>: <value> } }`
+- `{ <field>: /<pattern>/ }`
 
 ## Example
 
