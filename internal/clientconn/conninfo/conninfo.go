@@ -19,6 +19,7 @@ import (
 	"net/netip"
 	"sync"
 
+	"github.com/FerretDB/FerretDB/v2/internal/util/resource"
 	"github.com/FerretDB/FerretDB/v2/internal/util/scram"
 )
 
@@ -31,11 +32,24 @@ type ConnInfo struct {
 	rw           sync.RWMutex   // rw
 	metadataRecv bool           // protected by rw
 	steps        int            // protected by rw
+
+	token *resource.Token
 }
 
 // New creates a new ConnInfo.
 func New() *ConnInfo {
-	return new(ConnInfo)
+	res := &ConnInfo{
+		token: resource.NewToken(),
+	}
+
+	resource.Track(res, res.token)
+
+	return res
+}
+
+// Close closes ConnInfo and untracks it.
+func (ci *ConnInfo) Close() {
+	resource.Untrack(ci, ci.token)
 }
 
 // Conv returns SCRAM conversation.
