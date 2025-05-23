@@ -1,0 +1,82 @@
+---
+sidebar_position: 1
+slug: /compatible-applications
+---
+
+# List of compatible applications
+
+import React from 'react';
+import { categorizedApps } from './applications.js';
+
+<!-- markdownlint-disable MD033 -->
+
+export const Grid = ({ apps }) => (
+
+  <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+        gap: '1.5rem',
+        marginTop: '1rem',
+        justifyContent: 'center',
+      }}
+    >
+      {apps.map(({ name, logo, link }) => (
+        <a
+          key={name}
+          href={link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="card"
+          style={{
+            maxWidth: '160px',
+            maxHeight: '160px',
+            padding: '1rem',
+            textAlign: 'center',
+            textDecoration: 'none',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            height: '100%',
+          }}
+        >
+          <img
+            src={logo}
+            alt={`${name} logo`}
+            style={{ width: '40px', height: '40px', marginBottom: '1rem' }}
+          />
+          <b>{name}</b>
+        </a>
+      ))}
+    </div>
+  </div>
+);
+
+Explore officially tested applications compatible with FerretDB.
+
+<div style={{ marginTop: '3rem' }} />
+
+## GUI / Client Tools
+
+<Grid apps={categorizedApps["GUI / Client Tools"]} />
+
+## Monitoring / Observability
+
+<Grid apps={categorizedApps["Monitoring / Observability"]} />
+
+## Data Migration
+
+<Grid apps={categorizedApps["Data Migration"]} />
+
+## Deployment Platforms/ Orchestration
+
+<Grid apps={categorizedApps["Deployment Platforms"]} />
+
+## Postgres Operators
+
+<Grid apps={categorizedApps["Database Backends"]} />
+
+If you have any questions or suggestions, please reach out to us on any of our [community channels](../introduction.md#community).
+
+<!-- markdownlint-enable MD033 -->
