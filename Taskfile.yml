@@ -755,12 +755,15 @@ tasks:
     cmds:
       - bin/opendocdb-cts fmt --dir=website/docs/guides
       - bin/opendocdb-cts convert --dir=website/docs/guides website/docs/guides --db=db
+      - bin/opendocdb-cts fmt --dir=website/docs/reference
+      - bin/opendocdb-cts convert --dir=website/docs/reference website/docs/reference --db=db
       - task: fmt-docs
 
   cts:
     desc: "Run CTS tests against FerretDB"
     cmds:
       - bin/opendocdb-cts run --dir=website/docs/guides --uri=mongodb://127.0.0.1:27017/cts
+      - bin/opendocdb-cts run --dir=website/docs/reference --uri=mongodb://127.0.0.1:27017/cts
 
   docs:
     desc: "Format, lint and build documentation"
