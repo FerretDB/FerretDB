@@ -146,6 +146,9 @@ func (c *conn) run(ctx context.Context) (err error) {
 	}()
 
 	connInfo := conninfo.New()
+
+	defer connInfo.Close()
+
 	if c.netConn.RemoteAddr().Network() != "unix" {
 		connInfo.Peer, err = netip.ParseAddrPort(c.netConn.RemoteAddr().String())
 		if err != nil {
