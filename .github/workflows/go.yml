@@ -36,6 +36,9 @@ jobs:
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
+    permissions:
+      contents: read
+
     steps:
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
@@ -92,6 +95,9 @@ jobs:
       cancel-in-progress: true
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
+
+    permissions:
+      contents: read
 
     steps:
       # TODO https://github.com/FerretDB/github-actions/issues/211
@@ -231,6 +237,9 @@ jobs:
       cancel-in-progress: true
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
+
+    permissions:
+      contents: read
 
     steps:
       # TODO https://github.com/FerretDB/github-actions/issues/211

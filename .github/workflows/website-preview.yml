@@ -39,6 +39,9 @@ jobs:
       name: cloudflare-dev-blog
       url: ${{ steps.extract.outputs.extracted_url }}
 
+    permissions:
+      contents: read
+
     steps:
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
@@ -101,6 +104,9 @@ jobs:
     environment:
       name: cloudflare-dev-docs
       url: ${{ steps.extract.outputs.extracted_url }}
+
+    permissions:
+      contents: read
 
     steps:
       # We can't easily download build results from the Docs workflow:
