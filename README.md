@@ -56,10 +56,12 @@ and [contributing guidelines](CONTRIBUTING.md).
 
 ## Quickstart
 
-Run this command to start FerretDB with PostgreSQL:
+Run this command to start FerretDB with PostgreSQL, make sure to update `<username>` and `<password>`:
 
 ```sh
-docker run -d --rm --name ferretdb -p 27017:27017 --platform linux/amd64 \
+docker run -d --rm --name ferretdb -p 27017:27017 \
+  -e POSTGRES_USER=<username> \
+  -e POSTGRES_PASSWORD=<password> \
   ghcr.io/ferretdb/ferretdb-eval:2
 ```
 
@@ -70,10 +72,10 @@ that don't have those problems.
 
 With that container running, you can:
 
-- Connect to it with any MongoDB client application using MongoDB URI `mongodb://username:password@127.0.0.1:27017/`.
-- Connect to it using MongoDB Shell by just running `mongosh`.
+- Connect to it with any MongoDB client application using the MongoDB URI `mongodb://<username>:<password>@127.0.0.1:27017/`.
+- Connect to it using the MongoDB Shell by just running `mongosh`.
   If you don't have it installed locally, you can run `docker exec -it ferretdb mongosh`.
-- For PostgreSQL, connect to it by running `docker exec -it ferretdb psql -U username postgres`.
+- For PostgreSQL, connect to it by running `docker exec -it ferretdb psql -U <username> postgres`.
 
 You can stop the container with `docker stop ferretdb`.
 
