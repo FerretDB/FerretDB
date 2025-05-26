@@ -36,6 +36,7 @@ type InsertParams struct {
 	MaxTimeMS                int64           `ferretdb:"maxTimeMS,ignored"`
 	WriteConcern             any             `ferretdb:"writeConcern,ignored"`
 	BypassDocumentValidation bool            `ferretdb:"bypassDocumentValidation,ignored"`
+	BypassEmptyTsReplacement bool            `ferretdb:"bypassEmptyTsReplacement,ignored"`
 	Comment                  string          `ferretdb:"comment,ignored"`
 	LSID                     any             `ferretdb:"lsid,ignored"`
 	TxnNumber                int64           `ferretdb:"txnNumber,ignored"`
