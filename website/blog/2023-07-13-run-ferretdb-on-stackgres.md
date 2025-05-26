@@ -1,12 +1,7 @@
 ---
 slug: run-ferretdb-on-stackgres
 title: 'How to Run FerretDB on Top of StackGres'
-authors:
-  - alex
-  - name: Álvaro Hernández
-    title: Founder and CEO @ OnGres
-    url: https://www.linkedin.com/in/ahachete
-    image_url: https://stackgres.io/img/team/alvaro.jpg
+authors: [alex, alvaro]
 image: /img/blog/stackgres-ferretdb.png
 description: >
   Learn to set up and run FerretDB – MongoDB open-source alternative on your Kubernetes cluster – and easily deploy and manage PostgreSQL instances using StackgGres operator.
