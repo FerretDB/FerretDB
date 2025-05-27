@@ -9,15 +9,15 @@ require (
 	github.com/FerretDB/gh v0.1.4
 	github.com/go-task/task/v3 v3.43.3
 	github.com/google/go-github/v57 v57.0.0
-	github.com/goreleaser/nfpm/v2 v2.42.0
+	github.com/goreleaser/nfpm/v2 v2.42.1
 	github.com/kisielk/godepgraph v0.0.0-20240411160502-0f324ca7e282
 	github.com/oapi-codegen/oapi-codegen/v2 v2.4.1
 	github.com/quasilyte/go-consistent v0.6.1
 	github.com/rogpeppe/go-internal v1.14.1
 	github.com/sethvargo/go-githubactions v1.3.1
 	github.com/stretchr/testify v1.10.0
-	golang.org/x/perf v0.0.0-20250505210442-a54a20dddd97
-	golang.org/x/pkgsite v0.0.0-20250506005617-1bc9132f5665
+	golang.org/x/perf v0.0.0-20250515181355-8f5f3abfb71a
+	golang.org/x/pkgsite v0.0.0-20250523174444-0e6de173c6b5
 	golang.org/x/tools v0.33.0
 	golang.org/x/vuln v1.1.4
 	gopkg.in/yaml.v3 v3.0.1
@@ -25,13 +25,13 @@ require (
 )
 
 require (
-	dario.cat/mergo v1.0.1 // indirect
+	dario.cat/mergo v1.0.2 // indirect
 	github.com/Ladicle/tabwriter v1.0.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.3.1 // indirect
 	github.com/Masterminds/sprig/v3 v3.3.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/ProtonMail/go-crypto v1.1.6 // indirect
+	github.com/ProtonMail/go-crypto v1.2.0 // indirect
 	github.com/aclements/go-moremath v0.0.0-20210112150236-f10218a38794 // indirect
 	github.com/alecthomas/chroma/v2 v2.16.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
@@ -69,7 +69,7 @@ require (
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/licensecheck v0.3.1 // indirect
-	github.com/google/rpmpack v0.6.1-0.20240329070804-c2247cbb881a // indirect
+	github.com/google/rpmpack v0.6.1-0.20250405124433-758cc6896cbc // indirect
 	github.com/google/safehtml v0.0.3-0.20211026203422-d6f0e11a5516 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/goreleaser/chglog v0.7.0 // indirect
