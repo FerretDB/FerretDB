@@ -6,11 +6,12 @@ description: Create one or more indexes on a collection to improve query perform
 # createIndexes
 
 import CodeBlock from '@theme/CodeBlock';
-import CreateIndex from '!!raw-loader!./create-indexes/1-create-simple-index.request.js';
-import CreateUniqueIndex from '!!raw-loader!./create-indexes/2-create-unique-index.request.js';
-import CreateCompoundIndex from '!!raw-loader!./create-indexes/3-create-compound-index.request.js';
-import CreatePartialIndex from '!!raw-loader!./create-indexes/4-create-partial-index.request.js';
-import CreateSparseIndex from '!!raw-loader!./create-indexes/5-create-sparse-index.request.js';
+import CreateIndexes from '!!raw-loader!./createIndexes.js';
+import CreateIndex from '!!raw-loader!../\_data/createIndexes/1-create-simple-index.request.js';
+import CreateUniqueIndex from '!!raw-loader!../\_data/createIndexes/2-create-unique-index.request.js';
+import CreateCompoundIndex from '!!raw-loader!../\_data/createIndexes/3-create-compound-index.request.js';
+import CreatePartialIndex from '!!raw-loader!../\_data/createIndexes/4-create-partial-index.request.js';
+import CreateSparseIndex from '!!raw-loader!../\_data/createIndexes/5-create-sparse-index.request.js';
 
 <!-- Short description of the command and its usage. -->
 
@@ -23,27 +24,7 @@ The `createIndexes` command creates one or more indexes on a given collection to
 This command accepts a collection name and an array of index specification documents.
 The index specification document specifies the fields to be indexed, the index name, and other options such as uniqueness, partial filter expressions, and expiration times for TTL indexes.
 
-```js
-db.runCommand({
-  createIndexes: '<collection_name>',
-  indexes: [
-    {
-      key: {
-        '<field1>': '<index_type>',
-        '<field2>': '<index_type>'
-      },
-      name: '<index_name>',
-      unique: '<boolean>',
-      partialFilterExpression: {
-        '<field>': { '<operator>': '<value>' }
-      },
-      sparse: '<boolean>',
-      expireAfterSeconds: '<int32>',
-      cosmosSearchOptions: '<document>'
-    }
-  ]
-})
-```
+<CodeBlock language="js">{CreateIndexes}</CodeBlock>
 
 The table below describes the fields and options available for the `createIndexes` command.
 

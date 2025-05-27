@@ -755,8 +755,10 @@ tasks:
     cmds:
       - bin/opendocdb-cts fmt --dir=website/docs/guides
       - bin/opendocdb-cts convert --dir=website/docs/guides website/docs/guides --db=db
-      - bin/opendocdb-cts fmt --dir=website/docs/reference
-      - bin/opendocdb-cts convert --dir=website/docs/reference website/docs/reference --db=db
+
+      - bin/opendocdb-cts fmt --dir=website/docs/reference/_data
+      - bin/opendocdb-cts convert --dir=website/docs/reference/_data website/docs/reference/_data --db=db
+
       - task: fmt-docs
 
   cts:
