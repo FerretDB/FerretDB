@@ -3,7 +3,7 @@ sidebar_position: 1
 description: Create one or more indexes on a collection to improve query performance and enable certain query features.
 ---
 
-# `createIndexes`
+# createIndexes
 
 import CodeBlock from '@theme/CodeBlock';
 import CreateIndex from '!!raw-loader!./create-indexes/1-create-simple-index.request.js';
@@ -12,13 +12,11 @@ import CreateCompoundIndex from '!!raw-loader!./create-indexes/3-create-compound
 import CreatePartialIndex from '!!raw-loader!./create-indexes/4-create-partial-index.request.js';
 import CreateSparseIndex from '!!raw-loader!./create-indexes/5-create-sparse-index.request.js';
 
-<!-- Category for Command "Administrative, Diagnostic, and Utility Commands" should be organized per folder as present in the compatibility document -->
-
 <!-- Short description of the command and its usage. -->
 
-Create one or more indexes on a given collection to improve query performance or enable certain query features (e.g., full-text, vector, and TTL indexes).
+The `createIndexes` command creates one or more indexes on a given collection to improve query performance or enable certain query features (e.g., full-text, vector, and TTL indexes).
 
-<!-- Syntax structure of the command here if there are no unique variations, types, or usage examples to command. Otherwise, use syntax inside subcategories-->
+<!-- Syntax structure of the command here with all available options, field variables, and types.-->
 
 <!-- markdownlint-disable MD033 -->
 
@@ -31,15 +29,17 @@ db.runCommand({
   indexes: [
     {
       key: {
-        '<field1>': <index_type>, // 1 for ascending, -1 for descending
-        '<field2>': <index_type> // optional
+        '<field1>': '<index_type>',
+        '<field2>': '<index_type>'
       },
       name: '<index_name>',
-      unique: <boolean>, // optional
+      unique: '<boolean>',
       partialFilterExpression: {
         '<field>': { '<operator>': '<value>' }
-      }, // optional
-      sparse: <boolean> // optional
+      },
+      sparse: '<boolean>',
+      expireAfterSeconds: '<int32>',
+      cosmosSearchOptions: '<document>'
     }
   ]
 })
@@ -49,15 +49,17 @@ The table below describes the fields and options available for the `createIndexe
 
 <!-- Explain fields such as arguments, modifiers, stage, operators, parameters, options supported by the command in a table format if more than a single item (if necessary or available): -->
 
-| Field                     | Type     | Description                                                                                                                                                               |
-| ------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `createIndexes`           | string   | The name of the collection.                                                                                                                                               |
-| `indexes`                 | array    | An array of index specification documents. Each document defines an index.                                                                                                |
-| `key`                     | document | A single document that contains the field(s) to index and their sort order or type (e.g. `1`, `-1`, `text` for full-text indexes, and `cosmosSearch` for vector indexes). |
-| `name`                    | string   | A required name for the index. Must be unique to the collection.                                                                                                          |
-| `unique`                  | boolean  | Optional. Ensures all values are unique for the indexed field if set to `true`.                                                                                           |
-| `partialFilterExpression` | document | Optional. Restricts index to documents matching the condition.                                                                                                            |
-| `sparse`                  | boolean  | Optional. Only indexes documents that contain the indexed field if set to `true`.                                                                                         |
+| Field                     | Type     | Description                                                                                                                                                                                       |
+| ------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `createIndexes`           | string   | The name of the collection.                                                                                                                                                                       |
+| `indexes`                 | array    | An array of index specification documents. Each document defines an index.                                                                                                                        |
+| `key`                     | document | A single document that contains the field(s) to index and their sort order or type (e.g. `1`, `-1`, `text` for full-text indexes, and `cosmosSearch` for vector indexes).                         |
+| `name`                    | string   | A required name for the index. Must be unique to the collection.                                                                                                                                  |
+| `unique`                  | boolean  | Optional. Ensures all values are unique for the indexed field if set to `true`.                                                                                                                   |
+| `partialFilterExpression` | document | Optional. Restricts index to documents matching the condition.                                                                                                                                    |
+| `sparse`                  | boolean  | Optional. Only indexes documents that contain the indexed field if set to `true`.                                                                                                                 |
+| `expireAfterSeconds`      | int32    | Optional. Specifically used for creating TTL indexes. Automatically deletes documents after set time.                                                                                             |
+| `cosmosSearchOptions`     | document | Optional. Specifies the configuration parameters (`kind`, `similarity`, `dimensions`, etc.) for creating a vendor index [See vector index guide for more details](../../guides/vector-search.mdx) |
 
 ## Example
 
