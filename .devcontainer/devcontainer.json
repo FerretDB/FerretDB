@@ -1,0 +1,27 @@
+{
+  "name": "FerretDB Development",
+  "dockerComposeFile": ["../docker-compose.yml", "../docker-compose.devcontainer.yml"],
+  "service": "devcontainer",
+  "workspaceFolder": "/workdir",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/git-lfs:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "editorconfig.editorconfig",
+        "esbenp.prettier-vscode",
+        "davidanson.vscode-markdownlint"
+      ],
+      "settings": {
+        "go.useLanguageServer": true,
+        "go.lintTool": "golangci-lint",
+        "editor.formatOnSave": true
+      }
+    }
+  },
+  "remoteUser": "vscode",
+  "postCreateCommand": "go mod download"
+}

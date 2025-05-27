@@ -1,0 +1,33 @@
+---
+services:
+  devcontainer:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    container_name: ferretdb_devcontainer
+    environment:
+      - GOPATH=/go
+      - GOCACHE=/go/cache/gocache
+      - GOMODCACHE=/go/cache/gomodcache
+      - FERRETDB_POSTGRESQL_URL=postgres://username:password@postgres:5432/postgres
+      - FERRETDB_TELEMETRY=disable
+    volumes:
+      - .:/workdir:cached
+      - go-cache:/go/cache
+    command: sleep infinity
+    # Overrides default container user to avoid permission issues with bind mounts
+    user: vscode
+    # Always use a specific tag/sha for reproducible builds
+    init: true # clean handling of signals
+    # For VS Code integration with devcontainer
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    network_mode: service:postgres
+    depends_on:
+      - postgres
+      - mongodb
+      - mongodb-secure
+
+volumes:
+  go-cache:
+    driver: local
