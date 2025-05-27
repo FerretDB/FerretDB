@@ -738,7 +738,7 @@ tasks:
       # TODO --print-width 120 (https://github.com/FerretDB/FerretDB/issues/4636)
       - >
         docker compose run --rm prettier --write --single-quote --trailing-comma none --no-semi
-        --parser markdown "**/*.md" "**/*.mdx"
+        "**/*.md" "**/*.mdx"
 
       - >
         docker compose run --rm markdownlint --config "build/.markdownlint.yml"
