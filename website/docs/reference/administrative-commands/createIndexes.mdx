@@ -5,15 +5,15 @@ description: Create one or more indexes on a collection to improve query perform
 
 # createIndexes
 
-import CodeBlock from '@theme/CodeBlock';
-import CreateIndexes from '!!raw-loader!./createIndexes.js';
-import CreateIndex from '!!raw-loader!../\_data/createIndexes/1-create-simple-index.request.js';
-import CreateUniqueIndex from '!!raw-loader!../\_data/createIndexes/2-create-unique-index.request.js';
-import CreateCompoundIndex from '!!raw-loader!../\_data/createIndexes/3-create-compound-index.request.js';
-import CreatePartialIndex from '!!raw-loader!../\_data/createIndexes/4-create-partial-index.request.js';
-import CreateSparseIndex from '!!raw-loader!../\_data/createIndexes/5-create-sparse-index.request.js';
+import CodeBlock from '@theme/CodeBlock'
+import CreateIndexes from '!!raw-loader!./createIndexes.js'
+import CreateIndex from '!!raw-loader!../_data/createIndexes/1-create-simple-index.request.js'
+import CreateUniqueIndex from '!!raw-loader!../_data/createIndexes/2-create-unique-index.request.js'
+import CreateCompoundIndex from '!!raw-loader!../_data/createIndexes/3-create-compound-index.request.js'
+import CreatePartialIndex from '!!raw-loader!../_data/createIndexes/4-create-partial-index.request.js'
+import CreateSparseIndex from '!!raw-loader!../_data/createIndexes/5-create-sparse-index.request.js'
 
-<!-- Short description of the command and its usage. -->
+{/* Short description of the command and its usage. */}
 
 The `createIndexes` command creates one or more indexes on a given collection to improve query performance or enable certain query features (e.g., full-text, vector, and TTL indexes).
 
@@ -40,7 +40,7 @@ The table below describes the fields and options available for the `createIndexe
 | `partialFilterExpression` | document | Optional. Restricts index to documents matching the condition.                                                                                                                                                                            |
 | `sparse`                  | boolean  | Optional. Only indexes documents that contain the indexed field if set to `true`.                                                                                                                                                         |
 | `expireAfterSeconds`      | int32    | Optional. Specifically used for creating TTL indexes. Automatically deletes documents after set time.                                                                                                                                     |
-| `cosmosSearchOptions`     | document | Optional. Specifies the configuration parameters (`kind`, `similarity`, `dimensions`, etc.) for creating a vendor index. [See vector index guide for more details](../../guides/vector-search.mdx).                                         |
+| `cosmosSearchOptions`     | document | Optional. Specifies the configuration parameters (`kind`, `similarity`, `dimensions`, etc.) for creating a vendor index. [See vector index guide for more details](../../guides/vector-search.mdx).                                       |
 
 ## Example
 
