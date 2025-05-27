@@ -2,6 +2,21 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v1.24.2](https://github.com/FerretDB/FerretDB/releases/tag/v1.24.2) (2025-05-27)
+
+## What's Changed
+
+### Fixed Bugs 🐛
+
+- Ignore `bypassEmptyTsReplacement` to simplify migrations by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5163
+
+### Other Changes 🤖
+
+- Bump deps by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5165
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5184
+
+[All commits](https://github.com/FerretDB/FerretDB/compare/v1.24.1...v1.24.2).
+
 ## [v1.24.1](https://github.com/FerretDB/FerretDB/releases/tag/v1.24.1) (2025-05-08)
 
 ### Fixed Bugs 🐛
