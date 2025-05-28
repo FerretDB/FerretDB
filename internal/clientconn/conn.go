@@ -35,6 +35,8 @@ import (
 
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
+	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 	"github.com/pmezard/go-difflib/difflib"
 	"go.opentelemetry.io/otel"
 	otelattribute "go.opentelemetry.io/otel/attribute"
@@ -85,6 +87,7 @@ type conn struct {
 	h              *handler.Handler
 	m              *connmetrics.ConnMetrics
 	proxy          *proxy.Handler
+	mcpServer      *server.MCPServer
 	lastRequestID  atomic.Int32
 	testRecordsDir string // if empty, no records are created
 }
@@ -122,12 +125,18 @@ func newConn(opts *newConnOpts) (*conn, error) {
 		}
 	}
 
+	mcpServer := server.NewMCPServer(
+		"Wire Protocol Server",
+		"0.0.1",
+	)
+
 	return &conn{
 		netConn:        opts.netConn,
 		mode:           opts.mode,
 		l:              opts.l,
 		h:              opts.handler,
 		m:              opts.connMetrics,
+		mcpServer:      mcpServer,
 		proxy:          p,
 		testRecordsDir: opts.testRecordsDir,
 	}, nil
@@ -568,6 +577,54 @@ func (c *conn) renamePartialFile(ctx context.Context, f *os.File, h hash.Hash, e
 	if e := os.Rename(f.Name(), path); e != nil {
 		c.l.WarnContext(ctx, "Failed to rename file", logging.Error(e))
 	}
+}
+
+// runMCPServer runs the MCP server.
+func (c *conn) runMCPServer(ctx context.Context) error {
+	dbStats := mcp.NewTool("find",
+		mcp.WithDescription("Find the documents"),
+		mcp.WithString("database",
+			mcp.Required(),
+			mcp.Description("The database to query"),
+		),
+		mcp.WithString("collection",
+			mcp.Required(),
+			mcp.Description("The collection to query"),
+		),
+	)
+
+	c.mcpServer.AddTool(dbStats, func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		database, err := request.RequireString("database")
+		if err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
+		}
+
+		collection, err := request.RequireString("collection")
+		if err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
+		}
+
+		req := wire.MustOpMsg(
+			"find", collection,
+			"$db", database,
+		)
+
+		res, err := c.h.Handle(ctx, &middleware.Request{OpMsg: req})
+		if err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
+		}
+
+		resRaw := must.NotFail(res.OpMsg.DocumentRaw())
+		results := must.NotFail(must.NotFail(resRaw.Decode()).Get("cursor").(wirebson.AnyDocument).Decode()).Get("firstBatch").(wirebson.AnyDocument)
+
+		return mcp.NewToolResultText(results.LogMessage()), nil
+	})
+
+	if err := server.ServeStdio(c.mcpServer); err != nil {
+		c.l.ErrorContext(ctx, "Failed to serve MCP server", logging.Error(err))
+	}
+
+	return nil
 }
 
 // logResponse logs response's header and body and returns the log level that was used.
