@@ -17,9 +17,7 @@ import CreateSparseIndex from '!!raw-loader!../_data/createIndexes/5-create-spar
 
 The `createIndexes` command creates one or more indexes on a given collection to improve query performance or enable certain query features (e.g., full-text, vector, and TTL indexes).
 
-<!-- Syntax structure of the command here with all available options, field variables, and types.-->
-
-<!-- markdownlint-disable MD033 -->
+{/* Syntax structure of the command here with all available options, field variables, and types. */}
 
 This command accepts a collection name and an array of index specification documents.
 The index specification document specifies the fields to be indexed, the index name, and other options such as uniqueness, partial filter expressions, and expiration times for TTL indexes.
@@ -28,7 +26,7 @@ The index specification document specifies the fields to be indexed, the index n
 
 The table below describes the fields and options available for the `createIndexes` command.
 
-<!-- Explain fields such as arguments, modifiers, stage, operators, parameters, options supported by the command in a table format if more than a single item (if necessary or available): -->
+{/* Explain fields such as arguments, modifiers, stage, operators, parameters, options supported by the command in a table format if more than a single item (if necessary or available): */}
 
 | Field                     | Type     | Description                                                                                                                                                                                                                               |
 | ------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -88,19 +86,17 @@ For example, if you want to create a sparse index on the `books` collection for 
 
 ## Implementation notes and constraints
 
-<!-- If there are any known or unique information about command behavior, limitations, or contraints, list them here -->
+{/* If there are any known or unique information about command behavior, limitations, or contraints, list them here */}
 
 - `partialFilterExpression` and `sparse` options cannot be used together in the same index specification. If both are specified, the command will fail with an error.
 - `hidden` indexes are not supported yet.
 
 ## Additional information
 
-<!-- Include and link to other related materials or information here -->
+{/* Include and link to other related materials or information here */}
 
 Please find other usages of `createIndexes` below:
 
 - [Vector Indexes](../../guides/vector-search.mdx)
 - [TTL Indexes](../../guides/ttl-indexes.mdx)
 - [Full-Text Indexes](../../guides/full-text-search.mdx)
-
-<!-- markdownlint-enable MD033 -->
