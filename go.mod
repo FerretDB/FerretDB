@@ -6,7 +6,7 @@ toolchain go1.24.3
 
 require (
 	github.com/AlekSi/pointer v1.2.0
-	github.com/FerretDB/wire v0.0.24
+	github.com/FerretDB/wire v0.1.0
 	github.com/alecthomas/kong v1.11.0
 	github.com/arl/statsviz v0.6.0
 	github.com/google/uuid v1.6.0
