@@ -16,7 +16,9 @@ package mcp
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"net/http"
 
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
@@ -38,10 +40,24 @@ type Server struct {
 type ServerOpts struct {
 	L       *slog.Logger
 	Handler *handler.Handler
+	TCPAddr string
+}
+
+// authKey is a custom context key for storing the auth token.
+type authKey struct{}
+
+// withAuthKey adds an auth key to the context.
+func withAuthKey(ctx context.Context, auth string) context.Context {
+	return context.WithValue(ctx, authKey{}, auth)
+}
+
+// authFromRequest extracts the auth token from the request headers.
+func authFromRequest(ctx context.Context, r *http.Request) context.Context {
+	return withAuthKey(ctx, r.Header.Get("Authorization"))
 }
 
 // New creates a MCP server.
-func New(opts *ServerOpts) (*Server, error) {
+func New(opts *ServerOpts) *Server {
 	mcpServer := server.NewMCPServer(
 		"Wire Protocol Server",
 		"0.0.1",
@@ -50,7 +66,7 @@ func New(opts *ServerOpts) (*Server, error) {
 	return &Server{
 		opts: opts,
 		s:    mcpServer,
-	}, nil
+	}
 }
 
 // Serve runs the MCP server.
@@ -69,11 +85,12 @@ func (s *Server) Serve(ctx context.Context) error {
 
 	s.s.AddTool(dbStats, s.handleFind)
 
-	if err := server.ServeStdio(s.s); err != nil {
+	s.opts.L.InfoContext(ctx, fmt.Sprintf("Starting MCP server on http://%s/", s.opts.TCPAddr))
+
+	httpServer := server.NewStreamableHTTPServer(s.s, server.WithHTTPContextFunc(authFromRequest))
+	if err := httpServer.Start(s.opts.TCPAddr); err != nil {
 		return err
 	}
-
-	s.opts.L.InfoContext(ctx, "MCP server started")
 
 	return nil
 }
