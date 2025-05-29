@@ -25,6 +25,7 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
@@ -41,19 +42,6 @@ type ServerOpts struct {
 	L       *slog.Logger
 	Handler *handler.Handler
 	TCPAddr string
-}
-
-// authKey is a custom context key for storing the auth token.
-type authKey struct{}
-
-// withAuthKey adds an auth key to the context.
-func withAuthKey(ctx context.Context, auth string) context.Context {
-	return context.WithValue(ctx, authKey{}, auth)
-}
-
-// authFromRequest extracts the auth token from the request headers.
-func authFromRequest(ctx context.Context, r *http.Request) context.Context {
-	return withAuthKey(ctx, r.Header.Get("Authorization"))
 }
 
 // New creates a MCP server.
@@ -87,8 +75,10 @@ func (s *Server) Serve(ctx context.Context) error {
 
 	s.opts.L.InfoContext(ctx, fmt.Sprintf("Starting MCP server on http://%s/", s.opts.TCPAddr))
 
-	httpServer := server.NewStreamableHTTPServer(s.s, server.WithHTTPContextFunc(authFromRequest))
-	if err := httpServer.Start(s.opts.TCPAddr); err != nil {
+	// FIXME add authentication
+	sseServer := server.NewSSEServer(s.s, server.WithBaseURL(s.opts.TCPAddr), server.WithSSEContextFunc(withConnInfo))
+
+	if err := sseServer.Start(s.opts.TCPAddr); err != nil {
 		return err
 	}
 
@@ -119,7 +109,17 @@ func (s *Server) handleFind(ctx context.Context, request mcp.CallToolRequest) (*
 
 	resRaw := must.NotFail(res.OpMsg.DocumentRaw())
 	results := must.NotFail(must.NotFail(resRaw.Decode()).Get("cursor").(wirebson.AnyDocument).Decode()).
-		Get("firstBatch").(wirebson.AnyDocument)
+		Get("firstBatch").(wirebson.AnyArray)
 
 	return mcp.NewToolResultText(results.LogMessage()), nil
+}
+
+// withConnInfo creates a new connection info and adds it to the context.
+func withConnInfo(ctx context.Context, r *http.Request) context.Context {
+	connInfo := conninfo.New()
+
+	defer connInfo.Close()
+
+	// FIXME this is not quite correct
+	return conninfo.Ctx(r.Context(), connInfo)
 }
