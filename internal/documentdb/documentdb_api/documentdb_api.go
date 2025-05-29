@@ -98,6 +98,20 @@ func Collection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseNam
 	return
 }
 
+// Compact is a wrapper for
+//
+//	documentdb_api.compact(p_spec documentdb_core.bson, OUT compact documentdb_core.bson).
+func Compact(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outCompact wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.compact", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT compact::bytea FROM documentdb_api.compact($1::bytea)", spec)
+	if err = row.Scan(&outCompact); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api.compact", l)
+	}
+	return
+}
+
 // CountQuery is a wrapper for
 //
 //	documentdb_api.count_query(database text, countspec documentdb_core.bson, OUT document documentdb_core.bson).
