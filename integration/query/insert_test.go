@@ -34,7 +34,13 @@ func TestInsertZeroTimestamp(tt *testing.T) {
 	_, resp, err := s.WireConn.Request(s.Ctx, wire.MustOpMsg(
 		"insert", s.Collection.Name(),
 		"documents", wirebson.MustArray(
-			wirebson.MustDocument("_id", "id", "v", wirebson.Timestamp(0)),
+			wirebson.MustDocument(
+				"_id", "id",
+				"v", wirebson.Timestamp(0),
+				"d", wirebson.MustDocument(
+					"dv", wirebson.Timestamp(0),
+				),
+			),
 		),
 		"$db", s.Collection.Database().Name(),
 	))
@@ -55,10 +61,13 @@ func TestInsertZeroTimestamp(tt *testing.T) {
 	require.Equal(tt, 1.0, actual.Get("ok"))
 
 	batch := actual.Get("cursor").(*wirebson.Document).Get("firstBatch").(*wirebson.Array)
-	v := batch.Get(0).(*wirebson.Document).Get("v").(wirebson.Timestamp)
+
+	d := batch.Get(0).(*wirebson.Document).Get("d").(*wirebson.Document)
+	assert.Equal(tt, wirebson.Timestamp(0), d.Get("dv"))
 
 	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/1608")
 
+	v := batch.Get(0).(*wirebson.Document).Get("v").(wirebson.Timestamp)
 	assert.NotEqual(t, wirebson.Timestamp(0), v)
 	assert.NotZero(t, v.I())
 	assert.InDelta(t, time.Now().Unix(), v.T(), 5.0)
