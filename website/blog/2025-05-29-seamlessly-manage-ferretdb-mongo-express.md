@@ -63,7 +63,7 @@ Here's what you need to do:
 
 ### Example of Mongo Express with FerretDB
 
-Here ia view of a `books` collection in FerretDB using Mongo Express:
+Here is a view of a `books` collection in FerretDB using Mongo Express:
 
 ![Mongo Express view of a collection in FerretDB](/img/blog/mongoexpress-ferretdb-collection.png)
 
