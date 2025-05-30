@@ -268,6 +268,7 @@ tasks:
         --no-auth
         --listen-addr=:27017
         --listen-data-api-addr=127.0.0.1:8899
+        --listen-mcp-server-addr=127.0.0.1:8081
         --proxy-addr=127.0.0.1:37017
         --postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
@@ -351,6 +352,11 @@ tasks:
       - >
         docker compose run --rm legacy-mongo-shell
         'mongodb://username:password@host.docker.internal:27017/'
+
+  mcpclient:
+    desc: "Run MCP client (using Ollama client installed on the host)"
+    cmds:
+      - bin/mcphost --config build/mcp/.mcp.json --model ollama:mistral
 
   testsql:
     desc: "Run pgTAP with test.sql script"

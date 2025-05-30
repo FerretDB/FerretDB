@@ -43,6 +43,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi"
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/mcp"
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/debug"
 	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
@@ -71,13 +72,14 @@ var cli struct {
 	PostgreSQLURLFile []byte `name:"postgresql-url-file" help:"Path to a file containing the PostgreSQL connection URL. If non-empty, this overrides --postgresql-url." group:"PostgreSQL"     type:"filecontent"`
 
 	Listen struct {
-		Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address for MongoDB protocol."`
-		Unix        string `default:""                help:"Listen Unix domain socket path for MongoDB protocol."`
-		TLS         string `default:""                help:"Listen TLS address for MongoDB protocol."`
-		TLSCertFile string `default:""                help:"TLS cert file path."`
-		TLSKeyFile  string `default:""                help:"TLS key file path."`
-		TLSCaFile   string `default:""                help:"TLS CA file path."`
-		DataAPIAddr string `default:""                help:"Listen TCP address for HTTP Data API."`
+		Addr          string `default:"127.0.0.1:27017" help:"Listen TCP address for MongoDB protocol."`
+		Unix          string `default:""                help:"Listen Unix domain socket path for MongoDB protocol."`
+		TLS           string `default:""                help:"Listen TLS address for MongoDB protocol."`
+		TLSCertFile   string `default:""                help:"TLS cert file path."`
+		TLSKeyFile    string `default:""                help:"TLS key file path."`
+		TLSCaFile     string `default:""                help:"TLS CA file path."`
+		DataAPIAddr   string `default:""                help:"Listen TCP address for HTTP Data API."`
+		MCPServerAddr string `default:""                help:"Listen TCP address for HTTP Data API."`
 	} `embed:"" prefix:"listen-" group:"Interfaces"`
 
 	Proxy struct {
@@ -548,6 +550,27 @@ func run() {
 			}
 
 			lis.Run(ctx)
+		}()
+	}
+
+	if cmp.Or(cli.Listen.MCPServerAddr, "-") != "-" {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			l := logging.WithName(logger, "mcp")
+
+			e := mcp.New(&mcp.ServerOpts{
+				TCPAddr: cli.Listen.MCPServerAddr,
+				L:       l,
+				Handler: h,
+			}).Serve(ctx)
+
+			if e != nil {
+				p.Close()
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to construct MCP Server", logging.Error(e))
+			}
 		}()
 	}
 
