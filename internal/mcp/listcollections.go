@@ -48,10 +48,14 @@ func (s *Server) handleListCollections(ctx context.Context, request mcp.ReadReso
 		"$db", database,
 	)
 
+	s.opts.L.DebugContext(ctx, "OP_MSG request", "request", req.StringIndent())
+
 	res, err := s.opts.Handler.Handle(ctx, &middleware.Request{OpMsg: req})
 	if err != nil {
 		return nil, err
 	}
+
+	s.opts.L.DebugContext(ctx, "OP_MSG response", "response", res.OpMsg.StringIndent())
 
 	doc, err := res.OpMsg.DocumentDeep()
 	if err != nil {

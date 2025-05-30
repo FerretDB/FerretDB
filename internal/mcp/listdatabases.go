@@ -23,7 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 )
 
-// newTool creates a new MCP resource for listDatabases command.
+// newListDatabasesResource creates a new MCP resource for listDatabases command.
 func newListDatabasesResource() mcp.Resource {
 	return mcp.NewResource(
 		"databases",
@@ -39,10 +39,14 @@ func (s *Server) handleListDatabases(ctx context.Context, request mcp.ReadResour
 		"listDatabase", int32(1),
 	)
 
+	s.opts.L.DebugContext(ctx, "OP_MSG request", "request", req.StringIndent())
+
 	res, err := s.opts.Handler.Handle(ctx, &middleware.Request{OpMsg: req})
 	if err != nil {
 		return nil, err
 	}
+
+	s.opts.L.DebugContext(ctx, "OP_MSG response", "response", res.OpMsg.StringIndent())
 
 	doc, err := res.OpMsg.DocumentDeep()
 	if err != nil {

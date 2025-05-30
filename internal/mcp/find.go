@@ -22,7 +22,6 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // newFindTool creates a new MCP tool for find command.
@@ -57,12 +56,19 @@ func (s *Server) handleFind(ctx context.Context, request mcp.CallToolRequest) (*
 		"$db", database,
 	)
 
+	s.opts.L.DebugContext(ctx, "OP_MSG request", "request", req.StringIndent())
+
 	res, err := s.opts.Handler.Handle(ctx, &middleware.Request{OpMsg: req})
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	doc := must.NotFail(res.OpMsg.DocumentDeep())
+	s.opts.L.DebugContext(ctx, "OP_MSG response", "response", res.OpMsg.StringIndent())
+
+	doc, err := res.OpMsg.DocumentDeep()
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
 
 	var jsonRes []byte
 
@@ -80,6 +86,8 @@ func (s *Server) handleFind(ctx context.Context, request mcp.CallToolRequest) (*
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
+
+	s.opts.L.DebugContext(ctx, "Find response", "json", string(jsonRes))
 
 	return mcp.NewToolResultText(string(jsonRes)), nil
 }

@@ -21,13 +21,12 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // newInsertTool creates a new MCP tool for insert command.
 func newInsertTool() mcp.Tool {
 	return mcp.NewTool("find",
-		mcp.WithDescription("Insert documents"),
+		mcp.WithDescription("Insert documents and it returns the number of inserted documents"),
 		mcp.WithString("database",
 			mcp.Required(),
 			mcp.Description("The database name"),
@@ -38,7 +37,7 @@ func newInsertTool() mcp.Tool {
 		),
 		mcp.WithArray("documents",
 			mcp.Required(),
-			mcp.Description("The documents to insert as each document is a string in JSON format"),
+			mcp.Description("The documents to insert, each document is a string in JSON format"),
 		),
 	)
 }
@@ -63,12 +62,21 @@ func (s *Server) handleInsert(ctx context.Context, request mcp.CallToolRequest) 
 		"documents", documents,
 	)
 
+	s.opts.L.DebugContext(ctx, "OP_MSG request", "request", req.StringIndent())
+
 	res, err := s.opts.Handler.Handle(ctx, &middleware.Request{OpMsg: req})
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	n := must.NotFail(res.OpMsg.DocumentDeep()).Get("n").(float64)
+	s.opts.L.DebugContext(ctx, "OP_MSG response", "response", res.OpMsg.StringIndent())
+
+	doc, err := res.OpMsg.DocumentDeep()
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	n := doc.Get("n").(float64)
 
 	return mcp.FormatNumberResult(n), nil
 }
