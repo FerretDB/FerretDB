@@ -68,6 +68,11 @@ type Config struct {
 	// Defaults to [io.Discard], effectively disabling logging.
 	LogOutput io.Writer
 
+	// Logger is a custom logger.
+	// If nil, a default logger will be created.
+	// If not nil, the LogLevel and LogOutput are ignored.
+	Logger *slog.Logger
+
 	// EnabledTelemetry set the telemetry enable or not.
 	// If empty, the telemetry is undecided by default.
 	EnabledTelemetry *bool
@@ -88,9 +93,6 @@ func New(config *Config) (*FerretDB, error) {
 		return nil, fmt.Errorf("failed to set up state provider: %w", err)
 	}
 
-	// Note that the current implementation requires `*logging.Handler` in the `getLog` command implementation.
-	// TODO https://github.com/FerretDB/FerretDB/issues/4750
-
 	logLevel := config.LogLevel
 	if logLevel == nil {
 		logLevel = slog.LevelError
@@ -102,11 +104,20 @@ func New(config *Config) (*FerretDB, error) {
 	}
 
 	lOpts := &logging.NewHandlerOpts{
-		Base:       "console",
-		Level:      logLevel,
 		SkipChecks: true,
+		Level:      logLevel,
 	}
-	logger := logging.WithName(logging.Logger(logOutput, lOpts, ""), "ferretdb")
+
+	var logger *slog.Logger
+	if config.Logger == nil {
+		lOpts.Base = "console"
+		logger = logging.WithName(logging.Logger(logOutput, lOpts, ""), "ferretdb")
+	} else {
+		handler := config.Logger.Handler()
+		lOpts.Base = "custom"
+		lOpts.Handler = handler
+		logger = logging.WithName(logging.Logger(nil, lOpts, ""), "ferretdb")
+	}
 
 	lm := connmetrics.NewListenerMetrics()
 

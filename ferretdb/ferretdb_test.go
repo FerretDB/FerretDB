@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"os"
 	"os/exec"
 	"testing"
 
@@ -81,6 +82,55 @@ func Example() {
 	<-done
 
 	// Output: mongodb://127.0.0.1:17027/
+}
+
+func TestFerretDBWithCustomLogger(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
+	f, err := ferretdb.New(&ferretdb.Config{
+		PostgreSQLURL: testutil.PostgreSQLURL(t),
+		ListenAddr:    "127.0.0.1:0",
+		StateDir:      t.TempDir(),
+		Logger:        logger,
+	})
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(testutil.Ctx(t))
+	done := make(chan struct{})
+
+	go func() {
+		f.Run(ctx)
+		close(done)
+	}()
+
+	uri := f.MongoDBURI()
+	require.NotEmpty(t, uri)
+
+	client, err := mongo.Connect(options.Client().ApplyURI(uri))
+	require.NoError(t, err)
+
+	err = client.Ping(ctx, nil)
+	require.NoError(t, err)
+
+	res := client.Database("admin").RunCommand(ctx, bson.D{{Key: "getLog", Value: "global"}})
+
+	var actual bson.M
+	err = res.Decode(&actual)
+	require.NoError(t, err)
+
+	ok, exist := actual["ok"]
+	require.True(t, exist)
+	require.Equal(t, float64(1), ok)
+
+	_, exist = actual["log"]
+	require.True(t, exist)
+
+	err = client.Disconnect(ctx)
+	require.NoError(t, err)
+
+	cancel()
+	<-done
 }
 
 func TestFerretDB(t *testing.T) {
