@@ -115,16 +115,15 @@ func TestFerretDBWithCustomLogger(t *testing.T) {
 
 	res := client.Database("admin").RunCommand(ctx, bson.D{{Key: "getLog", Value: "global"}})
 
-	var actual bson.M
+	var actual bson.D
 	err = res.Decode(&actual)
 	require.NoError(t, err)
 
-	ok, exist := actual["ok"]
-	require.True(t, exist)
-	require.Equal(t, float64(1), ok)
+	require.Len(t, actual, 3)
+	require.Equal(t, "log", actual[0].Key)
 
-	_, exist = actual["log"]
-	require.True(t, exist)
+	require.Equal(t, "ok", actual[1].Key)
+	require.Equal(t, 1.0, actual[1].Value)
 
 	err = client.Disconnect(ctx)
 	require.NoError(t, err)

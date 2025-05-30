@@ -109,6 +109,7 @@ func New(config *Config) (*FerretDB, error) {
 	}
 
 	var logger *slog.Logger
+
 	if config.Logger == nil {
 		lOpts.Base = "console"
 		logger = logging.WithName(logging.Logger(logOutput, lOpts, ""), "ferretdb")
