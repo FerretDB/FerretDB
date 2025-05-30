@@ -49,26 +49,26 @@ Connecting Novu to your FerretDB instance is straightforward, as Novu expects a 
 Here's a step-by-step guide to get you started:
 
 1. **Ensure FerretDB is running:** Make sure your FerretDB instance is active and accessible.
-    If you haven't set it up yet, refer to our [FerretDB Installation Guide](https://docs.ferretdb.io/installation/ferretdb/).
+   If you haven't set it up yet, refer to our [FerretDB Installation Guide](https://docs.ferretdb.io/installation/ferretdb/).
 2. **Self-host Novu:** Novu offers self-hosting options, typically via Docker or by running individual services.
-    You'll need to set up Novu — [refer to Novu's documentation](https://docs.novu.co/community/self-hosting-novu/overview) for detailed instructions.
+   You'll need to set up Novu – [refer to Novu's documentation](https://docs.novu.co/community/self-hosting-novu/overview) for detailed instructions.
 3. **Configure Novu's database connection:** When configuring Novu, instead of pointing to a MongoDB instance, update the `.env` file to point to your FerretDB instance.
 
-    You'll need to update the `MONGO_URL` environment variable, as shown below (assuming FerretDB is running on `127.0.0.1:27017`):
+   You'll need to update the `MONGO_URL` environment variable, as shown below (assuming FerretDB is running on `127.0.0.1:27017`):
 
-    ```text
-    MONGO_INITDB_ROOT_USERNAME=<username>
-    MONGO_INITDB_ROOT_PASSWORD=<password>
-    MONGO_URL=mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@localhost:27017/novu-db
-    MONGO_AUTO_CREATE_INDEXES=true
-    ```
+   ```text
+   MONGO_INITDB_ROOT_USERNAME=<username>
+   MONGO_INITDB_ROOT_PASSWORD=<password>
+   MONGO_URL=mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@localhost:27017/novu-db
+   MONGO_AUTO_CREATE_INDEXES=true
+   ```
 
-    Ensure to replace `127.0.0.1:27017` with your FerretDB host and port.
+   Ensure to replace `127.0.0.1:27017` with your FerretDB host and port.
 
-4.  **Launch Novu and test:** Once configured, launch Novu.
-    It should connect to FerretDB, create the necessary collections, and be ready to start sending notifications!
+4. **Launch Novu and test:** Once configured, launch Novu.
+   It should connect to FerretDB, create the necessary collections, and be ready to start sending notifications!
 
-    You can then proceed with Novu's setup, creating workflows and sending test notifications.
+   You can then proceed with Novu's setup, creating workflows and sending test notifications.
 
 ### Example of Novu with FerretDB as the backend
 
@@ -153,7 +153,8 @@ The following command shows the most recent message sent by Novu, which is store
 ]
 ```
 
-That's it! You now have a fully functional notification system powered by Novu and FerretDB.
+That's it!
+You now have a fully functional notification system powered by Novu and FerretDB.
 
 ## Conclusion
 
