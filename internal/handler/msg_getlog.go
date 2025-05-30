@@ -83,7 +83,6 @@ func (h *Handler) msgGetLog(connCtx context.Context, req *middleware.Request) (*
 	case "global":
 		var log *wirebson.Array
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/4750
 		if log, err = h.L.Handler().(*logging.Handler).RecentEntries(); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
