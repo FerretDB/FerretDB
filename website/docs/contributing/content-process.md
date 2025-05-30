@@ -1,9 +1,9 @@
 ---
-sidebar_position: 2
-draft: true
+sidebar_position: 3
+unlisted: true
 ---
 
-# Content Creation Guide for FerretDB
+# Blog creation guide
 
 ## Introduction
 
@@ -15,20 +15,49 @@ Everybody is welcome to contribute and write a blog post for FerretDB.
 The first step to creating a blog post, pitching a draft, or idea is to [create an issue here](https://github.com/FerretDB/engineering/issues/new/choose).
 Please note that the FerretDB blog represents the official voice of the company and product, and as such, all published content will be carefully vetted and reviewed.
 
-## Creating a New Blog Post
+## Creating a new blog post
 
 Once the blog post pitch is approved, you can start creating the draft.
 
-### Article Template
+### File name and URL
 
-We have provided a template for writing blog posts.
-Please find the [template](YYYY-MM-DD.blog-template.md) here and feel free to start writing the draft with the provided template.
+All blog posts should be written in Markdown format.
+Start by creating a new file in the `website/blog` directory.
 
-### Names and URLs
+The file name should be in the format `YYYY-MM-DD-shortened-article-url.md` or `YYYY-MM-DD-folder-name/article-url.md`,
+where `YYYY-MM-DD` is the date of the post, and `shortened-article-url` is a shortened descriptive title of the post.
 
-The file name should be in the format `YYYY-MM-DD-shortened-article-name.md` or `YYYY-MM-DD-folder-name/article-name.md`,
-where `YYYY-MM-DD` is the date of the post, and `shortened-article-name` is a shortened descriptive title of the post.
-Please do not use underscores or spaces in the file names, directory names, or slugs because URL paths typically use dashes.
+### Article template
+
+Please find the blog writing template below and feel free to start writing the draft with it.
+You may copy and paste the template into your new blog post file.
+
+```markdown
+---
+slug: url-slug-of-post # the URL slug of the blog post with dashes instead of spaces
+title: Blog post template
+authors: [name] # the author name should be stored in the `authors.yml` file and referenced here
+description: >
+  This is a short description of a FerretDB blog post.
+image: /img/blog/postgresql.png
+tags: [tag1, tag2]
+---
+
+![Image alt description](/img/blog/postgresql.png) <!--Please add the path for the image banner (i.e. /img/blog/banner-image.png).-->
+
+Leave a space before starting article.
+Please write a short summary of the article here.
+This can be the same as the `description` above.
+
+<!--truncate-->
+
+Start body of the article from here.
+This section should contain the rest of the article introduction.
+
+## The content writing process
+
+Each section of the article should be a heading, starting from Heading 2.
+```
 
 ### Tags
 
@@ -65,29 +94,12 @@ This is not an exhaustive list, and the direction of our blog posts can surely e
 If a blog post calls for a new tag or you would like to suggest more tags, please ensure to add it to this list.
 This helps to maintain consistency across all blog posts.
 
-### Keywords (optional)
-
-Keywords in the front matter are displayed as meta keywords tag in HTML.
-Meta keywords tag are not so important for SEO anymore, but they can help with focusing the content on specific keywords that should be used (appear at least once) in the blog content, meta description, title, or alt images.
-
-The use of meta keywords is not mandatory, but if you want to add them, please ensure that they are relevant to the blog post.
-All keywords must be in small-case.
-
-### Writing Guide
+### Formatting
 
 We have a writing guide that provides guidelines for creating clear, concise, and engaging content.
 Please see our [writing guide](writing-guide.md) for help formatting your blog post.
 
-## Setting Front Matter and Publishing Options
-
-Front matter is the metadata that appears at the top of the markdown file and provides information about the post, such as the title and author.
-
-In the front matter, `draft: true` keeps the page hidden from the visitors of the site.
-Use this option if you plan to merge the content into `main` branch while keeping the page hidden.
-Other cases, remove `draft: true` to enable CI to build and render the new content during the reviewing.
-Make sure to include all necessary information in the front matter, such as the title and author.
-
-## Reviewing and Editing Content
+## Reviewing and editing content
 
 To publish a blog post, you will need to create a Pull Request with a file of your blog post content formatted in Markdown.
 However, before publishing any content, it must be reviewed and edited by the FerretDB Team to ensure that it meets our standards for quality and accuracy.
@@ -97,14 +109,14 @@ It may involve one or more rounds of editing.
 Before opening a PR, be sure to double-check the content for any errors or inconsistencies, such as spelling mistakes or broken links.
 Please preview the blog post to make sure that it is properly formatted and looks as you expect it to.
 
-Once the content is ready for review, please open a PR and assign it to @Ferretdb/core.
+Once the content is ready for review, please open a PR and assign it to @Ferretdb/docs.
 
-## Final Approval and Publishing
+## Final approval and publishing
 
 The final approval for publishing content is given once it has passed through all reviews and approved by the team.
 To publish the content, change the date in file name to the proposed published date, and then remove `draft: true` if set from the front matter.
 
-## Post Publishing
+## Post publishing
 
 Once the article is published, we encourage you to share the blog post across your social media pages.
 The article may be updated from time-to-time to ensure we are putting the most accurate information out, and to improve search engine rankings.
