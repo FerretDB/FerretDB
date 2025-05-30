@@ -53,18 +53,34 @@ func New(opts *ServerOpts) *Server {
 	}
 }
 
-// mcpTool represents an MCP tool with its handler function.
-type mcpTool struct {
-	tool    mcp.Tool
-	handler server.ToolHandlerFunc
+// mcpHandlers represents an MCP tool with its toolHandler function.
+type mcpHandlers struct {
+	tool                    mcp.Tool
+	resource                mcp.Resource
+	resourceTemplate        mcp.ResourceTemplate
+	toolHandler             server.ToolHandlerFunc
+	resourceHandler         server.ResourceHandlerFunc
+	resourceTemplateHandler server.ResourceTemplateHandlerFunc
 }
 
 // initTools initializes the MCP tools for the server.
-func (s *Server) initTools() map[string]mcpTool {
-	return map[string]mcpTool{
+func (s *Server) initTools() map[string]mcpHandlers {
+	return map[string]mcpHandlers{
 		"find": {
-			handler: s.handleFind,
-			tool:    newFindTool(),
+			toolHandler: s.handleFind,
+			tool:        newFindTool(),
+		},
+		"insert": {
+			toolHandler: s.handleInsert,
+			tool:        newInsertTool(),
+		},
+		"listCollections": {
+			resourceTemplateHandler: s.handleListCollections,
+			resourceTemplate:        newListCollectionsResource(),
+		},
+		"listDatabases": {
+			resourceHandler: s.handleListDatabases,
+			resource:        newListDatabasesResource(),
 		},
 	}
 }
@@ -72,7 +88,17 @@ func (s *Server) initTools() map[string]mcpTool {
 // Serve runs the MCP server.
 func (s *Server) Serve(ctx context.Context) error {
 	for _, t := range s.initTools() {
-		s.s.AddTool(t.tool, t.handler)
+		if t.toolHandler != nil {
+			s.s.AddTool(t.tool, t.toolHandler)
+		}
+
+		if t.resourceHandler != nil {
+			s.s.AddResource(t.resource, t.resourceHandler)
+		}
+
+		if t.resourceTemplateHandler != nil {
+			s.s.AddResourceTemplate(t.resourceTemplate, t.resourceTemplateHandler)
+		}
 	}
 
 	s.opts.L.InfoContext(ctx, fmt.Sprintf("Starting MCP server on http://%s/", s.opts.TCPAddr))

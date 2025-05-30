@@ -18,30 +18,33 @@ import (
 	"context"
 
 	"github.com/FerretDB/wire"
-	"github.com/FerretDB/wire/wirebson"
 	"github.com/mark3labs/mcp-go/mcp"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// newFindTool creates a new MCP tool for find command.
-func newFindTool() mcp.Tool {
+// newInsertTool creates a new MCP tool for insert command.
+func newInsertTool() mcp.Tool {
 	return mcp.NewTool("find",
-		mcp.WithDescription("Find queries to get documents"),
+		mcp.WithDescription("Insert documents"),
 		mcp.WithString("database",
 			mcp.Required(),
-			mcp.Description("The database to query"),
+			mcp.Description("The database name"),
 		),
 		mcp.WithString("collection",
 			mcp.Required(),
-			mcp.Description("The collection to query"),
+			mcp.Description("The collection name"),
+		),
+		mcp.WithArray("documents",
+			mcp.Required(),
+			mcp.Description("The documents to insert as each document is a string in JSON format"),
 		),
 	)
 }
 
-// handleFind calls find command with the given parameters.
-func (s *Server) handleFind(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+// handleInsert executes insert command.
+func (s *Server) handleInsert(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	database, err := request.RequireString("database")
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
@@ -52,9 +55,12 @@ func (s *Server) handleFind(ctx context.Context, request mcp.CallToolRequest) (*
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
+	documents := request.GetStringSlice("documents", []string{})
+
 	req := wire.MustOpMsg(
-		"find", collection,
+		"insert", collection,
 		"$db", database,
+		"documents", documents,
 	)
 
 	res, err := s.opts.Handler.Handle(ctx, &middleware.Request{OpMsg: req})
@@ -62,24 +68,7 @@ func (s *Server) handleFind(ctx context.Context, request mcp.CallToolRequest) (*
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	doc := must.NotFail(res.OpMsg.DocumentDeep())
+	n := must.NotFail(res.OpMsg.DocumentDeep()).Get("n").(float64)
 
-	var jsonRes []byte
-
-	if doc.Get("ok").(float64) != 1 {
-		if jsonRes, err = doc.MarshalJSON(); err != nil {
-			return mcp.NewToolResultError(err.Error()), nil
-		}
-
-		return mcp.NewToolResultError(string(jsonRes)), nil
-	}
-
-	results := doc.Get("cursor").(*wirebson.Document).Get("firstBatch").(*wirebson.Array)
-
-	jsonRes, err = results.MarshalJSON()
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
-	}
-
-	return mcp.NewToolResultText(string(jsonRes)), nil
+	return mcp.FormatNumberResult(n), nil
 }
