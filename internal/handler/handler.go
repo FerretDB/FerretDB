@@ -26,7 +26,6 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/session"
-	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 )
 
@@ -83,10 +82,6 @@ type NewOpts struct {
 // [Handler.Run] must be called on the returned value.
 func New(opts *NewOpts) (*Handler, error) {
 	sessionTimeout := time.Duration(session.LogicalSessionTimeoutMinutes) * time.Minute
-
-	// we rely on on it in the `getLog` implementation
-	// TODO https://github.com/FerretDB/FerretDB/issues/4750
-	_ = opts.L.Handler().(*logging.Handler)
 
 	h := &Handler{
 		NewOpts: opts,
