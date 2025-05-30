@@ -27,6 +27,12 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
 )
 
+// cleanup is passed as the second argument to [runtime.AddCleanup].
+// It is a variable so the tests can replace it.
+var cleanup = func(msg string) {
+	panic(msg)
+}
+
 // Token is a field of a tracked object, holding the cleanup.
 //
 // The cleanup is used to stop scheduled cleanups when Untrack is called.
@@ -81,10 +87,7 @@ func Track[T any](obj *T, token *Token) {
 		errMsg += "\nObject created by " + string(runtimedebug.Stack())
 	}
 
-	c := runtime.AddCleanup(obj, func(msg string) {
-		panic(msg)
-	}, errMsg,
-	)
+	c := runtime.AddCleanup(obj, cleanup, errMsg)
 
 	token.cleanup = &c
 }
