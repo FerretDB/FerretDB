@@ -353,6 +353,11 @@ tasks:
         docker compose run --rm legacy-mongo-shell
         'mongodb://username:password@host.docker.internal:27017/'
 
+  mcpclient:
+    desc: "Run MCP client (using Ollama client installed on the host)"
+    cmds:
+      - bin/mcphost --config build/mcp/.mcp.json --model ollama:mistral
+
   testsql:
     desc: "Run pgTAP with test.sql script"
     cmds:
