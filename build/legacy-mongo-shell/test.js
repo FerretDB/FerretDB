@@ -12,8 +12,8 @@
     v: Timestamp(0, 0),
     d: {
       dv: Timestamp(0, 0),
-    }
-  }
+    },
+  };
 
   coll.insert(doc);
 
