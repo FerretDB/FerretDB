@@ -62,9 +62,24 @@ func (s *Server) handleFind(ctx context.Context, request mcp.CallToolRequest) (*
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	resRaw := must.NotFail(res.OpMsg.DocumentRaw())
-	results := must.NotFail(must.NotFail(resRaw.Decode()).Get("cursor").(wirebson.AnyDocument).Decode()).
-		Get("firstBatch").(wirebson.AnyArray)
+	doc := must.NotFail(res.OpMsg.DocumentDeep())
 
-	return mcp.NewToolResultText(results.LogMessage()), nil
+	var jsonRes []byte
+
+	if doc.Get("ok").(float64) != 1 {
+		if jsonRes, err = doc.MarshalJSON(); err != nil {
+			return mcp.NewToolResultError(err.Error()), nil
+		}
+
+		return mcp.NewToolResultError(string(jsonRes)), nil
+	}
+
+	results := doc.Get("cursor").(*wirebson.Document).Get("firstBatch").(*wirebson.Array)
+
+	jsonRes, err = results.MarshalJSON()
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	return mcp.NewToolResultText(string(jsonRes)), nil
 }
