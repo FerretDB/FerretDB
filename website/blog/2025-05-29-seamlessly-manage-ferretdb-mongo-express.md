@@ -11,16 +11,17 @@ tags: [mongodb gui, compatible applications, tutorial]
 
 ![Seamlessly Manage Your FerretDB Databases with Mongo Express](/img/blog/ferretdb-mongoexpress.jpg)
 
+At FerretDB, we're committed to providing a truly open-source alternative to MongoDB, allowing you to leverage the power of PostgreSQL with the flexibility of a document database.
+
 <!--truncate-->
 
-At FerretDB, we're committed to providing a truly open-source alternative to MongoDB, allowing you to leverage the power of PostgreSQL with the flexibility of a document database.
 A key part of that commitment is ensuring seamless integration with the tools you already know and love.
 
-In this guide, we're excited to highlight how effortlessly you can manage your FerretDB databases using Mongo Express, a popular web-based MongoDB admin interface.
+In this guide, we're excited to highlight how effortlessly you can manage your [FerretDB](https://www.ferretdb.com/) databases using Mongo Express, a popular web-based MongoDB admin interface.
 
 ## What is Mongo Express?
 
-Mongo Express is a web-based administrative interface.
+[Mongo Express](https://github.com/mongo-express/mongo-express) is a web-based administrative interface.
 It offers a user-friendly way to connect and interact with multiple databases, browse collections, execute queries, and manage documents directly from your web browser.
 
 Tools like Mongo Express that are designed for MongoDB work out-of-the-box with FerretDB.
@@ -47,7 +48,7 @@ Here's what you need to do:
    - Database Name: (Optional) You can specify a database here, or browse all databases after connecting.
    - Username/Password: (Optional) If you have [authentication enabled on your FerretDB instance](https://docs.ferretdb.io/security/authentication/), provide the credentials.
 
-     Example for Mongo Express using environment variables in Docker-compose:
+     Example for Mongo Express using environment variables set in a `docker-compose.yml` file under the Mongo Express service:
 
      ```yaml
      ME_CONFIG_MONGODB_URL: mongodb://<username>:<password>@<host>:<port>/
@@ -60,7 +61,7 @@ Here's what you need to do:
 
 4. **Connect and explore**: Once configured, Mongo Express will connect to your FerretDB instance, and you can start managing your databases and collections!
 
-## Example
+### Example of Mongo Express with FerretDB
 
 Here ia view of a `books` collection in FerretDB using Mongo Express:
 
@@ -68,7 +69,7 @@ Here ia view of a `books` collection in FerretDB using Mongo Express:
 
 Next, you can perform operations on the data from within Mongo Express, such as querying the `books` collection:
 
-![Mongo Express query example in FerretDB](/img/blog/mongoexpress-query.png)
+![Mongo Express query example of a collection in FerretDB](/img/blog/mongoexpress-query.png)
 
 ## Conclusion
 
@@ -78,6 +79,6 @@ This is just one example of how FerretDB allows you to continue using your prefe
 We're constantly working to expand our integrations and support for various tools.
 Stay tuned for more updates, and feel free to reach out to us if you have any questions or suggestions!
 
-- [Try FerretDB today](https://github.com/FerretDB/FerretDB)
-- [Join our community](https://docs.ferretdb.io/#community)
-- [Explore more compatible applications](https://docs.ferretdb.io/compatible-applications)
+- [Ready to get started? Try FerretDB today](https://github.com/FerretDB/FerretDB)
+- [Have questions, suggestions, or requests? Join our community](https://docs.ferretdb.io/#community)
+- [Discover more ways to integrate other compatible applications with FerretDB](https://docs.ferretdb.io/compatible-applications)
