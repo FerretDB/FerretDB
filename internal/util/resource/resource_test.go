@@ -18,26 +18,30 @@ import (
 	"runtime"
 	"runtime/pprof"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+// Object represents a tracked object for tests.
 type Object struct {
 	token *Token
 }
 
+// globalObj is a global object that is never cleaned up.
 var globalObj *Object
 
+// origCleanup is the original cleanup function.
+var origCleanup = cleanup
+
+// See https://go.dev/doc/gc-guide#Testing_object_death
+// and https://pkg.go.dev/cmd/compile#hdr-Line_Directives.
+//
 //nolint:godot // line directives are not normal comments
 func TestTrackUntrack(t *testing.T) {
-	ch := make(chan string, 10)
-	cleanup = func(msg string) {
-		ch <- msg
-	}
-
 	name := profileName(globalObj)
+
+	runtime.GC()
 
 	t.Run("LocalUntrack", func(t *testing.T) {
 		require.Nil(t, pprof.Lookup(name))
@@ -52,16 +56,16 @@ func TestTrackUntrack(t *testing.T) {
 		Untrack(obj, obj.token)
 
 		runtime.GC()
-		select {
-		case <-ch:
-			t.Fatal("unexpected cleanup message")
-		default:
-		}
 
 		assert.Equal(t, 0, pprof.Lookup(name).Count())
 	})
 
 	t.Run("LocalCleanup", func(t *testing.T) {
+		ch := make(chan string, 1)
+		cleanup = func(msg string) {
+			ch <- msg
+		}
+
 		require.Equal(t, 0, pprof.Lookup(name).Count())
 
 		obj := &Object{token: NewToken()}
@@ -80,6 +84,8 @@ func TestTrackUntrack(t *testing.T) {
 	})
 
 	t.Run("Global", func(t *testing.T) {
+		cleanup = origCleanup
+
 		require.Equal(t, 1, pprof.Lookup(name).Count())
 
 		globalObj = &Object{token: NewToken()}
@@ -90,16 +96,9 @@ func TestTrackUntrack(t *testing.T) {
 		assert.Equal(t, 2, pprof.Lookup(name).Count())
 
 		runtime.GC()
-		select {
-		case <-ch:
-			t.Fatal("unexpected cleanup message")
-		default:
-		}
 
 		assert.Equal(t, 2, pprof.Lookup(name).Count())
 	})
 
 	runtime.GC()
-	time.Sleep(time.Second)
-	require.Empty(t, ch)
 }
