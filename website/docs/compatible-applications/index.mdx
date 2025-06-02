@@ -7,46 +7,28 @@ slug: /compatible-applications
 
 import React from 'react';
 import { categorizedApps } from './applications.js';
+import styles from './grid.module.css';
 
 <!-- markdownlint-disable MD033 -->
 
 export const Grid = ({ apps }) => (
 
-  <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-        gap: '1.5rem',
-        marginTop: '1rem',
-        justifyContent: 'center',
-      }}
-    >
+  <div className={styles.container}>
+    <div className={styles.grid}>
       {apps.map(({ name, logo, link }) => (
         <a
           key={name}
           href={link}
           target="_blank"
           rel="noopener noreferrer"
-          className="card"
-          style={{
-            maxWidth: '160px',
-            maxHeight: '160px',
-            padding: '1rem',
-            textAlign: 'center',
-            textDecoration: 'none',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            height: '100%',
-          }}
+          className={`${styles.card} card`}
         >
           <img
             src={logo}
             alt={`${name} logo`}
-            style={{ width: '40px', height: '40px', marginBottom: '1rem' }}
+            className={styles.logo}
           />
-          <b>{name}</b>
+          {name}
         </a>
       ))}
     </div>
@@ -75,7 +57,7 @@ Explore officially tested applications compatible with FerretDB.
 
 ## Postgres Operators
 
-<Grid apps={categorizedApps["Database Backends"]} />
+<Grid apps={categorizedApps["PostgreSQL Operators"]} />
 
 If you have any questions or suggestions, please reach out to us on any of our [community channels](../introduction.md#community).
 

@@ -33,7 +33,7 @@ export const categorizedApps = {
       link: 'https://blog.ferretdb.io/run-mongodb-workloads-ferretdb-taikun-cloudworks/'
     }
   ],
-  'Database Backends': [
+  'PostgreSQL Operators': [
     {
       name: 'CloudNativePG',
       logo: '/img/integrations/cnpg-logo.png',
@@ -64,23 +64,4 @@ export const categorizedApps = {
       link: 'https://blog.ferretdb.io/migrate-mongodb-data-ferretdb-dsync/'
     }
   ]
-  // 'Authentication / Security': [
-  //   {
-  //     name: 'OpenZiti',
-  //     logo: '/img/integrations/abstract-logo.png',
-  //     link: 'https://blog.ferretdb.io/run-ferretdb-securely-using-openziti/'
-  //   }
-  // ],
-  // Other: [
-  //   {
-  //     name: 'Illa Cloud',
-  //     logo: '/img/integrations/abstract-logo.png',
-  //     link: 'https://blog.ferretdb.io/build-internal-apps-illa-cloud-ferretdb/'
-  //   },
-  //   {
-  //     name: 'FastNetMon',
-  //     logo: '/img/integrations/abstract-logo.png',
-  //     link: 'https://blog.ferretdb.io/fastnetmon-picked-ferretdb-saas-offering/'
-  //   }
-  // ]
 }
