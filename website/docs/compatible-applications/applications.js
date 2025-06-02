@@ -37,7 +37,7 @@ export const categorizedApps = {
     {
       name: 'CloudNativePG',
       logo: '/img/integrations/cnpg-logo.png',
-      link: 'https://blog.ferretdb.io/run-ferretdb-cloudnativepg-kubernetes/'
+      link: 'https://blog.ferretdb.io/run-ferretdb-postgres-documentdb-extension-cnpg-kubernetes/'
     }
   ],
   'Monitoring / Observability': [
