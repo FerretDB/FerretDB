@@ -29,6 +29,7 @@ import (
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/xdg-go/scram"
 
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
@@ -52,7 +53,7 @@ type Server struct {
 }
 
 // AuthMiddleware handles SCRAM authentication based on the username and password specified in request.
-// After successful handshake it calls the next handler with the proper connInfo in context.
+// After a successful handshake it calls the next handler.
 func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -140,6 +141,18 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 		}
 
 		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// ConnInfoMiddleware returns a handler function that creates a new [*conninfo.ConnInfo],
+// calls the next handler, and closes the connection info after the request is done.
+func (s *Server) ConnInfoMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		connInfo := conninfo.New()
+
+		defer connInfo.Close()
+
+		next.ServeHTTP(w, r.WithContext(conninfo.Ctx(r.Context(), connInfo)))
 	})
 }
 
