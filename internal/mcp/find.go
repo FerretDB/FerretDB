@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"github.com/FerretDB/wire"
-	"github.com/FerretDB/wire/wirebson"
 	"github.com/mark3labs/mcp-go/mcp"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
@@ -69,20 +68,7 @@ func (h *Handler) handleFind(ctx context.Context, request mcp.CallToolRequest) (
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
-
-	var jsonRes []byte
-
-	if doc.Get("ok").(float64) != 1 {
-		if jsonRes, err = doc.MarshalJSON(); err != nil {
-			return mcp.NewToolResultError(err.Error()), nil
-		}
-
-		return mcp.NewToolResultError(string(jsonRes)), nil
-	}
-
-	results := doc.Get("cursor").(*wirebson.Document).Get("firstBatch").(*wirebson.Array)
-
-	jsonRes, err = results.MarshalJSON()
+	jsonRes, err := doc.MarshalJSON()
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
