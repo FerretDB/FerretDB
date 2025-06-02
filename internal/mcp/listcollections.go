@@ -16,32 +16,29 @@ package mcp
 
 import (
 	"context"
-	"net/url"
-
 	"github.com/FerretDB/wire"
 	"github.com/mark3labs/mcp-go/mcp"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 )
 
-// newListCollectionsResource creates a new MCP resource for listCollections command.
-func newListCollectionsResource() mcp.ResourceTemplate {
-	return mcp.NewResourceTemplate(
-		"databases://{database}",
-		"A list of all collections in a database",
-		mcp.WithTemplateDescription("A list of all collections in the database"),
-		mcp.WithTemplateMIMEType("application/json"),
+// newListCollections creates a new MCP tool for listCollections command.
+func newListCollections() mcp.Tool {
+	return mcp.NewTool("list collections",
+		mcp.WithDescription("Returns list of all collections in a database"),
+		mcp.WithString("database",
+			mcp.Required(),
+			mcp.Description("The database to query"),
+		),
 	)
 }
 
-// handleListDatabases calls the listCollections command and returns the result as an MCP resource.
-func (h *Handler) handleListCollections(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
-	u, err := url.Parse(request.Params.URI)
+// handleListDatabases calls the listCollections command with the given parameters.
+func (h *Handler) listCollections(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	database, err := request.RequireString("database")
 	if err != nil {
-		return nil, err
+		return mcp.NewToolResultError(err.Error()), nil
 	}
-
-	database := u.Path
 
 	req := wire.MustOpMsg(
 		"listCollections", int32(1),
@@ -67,11 +64,7 @@ func (h *Handler) handleListCollections(ctx context.Context, request mcp.ReadRes
 		return nil, err
 	}
 
-	return []mcp.ResourceContents{
-		mcp.TextResourceContents{
-			URI:      "databases://{database}",
-			MIMEType: "application/json",
-			Text:     string(jsonRes),
-		},
-	}, nil
+	h.l.DebugContext(ctx, "ListCollections response", "json", string(jsonRes))
+
+	return mcp.NewToolResultText(string(jsonRes)), nil
 }

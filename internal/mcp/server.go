@@ -64,34 +64,30 @@ func New(opts *ServerOpts) *Server {
 	}
 }
 
-// mcpHandlers represents an MCP tool with its toolHandler function.
+// mcpHandlers represents an MCP handler function.
 type mcpHandlers struct {
-	tool                    mcp.Tool
-	resource                mcp.Resource
-	resourceTemplate        mcp.ResourceTemplate
-	toolHandler             server.ToolHandlerFunc
-	resourceHandler         server.ResourceHandlerFunc
-	resourceTemplateHandler server.ResourceTemplateHandlerFunc
+	tool        mcp.Tool
+	toolHandler server.ToolHandlerFunc
 }
 
 // initTools initializes the MCP tools for the server.
 func (s *Server) initTools() map[string]mcpHandlers {
 	return map[string]mcpHandlers{
 		"find": {
-			toolHandler: s.h.handleFind,
+			toolHandler: withLog(s.h.find, s.opts.L),
 			tool:        newFindTool(),
 		},
 		"insert": {
-			toolHandler: s.h.handleInsert,
+			toolHandler: withLog(s.h.insert, s.opts.L),
 			tool:        newInsertTool(),
 		},
 		"listCollections": {
-			resourceTemplateHandler: s.h.handleListCollections,
-			resourceTemplate:        newListCollectionsResource(),
+			toolHandler: s.h.listCollections,
+			tool:        newListCollections(),
 		},
 		"listDatabases": {
-			resourceHandler: s.h.handleListDatabases,
-			resource:        newListDatabasesResource(),
+			toolHandler: s.h.listDatabases,
+			tool:        newListDatabases(),
 		},
 	}
 }
@@ -101,14 +97,6 @@ func (s *Server) Serve(ctx context.Context) error {
 	for _, t := range s.initTools() {
 		if t.toolHandler != nil {
 			s.s.AddTool(t.tool, t.toolHandler)
-		}
-
-		if t.resourceHandler != nil {
-			s.s.AddResource(t.resource, t.resourceHandler)
-		}
-
-		if t.resourceTemplateHandler != nil {
-			s.s.AddResourceTemplate(t.resourceTemplate, t.resourceTemplateHandler)
 		}
 	}
 
@@ -132,4 +120,19 @@ func withConnInfo(ctx context.Context, r *http.Request) context.Context {
 
 	// FIXME this is not quite correct
 	return conninfo.Ctx(r.Context(), connInfo)
+}
+
+// withLog wraps the next handler with logging functionality.
+func withLog(next server.ToolHandlerFunc, l *slog.Logger) server.ToolHandlerFunc {
+	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		l.DebugContext(ctx, "MCP request", "request", fmt.Sprintf("%+v", request))
+
+		res, err := next(ctx, request)
+		if err != nil {
+			l.ErrorContext(ctx, "MCP Error response", "response", fmt.Sprintf("%+v", res))
+		}
+
+		l.DebugContext(ctx, "MCP response", "response", fmt.Sprintf("%+v", res))
+		return res, err
+	}
 }

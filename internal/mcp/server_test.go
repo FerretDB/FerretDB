@@ -59,18 +59,34 @@ func TestHandle(t *testing.T) {
 
 	ctx := conninfo.Ctx(context.Background(), conninfo.New())
 
+	t.Run("insert", func(t *testing.T) {
+		t.Parallel()
+
+		var req mcp.CallToolRequest
+		req.Params.Name = "insert"
+		req.Params.Arguments = map[string]any{
+			"database":   "test",
+			"collection": "values",
+		}
+
+		var res *mcp.CallToolResult
+		res, err = mcpH.insert(ctx, req)
+		require.NoError(t, err)
+		assert.False(t, res.IsError, res.Content)
+	})
+
 	t.Run("find", func(t *testing.T) {
 		t.Parallel()
 
 		var req mcp.CallToolRequest
 		req.Params.Name = "find"
 		req.Params.Arguments = map[string]any{
-			"database":   "names",
-			"collection": "authors",
+			"database":   "test",
+			"collection": "values",
 		}
 
 		var res *mcp.CallToolResult
-		res, err = mcpH.handleFind(ctx, req)
+		res, err = mcpH.find(ctx, req)
 		require.NoError(t, err)
 		assert.False(t, res.IsError, res.Content)
 	})

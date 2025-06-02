@@ -38,8 +38,8 @@ func newFindTool() mcp.Tool {
 	)
 }
 
-// handleFind calls find command with the given parameters.
-func (h *Handler) handleFind(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+// find calls find command with the given parameters.
+func (h *Handler) find(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	database, err := request.RequireString("database")
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil

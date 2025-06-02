@@ -23,18 +23,15 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 )
 
-// newListDatabasesResource creates a new MCP resource for listDatabases command.
-func newListDatabasesResource() mcp.Resource {
-	return mcp.NewResource(
-		"databases",
-		"A list of all databases",
-		mcp.WithResourceDescription("A list of all databases"),
-		mcp.WithMIMEType("application/json"),
+// newListDatabases creates a new MCP tool for listDatabases command.
+func newListDatabases() mcp.Tool {
+	return mcp.NewTool("list databases",
+		mcp.WithDescription("Returns list of all databases"),
 	)
 }
 
-// handleListDatabases calls the listDatabases command and returns the result as an MCP resource.
-func (h *Handler) handleListDatabases(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+// listDatabases calls the listDatabases command and returns the results.
+func (h *Handler) listDatabases(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	req := wire.MustOpMsg(
 		"listDatabase", int32(1),
 	)
@@ -58,11 +55,7 @@ func (h *Handler) handleListDatabases(ctx context.Context, request mcp.ReadResou
 		return nil, err
 	}
 
-	return []mcp.ResourceContents{
-		mcp.TextResourceContents{
-			URI:      "databases",
-			MIMEType: "application/json",
-			Text:     string(jsonRes),
-		},
-	}, nil
+	h.l.DebugContext(ctx, "ListDatabases response", "json", string(jsonRes))
+
+	return mcp.NewToolResultText(string(jsonRes)), nil
 }

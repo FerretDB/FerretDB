@@ -16,6 +16,7 @@ package mcp
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/FerretDB/wire"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -25,25 +26,21 @@ import (
 
 // newInsertTool creates a new MCP tool for insert command.
 func newInsertTool() mcp.Tool {
-	return mcp.NewTool("find",
-		mcp.WithDescription("Insert documents and it returns the number of inserted documents"),
-		mcp.WithString("database",
-			mcp.Required(),
-			mcp.Description("The database name"),
-		),
-		mcp.WithString("collection",
-			mcp.Required(),
-			mcp.Description("The collection name"),
-		),
-		mcp.WithArray("documents",
-			mcp.Required(),
-			mcp.Description("The documents to insert, each document is a string in JSON format"),
-		),
-	)
+	rawSchema := json.RawMessage(`{
+		"type": "object",
+		"properties": {
+			"insert": {"type": "string", "description": "Name of collection to insert documents into"},
+			"documents": {"type": "array", "description": "array of documents where each document is a JSON object"},
+			"$db": {"type": "string", "description": "Name of database"}
+		},
+		"required": ["insert", "documents", "$db"]
+	}`)
+
+	return mcp.NewToolWithRawSchema("insert", "Insert documents and it returns the number of inserted documents", rawSchema)
 }
 
-// handleInsert executes insert command.
-func (h *Handler) handleInsert(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+// insert executes insert command.
+func (h *Handler) insert(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	database, err := request.RequireString("database")
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
