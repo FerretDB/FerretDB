@@ -34,19 +34,19 @@ func newListDatabasesResource() mcp.Resource {
 }
 
 // handleListDatabases calls the listDatabases command and returns the result as an MCP resource.
-func (s *Server) handleListDatabases(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+func (h *Handler) handleListDatabases(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 	req := wire.MustOpMsg(
 		"listDatabase", int32(1),
 	)
 
-	s.opts.L.DebugContext(ctx, "OP_MSG request", "request", req.StringIndent())
+	h.l.DebugContext(ctx, "OP_MSG request", "request", req.StringIndent())
 
-	res, err := s.opts.Handler.Handle(ctx, &middleware.Request{OpMsg: req})
+	res, err := h.h.Handle(ctx, &middleware.Request{OpMsg: req})
 	if err != nil {
 		return nil, err
 	}
 
-	s.opts.L.DebugContext(ctx, "OP_MSG response", "response", res.OpMsg.StringIndent())
+	h.l.DebugContext(ctx, "OP_MSG response", "response", res.OpMsg.StringIndent())
 
 	doc, err := res.OpMsg.DocumentDeep()
 	if err != nil {

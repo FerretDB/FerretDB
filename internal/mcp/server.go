@@ -31,6 +31,13 @@ import (
 type Server struct {
 	opts *ServerOpts
 	s    *server.MCPServer
+	h    *Handler
+}
+
+// Handler implements handling of MCP requests.
+type Handler struct {
+	l *slog.Logger
+	h *handler.Handler
 }
 
 // ServerOpts represents [Serve] options.
@@ -49,7 +56,11 @@ func New(opts *ServerOpts) *Server {
 
 	return &Server{
 		opts: opts,
-		s:    mcpServer,
+		h: &Handler{
+			h: opts.Handler,
+			l: opts.L,
+		},
+		s: mcpServer,
 	}
 }
 
@@ -67,19 +78,19 @@ type mcpHandlers struct {
 func (s *Server) initTools() map[string]mcpHandlers {
 	return map[string]mcpHandlers{
 		"find": {
-			toolHandler: s.handleFind,
+			toolHandler: s.h.handleFind,
 			tool:        newFindTool(),
 		},
 		"insert": {
-			toolHandler: s.handleInsert,
+			toolHandler: s.h.handleInsert,
 			tool:        newInsertTool(),
 		},
 		"listCollections": {
-			resourceTemplateHandler: s.handleListCollections,
+			resourceTemplateHandler: s.h.handleListCollections,
 			resourceTemplate:        newListCollectionsResource(),
 		},
 		"listDatabases": {
-			resourceHandler: s.handleListDatabases,
+			resourceHandler: s.h.handleListDatabases,
 			resource:        newListDatabasesResource(),
 		},
 	}

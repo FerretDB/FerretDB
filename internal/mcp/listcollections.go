@@ -35,7 +35,7 @@ func newListCollectionsResource() mcp.ResourceTemplate {
 }
 
 // handleListDatabases calls the listCollections command and returns the result as an MCP resource.
-func (s *Server) handleListCollections(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
+func (h *Handler) handleListCollections(ctx context.Context, request mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
 	u, err := url.Parse(request.Params.URI)
 	if err != nil {
 		return nil, err
@@ -48,14 +48,14 @@ func (s *Server) handleListCollections(ctx context.Context, request mcp.ReadReso
 		"$db", database,
 	)
 
-	s.opts.L.DebugContext(ctx, "OP_MSG request", "request", req.StringIndent())
+	h.l.DebugContext(ctx, "OP_MSG request", "request", req.StringIndent())
 
-	res, err := s.opts.Handler.Handle(ctx, &middleware.Request{OpMsg: req})
+	res, err := h.h.Handle(ctx, &middleware.Request{OpMsg: req})
 	if err != nil {
 		return nil, err
 	}
 
-	s.opts.L.DebugContext(ctx, "OP_MSG response", "response", res.OpMsg.StringIndent())
+	h.l.DebugContext(ctx, "OP_MSG response", "response", res.OpMsg.StringIndent())
 
 	doc, err := res.OpMsg.DocumentDeep()
 	if err != nil {

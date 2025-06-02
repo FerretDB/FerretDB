@@ -43,7 +43,7 @@ func newInsertTool() mcp.Tool {
 }
 
 // handleInsert executes insert command.
-func (s *Server) handleInsert(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (h *Handler) handleInsert(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	database, err := request.RequireString("database")
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
@@ -62,14 +62,14 @@ func (s *Server) handleInsert(ctx context.Context, request mcp.CallToolRequest) 
 		"documents", documents,
 	)
 
-	s.opts.L.DebugContext(ctx, "OP_MSG request", "request", req.StringIndent())
+	h.l.DebugContext(ctx, "OP_MSG request", "request", req.StringIndent())
 
-	res, err := s.opts.Handler.Handle(ctx, &middleware.Request{OpMsg: req})
+	res, err := h.h.Handle(ctx, &middleware.Request{OpMsg: req})
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	s.opts.L.DebugContext(ctx, "OP_MSG response", "response", res.OpMsg.StringIndent())
+	h.l.DebugContext(ctx, "OP_MSG response", "response", res.OpMsg.StringIndent())
 
 	doc, err := res.OpMsg.DocumentDeep()
 	if err != nil {
