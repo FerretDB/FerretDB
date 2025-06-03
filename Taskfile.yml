@@ -356,7 +356,7 @@ tasks:
   mcpclient:
     desc: "Run MCP client (using Ollama client installed on the host)"
     cmds:
-      - bin/mcphost --config build/mcp/.mcp.json --model ollama:mistral
+      - bin/mcphost --config build/mcp/.mcp.json --model ollama:phi4-mini
 
   testsql:
     desc: "Run pgTAP with test.sql script"
