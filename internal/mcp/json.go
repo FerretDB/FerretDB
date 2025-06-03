@@ -17,12 +17,12 @@ package mcp
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
-	"github.com/FerretDB/wire"
+	"io"
+
 	"github.com/FerretDB/wire/wirebson"
 	"go.mongodb.org/mongo-driver/v2/bson"
-	"io"
+
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // marshalJSON encodes wirebson.RawDocument into extended JSON.
@@ -89,83 +89,4 @@ func unmarshalSingleJSON(json *json.RawMessage) (out any, err error) {
 	}
 
 	return
-}
-
-// prepareOpMsg creates a new OpMsg from the given pairs of field names and values,
-// which can be used as handler command msg.
-//
-// If any of pair values is nil it's ignored.
-func prepareOpMsg(pairs ...any) (*middleware.Request, error) {
-	doc, err := prepareDocument(pairs...)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := wire.NewOpMsg(doc)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &middleware.Request{OpMsg: req}, nil
-}
-
-// prepareDocument creates a new bson document from the given pairs of
-// field names and values, which can be used as handler command msg.
-//
-// If any of pair values is nil it's ignored.
-func prepareDocument(pairs ...any) (*wirebson.Document, error) {
-	l := len(pairs)
-
-	if l%2 != 0 {
-		return nil, lazyerrors.Errorf("invalid number of arguments: %d", l)
-	}
-
-	docPairs := make([]any, 0, l)
-
-	for i := 0; i < l; i += 2 {
-		var err error
-
-		key := pairs[i]
-		v := pairs[i+1]
-
-		switch val := v.(type) {
-		// json.RawMessage is the non-pointer exception.
-		// Other non-pointer types don't need special handling.
-		case json.RawMessage:
-			v, err = unmarshalSingleJSON(&val)
-			if err != nil {
-				return nil, err
-			}
-
-		case *json.RawMessage:
-			if val == nil {
-				continue
-			}
-
-			v, err = unmarshalSingleJSON(val)
-			if err != nil {
-				return nil, err
-			}
-		case *float32:
-			if val == nil {
-				continue
-			}
-
-			v = float64(*val)
-		case *bool:
-			if val == nil {
-				continue
-			}
-
-			v = *val
-		}
-
-		if v == nil {
-			continue
-		}
-
-		docPairs = append(docPairs, key, v)
-	}
-
-	return wirebson.NewDocument(docPairs...)
 }

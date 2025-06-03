@@ -30,7 +30,7 @@ func newInsertTool() mcp.Tool {
 		"type": "object",
 		"properties": {
 			"collection": {"type": "string", "description": "The collection to insert documents into"},
-			"documents": {"type": "array", "description": "The documents contains documents to insert, represented in Extended JSON v2 format"},
+			"documents": {"type": "array", "description": "The documents to insert, represented in Extended JSON v2 format"},
 			"database": {"type": "string", "description": "The database to use for inserting documents"}
 		},
 		"required": ["collection", "documents", "database"]
