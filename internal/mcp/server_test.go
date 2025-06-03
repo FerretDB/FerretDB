@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
@@ -68,20 +67,20 @@ func TestHandle(t *testing.T) {
 		req        mcp.CallToolRequest
 		handleFunc server.ToolHandlerFunc
 	}{
-		"insertAsRaw": {
+		"insertRawDocuments": {
 			req: mcp.CallToolRequest{
 				Params: params{
 					Name: "insert",
-					Arguments: must.NotFail(json.Marshal(api.InsertManyJSONBody{
-						Collection: "values",
-						Database:   "test",
-						Documents:  json.RawMessage(`[{"abc": "def"}]`),
-					})),
+					Arguments: map[string]any{
+						"collection": "values",
+						"database":   "test",
+						"documents":  must.NotFail(json.Marshal([]any{map[string]any{"abc": "def"}})),
+					},
 				},
 			},
 			handleFunc: mh.insert,
 		},
-		"insertAsMap": {
+		"insertMapDocuments": {
 			req: mcp.CallToolRequest{
 				Params: params{
 					Name: "insert",

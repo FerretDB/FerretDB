@@ -21,73 +21,59 @@ import (
 	"log/slog"
 
 	"github.com/mark3labs/mcp-go/mcp"
-
-	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
 )
 
 // newInsertTool creates a new MCP tool for insert command.
 func newInsertTool() mcp.Tool {
-	rawSchema := json.RawMessage(`{
-		"type": "object",
-		"properties": {
-			"collection": {"type": "string", "description": "The collection to insert documents into"},
-			"documents": {"type": "array", "description": "The documents to insert, represented in Extended JSON v2 format"},
-			"database": {"type": "string", "description": "The database to use for inserting documents"}
-		},
-		"required": ["collection", "documents", "database"]
-	}`)
-
-	return mcp.NewToolWithRawSchema("insert", "Insert documents and return the number inserted documents", rawSchema)
-
-	//	return mcp.NewTool("insert",
-	//		mcp.WithDescription("Insert documents and return the number inserted documents"),
-	//		mcp.WithString("database",
-	//			mcp.Required(),
-	//			mcp.Description("The database to use for inserting documents"),
-	//		),
-	//		mcp.WithString("collection",
-	//			mcp.Required(),
-	//			mcp.Description("The collection to insert documents into"),
-	//		),
-	//		mcp.WithArray("documents",
-	//			mcp.Required(),
-	//			mcp.Description("The documents contains documents to insert, represented in Extended JSON v2 format"),
-	//			mcp.Items(`{
-	//		"type": "object",
-	//}`),
-	//		),
-	//	)
+	return mcp.NewTool("insert",
+		mcp.WithDescription("Insert documents and return the number inserted documents"),
+		mcp.WithString("database",
+			mcp.Required(),
+			mcp.Description("The database to use for inserting documents"),
+		),
+		mcp.WithString("collection",
+			mcp.Required(),
+			mcp.Description("The collection to insert documents into"),
+		),
+		mcp.WithArray("documents",
+			mcp.Required(),
+			mcp.Description("The documents contains documents to insert, represented in Extended JSON v2 format"),
+			mcp.Items(`{"type":"object"}`),
+		),
+	)
 }
 
 // insert executes insert command.
 func (h *Handler) insert(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	var raw json.RawMessage
-	var err error
-
-	args := request.GetRawArguments()
-
-	// ideally, request arguments should be json.RawMessage according to tools initialization, but so far map[string]any is observed
-	switch args := args.(type) {
-	case map[string]any:
-		if raw, err = json.Marshal(args); err != nil {
-			return mcp.NewToolResultErrorFromErr("cannot marshal insert request map", err), nil
-		}
-	case []byte:
-		raw = args
-	default:
-		return mcp.NewToolResultError(fmt.Sprintf("invalid argument type %T for insert command", args)), nil
+	database, err := request.RequireString("database")
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	var body api.InsertManyJSONBody
+	collection, err := request.RequireString("collection")
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
 
-	if err = json.Unmarshal(raw, &body); err != nil {
-		return mcp.NewToolResultErrorFromErr("cannot unmarshal insert body", err), nil
+	var rawDocuments json.RawMessage
+
+	// ideally, documents arguments should be json.RawMessage bytes, but so far []any is observed
+	switch documents := request.GetArguments()["documents"].(type) {
+	case []any:
+		// marshal to json.RawMessage so we can use similar code as DataAPI to do json -> bson conversion
+		if rawDocuments, err = json.Marshal(documents); err != nil {
+			return mcp.NewToolResultErrorFromErr("cannot marshal insert request slice", err), nil
+		}
+	case []byte:
+		rawDocuments = documents
+	default:
+		return mcp.NewToolResultError(fmt.Sprintf("invalid argument type %T for insert command", documents)), nil
 	}
 
 	req, err := prepareOpMsg(
-		"insert", body.Collection,
-		"$db", body.Database,
-		"documents", body.Documents,
+		"insert", collection,
+		"$db", database,
+		"documents", rawDocuments,
 	)
 	if err != nil {
 		return mcp.NewToolResultErrorFromErr("cannot create OP_MSG", err), nil
