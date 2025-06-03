@@ -15,6 +15,7 @@
 package mcp
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"log/slog"
@@ -86,12 +87,16 @@ func (h *Handler) insert(ctx context.Context, request mcp.CallToolRequest) (*mcp
 
 	h.l.DebugContext(ctx, "OP_MSG response", slog.String("response", res.OpMsg.StringIndent()))
 
-	doc, err := res.OpMsg.DocumentDeep()
+	rawRes, err := res.OpMsg.DocumentRaw()
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	n := doc.Get("n").(int32)
+	buf := new(bytes.Buffer)
 
-	return mcp.FormatNumberResult(float64(n)), nil
+	if err = marshalJSON(rawRes, buf); err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
+
+	return mcp.NewToolResultText(buf.String()), nil
 }
