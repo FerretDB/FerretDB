@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -28,6 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
@@ -56,41 +58,62 @@ func TestHandle(t *testing.T) {
 
 	ctx := conninfo.Ctx(context.Background(), conninfo.New())
 
-	t.Run("insert", func(t *testing.T) {
-		t.Parallel()
+	type params struct {
+		Name      string    `json:"name"`
+		Arguments any       `json:"arguments,omitempty"`
+		Meta      *mcp.Meta `json:"_meta,omitempty"`
+	}
 
-		docs := json.RawMessage(`[{"abc": "def"}]`)
+	for name, tc := range map[string]struct {
+		req        mcp.CallToolRequest
+		handleFunc server.ToolHandlerFunc
+	}{
+		"insertAsRaw": {
+			req: mcp.CallToolRequest{
+				Params: params{
+					Name: "insert",
+					Arguments: must.NotFail(json.Marshal(api.InsertManyJSONBody{
+						Collection: "values",
+						Database:   "test",
+						Documents:  json.RawMessage(`[{"abc": "def"}]`),
+					})),
+				},
+			},
+			handleFunc: mh.insert,
+		},
+		"insertAsMap": {
+			req: mcp.CallToolRequest{
+				Params: params{
+					Name: "insert",
+					Arguments: map[string]any{
+						"collection": "values",
+						"database":   "test",
+						"documents":  []any{map[string]any{"abc": "def"}},
+					},
+				},
+			},
+			handleFunc: mh.insert,
+		},
+		"find": {
+			req: mcp.CallToolRequest{
+				Params: params{
+					Name: "find",
+					Arguments: map[string]any{
+						"database":   "test",
+						"collection": "values",
+					},
+				},
+			},
+			handleFunc: mh.find,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-		body, err := json.Marshal(api.InsertManyJSONBody{
-			Collection: "values",
-			Database:   "documents",
-			Documents:  docs,
+			var res *mcp.CallToolResult
+			res, err = tc.handleFunc(ctx, tc.req)
+			require.NoError(t, err)
+			assert.False(t, res.IsError, res.Content)
 		})
-		require.NoError(t, err)
-
-		var req mcp.CallToolRequest
-		req.Params.Name = "insert"
-		req.Params.Arguments = body
-
-		var res *mcp.CallToolResult
-		res, err = mh.insert(ctx, req)
-		require.NoError(t, err)
-		assert.False(t, res.IsError, res.Content)
-	})
-
-	t.Run("find", func(t *testing.T) {
-		t.Parallel()
-
-		var req mcp.CallToolRequest
-		req.Params.Name = "find"
-		req.Params.Arguments = map[string]any{
-			"database":   "test",
-			"collection": "values",
-		}
-
-		var res *mcp.CallToolResult
-		res, err = mh.find(ctx, req)
-		require.NoError(t, err)
-		assert.False(t, res.IsError, res.Content)
-	})
+	}
 }

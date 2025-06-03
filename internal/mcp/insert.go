@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -61,12 +62,27 @@ func newInsertTool() mcp.Tool {
 
 // insert executes insert command.
 func (h *Handler) insert(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	raw := request.GetRawArguments().([]byte)
+	var raw json.RawMessage
+	var err error
+
+	args := request.GetRawArguments()
+
+	// ideally request arguments should be json.RawMessage according to tools initialization, but so far map[string]any is observed
+	switch args := args.(type) {
+	case map[string]any:
+		if raw, err = json.Marshal(args); err != nil {
+			return mcp.NewToolResultErrorFromErr("cannot marshal insert request map", err), nil
+		}
+	case []byte:
+		raw = args
+	default:
+		return mcp.NewToolResultError(fmt.Sprintf("invalid argument type %T for insert command", args)), nil
+	}
 
 	var body api.InsertManyJSONBody
-	err := json.Unmarshal(raw, &body)
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
+
+	if err = json.Unmarshal(raw, &body); err != nil {
+		return mcp.NewToolResultErrorFromErr("cannot unmarshal insert body", err), nil
 	}
 
 	req, err := prepareOpMsg(
@@ -75,27 +91,27 @@ func (h *Handler) insert(ctx context.Context, request mcp.CallToolRequest) (*mcp
 		"documents", body.Documents,
 	)
 	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
+		return mcp.NewToolResultErrorFromErr("cannot create OP_MSG", err), nil
 	}
 
 	h.l.DebugContext(ctx, "OP_MSG request", slog.String("request", req.OpMsg.StringIndent()))
 
 	res, err := h.h.Handle(ctx, req)
 	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
+		return mcp.NewToolResultErrorFromErr("failed to handle OP_MSG", err), nil
 	}
 
 	h.l.DebugContext(ctx, "OP_MSG response", slog.String("response", res.OpMsg.StringIndent()))
 
 	rawRes, err := res.OpMsg.DocumentRaw()
 	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
+		return mcp.NewToolResultErrorFromErr("failed to get raw document", err), nil
 	}
 
 	buf := new(bytes.Buffer)
 
 	if err = marshalJSON(rawRes, buf); err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
+		return mcp.NewToolResultErrorFromErr("cannot marshal to extend JSON", err), nil
 	}
 
 	return mcp.NewToolResultText(buf.String()), nil
