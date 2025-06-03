@@ -79,7 +79,7 @@ var cli struct {
 		TLSKeyFile    string `default:""                help:"TLS key file path."`
 		TLSCaFile     string `default:""                help:"TLS CA file path."`
 		DataAPIAddr   string `default:""                help:"Listen TCP address for HTTP Data API."`
-		MCPServerAddr string `default:""                help:"Listen TCP address for HTTP Data API."`
+		MCPServerAddr string `default:""                help:"Experimental listen TCP address for MCP server sent events."`
 	} `embed:"" prefix:"listen-" group:"Interfaces"`
 
 	Proxy struct {

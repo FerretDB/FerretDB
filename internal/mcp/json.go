@@ -22,10 +22,11 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// prepareDocument creates a new bson document from the given pairs of
-// field names and values, which can be used as handler command msg.
+// prepareDocument creates a new bson document from JSON field values pairs,
+// including json.RawMessage value.
 //
 // If any of pair values is nil it's ignored.
 func prepareDocument(pairs ...any) (*wirebson.Document, error) {
@@ -85,7 +86,7 @@ func prepareDocument(pairs ...any) (*wirebson.Document, error) {
 	return wirebson.NewDocument(docPairs...)
 }
 
-// unmarshalSingleJSON takes extended JSON object and unmarshals it into the wirebson composite.
+// unmarshalExtJSON takes extended JSON object and unmarshals it into the [*wirebson.Document].
 // If provided json is nil it also returns nil.
 func unmarshalExtJSON(json *json.RawMessage) (out any, err error) {
 	if json == nil {
@@ -134,7 +135,7 @@ func unmarshalExtJSON(json *json.RawMessage) (out any, err error) {
 		bson.TypeMaxKey:
 		fallthrough
 	default:
-		panic(fmt.Errorf("Unrecognized type: %T", t))
+		must.NoError(fmt.Errorf("Unrecognized type: %T", t))
 	}
 
 	return
