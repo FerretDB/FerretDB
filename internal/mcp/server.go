@@ -25,29 +25,37 @@ import (
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
-// Server implements services described by OpenAPI description file.
+// Server implements an MCP server.
 type Server struct {
 	opts *ServerOpts
 	s    *server.MCPServer
-	h    *Handler
-}
-
-// Handler implements handling of MCP requests.
-type Handler struct {
-	l *slog.Logger
-	h *handler.Handler
 }
 
 // ServerOpts represents [Serve] options.
 type ServerOpts struct {
 	L       *slog.Logger
-	Handler *handler.Handler
+	Handler *Handler
 	TCPAddr string
 }
 
-// New creates a MCP server.
+// Handler handles MCP request.
+type Handler struct {
+	h *handler.Handler
+	l *slog.Logger
+}
+
+// NewHandler creates a new MCP handler with the given logger and handler.
+func NewHandler(h *handler.Handler, l *slog.Logger) *Handler {
+	return &Handler{
+		h: h,
+		l: l,
+	}
+}
+
+// New creates an MCP server.
 func New(opts *ServerOpts) *Server {
 	mcpServer := server.NewMCPServer(
 		"Wire Protocol Server",
@@ -56,37 +64,33 @@ func New(opts *ServerOpts) *Server {
 
 	return &Server{
 		opts: opts,
-		h: &Handler{
-			h: opts.Handler,
-			l: opts.L,
-		},
-		s: mcpServer,
+		s:    mcpServer,
 	}
 }
 
-// mcpHandlers represents an MCP handler function.
-type mcpHandlers struct {
+// mcpHandlers represents a tool and its handler to retrieve and return data.
+type mcpHandler struct {
 	tool        mcp.Tool
 	toolHandler server.ToolHandlerFunc
 }
 
-// initTools initializes the MCP tools for the server.
-func (s *Server) initTools() map[string]mcpHandlers {
-	return map[string]mcpHandlers{
+// initHandlers returns available MCP handlers for the server.
+func (s *Server) initHandlers() map[string]mcpHandler {
+	return map[string]mcpHandler{
 		"find": {
-			toolHandler: withLog(s.h.find, s.opts.L),
+			toolHandler: s.opts.Handler.find,
 			tool:        newFindTool(),
 		},
 		"insert": {
-			toolHandler: withLog(s.h.insert, s.opts.L),
+			toolHandler: s.opts.Handler.insert,
 			tool:        newInsertTool(),
 		},
 		"listCollections": {
-			toolHandler: s.h.listCollections,
+			toolHandler: s.opts.Handler.listCollections,
 			tool:        newListCollections(),
 		},
 		"listDatabases": {
-			toolHandler: s.h.listDatabases,
+			toolHandler: s.opts.Handler.listDatabases,
 			tool:        newListDatabases(),
 		},
 	}
@@ -94,9 +98,9 @@ func (s *Server) initTools() map[string]mcpHandlers {
 
 // Serve runs the MCP server.
 func (s *Server) Serve(ctx context.Context) error {
-	for _, t := range s.initTools() {
+	for _, t := range s.initHandlers() {
 		if t.toolHandler != nil {
-			s.s.AddTool(t.tool, t.toolHandler)
+			s.s.AddTool(t.tool, withLog(t.toolHandler, s.opts.L))
 		}
 	}
 
@@ -122,17 +126,19 @@ func withConnInfo(ctx context.Context, r *http.Request) context.Context {
 	return conninfo.Ctx(r.Context(), connInfo)
 }
 
-// withLog wraps the next handler with logging functionality.
+// withLog wraps the next handler with logging of request, response and error.
 func withLog(next server.ToolHandlerFunc, l *slog.Logger) server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		l.DebugContext(ctx, "MCP request", "request", fmt.Sprintf("%+v", request))
+		l.DebugContext(ctx, "MCP request", slog.String("request", fmt.Sprintf("%+v", request)))
 
 		res, err := next(ctx, request)
 		if err != nil {
-			l.ErrorContext(ctx, "MCP Error response", "response", fmt.Sprintf("%+v", res))
+			l.ErrorContext(ctx, "MCP error", logging.Error(err))
+
+			return nil, err
 		}
 
-		l.DebugContext(ctx, "MCP response", "response", fmt.Sprintf("%+v", res))
-		return res, err
+		l.DebugContext(ctx, "MCP response", slog.String("response", fmt.Sprintf("%+v", res)))
+		return res, nil
 	}
 }

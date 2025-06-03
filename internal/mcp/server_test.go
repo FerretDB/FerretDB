@@ -34,11 +34,9 @@ func TestHandle(t *testing.T) {
 	t.Parallel()
 
 	uri := testutil.PostgreSQLURL(t)
-
+	l := testutil.Logger(t)
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
-
-	l := testutil.Logger(t)
 
 	p, err := documentdb.NewPool(uri, logging.WithName(l, "pool"), sp)
 	require.NoError(t, err)
@@ -52,10 +50,7 @@ func TestHandle(t *testing.T) {
 	h, err := handler.New(handlerOpts)
 	require.NoError(t, err)
 
-	mcpH := &Handler{
-		l: l,
-		h: h,
-	}
+	mh := NewHandler(h, logging.WithName(l, "handler"))
 
 	ctx := conninfo.Ctx(context.Background(), conninfo.New())
 
@@ -70,7 +65,7 @@ func TestHandle(t *testing.T) {
 		}
 
 		var res *mcp.CallToolResult
-		res, err = mcpH.insert(ctx, req)
+		res, err = mh.insert(ctx, req)
 		require.NoError(t, err)
 		assert.False(t, res.IsError, res.Content)
 	})
@@ -86,7 +81,7 @@ func TestHandle(t *testing.T) {
 		}
 
 		var res *mcp.CallToolResult
-		res, err = mcpH.find(ctx, req)
+		res, err = mh.find(ctx, req)
 		require.NoError(t, err)
 		assert.False(t, res.IsError, res.Content)
 	})

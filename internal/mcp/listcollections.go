@@ -16,6 +16,8 @@ package mcp
 
 import (
 	"context"
+	"log/slog"
+
 	"github.com/FerretDB/wire"
 	"github.com/mark3labs/mcp-go/mcp"
 
@@ -33,7 +35,7 @@ func newListCollections() mcp.Tool {
 	)
 }
 
-// handleListDatabases calls the listCollections command with the given parameters.
+// listDatabases calls the listCollections command with the given parameters.
 func (h *Handler) listCollections(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	database, err := request.RequireString("database")
 	if err != nil {
@@ -45,14 +47,14 @@ func (h *Handler) listCollections(ctx context.Context, request mcp.CallToolReque
 		"$db", database,
 	)
 
-	h.l.DebugContext(ctx, "OP_MSG request", "request", req.StringIndent())
+	h.l.DebugContext(ctx, "OP_MSG request", slog.String("request", req.StringIndent()))
 
 	res, err := h.h.Handle(ctx, &middleware.Request{OpMsg: req})
 	if err != nil {
 		return nil, err
 	}
 
-	h.l.DebugContext(ctx, "OP_MSG response", "response", res.OpMsg.StringIndent())
+	h.l.DebugContext(ctx, "OP_MSG response", slog.String("response", res.OpMsg.StringIndent()))
 
 	doc, err := res.OpMsg.DocumentDeep()
 	if err != nil {
@@ -63,8 +65,6 @@ func (h *Handler) listCollections(ctx context.Context, request mcp.CallToolReque
 	if err != nil {
 		return nil, err
 	}
-
-	h.l.DebugContext(ctx, "ListCollections response", "json", string(jsonRes))
 
 	return mcp.NewToolResultText(string(jsonRes)), nil
 }

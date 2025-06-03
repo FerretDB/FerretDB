@@ -16,6 +16,7 @@ package mcp
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/FerretDB/wire"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -55,25 +56,24 @@ func (h *Handler) find(ctx context.Context, request mcp.CallToolRequest) (*mcp.C
 		"$db", database,
 	)
 
-	h.l.DebugContext(ctx, "OP_MSG request", "request", req.StringIndent())
+	h.l.DebugContext(ctx, "OP_MSG request", slog.String("request", req.StringIndent()))
 
 	res, err := h.h.Handle(ctx, &middleware.Request{OpMsg: req})
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	h.l.DebugContext(ctx, "OP_MSG response", "response", res.OpMsg.StringIndent())
+	h.l.DebugContext(ctx, "OP_MSG response", slog.String("response", res.OpMsg.StringIndent()))
 
 	doc, err := res.OpMsg.DocumentDeep()
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
+
 	jsonRes, err := doc.MarshalJSON()
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
-
-	h.l.DebugContext(ctx, "Find response", "json", string(jsonRes))
 
 	return mcp.NewToolResultText(string(jsonRes)), nil
 }
