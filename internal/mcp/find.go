@@ -43,12 +43,12 @@ func newFindTool() mcp.Tool {
 func (h *Handler) find(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	database, err := request.RequireString("database")
 	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
+		return mcp.NewToolResultErrorFromErr("failed to get database name", err), nil
 	}
 
 	collection, err := request.RequireString("collection")
 	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
+		return mcp.NewToolResultErrorFromErr("failed to get collection name", err), nil
 	}
 
 	req := wire.MustOpMsg(
@@ -60,19 +60,19 @@ func (h *Handler) find(ctx context.Context, request mcp.CallToolRequest) (*mcp.C
 
 	res, err := h.h.Handle(ctx, &middleware.Request{OpMsg: req})
 	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
+		return mcp.NewToolResultErrorFromErr("failed to handle OP_MSG", err), nil
 	}
 
 	h.l.DebugContext(ctx, "OP_MSG response", slog.String("response", res.OpMsg.StringIndent()))
 
 	doc, err := res.OpMsg.DocumentDeep()
 	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
+		return mcp.NewToolResultErrorFromErr("failed to decode OP_MSG", err), nil
 	}
 
 	jsonRes, err := doc.MarshalJSON()
 	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
+		return mcp.NewToolResultErrorFromErr("failed to marshal", err), nil
 	}
 
 	return mcp.NewToolResultText(string(jsonRes)), nil
