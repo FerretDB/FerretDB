@@ -337,8 +337,8 @@ github.com/oasdiff/yaml v0.0.0-20250309154309-f31be36b4037 h1:G7ERwszslrBzRxj//J
 github.com/oasdiff/yaml v0.0.0-20250309154309-f31be36b4037/go.mod h1:2bpvgLBZEtENV5scfDFEtB/5+1M4hkQhDQrccEJ/qGw=
 github.com/oasdiff/yaml3 v0.0.0-20250309153720-d2182401db90 h1:bQx3WeLcUWy+RletIKwUIt4x3t8n2SxavmoclizMb8c=
 github.com/oasdiff/yaml3 v0.0.0-20250309153720-d2182401db90/go.mod h1:y5+oSEHCPT/DGrS++Wc/479ERge0zTFxaF8PbGKcg2o=
-github.com/ollama/ollama v0.9.0 h1:GvdGhi8G/QMnFrY0TMLDy1bXua+Ify8KTkFe4ZY/OZs=
-github.com/ollama/ollama v0.9.0/go.mod h1:aio9yQ7nc4uwIbn6S0LkGEPgn8/9bNQLL1nHuH+OcD0=
+github.com/ollama/ollama v0.5.1 h1:Ug4y/5UZZoTgetMklZslAlEdaCnYEX9qZJ/aTsM4+xc=
+github.com/ollama/ollama v0.5.1/go.mod h1:wrgnDTdogU9yeFOj/Jc8BpRBJrWu+Ox4eGyHxqiaQDc=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.10.2/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.12.1/go.mod h1:zj2OWP4+oCPe1qIXoGWkgMRwljMUYCdkwsT2108oapk=
