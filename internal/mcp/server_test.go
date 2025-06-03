@@ -126,7 +126,6 @@ func TestHandle(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			// do not run parallel to avoid datarace
-
 			var res *mcp.CallToolResult
 			res, err = tc.handleFunc(ctx, tc.req)
 			require.NoError(t, err)
