@@ -34,7 +34,7 @@ func newListDatabases() mcp.Tool {
 // listDatabases calls the listDatabases command and returns the results.
 func (h *Handler) listDatabases(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	req := wire.MustOpMsg(
-		"listDatabase", int32(1),
+		"listDatabases", int32(1),
 	)
 
 	h.l.DebugContext(ctx, "OP_MSG request", slog.String("request", req.StringIndent()))

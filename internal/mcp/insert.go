@@ -15,7 +15,6 @@
 package mcp
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -67,7 +66,7 @@ func (h *Handler) insert(ctx context.Context, request mcp.CallToolRequest) (*mcp
 
 	args := request.GetRawArguments()
 
-	// ideally request arguments should be json.RawMessage according to tools initialization, but so far map[string]any is observed
+	// ideally, request arguments should be json.RawMessage according to tools initialization, but so far map[string]any is observed
 	switch args := args.(type) {
 	case map[string]any:
 		if raw, err = json.Marshal(args); err != nil {
@@ -103,16 +102,15 @@ func (h *Handler) insert(ctx context.Context, request mcp.CallToolRequest) (*mcp
 
 	h.l.DebugContext(ctx, "OP_MSG response", slog.String("response", res.OpMsg.StringIndent()))
 
-	rawRes, err := res.OpMsg.DocumentRaw()
+	doc, err := res.OpMsg.DocumentDeep()
 	if err != nil {
-		return mcp.NewToolResultErrorFromErr("failed to get raw document", err), nil
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	buf := new(bytes.Buffer)
-
-	if err = marshalJSON(rawRes, buf); err != nil {
-		return mcp.NewToolResultErrorFromErr("cannot marshal to extend JSON", err), nil
+	jsonRes, err := doc.MarshalJSON()
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	return mcp.NewToolResultText(buf.String()), nil
+	return mcp.NewToolResultText(string(jsonRes)), nil
 }

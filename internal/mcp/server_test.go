@@ -106,6 +106,25 @@ func TestHandle(t *testing.T) {
 			},
 			handleFunc: mh.find,
 		},
+		"listCollections": {
+			req: mcp.CallToolRequest{
+				Params: params{
+					Name: "list collections",
+					Arguments: map[string]any{
+						"database": "test",
+					},
+				},
+			},
+			handleFunc: mh.listCollections,
+		},
+		"listDatabases": {
+			req: mcp.CallToolRequest{
+				Params: params{
+					Name: "list databases",
+				},
+			},
+			handleFunc: mh.listDatabases,
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
