@@ -15,7 +15,6 @@
 package mcp
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 
@@ -53,10 +52,10 @@ func TestHandle(t *testing.T) {
 	h, err := handler.New(handlerOpts)
 	require.NoError(t, err)
 
-	mh := NewHandler(h, logging.WithName(l, "handler"))
+	ctx := conninfo.Ctx(t.Context(), conninfo.New())
+	mh := NewHandler(h, logging.WithName(l, "mcp-handler"))
 
-	ctx := conninfo.Ctx(context.Background(), conninfo.New())
-
+	//nolint:vet // for testing
 	type params struct {
 		Name      string    `json:"name"`
 		Arguments any       `json:"arguments,omitempty"`

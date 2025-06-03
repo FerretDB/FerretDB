@@ -20,7 +20,10 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/FerretDB/wire"
 	"github.com/mark3labs/mcp-go/mcp"
+
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 )
 
 // newInsertTool creates a new MCP tool for insert command.
@@ -70,18 +73,23 @@ func (h *Handler) insert(ctx context.Context, request mcp.CallToolRequest) (*mcp
 		return mcp.NewToolResultError(fmt.Sprintf("invalid argument type %T for insert command", documents)), nil
 	}
 
-	req, err := prepareOpMsg(
+	reqDoc, err := prepareDocument(
 		"insert", collection,
 		"$db", database,
 		"documents", rawDocuments,
 	)
 	if err != nil {
+		return mcp.NewToolResultErrorFromErr("cannot create document", err), nil
+	}
+
+	req, err := wire.NewOpMsg(reqDoc)
+	if err != nil {
 		return mcp.NewToolResultErrorFromErr("cannot create OP_MSG", err), nil
 	}
 
-	h.l.DebugContext(ctx, "OP_MSG request", slog.String("request", req.OpMsg.StringIndent()))
+	h.l.DebugContext(ctx, "OP_MSG request", slog.String("request", req.StringIndent()))
 
-	res, err := h.h.Handle(ctx, req)
+	res, err := h.h.Handle(ctx, &middleware.Request{OpMsg: req})
 	if err != nil {
 		return mcp.NewToolResultErrorFromErr("failed to handle OP_MSG", err), nil
 	}

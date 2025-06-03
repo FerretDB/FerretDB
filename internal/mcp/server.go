@@ -106,7 +106,8 @@ func (s *Server) Serve(ctx context.Context) error {
 
 	s.opts.L.InfoContext(ctx, fmt.Sprintf("Starting MCP server on http://%s/", s.opts.TCPAddr))
 
-	// FIXME add authentication
+	// can authentication be added?
+	// TODO https://github.com/FerretDB/FerretDB/issues/5209
 	sseServer := server.NewSSEServer(s.s, server.WithBaseURL(s.opts.TCPAddr), server.WithSSEContextFunc(withConnInfo))
 
 	if err := sseServer.Start(s.opts.TCPAddr); err != nil {
@@ -120,9 +121,10 @@ func (s *Server) Serve(ctx context.Context) error {
 func withConnInfo(ctx context.Context, r *http.Request) context.Context {
 	connInfo := conninfo.New()
 
+	// improve handling of conninfo
+	// TODO https://github.com/FerretDB/FerretDB/issues/5209
 	defer connInfo.Close()
 
-	// FIXME this is not quite correct
 	return conninfo.Ctx(r.Context(), connInfo)
 }
 
@@ -139,6 +141,7 @@ func withLog(next server.ToolHandlerFunc, l *slog.Logger) server.ToolHandlerFunc
 		}
 
 		l.DebugContext(ctx, "MCP response", slog.String("response", fmt.Sprintf("%+v", res)))
+
 		return res, nil
 	}
 }
