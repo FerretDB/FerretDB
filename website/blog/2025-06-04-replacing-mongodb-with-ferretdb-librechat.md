@@ -18,7 +18,7 @@ tags:
 ![Replacing MongoDB with FerretDB on LibreChat](/img/blog/ferretdb-librechat.jpg)
 
 [LibreChat](https://www.librechat.ai/) is a free, open-source application that provides a user-friendly and customizable interface for interacting with various AI providers.
-It allows users to connect with providers like [OpenAI](https://openai.com/), [Azure](https://azure.microsoft.com/), [Anthropic](https://www.anthropic.com/), and more.
+It allows users to connect with providers like [Ollama](https://ollama.com/), [OpenAI](https://openai.com/), [Azure](https://azure.microsoft.com/), [Anthropic](https://www.anthropic.com/), and others – including fully local open-source models such as phi4-mini.
 
 For LibreChat users who want to stay fully open source, FerretDB is a great drop-in replacement for MongoDB,
 especially if you're looking to avoid proprietary databases or vendor lock-in.
@@ -32,11 +32,12 @@ This guide shows how to run LibreChat with FerretDB as the database, either by c
 
 Make sure you have a working LibreChat setup before proceeding.
 You'll also need API keys for your preferred AI providers.
-This guide uses `OPENAI_API_KEY` which is already set in the `.env` file.
+This guide uses a local Ollama model (`phi4-mini`), which requires no API key setup.
+Just make sure the model is pulled and Ollama is running.
 
 ## How to use FerretDB with LibreChat
 
-This guide assumes you have already have a running instance of LibreChat.
+This guide assumes you already have a running instance of LibreChat.
 See the [LibreChat documentation](https://www.librechat.ai/docs/quick_start/local_setup) for installation instructions.
 
 LibreChat can connect to FerretDB in two ways:
@@ -103,8 +104,56 @@ services:
 
 Replace `<username>` and `<password>` with your desired FerretDB credentials.
 
-Once set up, run `docker compose up` to start the entire stack.
+## Using Ollama with LibreChat
+
+LibreChat supports Ollama as a provider, allowing you to run open-source models like `phi4-mini` locally.
+We assume you have Ollama installed and the `phi4-mini` model pulled.
+You can use any other Ollama model as well, just replace `phi4-mini` with the desired model name.
+You can also check the [LibreChat documentation for more details on setting up Ollama as a provider](https://www.librechat.ai/docs/configuration/librechat_yaml/ai_endpoints/ollama).
+
+Start by copying the example configuration file for LibreChat:
+
+```sh
+cp librechat.example.yaml librechat.yaml
+```
+
+Then add the following under the `custom` section in `librechat.yaml`:
+
+```yaml
+custom:
+  - name: 'Ollama'
+    apiKey: 'ollama'
+    baseURL: 'http://host.docker.internal:11434/v1/' # Use this if LibreChat is in Docker
+    models:
+      default: ['phi4-mini']
+      fetch: false
+    titleConvo: true
+    titleModel: 'current_model'
+    summarize: false
+    summaryModel: 'current_model'
+    forcePrompt: false
+    modelDisplayLabel: 'Ollama (phi4-mini)'
+```
+
+Mount the configuration file in `docker-compose.override.yml`:
+
+```yaml
+api:
+  volumes:
+    - type: bind
+      source: ./librechat.yaml
+      target: /app/librechat.yaml
+```
+
+Then restart your containers to apply the changes:
+
+```sh
+docker compose down
+docker compose up -d
+```
+
 This will start FerretDB and PostgreSQL with DocumentDB extension, and LibreChat will connect to FerretDB using the specified connection string.
+You will also have Ollama running as a provider with the `phi4-mini` model available.
 
 This setup allows you to run LibreChat in a fully open-source environment without vendor lock-in or license restrictions.
 
@@ -113,9 +162,9 @@ This setup allows you to run LibreChat in a fully open-source environment withou
 After starting the services, you can access LibreChat by navigating to `http://localhost:3080` in your web browser.
 This will open up the LibreChat interface, where you can sign up and proceed to interact with your AI providers or models.
 
-The image below shows an interaction with OpenAI through the LibreChat interface:
+The image below shows an interaction with the open-source `phi4-mini` model running locally via Ollama in LibreChat:
 
-![LibreChat with OpenAI](/img/blog/librechat-interface.jpg)
+![A LibreChat interaction with the phi4-mini model running locally via Ollama:](/img/blog/librechat-interface.jpg)
 
 Once you interact with LibreChat, it creates a database named `LibreChat` in FerretDB and stores all user conversations and settings there.
 You can verify this by listing the collections:
@@ -153,48 +202,46 @@ You can view the conversation data in `messages` collection:
 LibreChat> db.messages.find().sort({ createdAt: -1 }).limit(2).pretty()
 [
   {
-    _id: ObjectId('6825eddb00716476ac090380'),
-    messageId: '934ef840-1bb9-46ba-87e1-3df1c3606de8',
-    user: '6824eb05e1a5e446598cb7e3',
-    updatedAt: ISODate('2025-05-15T13:36:27.060Z'),
-    expiredAt: null,
+    _id: ObjectId('683f79f2275d40bc6a0ba610'),
+    messageId: '06961e88-8192-45e5-8d9a-3ec46ca68d3b',
+    user: '683ef3e3f11454fa09471eb6',
+    updatedAt: ISODate('2025-06-03T22:40:50.523Z'),
+    expiredAt: ISODate('2025-07-03T22:40:50.521Z'),
     unfinished: false,
-    tokenCount: 145,
-    text: 'Sure! Here are three major sights to see in Brazil:\n' +
+    tokenCount: 43,
+    text: '1. Christ the Redeemer Statue, Rio de Janeiro\n' +
       '\n' +
-      '1. **Christ the Redeemer (Cristo Redentor)** – Located in Rio de Janeiro, this iconic statue of Jesus Christ stands atop Mount Corcovado and is one of the New Seven Wonders of the World.\n' +
+      '2. Sugarloaf Mountain (Pão de Açúcar), Rio de Janeiro\n' +
       '\n' +
-      '2. **Iguaçu Falls (Cataratas do Iguaçu)** – Situated on the border between Brazil and Argentina, these breathtaking waterfalls are among the largest and most impressive in the world, located within Iguaçu National Park.\n' +
-      '\n' +
-      '3. **Amazon Rainforest** – The vast and biodiverse Amazon Rainforest can be explored from cities like Manaus. Visitors can experience unique wildlife, indigenous cultures, and the mighty Amazon River.',
+      '3. Amazon Rainforest, Northern region',
     finish_reason: 'stop',
-    endpoint: 'openAI',
-    sender: 'GPT-4o',
-    model: 'chatgpt-4o-latest',
+    endpoint: 'ollama',
+    sender: 'Ollama (phi4-mini)',
+    model: 'phi4-mini',
     isCreatedByUser: false,
-    parentMessageId: 'aed06022-f0c0-42cc-a223-a985bc204cfe',
-    conversationId: '847501ba-85c3-4a80-ac0c-de78bb795056',
+    parentMessageId: 'dfe1c54c-4381-4e66-979b-dc8df3b958c7',
+    conversationId: '5a68447f-f4e7-4156-8920-74f5833aefe7',
     __v: 0,
-    createdAt: ISODate('2025-05-15T13:36:27.060Z'),
+    createdAt: ISODate('2025-06-03T22:40:50.523Z'),
     error: false,
     _meiliIndex: true
   },
   {
-    _id: ObjectId('6825edd8c3efbe53320a2cf0'),
-    messageId: 'aed06022-f0c0-42cc-a223-a985bc204cfe',
-    user: '6824eb05e1a5e446598cb7e3',
-    updatedAt: ISODate('2025-05-15T13:36:27.268Z'),
-    expiredAt: null,
+    _id: ObjectId('683f79f00707f2f06a0fa8c0'),
+    messageId: 'dfe1c54c-4381-4e66-979b-dc8df3b958c7',
+    user: '683ef3e3f11454fa09471eb6',
+    updatedAt: ISODate('2025-06-03T22:40:50.686Z'),
+    expiredAt: ISODate('2025-07-03T22:40:50.681Z'),
     unfinished: false,
-    endpoint: 'openAI',
-    tokenCount: 18,
+    endpoint: 'ollama',
+    tokenCount: 15,
     isCreatedByUser: true,
     text: 'Can you list three major sights to see in Brazil?',
     sender: 'User',
-    conversationId: '847501ba-85c3-4a80-ac0c-de78bb795056',
-    parentMessageId: '73794ba9-d0f8-4b1c-8eea-5daea0abb69f',
+    conversationId: '5a68447f-f4e7-4156-8920-74f5833aefe7',
+    parentMessageId: '28c8b0d6-bbe1-4d09-8693-5b30cb691ca3',
     __v: 0,
-    createdAt: ISODate('2025-05-15T13:36:24.580Z'),
+    createdAt: ISODate('2025-06-03T22:40:48.477Z'),
     model: null,
     error: false,
     _meiliIndex: true
