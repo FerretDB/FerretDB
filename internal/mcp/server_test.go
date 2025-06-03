@@ -16,6 +16,7 @@ package mcp
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -23,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
@@ -57,12 +59,18 @@ func TestHandle(t *testing.T) {
 	t.Run("insert", func(t *testing.T) {
 		t.Parallel()
 
+		docs := json.RawMessage(`[{"abc": "def"}]`)
+
+		body, err := json.Marshal(api.InsertManyJSONBody{
+			Collection: "values",
+			Database:   "documents",
+			Documents:  docs,
+		})
+		require.NoError(t, err)
+
 		var req mcp.CallToolRequest
 		req.Params.Name = "insert"
-		req.Params.Arguments = map[string]any{
-			"database":   "test",
-			"collection": "values",
-		}
+		req.Params.Arguments = body
 
 		var res *mcp.CallToolResult
 		res, err = mh.insert(ctx, req)

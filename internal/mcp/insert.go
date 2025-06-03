@@ -19,10 +19,9 @@ import (
 	"encoding/json"
 	"log/slog"
 
-	"github.com/FerretDB/wire"
 	"github.com/mark3labs/mcp-go/mcp"
 
-	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
+	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
 )
 
 // newInsertTool creates a new MCP tool for insert command.
@@ -30,39 +29,57 @@ func newInsertTool() mcp.Tool {
 	rawSchema := json.RawMessage(`{
 		"type": "object",
 		"properties": {
-			"insert": {"type": "string", "description": "Name of collection to insert documents into"},
-			"documents": {"type": "array", "description": "array of documents where each document is a JSON object"},
-			"$db": {"type": "string", "description": "Name of database"}
+			"collection": {"type": "string", "description": "The collection to insert documents into"},
+			"documents": {"type": "array", "description": "The documents contains documents to insert, represented in Extended JSON v2 format"},
+			"database": {"type": "string", "description": "The database to use for inserting documents"}
 		},
-		"required": ["insert", "documents", "$db"]
+		"required": ["collection", "documents", "database"]
 	}`)
 
-	return mcp.NewToolWithRawSchema("insert", "Insert documents and it returns the number of inserted documents", rawSchema)
+	return mcp.NewToolWithRawSchema("insert", "Insert documents and return the number inserted documents", rawSchema)
+
+	//	return mcp.NewTool("insert",
+	//		mcp.WithDescription("Insert documents and return the number inserted documents"),
+	//		mcp.WithString("database",
+	//			mcp.Required(),
+	//			mcp.Description("The database to use for inserting documents"),
+	//		),
+	//		mcp.WithString("collection",
+	//			mcp.Required(),
+	//			mcp.Description("The collection to insert documents into"),
+	//		),
+	//		mcp.WithArray("documents",
+	//			mcp.Required(),
+	//			mcp.Description("The documents contains documents to insert, represented in Extended JSON v2 format"),
+	//			mcp.Items(`{
+	//		"type": "object",
+	//}`),
+	//		),
+	//	)
 }
 
 // insert executes insert command.
 func (h *Handler) insert(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	database, err := request.RequireString("database")
+	raw := request.GetRawArguments().([]byte)
+
+	var body api.InsertManyJSONBody
+	err := json.Unmarshal(raw, &body)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	collection, err := request.RequireString("collection")
-	if err != nil {
-		return mcp.NewToolResultError(err.Error()), nil
-	}
-
-	documents := request.GetStringSlice("documents", []string{})
-
-	req := wire.MustOpMsg(
-		"insert", collection,
-		"$db", database,
-		"documents", documents,
+	req, err := prepareOpMsg(
+		"insert", body.Collection,
+		"$db", body.Database,
+		"documents", body.Documents,
 	)
+	if err != nil {
+		return mcp.NewToolResultError(err.Error()), nil
+	}
 
-	h.l.DebugContext(ctx, "OP_MSG request", slog.String("request", req.StringIndent()))
+	h.l.DebugContext(ctx, "OP_MSG request", slog.String("request", req.OpMsg.StringIndent()))
 
-	res, err := h.h.Handle(ctx, &middleware.Request{OpMsg: req})
+	res, err := h.h.Handle(ctx, req)
 	if err != nil {
 		return mcp.NewToolResultError(err.Error()), nil
 	}
@@ -74,7 +91,7 @@ func (h *Handler) insert(ctx context.Context, request mcp.CallToolRequest) (*mcp
 		return mcp.NewToolResultError(err.Error()), nil
 	}
 
-	n := doc.Get("n").(float64)
+	n := doc.Get("n").(int32)
 
-	return mcp.FormatNumberResult(n), nil
+	return mcp.FormatNumberResult(float64(n)), nil
 }
