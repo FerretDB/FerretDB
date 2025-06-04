@@ -29,7 +29,7 @@ import (
 // newInsertTool creates a new MCP tool for insert command.
 func newInsertTool() mcp.Tool {
 	return mcp.NewTool("insert",
-		mcp.WithDescription("Insert documents and return the number inserted documents"),
+		mcp.WithDescription("Insert documents to the collection and return the response in Extended JSON v2 format"),
 		mcp.WithString("database",
 			mcp.Required(),
 			mcp.Description("The database to use for inserting documents"),
@@ -46,7 +46,9 @@ func newInsertTool() mcp.Tool {
 	)
 }
 
-// insert executes insert command.
+// insert adds documents to the given collection in the database and returns the result of the insert command
+// in a string containing Extended JSON v2 format.
+// Each document to insert may be map[string]any, or []byte containing Extended JSON v2 format.
 func (h *ToolHandler) insert(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	database, err := request.RequireString("database")
 	if err != nil {
@@ -87,14 +89,14 @@ func (h *ToolHandler) insert(ctx context.Context, request mcp.CallToolRequest) (
 		return mcp.NewToolResultErrorFromErr("cannot create OP_MSG", err), nil
 	}
 
-	h.l.DebugContext(ctx, "OP_MSG request", slog.String("request", req.StringIndent()))
+	h.l.DebugContext(ctx, "OP_MSG request", slog.String("request", req.String()))
 
 	res, err := h.h.Handle(ctx, &middleware.Request{OpMsg: req})
 	if err != nil {
 		return mcp.NewToolResultErrorFromErr("failed to handle OP_MSG", err), nil
 	}
 
-	h.l.DebugContext(ctx, "OP_MSG response", slog.String("response", res.OpMsg.StringIndent()))
+	h.l.DebugContext(ctx, "OP_MSG response", slog.String("response", res.OpMsg.String()))
 
 	doc, err := res.OpMsg.DocumentDeep()
 	if err != nil {

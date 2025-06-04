@@ -35,7 +35,7 @@ func newListCollections() mcp.Tool {
 	)
 }
 
-// listDatabases calls the listCollections command with the given parameters.
+// listDatabases returns the list of collections in the given database in a string containing Extended JSON v2 format.
 func (h *ToolHandler) listCollections(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	database, err := request.RequireString("database")
 	if err != nil {
@@ -47,14 +47,14 @@ func (h *ToolHandler) listCollections(ctx context.Context, request mcp.CallToolR
 		"$db", database,
 	)
 
-	h.l.DebugContext(ctx, "OP_MSG request", slog.String("request", req.StringIndent()))
+	h.l.DebugContext(ctx, "OP_MSG request", slog.String("request", req.String()))
 
 	res, err := h.h.Handle(ctx, &middleware.Request{OpMsg: req})
 	if err != nil {
 		return mcp.NewToolResultErrorFromErr("failed to handle OP_MSG", err), nil
 	}
 
-	h.l.DebugContext(ctx, "OP_MSG response", slog.String("response", res.OpMsg.StringIndent()))
+	h.l.DebugContext(ctx, "OP_MSG response", slog.String("response", res.OpMsg.String()))
 
 	doc, err := res.OpMsg.DocumentDeep()
 	if err != nil {

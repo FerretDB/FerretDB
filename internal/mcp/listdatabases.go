@@ -31,20 +31,20 @@ func newListDatabases() mcp.Tool {
 	)
 }
 
-// listDatabases calls the listDatabases command and returns the results.
+// listDatabases returns the list of databases in a string containing Extended JSON v2 format.
 func (h *ToolHandler) listDatabases(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	req := wire.MustOpMsg(
 		"listDatabases", int32(1),
 	)
 
-	h.l.DebugContext(ctx, "OP_MSG request", slog.String("request", req.StringIndent()))
+	h.l.DebugContext(ctx, "OP_MSG request", slog.String("request", req.String()))
 
 	res, err := h.h.Handle(ctx, &middleware.Request{OpMsg: req})
 	if err != nil {
 		return mcp.NewToolResultErrorFromErr("failed to handle OP_MSG", err), nil
 	}
 
-	h.l.DebugContext(ctx, "OP_MSG response", slog.String("response", res.OpMsg.StringIndent()))
+	h.l.DebugContext(ctx, "OP_MSG response", slog.String("response", res.OpMsg.String()))
 
 	doc, err := res.OpMsg.DocumentDeep()
 	if err != nil {

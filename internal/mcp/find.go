@@ -39,7 +39,7 @@ func newFindTool() mcp.Tool {
 	)
 }
 
-// find calls find command with the given parameters.
+// find returns the documents from the given collection in the database in a string containing Extended JSON v2 format.
 func (h *ToolHandler) find(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	database, err := request.RequireString("database")
 	if err != nil {
@@ -56,14 +56,14 @@ func (h *ToolHandler) find(ctx context.Context, request mcp.CallToolRequest) (*m
 		"$db", database,
 	)
 
-	h.l.DebugContext(ctx, "OP_MSG request", slog.String("request", req.StringIndent()))
+	h.l.DebugContext(ctx, "OP_MSG request", slog.String("request", req.String()))
 
 	res, err := h.h.Handle(ctx, &middleware.Request{OpMsg: req})
 	if err != nil {
 		return mcp.NewToolResultErrorFromErr("failed to handle OP_MSG", err), nil
 	}
 
-	h.l.DebugContext(ctx, "OP_MSG response", slog.String("response", res.OpMsg.StringIndent()))
+	h.l.DebugContext(ctx, "OP_MSG response", slog.String("response", res.OpMsg.String()))
 
 	doc, err := res.OpMsg.DocumentDeep()
 	if err != nil {
