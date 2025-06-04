@@ -50,11 +50,11 @@ require (
 	github.com/Masterminds/semver/v3 v3.3.1 // indirect
 	github.com/Masterminds/sprig/v3 v3.3.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/OpenDocDB/cts/opendocdb-cts v0.2.1 // indirect
+	github.com/OpenDocDB/cts/opendocdb-cts v0.2.2 // indirect
 	github.com/ProtonMail/go-crypto v1.2.0 // indirect
 	github.com/aclements/go-moremath v0.0.0-20210112150236-f10218a38794 // indirect
 	github.com/alecthomas/chroma/v2 v2.16.0 // indirect
-	github.com/alecthomas/kong v1.10.0 // indirect
+	github.com/alecthomas/kong v1.11.0 // indirect
 	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
