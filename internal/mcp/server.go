@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net/http"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -100,7 +99,7 @@ func (s *Server) initHandlers() map[string]mcpHandler {
 func (s *Server) Serve(ctx context.Context) error {
 	for _, t := range s.initHandlers() {
 		if t.toolHandler != nil {
-			s.s.AddTool(t.tool, withLog(t.toolHandler, s.opts.L))
+			s.s.AddTool(t.tool, withLog(withConnInfo(t.toolHandler), s.opts.L))
 		}
 	}
 
@@ -108,7 +107,7 @@ func (s *Server) Serve(ctx context.Context) error {
 
 	// can authentication be added?
 	// TODO https://github.com/FerretDB/FerretDB/issues/5209
-	sseServer := server.NewSSEServer(s.s, server.WithBaseURL(s.opts.TCPAddr), server.WithSSEContextFunc(withConnInfo))
+	sseServer := server.NewSSEServer(s.s, server.WithBaseURL(s.opts.TCPAddr))
 
 	if err := sseServer.Start(s.opts.TCPAddr); err != nil {
 		return err
@@ -117,15 +116,15 @@ func (s *Server) Serve(ctx context.Context) error {
 	return nil
 }
 
-// withConnInfo creates a new connection info and adds it to the context.
-func withConnInfo(ctx context.Context, r *http.Request) context.Context {
-	connInfo := conninfo.New()
+// withConnInfo wraps the next handler with [*ConnInfo] context and closes it once the handler is executed.
+func withConnInfo(next server.ToolHandlerFunc) server.ToolHandlerFunc {
+	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		connInfo := conninfo.New()
 
-	// improve handling of conninfo
-	// TODO https://github.com/FerretDB/FerretDB/issues/5209
-	defer connInfo.Close()
+		defer connInfo.Close()
 
-	return conninfo.Ctx(r.Context(), connInfo)
+		return next(conninfo.Ctx(ctx, connInfo), request)
+	}
 }
 
 // withLog wraps the next handler with logging of request, response and error.
