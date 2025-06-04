@@ -2,7 +2,7 @@ export const categorizedApps = {
   'GUI Client Tools': [
     {
       name: 'Compass',
-      logo: '/img/integrations/abstract-logo.png',
+      logo: '/img/integrations/compass-logo.png',
       link: 'https://docs.ferretdb.io/usage/integrations/overview/#gui-applications'
     },
     {

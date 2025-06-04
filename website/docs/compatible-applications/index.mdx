@@ -1,15 +1,13 @@
 ---
-sidebar_position: 1
+sidebar_position: 3
 slug: /compatible-applications
 ---
 
-# List of compatible applications
+# Compatible applications
 
 import React from 'react';
 import { categorizedApps } from './applications.js';
 import styles from './grid.module.css';
-
-<!-- markdownlint-disable MD033 -->
 
 export const Grid = ({ apps }) => (
 
@@ -26,7 +24,7 @@ export const Grid = ({ apps }) => (
           <img
             src={logo}
             alt={`${name} logo`}
-            className={styles.logo}
+            className={`${styles.logo} no-zoom`}
           />
           {name}
         </a>
@@ -60,5 +58,3 @@ Explore officially tested applications compatible with FerretDB.
 <Grid apps={categorizedApps["PostgreSQL Operators"]} />
 
 If you have any questions or suggestions, please reach out to us on any of our [community channels](../introduction.md#community).
-
-<!-- markdownlint-enable MD033 -->
