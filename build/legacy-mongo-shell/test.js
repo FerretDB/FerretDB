@@ -3,26 +3,18 @@
 (function () {
   "use strict";
 
-  // Update the following example with your test.
+  db.coll.drop();
 
-  const coll = db.test;
+  const l = 1939;
+  // const l = 1938;
 
-  coll.drop();
+  const v = 'x'.repeat(l);
 
-  const init = [
-    { _id: "double", v: 42.13 },
-    { _id: "double-whole", v: 42.0 },
-    { _id: "double-zero", v: 0.0 },
-  ];
+  db.coll.insertOne({v: v});
 
-  coll.insertMany(init);
+  const actual = db.coll.findOneAndDelete({});
 
-  const query = { v: { $gt: 42.0 } };
-
-  const expected = [{ _id: "double", v: 42.13 }];
-
-  const actual = coll.find(query).toArray();
-  assert.eq(expected, actual);
+  assert.eq(v, actual.v);
 
   print("test.js passed!");
 })();
