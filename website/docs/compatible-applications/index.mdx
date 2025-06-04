@@ -5,32 +5,32 @@ slug: /compatible-applications
 
 # Compatible applications
 
-import React from 'react';
-import { categorizedApps } from './applications.js';
-import styles from './grid.module.css';
+import React from 'react'
+import { categorizedApps } from './applications.js'
+import styles from './grid.module.css'
 
 export const Grid = ({ apps }) => (
 
-  <div className={styles.container}>
-    <div className={styles.grid}>
-      {apps.map(({ name, logo, link }) => (
-        <a
-          key={name}
-          href={link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`${styles.card} card`}
-        >
-          <img
-            src={logo}
-            alt={`${name} logo`}
-            className={`${styles.logo} no-zoom`}
-          />
-          {name}
-        </a>
-      ))}
-    </div>
+<div className={styles.container}>
+  <div className={styles.grid}>
+    {apps.map(({ name, logo, link }) => (
+      <a
+        key={name}
+        href={link}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`${styles.card} card`}
+      >
+        <img
+          src={logo}
+          alt={`${name} logo`}
+          className={`${styles.logo} no-zoom`}
+        />
+        {name}
+      </a>
+    ))}
   </div>
+</div>
 );
 
 Explore officially tested applications compatible with FerretDB.
@@ -39,22 +39,22 @@ Explore officially tested applications compatible with FerretDB.
 
 ## GUI / Client Tools
 
-<Grid apps={categorizedApps["GUI / Client Tools"]} />
+<Grid apps={categorizedApps['GUI / Client Tools']} />
 
 ## Monitoring / Observability
 
-<Grid apps={categorizedApps["Monitoring / Observability"]} />
+<Grid apps={categorizedApps['Monitoring / Observability']} />
 
 ## Data Migration
 
-<Grid apps={categorizedApps["Data Migration"]} />
+<Grid apps={categorizedApps['Data Migration']} />
 
 ## Deployment Platforms/ Orchestration
 
-<Grid apps={categorizedApps["Deployment Platforms"]} />
+<Grid apps={categorizedApps['Deployment Platforms']} />
 
 ## Postgres Operators
 
-<Grid apps={categorizedApps["PostgreSQL Operators"]} />
+<Grid apps={categorizedApps['PostgreSQL Operators']} />
 
 If you have any questions or suggestions, please reach out to us on any of our [community channels](../introduction.md#community).
