@@ -15,87 +15,90 @@
 package resource
 
 import (
-	"os"
 	"runtime"
 	"runtime/pprof"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-type TestTrackObject struct {
+// Object represents a tracked object for tests.
+type Object struct {
 	token *Token
 }
 
-// runGC forces several GC cycles to give the runtime a chance to run cleanups.
-func runGC(t *testing.T) {
-	t.Helper()
+// globalObj is a global object that is never cleaned up.
+var globalObj *Object
 
-	for i := 0; i < 3; i++ {
+// origCleanup is the original cleanup function.
+var origCleanup = cleanup
+
+// See https://go.dev/doc/gc-guide#Testing_object_death
+// and https://pkg.go.dev/cmd/compile#hdr-Line_Directives.
+//
+//nolint:godot // line directives are not normal comments
+func TestTrackUntrack(t *testing.T) {
+	name := profileName(globalObj)
+
+	runtime.GC()
+
+	t.Run("LocalUntrack", func(t *testing.T) {
+		require.Nil(t, pprof.Lookup(name))
+
+		obj := &Object{token: NewToken()}
+
+//line testtrack.go:100
+		Track(obj, obj.token)
+
+		assert.Equal(t, 1, pprof.Lookup(name).Count())
+
+		Untrack(obj, obj.token)
+
 		runtime.GC()
-		runtime.Gosched()
-	}
-}
 
-// entryCount returns the number of entries for obj in its pprof profile.
-func entryCount(t *testing.T, obj any) int {
-	t.Helper()
+		assert.Equal(t, 0, pprof.Lookup(name).Count())
+	})
 
-	p := pprof.Lookup(profileName(obj))
-	if p != nil {
-		return p.Count()
-	}
+	t.Run("LocalCleanup", func(t *testing.T) {
+		ch := make(chan string, 1)
+		cleanup = func(msg string) {
+			ch <- msg
+		}
 
-	return 0
-}
+		require.Equal(t, 0, pprof.Lookup(name).Count())
 
-func TestTrackNoCleanupWhileReachable(t *testing.T) {
-	obj := &TestTrackObject{token: NewToken()}
-	Track(obj, obj.token)
-	t.Cleanup(func() { Untrack(obj, obj.token) })
+		obj := &Object{token: NewToken()}
 
-	assert.Equal(t, 1, entryCount(t, obj), "profile should have exactly one entry")
+//line testtrack.go:200
+		Track(obj, obj.token)
 
-	// GC should not run cleanup because obj is still reachable.
-	runGC(t)
+		assert.Equal(t, 1, pprof.Lookup(name).Count())
+		runtime.KeepAlive(obj)
 
-	runtime.KeepAlive(obj)
+		runtime.GC()
+		msg := <-ch
 
-	assert.Equal(t, 1, entryCount(t, obj), "cleanup shouldn't run while object is reachable")
-}
+		assert.Contains(t, msg, "testtrack.go:200")
+		assert.Equal(t, 1, pprof.Lookup(name).Count())
+	})
 
-func TestTrackCleanupRunsWhenAbandoned(t *testing.T) {
-	// This test crashes the process via a panic raised during runtime cleanup.
-	// It should manually be tested,
-	// should occur panic with 'TestTrackObject has not been finalized'
-	if os.Getenv("FERRETDB_TEST_MANUAL") != "true" {
-		t.Skip("set FERRETDB_TEST_MANUAL=true to run cleanup panic test")
-	}
+	t.Run("Global", func(t *testing.T) {
+		cleanup = origCleanup
 
-	obj := &TestTrackObject{token: NewToken()}
-	Track(obj, obj.token)
+		require.Equal(t, 1, pprof.Lookup(name).Count())
 
-	// Drop the reference; GC will trigger cleanup.
-	obj = nil
+		globalObj = &Object{token: NewToken()}
 
-	runGC(t)
+//line testtrack.go:300
+		Track(globalObj, globalObj.token)
 
-	t.Fatalf("expected cleanup panic did not occur")
-}
+		assert.Equal(t, 2, pprof.Lookup(name).Count())
 
-func TestUntrackProfileEntryRemoved(t *testing.T) {
-	obj := &TestTrackObject{token: NewToken()}
-	Track(obj, obj.token)
+		runtime.GC()
 
-	Untrack(obj, obj.token)
-	assert.Equal(t, 0, entryCount(t, obj), "profile entry should be removed after Untrack")
+		assert.Equal(t, 2, pprof.Lookup(name).Count())
+	})
 
-	token := obj.token
-	runtime.KeepAlive(obj)
-	obj = nil
-
-	// Object already unassigned from memory so cleanup is not necessary
-	runGC(t)
-
-	assert.Nil(t, token.cleanup, "cleanup handle should be nil after Untrack")
+	runtime.GC()
 }

@@ -18,6 +18,9 @@ jobs:
     name: Cleanup
     runs-on: server
 
+    permissions:
+      contents: read
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
