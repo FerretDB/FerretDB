@@ -33,8 +33,6 @@ FerretDB supports the following vector index kinds:
 - **Hierarchical Navigable Small World (HNSW)**: HNSW is a graph-based index that uses a hierarchical structure to store vectors, suitable for high-speed vector search in memory.
 - **Inverted File (IVF)**: IVF is an inverted file index that partitions the vector space (data sets) into clusters (inverted lists) and performs approximate nearest neighbor search within selected clusters.
 
-<!-- markdownlint-disable MD033 -->
-
 ## Creating an index
 
 Vector index can be created using the usual `createIndexes` command with the following syntax:
@@ -180,5 +178,3 @@ The query returns the two nearest neighbors of the query vector.
 </TabItem>
 
 </Tabs>
-
-<!-- markdownlint-enable MD033 -->
