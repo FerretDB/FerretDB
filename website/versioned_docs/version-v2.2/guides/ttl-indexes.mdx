@@ -30,8 +30,6 @@ The field must have a `Date` type.
 
 For example, let's create a TTL index for the `reservation.date` field in a `books` collection.
 
-<!-- markdownlint-disable MD033 -->
-
 <CodeBlock language="js">{CreateTTLIndexRequest}</CodeBlock>
 
 Let's insert a document into the `books` collection:
@@ -39,5 +37,3 @@ Let's insert a document into the `books` collection:
 <CodeBlock language="js">{InsertTTLDataRequest}</CodeBlock>
 
 After 60 seconds, the document will be deleted in the next cleanup operation.
-
-<!-- markdownlint-enable MD033 -->
