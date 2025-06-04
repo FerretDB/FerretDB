@@ -15,6 +15,7 @@
 package mcp
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -43,8 +44,6 @@ func TestHandle(t *testing.T) {
 	p, err := documentdb.NewPool(uri, logging.WithName(l, "pool"), sp)
 	require.NoError(t, err)
 
-	t.Cleanup(p.Close)
-
 	handlerOpts := &handler.NewOpts{
 		Pool:          p,
 		L:             logging.WithName(l, "handler"),
@@ -53,6 +52,20 @@ func TestHandle(t *testing.T) {
 
 	h, err := handler.New(handlerOpts)
 	require.NoError(t, err)
+
+	handlerCtx, cancel := context.WithCancel(t.Context())
+	handlerDone := make(chan struct{})
+
+	t.Cleanup(func() {
+		cancel()
+		<-handlerDone
+	})
+
+	go func() {
+		defer close(handlerDone)
+
+		h.Run(handlerCtx)
+	}()
 
 	ctx := conninfo.Ctx(t.Context(), conninfo.New())
 	mh := NewToolHandler(h, logging.WithName(l, "mcp-handler"))
