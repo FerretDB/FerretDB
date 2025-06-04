@@ -61,12 +61,15 @@ func TestHandle(t *testing.T) {
 		h.Run(handlerCtx)
 	}()
 
-	defer func() {
+	t.Cleanup(func() {
 		cancel()
 		<-handlerDone
-	}()
+	})
 
-	ctx := conninfo.Ctx(t.Context(), conninfo.New())
+	connInfo := conninfo.New()
+	ctx := conninfo.Ctx(t.Context(), connInfo)
+	t.Cleanup(connInfo.Close)
+
 	mh := NewToolHandler(h, logging.WithName(l, "mcp-handler"))
 
 	//nolint:vet // for testing
