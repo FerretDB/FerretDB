@@ -32,7 +32,7 @@ func newListDatabases() mcp.Tool {
 }
 
 // listDatabases calls the listDatabases command and returns the results.
-func (h *Handler) listDatabases(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (h *ToolHandler) listDatabases(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	req := wire.MustOpMsg(
 		"listDatabases", int32(1),
 	)

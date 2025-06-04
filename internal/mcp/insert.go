@@ -47,7 +47,7 @@ func newInsertTool() mcp.Tool {
 }
 
 // insert executes insert command.
-func (h *Handler) insert(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (h *ToolHandler) insert(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	database, err := request.RequireString("database")
 	if err != nil {
 		return mcp.NewToolResultErrorFromErr("failed to get database name", err), nil

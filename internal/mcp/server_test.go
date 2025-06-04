@@ -55,7 +55,7 @@ func TestHandle(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := conninfo.Ctx(t.Context(), conninfo.New())
-	mh := NewHandler(h, logging.WithName(l, "mcp-handler"))
+	mh := NewToolHandler(h, logging.WithName(l, "mcp-handler"))
 
 	//nolint:vet // for testing
 	type params struct {

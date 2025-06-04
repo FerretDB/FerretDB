@@ -36,7 +36,7 @@ func newListCollections() mcp.Tool {
 }
 
 // listDatabases calls the listCollections command with the given parameters.
-func (h *Handler) listCollections(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (h *ToolHandler) listCollections(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	database, err := request.RequireString("database")
 	if err != nil {
 		return mcp.NewToolResultErrorFromErr("failed to get database name", err), nil

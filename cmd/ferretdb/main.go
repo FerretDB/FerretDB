@@ -562,9 +562,9 @@ func run() {
 			l := logging.WithName(logger, "mcp")
 
 			e := mcp.New(&mcp.ServerOpts{
-				TCPAddr: cli.Listen.MCPServerAddr,
-				L:       l,
-				Handler: mcp.NewHandler(h, l),
+				TCPAddr:     cli.Listen.MCPServerAddr,
+				L:           l,
+				ToolHandler: mcp.NewToolHandler(h, l),
 			}).Serve(ctx)
 
 			if e != nil {

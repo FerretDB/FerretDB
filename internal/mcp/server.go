@@ -23,7 +23,6 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
@@ -35,72 +34,29 @@ type Server struct {
 
 // ServerOpts represents [Serve] options.
 type ServerOpts struct {
-	L       *slog.Logger
-	Handler *Handler
-	TCPAddr string
-}
-
-// Handler handles MCP request.
-type Handler struct {
-	h *handler.Handler
-	l *slog.Logger
-}
-
-// NewHandler creates a new MCP handler with the given logger and handler.
-func NewHandler(h *handler.Handler, l *slog.Logger) *Handler {
-	return &Handler{
-		h: h,
-		l: l,
-	}
+	L           *slog.Logger
+	ToolHandler *ToolHandler
+	TCPAddr     string
 }
 
 // New creates an MCP server.
 func New(opts *ServerOpts) *Server {
-	mcpServer := server.NewMCPServer(
-		"Wire Protocol Server",
-		"0.0.1",
-	)
-
 	return &Server{
 		opts: opts,
-		s:    mcpServer,
+		s:    server.NewMCPServer("Wire Protocol Server", "0.0.1"),
 	}
 }
 
-// mcpHandlers represents a tool and its handler to retrieve and return data.
-type mcpHandler struct {
-	tool        mcp.Tool
-	toolHandler server.ToolHandlerFunc
-}
-
-// initHandlers returns available MCP handlers for the server.
-func (s *Server) initHandlers() map[string]mcpHandler {
-	return map[string]mcpHandler{
-		"find": {
-			toolHandler: s.opts.Handler.find,
-			tool:        newFindTool(),
-		},
-		"insert": {
-			toolHandler: s.opts.Handler.insert,
-			tool:        newInsertTool(),
-		},
-		"listCollections": {
-			toolHandler: s.opts.Handler.listCollections,
-			tool:        newListCollections(),
-		},
-		"listDatabases": {
-			toolHandler: s.opts.Handler.listDatabases,
-			tool:        newListDatabases(),
-		},
-	}
+// tool represents a MCP tool clients can call to retrieve data or perform actions.
+type tool struct {
+	tool       mcp.Tool
+	handleFunc server.ToolHandlerFunc
 }
 
 // Serve runs the MCP server.
 func (s *Server) Serve(ctx context.Context) error {
-	for _, t := range s.initHandlers() {
-		if t.toolHandler != nil {
-			s.s.AddTool(t.tool, withLog(withConnInfo(t.toolHandler), s.opts.L))
-		}
+	for _, t := range s.opts.ToolHandler.initTools() {
+		s.s.AddTool(t.tool, withLog(withConnInfo(t.handleFunc), s.opts.L))
 	}
 
 	s.opts.L.InfoContext(ctx, fmt.Sprintf("Starting MCP server on http://%s/", s.opts.TCPAddr))
