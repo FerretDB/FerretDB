@@ -15,10 +15,6 @@ Some default values are overridden in [our Docker image](../installation/ferretd
 
 <!-- Keep order in sync with the `--help` output -->
 
-<!-- For <br /> -->
-<!-- markdownlint-capture -->
-<!-- markdownlint-disable MD033 -->
-
 ## General
 
 | Flag           | Description                      | Environment Variable | Default Value |
@@ -77,5 +73,3 @@ Additionally:
 | `--telemetry`         | Enable or disable [basic telemetry](telemetry.md)                                                                           | `FERRETDB_TELEMETRY`       | `undecided`                    |
 
 <!-- Do not document `--dev-XXX` flags -->
-
-<!-- markdownlint-restore -->
