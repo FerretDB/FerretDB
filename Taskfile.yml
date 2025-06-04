@@ -324,6 +324,14 @@ tasks:
     cmds:
       - bin/pkgsite{{exeExt}} -http=127.0.0.1:6060 -open
 
+  ollama:
+    desc: "Run Ollama server"
+    cmds:
+      - ollama serve
+    env:
+      # for https://ollama.com/library/phi4-mini
+      OLLAMA_CONTEXT_LENGTH: 131072
+
   psql:
     desc: "Run psql"
     cmds:

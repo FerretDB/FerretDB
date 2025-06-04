@@ -52,8 +52,6 @@ Single full-text index is created on a single field in a collection.
 
 To create a text index, use the `createIndex` command with the field you want to index and the type set to `'text'`.
 
-<!-- markdownlint-disable MD033 -->
-
 <CodeBlock language="js">{CreateTextIndexRequest}</CodeBlock>
 
 This command creates a full-text index on the `summary` field in a `books` collection.
@@ -96,5 +94,3 @@ Let's search for books that contain the words "hunt whales" in the `summary` fie
 Even though the query does not have exact matches, the search returns documents that contain similar words.
 
 <CodeBlock language="js">{RelevanceScoreResponse}</CodeBlock>
-
-<!-- markdownlint-enable MD033 -->
