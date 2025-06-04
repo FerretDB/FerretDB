@@ -21,7 +21,6 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
@@ -56,15 +55,15 @@ func TestHandle(t *testing.T) {
 	handlerCtx, cancel := context.WithCancel(t.Context())
 	handlerDone := make(chan struct{})
 
-	t.Cleanup(func() {
-		cancel()
-		<-handlerDone
-	})
-
 	go func() {
 		defer close(handlerDone)
 
 		h.Run(handlerCtx)
+	}()
+
+	defer func() {
+		cancel()
+		<-handlerDone
 	}()
 
 	ctx := conninfo.Ctx(t.Context(), conninfo.New())
@@ -144,7 +143,7 @@ func TestHandle(t *testing.T) {
 			var res *mcp.CallToolResult
 			res, err = tc.handleFunc(ctx, tc.req)
 			require.NoError(t, err)
-			assert.False(t, res.IsError, res.Content)
+			require.False(t, res.IsError, res.Content)
 		})
 	}
 }
