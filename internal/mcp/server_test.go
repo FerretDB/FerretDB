@@ -43,6 +43,8 @@ func TestHandle(t *testing.T) {
 	p, err := documentdb.NewPool(uri, logging.WithName(l, "pool"), sp)
 	require.NoError(t, err)
 
+	t.Cleanup(p.Close)
+
 	handlerOpts := &handler.NewOpts{
 		Pool:          p,
 		L:             logging.WithName(l, "handler"),
