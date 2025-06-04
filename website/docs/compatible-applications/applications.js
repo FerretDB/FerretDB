@@ -40,7 +40,7 @@ export const categorizedApps = {
       link: 'https://blog.ferretdb.io/run-ferretdb-postgres-documentdb-extension-cnpg-kubernetes/'
     }
   ],
-  'Monitoring / Observability': [
+  'Monitoring and Observability': [
     {
       name: 'Grafana',
       logo: '/img/integrations/grafana-logo.png',
