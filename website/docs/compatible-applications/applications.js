@@ -1,5 +1,5 @@
 export const categorizedApps = {
-  'GUI / Client Tools': [
+  'GUI Client Tools': [
     {
       name: 'Compass',
       logo: '/img/integrations/abstract-logo.png',
