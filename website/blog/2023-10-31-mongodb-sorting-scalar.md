@@ -27,9 +27,6 @@ However, if the BSON types are different, a predefined BSON comparison order is 
 
 The table below shows the predefined BSON comparison order for each BSON type.
 
-<!-- use newline in column header for appropriate spacing of columns -->
-<!-- markdownlint-disable MD033 -->
-
 | Order of Comparison<br/>(lowest to highest) | BSON Types                               |
 | ------------------------------------------- | ---------------------------------------- |
 | 1                                           | Null                                     |
