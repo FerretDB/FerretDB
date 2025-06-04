@@ -14,9 +14,9 @@ response = {
         ],
         summary:
           'Ishmael recounts his journey aboard the whaling ship Pequod under the leadership ' +
-          'of the obsessed Captain Ahab, who is obsessed with hunting the legendary white whale, ' +
-          'Moby Dick. The novel delves into themes of human struggle against nature and the ' +
-          'destructive power of obsession.',
+          'of the obsessed Captain Ahab, who is obsessed with hunting the legendary ' +
+          'white whale, Moby Dick. The novel delves into themes of human struggle ' +
+          'against nature and the destructive power of obsession.',
         score: Double(3)
       }
     ]

@@ -65,6 +65,7 @@ func TestInsertZeroTimestamp(tt *testing.T) {
 	d := batch.Get(0).(*wirebson.Document).Get("d").(*wirebson.Document)
 	assert.Equal(tt, wirebson.Timestamp(0), d.Get("dv"))
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/1608
 	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/1608")
 
 	v := batch.Get(0).(*wirebson.Document).Get("v").(wirebson.Timestamp)
