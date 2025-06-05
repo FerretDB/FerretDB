@@ -16,7 +16,6 @@ package mcp
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -27,7 +26,6 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
@@ -83,55 +81,6 @@ func TestHandle(t *testing.T) {
 		req        mcp.CallToolRequest
 		handleFunc server.ToolHandlerFunc
 	}{
-		"insertRawDocuments": {
-			req: mcp.CallToolRequest{
-				Params: params{
-					Name: "insert",
-					Arguments: map[string]any{
-						"collection": "values",
-						"database":   "test",
-						"documents":  must.NotFail(json.Marshal([]any{map[string]any{"abc": "def"}})),
-					},
-				},
-			},
-			handleFunc: mh.insert,
-		},
-		"insertMapDocuments": {
-			req: mcp.CallToolRequest{
-				Params: params{
-					Name: "insert",
-					Arguments: map[string]any{
-						"collection": "values",
-						"database":   "test",
-						"documents":  []any{map[string]any{"abc": "def"}},
-					},
-				},
-			},
-			handleFunc: mh.insert,
-		},
-		"find": {
-			req: mcp.CallToolRequest{
-				Params: params{
-					Name: "find",
-					Arguments: map[string]any{
-						"database":   "test",
-						"collection": "values",
-					},
-				},
-			},
-			handleFunc: mh.find,
-		},
-		"listCollections": {
-			req: mcp.CallToolRequest{
-				Params: params{
-					Name: "list collections",
-					Arguments: map[string]any{
-						"database": "test",
-					},
-				},
-			},
-			handleFunc: mh.listCollections,
-		},
 		"listDatabases": {
 			req: mcp.CallToolRequest{
 				Params: params{

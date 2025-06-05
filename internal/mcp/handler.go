@@ -37,18 +37,6 @@ func NewToolHandler(h *handler.Handler, l *slog.Logger) *ToolHandler {
 // initTools returns available MCP tools.
 func (h *ToolHandler) initTools() map[string]tool {
 	return map[string]tool{
-		"find": {
-			handleFunc: h.find,
-			tool:       newFindTool(),
-		},
-		"insert": {
-			handleFunc: h.insert,
-			tool:       newInsertTool(),
-		},
-		"listCollections": {
-			handleFunc: h.listCollections,
-			tool:       newListCollections(),
-		},
 		"listDatabases": {
 			handleFunc: h.listDatabases,
 			tool:       newListDatabases(),
