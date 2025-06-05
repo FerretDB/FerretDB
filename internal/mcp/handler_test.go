@@ -68,7 +68,7 @@ func TestHandle(t *testing.T) {
 	ctx := conninfo.Ctx(t.Context(), connInfo)
 	t.Cleanup(connInfo.Close)
 
-	mh := NewToolHandler(h, logging.WithName(l, "mcp-handler"))
+	mh := NewToolHandler(h)
 
 	//nolint:vet // for testing
 	type params struct {

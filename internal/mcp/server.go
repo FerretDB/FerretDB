@@ -23,6 +23,7 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
@@ -47,12 +48,6 @@ func New(opts *ServerOpts) *Server {
 	}
 }
 
-// tool represents a MCP tool clients can call to retrieve data or perform actions.
-type tool struct {
-	tool       mcp.Tool
-	handleFunc server.ToolHandlerFunc
-}
-
 // Serve runs the MCP server.
 func (s *Server) Serve(ctx context.Context) error {
 	for _, t := range s.opts.ToolHandler.initTools() {
@@ -66,7 +61,7 @@ func (s *Server) Serve(ctx context.Context) error {
 	sseServer := server.NewSSEServer(s.s, server.WithBaseURL(s.opts.TCPAddr))
 
 	if err := sseServer.Start(s.opts.TCPAddr); err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 
 	return nil
@@ -86,7 +81,9 @@ func withConnInfo(next server.ToolHandlerFunc) server.ToolHandlerFunc {
 // withLog wraps the next handler with logging of request, response and error.
 func withLog(next server.ToolHandlerFunc, l *slog.Logger) server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		l.DebugContext(ctx, "MCP request", slog.String("request", fmt.Sprintf("%+v", request)))
+		if l.Enabled(ctx, slog.LevelDebug) {
+			l.DebugContext(ctx, "MCP request", slog.String("request", fmt.Sprintf("%+v", request)))
+		}
 
 		res, err := next(ctx, request)
 		if err != nil {
@@ -95,7 +92,9 @@ func withLog(next server.ToolHandlerFunc, l *slog.Logger) server.ToolHandlerFunc
 			return nil, err
 		}
 
-		l.DebugContext(ctx, "MCP response", slog.String("response", fmt.Sprintf("%+v", res)))
+		if l.Enabled(ctx, slog.LevelDebug) {
+			l.DebugContext(ctx, "MCP response", slog.String("response", fmt.Sprintf("%+v", res)))
+		}
 
 		return res, nil
 	}

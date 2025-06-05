@@ -16,7 +16,6 @@ package mcp
 
 import (
 	"context"
-	"log/slog"
 
 	"github.com/FerretDB/wire"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -26,8 +25,11 @@ import (
 
 // newListDatabases creates a new MCP tool for listDatabases command.
 func newListDatabases() mcp.Tool {
-	return mcp.NewTool("list databases",
-		mcp.WithDescription("Returns list of all databases"),
+	return mcp.NewTool("list-databases",
+		mcp.WithDescription(
+			"Use Wire Query Protocol to returns a list of all databases. "+
+				"It uses Extended JSON v2 format for the response. "+
+				"Use this tool when you need to retrieve a list of databases."),
 	)
 }
 
@@ -37,24 +39,20 @@ func (h *ToolHandler) listDatabases(ctx context.Context, request mcp.CallToolReq
 		"listDatabases", int32(1),
 	)
 
-	h.l.DebugContext(ctx, "OP_MSG request", slog.String("request", req.String()))
-
 	res, err := h.h.Handle(ctx, &middleware.Request{OpMsg: req})
 	if err != nil {
 		return mcp.NewToolResultErrorFromErr("failed to handle OP_MSG", err), nil
 	}
 
-	h.l.DebugContext(ctx, "OP_MSG response", slog.String("response", res.OpMsg.String()))
-
-	doc, err := res.OpMsg.DocumentDeep()
+	resDoc, err := res.OpMsg.DocumentDeep()
 	if err != nil {
 		return mcp.NewToolResultErrorFromErr("failed to decode OP_MSG", err), nil
 	}
 
-	jsonRes, err := doc.MarshalJSON()
+	resJson, err := resDoc.MarshalJSON()
 	if err != nil {
 		return mcp.NewToolResultErrorFromErr("failed to marshal", err), nil
 	}
 
-	return mcp.NewToolResultText(string(jsonRes)), nil
+	return mcp.NewToolResultText(string(resJson)), nil
 }

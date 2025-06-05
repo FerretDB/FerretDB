@@ -15,29 +15,34 @@
 package mcp
 
 import (
-	"log/slog"
+	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
 )
 
+// tool represents MCP tool which clients can call to retrieve data or perform actions.
+type tool struct {
+	tool       mcp.Tool
+	handleFunc server.ToolHandlerFunc
+}
+
 // ToolHandler handles MCP request.
 type ToolHandler struct {
 	h *handler.Handler
-	l *slog.Logger
 }
 
 // NewToolHandler creates a new MCP handler with the given parameters.
-func NewToolHandler(h *handler.Handler, l *slog.Logger) *ToolHandler {
+func NewToolHandler(h *handler.Handler) *ToolHandler {
 	return &ToolHandler{
 		h: h,
-		l: l,
 	}
 }
 
 // initTools returns available MCP tools.
-func (h *ToolHandler) initTools() map[string]tool {
-	return map[string]tool{
-		"listDatabases": {
+func (h *ToolHandler) initTools() []tool {
+	return []tool{
+		{
 			handleFunc: h.listDatabases,
 			tool:       newListDatabases(),
 		},

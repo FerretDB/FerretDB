@@ -564,7 +564,7 @@ func run() {
 			e := mcp.New(&mcp.ServerOpts{
 				TCPAddr:     cli.Listen.MCPServerAddr,
 				L:           l,
-				ToolHandler: mcp.NewToolHandler(h, l),
+				ToolHandler: mcp.NewToolHandler(h),
 			}).Serve(ctx)
 
 			if e != nil {
