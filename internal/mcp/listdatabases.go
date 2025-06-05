@@ -27,9 +27,11 @@ import (
 func newListDatabases() mcp.Tool {
 	return mcp.NewTool("list-databases",
 		mcp.WithDescription(
-			"Use Wire Query Protocol to returns a list of all databases. "+
+			"Returns a list of databases by running listDatabases command. "+
 				"It uses Extended JSON v2 format for the response. "+
-				"Use this tool when you need to retrieve a list of databases."),
+				"Use this tool if you need to retrieve a list of databases. "+
+				"The response may be truncated if there are many databases, "+
+				"which is indicated by the presence of non zero cursor."),
 	)
 }
 
