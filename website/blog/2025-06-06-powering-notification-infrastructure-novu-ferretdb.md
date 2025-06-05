@@ -36,7 +36,7 @@ With Novu, you can build comprehensive notification workflows, manage user prefe
 ## Why use Novu with FerretDB?
 
 Novu uses MongoDB as its primary database for storing notification data, user preferences, and workflow configurations.
-Because FerretDB is designed to be a compatible alternative to MongoDB, it can serve as a drop-in replacement for Novu's database.
+By replacing MongoDB with FerretDB, you can run your notification infrastructure on a fully open-source stack without any vendor lock-in or restrictive licenses.
 This combination offers several compelling advantages:
 
 - **Open-source:** Both Novu and FerretDB are open-source, providing transparency, flexibility, and strong community support.
