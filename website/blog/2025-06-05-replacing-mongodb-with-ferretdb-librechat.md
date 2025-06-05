@@ -43,7 +43,7 @@ To follow this guide, ensure:
   ollama pull phi4-mini
   ```
 
-## How to use FerretDB with LibreChat
+## How to set up LibreChat with FerretDB
 
 Start by cloning the LibreChat repository:
 
