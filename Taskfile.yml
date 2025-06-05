@@ -362,7 +362,7 @@ tasks:
         'mongodb://username:password@host.docker.internal:27017/'
 
   mcpclient:
-    desc: "Run MCP client (using Ollama client installed on the host)"
+    desc: "Run MCP client (using local ollama server)"
     cmds:
       - bin/mcphost --config build/mcp/.mcp.json --model ollama:phi4-mini
 
