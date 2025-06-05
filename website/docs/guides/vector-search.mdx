@@ -85,6 +85,8 @@ Insert the following documents containing vector embeddings into a `books` colle
 
 <CodeBlock language="js">{InsertData}</CodeBlock>
 
+{/* TODO https://github.com/FerretDB/FerretDB/issues/5216 */}
+
 The field that we're mostly going to focus on is `vector`, which represents the vector embeddings generated for the `summary` field using the [SentenceTransformer("all-MiniLM-L6-v2") model](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2).
 You can use any embedding model to generate the vectors.
 
