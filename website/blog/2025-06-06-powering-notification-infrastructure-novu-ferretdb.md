@@ -57,10 +57,10 @@ Here's a step-by-step guide to get you started:
    You'll need to update the `MONGO_URL` environment variable, as shown below (assuming FerretDB is running on `127.0.0.1:27017`):
 
    ```text
-   MONGO_URL=mongodb://<username>:<password>@localhost:27017/novu-db
+   MONGO_URL=mongodb://<username>:<password>@127.0.0.1:27017/novu-db
    ```
 
-   Ensure to replace `127.0.0.1:27017` with your FerretDB host and port.
+   Ensure to replace `<username>` and `<password>` with your FerretDB credentials.
 
 4. **Launch Novu and test:** Once configured, launch Novu.
    It should connect to FerretDB, create the necessary collections, and be ready to start sending notifications!
