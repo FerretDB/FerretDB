@@ -67,7 +67,7 @@ func (s *Server) Serve(ctx context.Context) error {
 	return nil
 }
 
-// withConnInfo wraps the next handler with [*ConnInfo] context and closes it once the handler is executed.
+// withConnInfo wraps the next handler with [*conninfo.ConnInfo] context and closes it once the handler is executed.
 func withConnInfo(next server.ToolHandlerFunc) server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		connInfo := conninfo.New()

@@ -37,7 +37,7 @@ type ToolHandler struct {
 	h *handler.Handler
 }
 
-// NewToolHandler creates a new MCP handler with the given parameters.
+// NewToolHandler creates a new handler with the given parameters.
 func NewToolHandler(h *handler.Handler) *ToolHandler {
 	return &ToolHandler{
 		h: h,
