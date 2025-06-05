@@ -46,7 +46,7 @@ func (h *Handler) msgInsert(connCtx context.Context, req *middleware.Request) (*
 		return nil, err
 	}
 
-	// TODO https://github.com/microsoft/documentdb/issues/148
+	// TODO https://github.com/FerretDB/FerretDB/issues/5222
 	if v := doc.Get("bypassEmptyTsReplacement"); v != nil {
 		h.L.WarnContext(connCtx, "bypassEmptyTsReplacement is not supported by DocumentDB yet", slog.Any("value", v))
 		doc.Remove("bypassEmptyTsReplacement")
