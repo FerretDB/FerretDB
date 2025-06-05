@@ -57,10 +57,7 @@ Here's a step-by-step guide to get you started:
    You'll need to update the `MONGO_URL` environment variable, as shown below (assuming FerretDB is running on `127.0.0.1:27017`):
 
    ```text
-   MONGO_INITDB_ROOT_USERNAME=<username>
-   MONGO_INITDB_ROOT_PASSWORD=<password>
-   MONGO_URL=mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@localhost:27017/novu-db
-   MONGO_AUTO_CREATE_INDEXES=true
+   MONGO_URL=mongodb://<username>:<password>@localhost:27017/novu-db
    ```
 
    Ensure to replace `127.0.0.1:27017` with your FerretDB host and port.
