@@ -72,14 +72,14 @@ var cli struct {
 	PostgreSQLURLFile []byte `name:"postgresql-url-file" help:"Path to a file containing the PostgreSQL connection URL. If non-empty, this overrides --postgresql-url." group:"PostgreSQL"     type:"filecontent"`
 
 	Listen struct {
-		Addr          string `default:"127.0.0.1:27017" help:"Listen TCP address for MongoDB protocol."`
-		Unix          string `default:""                help:"Listen Unix domain socket path for MongoDB protocol."`
-		TLS           string `default:""                help:"Listen TLS address for MongoDB protocol."`
-		TLSCertFile   string `default:""                help:"TLS cert file path."`
-		TLSKeyFile    string `default:""                help:"TLS key file path."`
-		TLSCaFile     string `default:""                help:"TLS CA file path."`
-		DataAPIAddr   string `default:""                help:"Listen TCP address for HTTP Data API."`
-		MCPServerAddr string `default:""                help:"Experimental listen TCP address for MCP server sent events."`
+		Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address for MongoDB protocol."`
+		Unix        string `default:""                help:"Listen Unix domain socket path for MongoDB protocol."`
+		TLS         string `default:""                help:"Listen TLS address for MongoDB protocol."`
+		TLSCertFile string `default:""                help:"TLS cert file path."`
+		TLSKeyFile  string `default:""                help:"TLS key file path."`
+		TLSCaFile   string `default:""                help:"TLS CA file path."`
+		DataAPIAddr string `default:""                help:"Listen TCP address for HTTP Data API."`
+		MCPAddr     string `default:""                help:"Listen TCP address for MCP server."                   hidden:""`
 	} `embed:"" prefix:"listen-" group:"Interfaces"`
 
 	Proxy struct {
@@ -553,7 +553,7 @@ func run() {
 		}()
 	}
 
-	if cmp.Or(cli.Listen.MCPServerAddr, "-") != "-" {
+	if cmp.Or(cli.Listen.MCPAddr, "-") != "-" {
 		wg.Add(1)
 
 		go func() {
@@ -562,7 +562,7 @@ func run() {
 			l := logging.WithName(logger, "mcp")
 
 			e := mcp.New(&mcp.ServerOpts{
-				TCPAddr:     cli.Listen.MCPServerAddr,
+				TCPAddr:     cli.Listen.MCPAddr,
 				L:           l,
 				ToolHandler: mcp.NewToolHandler(h),
 			}).Serve(ctx)
