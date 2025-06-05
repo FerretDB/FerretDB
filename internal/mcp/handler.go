@@ -46,12 +46,10 @@ func NewToolHandler(h *handler.Handler) *ToolHandler {
 
 // initTools returns available MCP tools.
 func (h *ToolHandler) initTools() []tool {
-	return []tool{
-		{
-			handleFunc: h.listDatabases,
-			tool:       newListDatabases(),
-		},
-	}
+	return []tool{{
+		handleFunc: h.listDatabases,
+		tool:       newListDatabases(),
+	}}
 }
 
 // request sends a request document to the handler and returns decoded response document.

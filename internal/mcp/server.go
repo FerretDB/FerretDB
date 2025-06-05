@@ -22,6 +22,7 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 
+	"github.com/FerretDB/FerretDB/v2/build/version"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
@@ -44,7 +45,7 @@ type ServerOpts struct {
 func New(opts *ServerOpts) *Server {
 	return &Server{
 		opts: opts,
-		s:    server.NewMCPServer("Wire Protocol Server", "0.0.1"),
+		s:    server.NewMCPServer("FerretDB", version.Get().Version),
 	}
 }
 

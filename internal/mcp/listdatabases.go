@@ -23,13 +23,10 @@ import (
 
 // newListDatabases creates a new MCP tool for listDatabases command.
 func newListDatabases() mcp.Tool {
-	return mcp.NewTool("list-databases",
-		mcp.WithDescription(
-			"Return a list of databases. "+
-				"It uses Extended JSON v2 format for the response. "+
-				"Use this tool for retrieving a list of databases. "+
-				"The response is truncated if there are many databases, "+
-				"indicated by the presence of non zero cursor."),
+	return mcp.NewTool(
+		"listDatabases",
+		mcp.WithDescription("Returns a summary of all databases."),
+		mcp.WithReadOnlyHintAnnotation(true),
 	)
 }
 
