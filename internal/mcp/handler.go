@@ -15,10 +15,15 @@
 package mcp
 
 import (
+	"context"
+
+	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 )
 
 // tool represents MCP tool which clients can call to retrieve data or perform actions.
@@ -47,4 +52,24 @@ func (h *ToolHandler) initTools() []tool {
 			tool:       newListDatabases(),
 		},
 	}
+}
+
+// request sends a request document to the handler and returns decoded response document.
+func (h *ToolHandler) request(ctx context.Context, reqDoc *wirebson.Document) (*wirebson.Document, error) {
+	req, err := wire.NewOpMsg(reqDoc)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := h.h.Handle(ctx, &middleware.Request{OpMsg: req})
+	if err != nil {
+		return nil, err
+	}
+
+	resDoc, err := res.OpMsg.DocumentDeep()
+	if err != nil {
+		return nil, err
+	}
+
+	return resDoc, nil
 }
