@@ -5,15 +5,15 @@ description: Learn about vector search parameters and capabilities in FerretDB.
 
 # Vector search
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-import CodeBlock from '@theme/CodeBlock';
-import HNSWIndexRequest from '!!raw-loader!./vector-search/1-hnsw-index.request.js';
-import HNSWSearchRequest from '!!raw-loader!./vector-search/2-hnsw-search.request.js';
-import HNSWSearchResponse from '!!raw-loader!./vector-search/2-hnsw-search.response.js';
-import IVFIndexRequest from '!!raw-loader!./vector-search/4-ivf-index.request.js';
-import IVFSearchRequest from '!!raw-loader!./vector-search/5-ivf-search.request.js';
-import IVFSearchResponse from '!!raw-loader!./vector-search/5-ivf-search.response.js';
+import Tabs from '@theme/Tabs'
+import TabItem from '@theme/TabItem'
+import CodeBlock from '@theme/CodeBlock'
+import HNSWIndexRequest from '!!raw-loader!./vector-search/1-hnsw-index.request.js'
+import HNSWSearchRequest from '!!raw-loader!./vector-search/2-hnsw-search.request.js'
+import HNSWSearchResponse from '!!raw-loader!./vector-search/2-hnsw-search.response.js'
+import IVFIndexRequest from '!!raw-loader!./vector-search/4-ivf-index.request.js'
+import IVFSearchRequest from '!!raw-loader!./vector-search/5-ivf-search.request.js'
+import IVFSearchResponse from '!!raw-loader!./vector-search/5-ivf-search.response.js'
 
 Vector search is a technique for retrieving contextual and semantically related items based on the similarity of their vector representations.
 It operates on numerical vectors, which represent data such as text, images, or audio.
@@ -31,8 +31,6 @@ FerretDB supports the following vector index kinds:
 
 - **Hierarchical Navigable Small World (HNSW)**: HNSW is a graph-based index that uses a hierarchical structure to store vectors, suitable for high-speed vector search in memory.
 - **Inverted File (IVF)**: IVF is an inverted file index that partitions the vector space (data sets) into clusters (inverted lists) and performs approximate nearest neighbor search within selected clusters.
-
-<!-- markdownlint-disable MD033 -->
 
 ## Creating an index
 
@@ -181,5 +179,3 @@ The query returns the two nearest neighbors of the query vector.
 </TabItem>
 
 </Tabs>
-
-<!-- markdownlint-enable MD033 -->

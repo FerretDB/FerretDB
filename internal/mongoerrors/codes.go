@@ -69,6 +69,7 @@ const (
 	ErrCollectionUUIDMismatch                      = Code(361)     // CollectionUUIDMismatch
 	ErrUserCountLimitExceeded                      = Code(8000)    // UserCountLimitExceeded
 	ErrLocation10065                               = Code(10065)   // Location10065
+	ErrNotWritablePrimary                          = Code(10107)   // NotWritablePrimary
 	ErrBsonObjectTooLarge                          = Code(10334)   // BsonObjectTooLarge
 	ErrDuplicateKey                                = Code(11000)   // DuplicateKey
 	ErrBackgroundOperationInProgressForNamespace   = Code(12587)   // BackgroundOperationInProgressForNamespace
@@ -591,6 +592,7 @@ var pgCodes = map[string]Code{
 	"M0019": ErrCollectionUUIDMismatch,                      // 361
 	"M00DR": ErrUserCountLimitExceeded,                      // 8000
 	"M001A": ErrLocation10065,                               // 10065
+	"M00E8": ErrNotWritablePrimary,                          // 10107
 	"M001B": ErrBsonObjectTooLarge,                          // 10334
 	"M001C": ErrDuplicateKey,                                // 11000
 	"M001D": ErrBackgroundOperationInProgressForNamespace,   // 12587

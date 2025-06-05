@@ -7,11 +7,11 @@ on:
       - opened
       - reopened
       - synchronize
-    push:
-      branches:
-        - main
-        - main-*
-        - releases/*
+  push:
+    branches:
+      - main
+      - main-*
+      - releases/*
 
 env:
   GOPATH: /home/runner/go
@@ -28,6 +28,9 @@ jobs:
     timeout-minutes: 10
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
+
+    permissions:
+      contents: read
 
     steps:
       # TODO https://github.com/FerretDB/github-actions/issues/211
