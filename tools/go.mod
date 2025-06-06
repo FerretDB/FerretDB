@@ -6,19 +6,19 @@ toolchain go1.24.3
 
 require (
 	github.com/AlekSi/pointer v1.2.0
-	github.com/FerretDB/gh v0.1.4
+	github.com/FerretDB/gh v0.2.0
 	github.com/go-task/task/v3 v3.43.3
 	github.com/google/go-github/v57 v57.0.0
 	github.com/goreleaser/nfpm/v2 v2.42.1
 	github.com/kisielk/godepgraph v0.0.0-20240411160502-0f324ca7e282
 	github.com/oapi-codegen/oapi-codegen/v2 v2.4.1
-	github.com/quasilyte/go-consistent v0.6.1
+	github.com/quasilyte/go-consistent v0.6.2
 	github.com/rogpeppe/go-internal v1.14.1
 	github.com/sethvargo/go-githubactions v1.3.1
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/perf v0.0.0-20250515181355-8f5f3abfb71a
 	golang.org/x/pkgsite v0.0.0-20250523174444-0e6de173c6b5
-	golang.org/x/tools v0.33.0
+	golang.org/x/tools v0.34.0
 	golang.org/x/vuln v1.1.4
 	gopkg.in/yaml.v3 v3.0.1
 	mvdan.cc/gofumpt v0.8.0
@@ -67,6 +67,7 @@ require (
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
+	github.com/google/go-github/v70 v70.0.1-0.20250402125210-3a3f51bc7c5d // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/licensecheck v0.3.1 // indirect
 	github.com/google/rpmpack v0.6.1-0.20250405124433-758cc6896cbc // indirect
@@ -118,16 +119,16 @@ require (
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	gitlab.com/digitalxero/go-conventional-commit v1.0.7 // indirect
-	golang.org/x/crypto v0.38.0 // indirect
+	golang.org/x/crypto v0.39.0 // indirect
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
-	golang.org/x/mod v0.24.0 // indirect
-	golang.org/x/net v0.40.0 // indirect
+	golang.org/x/mod v0.25.0 // indirect
+	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
-	golang.org/x/sync v0.14.0 // indirect
+	golang.org/x/sync v0.15.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/telemetry v0.0.0-20240522233618-39ace7a40ae7 // indirect
 	golang.org/x/term v0.32.0 // indirect
-	golang.org/x/text v0.25.0 // indirect
+	golang.org/x/text v0.26.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	mvdan.cc/sh/v3 v3.11.0 // indirect
