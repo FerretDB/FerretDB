@@ -1,0 +1,67 @@
+---
+sidebar_position: 3
+description: Returns all documents that do not match the given query expression.
+---
+
+# `$not`
+
+import CodeBlock from '@theme/CodeBlock';
+import Dataset from '!!raw-loader!./logical-operators/2-insert-dataset.request.js';
+import NotOperatorRequest from '!!raw-loader!./logical-operators/5-not-operator.request.js';
+import NotOperatorResponse from '!!raw-loader!./logical-operators/5-not-operator.response.js';
+
+The `$not` operator negates a query expression and returns documents that do not match it.
+
+The operator accepts a single query expression as shown below, and all documents that do not match the expression are included in the result set.
+
+```js
+db.runCommand({
+  find: '<collection_name>',
+  filter: {
+    rating: {
+      $not: { <query_expression> }
+    }
+  }
+})
+```
+
+A query expression for the `$not` operator must be combined with another operator or a regular expression, such as:
+
+- `{ <field>: { <operator>: <value> } }`
+- `{ <field>: /<pattern>/ }`
+
+It cannot be used with direct values or as a top-level operator.
+
+## Example
+
+The following examples demonstrate how to use the `$not` operator in queries using documents in the following `books` collection:
+
+<!-- markdownlint-disable MD033 -->
+
+<CodeBlock language="js">{Dataset}</CodeBlock>
+
+### Filter documents that do not match a specific expression
+
+Using the books collection, return all documents where the rating is not less than `4.5`.
+
+<CodeBlock language="js">{NotOperatorRequest}</CodeBlock>
+
+The `$not` operator negates the query expression, so it returns all documents where the rating is not less than `4.5`.
+In this case, it returns `pride_prejudice_1813` and `clean_code_2008`.
+
+<CodeBlock language="js">{NotOperatorResponse}</CodeBlock>
+
+### Implementation notes and constraints
+
+- The `$not` operator cannot be used directly as a top-level operator independently and must be used to negate another operator like `$eq`, `$gt`, `$lt`, etc., or a regular expression.
+- It matches all documents that do not satisfy the specified condition, even if the field is missing or null.
+
+## Additional information
+
+Please find other logical operators in the following sections:
+
+- [`$or`](./or.mdx)
+- [`$and`](./and.mdx)
+- [`$nor`](./nor.mdx)
+
+<!-- markdownlint-enable MD033 -->
