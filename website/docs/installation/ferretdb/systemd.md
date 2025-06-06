@@ -2,7 +2,7 @@
 sidebar_position: 5
 ---
 
-# Systemd Unit
+# Systemd unit
 
 :::note
 This feature is still experimental.
