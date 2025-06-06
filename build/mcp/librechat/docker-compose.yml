@@ -20,19 +20,19 @@ services:
       - RAG_PORT=8000
       - RAG_API_URL=http://rag_api:8000
     volumes:
-      - type: bind
-        source: ./env
-        target: /app/.env
-      - ./images:/app/client/public/images
-      - ./uploads:/app/uploads
-      - ./logs:/app/api/logs
+      - ./env:/app/.env
+      - ./data/api/images:/app/client/public/images
+      - ./data/api/uploads:/app/uploads
+      - ./data/api/logs:/app/api/logs
+
   mongodb:
     container_name: chat-mongodb
     image: mongo
     restart: always
     volumes:
-      - ./data-node:/data/db
+      - ./data/mongodb:/data/db
     command: mongod --noauth
+
   meilisearch:
     container_name: chat-meilisearch
     image: getmeili/meilisearch:v1.12.3
@@ -42,7 +42,8 @@ services:
       - MEILI_NO_ANALYTICS=true
       - MEILI_MASTER_KEY=DrhYf7zENyR6AlUCKmnz0eYASOQdl6zxH7s7MKFSfFCt
     volumes:
-      - ./meili_data_v1.12:/meili_data
+      - ./data/meili:/meili_data
+
   vectordb:
     container_name: vectordb
     image: ankane/pgvector:latest
@@ -52,7 +53,8 @@ services:
       POSTGRES_PASSWORD: mypassword
     restart: always
     volumes:
-      - pgdata2:/var/lib/postgresql/data
+      - ./data/vectordb:/var/lib/postgresql/data
+
   rag_api:
     container_name: rag_api
     image: ghcr.io/danny-avila/librechat-rag-api-dev-lite:latest
@@ -64,6 +66,3 @@ services:
       - vectordb
     env_file:
       - env
-
-volumes:
-  pgdata2:
