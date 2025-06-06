@@ -32,6 +32,12 @@ type tool struct {
 	handleFunc server.ToolHandlerFunc
 }
 
+// resource represents MCP resource which LLM utilizes.
+type resource struct {
+	resource   mcp.Resource
+	handleFunc server.ResourceHandlerFunc
+}
+
 // ToolHandler handles MCP request.
 type ToolHandler struct {
 	h *handler.Handler
@@ -50,6 +56,16 @@ func (h *ToolHandler) initTools() []tool {
 		{
 			handleFunc: h.insert,
 			tool:       newInsertTool(),
+		},
+	}
+}
+
+// initResources returns available MCP resources.
+func (h *ToolHandler) initResources() []resource {
+	return []resource{
+		{
+			handleFunc: h.openAPISchema,
+			resource:   openAPISchemaResource(),
 		},
 	}
 }
