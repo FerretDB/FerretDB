@@ -57,7 +57,7 @@ services:
 
   rag_api:
     container_name: rag_api
-    image: ghcr.io/danny-avila/librechat-rag-api-dev-lite:latest
+    image: ghcr.io/danny-avila/librechat-rag-api-dev:latest
     environment:
       - DB_HOST=vectordb
       - RAG_PORT=8000
