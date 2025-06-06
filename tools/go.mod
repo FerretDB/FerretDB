@@ -2,7 +2,7 @@ module github.com/FerretDB/FerretDB/v2/tools
 
 go 1.24.1
 
-toolchain go1.24.3
+toolchain go1.24.4
 
 tool (
 	github.com/FerretDB/FerretDB/v2/tools/checkcomments
@@ -32,7 +32,7 @@ require (
 	github.com/rogpeppe/go-internal v1.14.1
 	github.com/sethvargo/go-githubactions v1.3.1
 	github.com/stretchr/testify v1.10.0
-	golang.org/x/tools v0.33.0
+	golang.org/x/tools v0.34.0
 )
 
 require (
@@ -87,7 +87,7 @@ require (
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
-	github.com/getkin/kin-openapi v0.132.0 // indirect
+	github.com/getkin/kin-openapi v0.127.0 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.6.2 // indirect
 	github.com/go-git/go-git/v5 v5.16.0 // indirect
@@ -123,6 +123,7 @@ require (
 	github.com/huandu/xstrings v1.5.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/invopop/jsonschema v0.13.0 // indirect
+	github.com/invopop/yaml v0.3.1 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
@@ -154,14 +155,12 @@ require (
 	github.com/muesli/roff v0.1.0 // indirect
 	github.com/muesli/termenv v0.15.3-0.20240618155329-98d742f6907a // indirect
 	github.com/oapi-codegen/oapi-codegen/v2 v2.4.1 // indirect
-	github.com/oasdiff/yaml v0.0.0-20250309154309-f31be36b4037 // indirect
-	github.com/oasdiff/yaml3 v0.0.0-20250309153720-d2182401db90 // indirect
-	github.com/ollama/ollama v0.6.5 // indirect
+	github.com/ollama/ollama v0.5.1 // indirect
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
 	github.com/pjbgf/sha1cd v0.3.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
-	github.com/quasilyte/go-consistent v0.6.1 // indirect
+	github.com/quasilyte/go-consistent v0.6.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sajari/fuzzy v1.0.0 // indirect
@@ -193,18 +192,18 @@ require (
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.opentelemetry.io/otel/trace v1.34.0 // indirect
-	golang.org/x/crypto v0.38.0 // indirect
-	golang.org/x/exp v0.0.0-20250218142911-aa4b98e5adaa // indirect
-	golang.org/x/mod v0.24.0 // indirect
-	golang.org/x/net v0.40.0 // indirect
+	golang.org/x/crypto v0.39.0 // indirect
+	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
+	golang.org/x/mod v0.25.0 // indirect
+	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
-	golang.org/x/perf v0.0.0-20250515181355-8f5f3abfb71a // indirect
-	golang.org/x/pkgsite v0.0.0-20250523174444-0e6de173c6b5 // indirect
-	golang.org/x/sync v0.14.0 // indirect
+	golang.org/x/perf v0.0.0-20250605212013-b481878a17be // indirect
+	golang.org/x/pkgsite v0.0.0-20250606033525-6805ff32e9c8 // indirect
+	golang.org/x/sync v0.15.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/telemetry v0.0.0-20240522233618-39ace7a40ae7 // indirect
 	golang.org/x/term v0.32.0 // indirect
-	golang.org/x/text v0.25.0 // indirect
+	golang.org/x/text v0.26.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
 	golang.org/x/vuln v1.1.4 // indirect
 	google.golang.org/api v0.228.0 // indirect
