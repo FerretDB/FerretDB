@@ -46,7 +46,7 @@ func newInsertTool() mcp.Tool {
 
 // insert adds documents to the given collection in the database and returns the result of the insert command
 // in a string containing Extended JSON v2 format.
-// Each document to insert may be map[string]any, or []byte containing Extended JSON v2 format.
+// Each document to insert is map[string]any.
 func (h *ToolHandler) insert(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	database, err := request.RequireString("database")
 	if err != nil {

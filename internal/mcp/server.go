@@ -55,6 +55,10 @@ func (s *Server) Serve(ctx context.Context) error {
 		s.s.AddTool(t.tool, withLog(withConnInfo(t.handleFunc), s.opts.L))
 	}
 
+	for _, r := range s.opts.ToolHandler.initResources() {
+		s.s.AddResource(r.resource, r.handleFunc)
+	}
+
 	s.opts.L.InfoContext(ctx, fmt.Sprintf("Starting MCP server on http://%s/", s.opts.TCPAddr))
 
 	// can authentication be added?
