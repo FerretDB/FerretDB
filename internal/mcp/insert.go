@@ -18,8 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
-	"github.com/FerretDB/wire"
+
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/mark3labs/mcp-go/mcp"
 )
@@ -63,14 +62,14 @@ func (h *ToolHandler) insert(ctx context.Context, request mcp.CallToolRequest) (
 		return mcp.NewToolResultError(fmt.Sprintf("invalid insert documents type %T", documents)), nil
 	}
 
-	jsonDocs, err := json.Marshal(documents)
+	jsonReq, err := json.Marshal(documents)
 	if err != nil {
 		return mcp.NewToolResultErrorFromErr("cannot marshal insert request slice", err), nil
 	}
 
 	bsonDocs := wirebson.MustArray()
 
-	if err = bsonDocs.UnmarshalJSON(jsonDocs); err != nil {
+	if err = bsonDocs.UnmarshalJSON(jsonReq); err != nil {
 		return mcp.NewToolResultErrorFromErr("cannot create document", err), nil
 	}
 
@@ -80,28 +79,18 @@ func (h *ToolHandler) insert(ctx context.Context, request mcp.CallToolRequest) (
 		"documents", bsonDocs,
 	)
 	if err != nil {
-		return mcp.NewToolResultErrorFromErr("cannot create document", err), nil
+		return mcp.NewToolResultErrorFromErr("create document failed", err), nil
 	}
 
-	req, err := wire.NewOpMsg(reqDoc)
+	resDoc, err := h.request(ctx, reqDoc)
 	if err != nil {
-		return mcp.NewToolResultErrorFromErr("cannot create OP_MSG", err), nil
+		return mcp.NewToolResultErrorFromErr("request failed", err), nil
 	}
 
-	res, err := h.h.Handle(ctx, &middleware.Request{OpMsg: req})
+	resJson, err := resDoc.MarshalJSON()
 	if err != nil {
-		return mcp.NewToolResultErrorFromErr("failed to handle OP_MSG", err), nil
+		return mcp.NewToolResultErrorFromErr("marshal failed", err), nil
 	}
 
-	doc, err := res.OpMsg.DocumentDeep()
-	if err != nil {
-		return mcp.NewToolResultErrorFromErr("failed to decode OP_MSG", err), nil
-	}
-
-	jsonRes, err := doc.MarshalJSON()
-	if err != nil {
-		return mcp.NewToolResultErrorFromErr("failed to marshal", err), nil
-	}
-
-	return mcp.NewToolResultText(string(jsonRes)), nil
+	return mcp.NewToolResultText(string(resJson)), nil
 }
