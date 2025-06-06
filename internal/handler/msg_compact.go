@@ -61,7 +61,7 @@ func (h *Handler) msgCompact(connCtx context.Context, req *middleware.Request) (
 	}
 	defer conn.Release()
 
-	// TODO https://github.com/microsoft/documentdb/issues/206
+	// TODO https://github.com/FerretDB/FerretDB/issues/5224
 	q := "VACUUM ANALYZE"
 	if force {
 		q = "VACUUM FULL ANALYZE"
