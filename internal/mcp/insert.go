@@ -26,7 +26,10 @@ import (
 // newInsertTool creates a new MCP tool for insert command.
 func newInsertTool() mcp.Tool {
 	return mcp.NewTool("insert",
-		mcp.WithDescription("Insert documents to the collection and return the response in Extended JSON v2 format"),
+		mcp.WithDescription("Insert documents to the collection and return the response in Extended JSON v2 format. "+
+			"If the response contains ok field with value 1, the operation was successful. "+
+			"If the response contains ok field with value 0, the operation failed and the error message is in the errmsg field."+
+			"The documents to insert are represented in Extended JSON v2 format."),
 		mcp.WithString("database",
 			mcp.Required(),
 			mcp.Description("The database to use for inserting documents"),
@@ -37,7 +40,9 @@ func newInsertTool() mcp.Tool {
 		),
 		mcp.WithArray("documents",
 			mcp.Required(),
-			mcp.Description("The documents contains documents to insert, represented in Extended JSON v2 format"),
+			mcp.Description("The documents contains documents to insert, represented in Extended JSON v2 format."+
+				"Extended JSON v2 format also used in openapi-schema.",
+			),
 			mcp.Items(`{"type":"object"}`),
 		),
 	)
