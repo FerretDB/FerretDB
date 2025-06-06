@@ -189,9 +189,6 @@ const config = {
         ],
         copyright: `Copyright © ${new Date().getFullYear()} FerretDB Inc. Built with Docusaurus.`,
       },
-      zoom: {
-        selector: "img:not(.no-zoom)",
-      },
       prism: {
         theme: themes.github,
         darkTheme: themes.dracula,

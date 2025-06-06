@@ -1,10 +1,10 @@
 export const categorizedApps = {
   'GUI Client Tools': [
-    {
-      name: 'Compass',
-      logo: '/img/integrations/compass-logo.png',
-      link: 'https://docs.ferretdb.io/usage/integrations/overview/#gui-applications'
-    },
+    // Add compass blog post [https://github.com/FerretDB/FerretDB/issues/1982]
+    //   name: 'Compass',
+    //   logo: '/img/integrations/compass-logo.png',
+    //   link: 'https://docs.ferretdb.io/usage/integrations/overview/#gui-applications'
+    // },
     {
       name: 'NoSQLBooster',
       logo: '/img/integrations/nosqlbooster-logo.png',
@@ -17,7 +17,7 @@ export const categorizedApps = {
     },
     {
       name: 'MajorM',
-      logo: '/img/integrations/majorm-logo.jpg',
+      logo: '/img/integrations/majorm-logo.png',
       link: 'https://blog.ferretdb.io/query-filter-ferretdb-with-majorm/'
     },
     {
@@ -60,7 +60,7 @@ export const categorizedApps = {
   'Data Migration': [
     {
       name: 'dsync',
-      logo: '/img/integrations/abstract-logo.png',
+      logo: '/img/integrations/adiom-logo.png',
       link: 'https://blog.ferretdb.io/migrate-mongodb-data-ferretdb-dsync/'
     }
   ]

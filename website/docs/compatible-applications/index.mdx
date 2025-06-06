@@ -21,11 +21,7 @@ export const Grid = ({ apps }) => (
         rel="noopener noreferrer"
         className={`${styles.card} card`}
       >
-        <img
-          src={logo}
-          alt={`${name} logo`}
-          className={`${styles.logo} no-zoom`}
-        />
+        <img src={logo} alt={`${name} logo`} className={styles.logo} />
         {name}
       </a>
     ))}
@@ -39,11 +35,11 @@ Explore officially tested applications compatible with FerretDB.
 
 ## GUI / Client Tools
 
-<Grid apps={categorizedApps['GUI / Client Tools']} />
+<Grid apps={categorizedApps['GUI Client Tools']} />
 
 ## Monitoring / Observability
 
-<Grid apps={categorizedApps['Monitoring / Observability']} />
+<Grid apps={categorizedApps['Monitoring and Observability']} />
 
 ## Data Migration
 
