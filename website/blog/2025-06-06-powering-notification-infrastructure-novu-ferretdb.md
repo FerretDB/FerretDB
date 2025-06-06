@@ -116,8 +116,8 @@ As you can see, FerretDB is running version `v2.2.0`, and it is connected to Nov
 
 Here is a view of all the collections created in FerretDB for Novu as well as the workflow and notifications created when we run the command `show collections` in the `novu-db` database:
 
-```js
-response = changes
+```text
+changes
 controls
 environments
 executiondetails
