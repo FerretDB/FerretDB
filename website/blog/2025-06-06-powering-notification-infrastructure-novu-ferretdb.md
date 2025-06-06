@@ -58,6 +58,7 @@ Here's a step-by-step guide to get you started:
 
    ```text
    MONGO_URL=mongodb://<username>:<password>@127.0.0.1:27017/novu-db
+   MONGO_AUTO_CREATE_INDEXES=true
    ```
 
    Ensure to replace `<username>` and `<password>` with your FerretDB credentials.
@@ -77,13 +78,46 @@ The next image shows the in-app notification received by a user:
 
 ![A screenshot of a Novu in-app notification received by a user](/img/blog/novu-notification.png)
 
-Here is a view of all the collections created in FerretDB for Novu as well as the workflow and notifications created:
+You can use `mongosh` or any other client tool to check the database created by Novu in FerretDB to see the collections and data stored there.
 
-```text
-> use novu-db
-switched to db novu-db
-> show collections
-changes
+Run `db.runCommand({ buildInfo: 1 })` to confirm that Novu is now using FerretDB to store its data.
+
+```js
+response = {
+  version: '7.0.77',
+  gitVersion: 'd2d96a7c5e19db2ccff63993ec568834b17fd6d9',
+  modules: [],
+  sysInfo: 'deprecated',
+  versionArray: [7, 0, 77, 0],
+  bits: 64,
+  debug: false,
+  maxBsonObjectSize: 16777216,
+  buildEnvironment: {
+    '-buildmode': 'exe',
+    '-compiler': 'gc',
+    '-trimpath': 'true',
+    CGO_ENABLED: '0',
+    GOARCH: 'arm64',
+    GOARM64: 'v8.0',
+    GOOS: 'linux',
+    'go.runtime': 'go1.24.3',
+    'go.version': 'go1.24.3',
+    vcs: 'git',
+    'vcs.modified': 'true',
+    'vcs.revision': 'd2d96a7c5e19db2ccff63993ec568834b17fd6d9',
+    'vcs.time': '2025-05-09T18:03:55Z'
+  },
+  ferretdb: { version: 'v2.2.0', package: 'docker' },
+  ok: 1
+}
+```
+
+As you can see, FerretDB is running version `v2.2.0`, and it is connected to Novu.
+
+Here is a view of all the collections created in FerretDB for Novu as well as the workflow and notifications created when we run the command `show collections` in the `novu-db` database:
+
+```js
+response = changes
 controls
 environments
 executiondetails
@@ -107,11 +141,15 @@ users
 workflowoverrides
 ```
 
-The following command shows the most recent message sent by Novu, which is stored in the `messages` collection in FerretDB:
+We need to show the most recent notification message sent by Novu, which is stored in the `messages` collection in FerretDB.
+To do this, let's run the following command to retrieve the latest message.
 
-```text
-> db.messages.find().sort({ createdAt: -1 }).limit(1)
-[
+```js
+db.messages.find().sort({ createdAt: -1 }).limit(1)
+```
+
+```js
+response = [
   {
     _id: ObjectId('6839dcaf213a25d911bae32e'),
     _templateId: ObjectId('6839db04662b0a0da8fcd8a7'),
