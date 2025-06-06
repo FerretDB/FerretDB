@@ -57,6 +57,10 @@ func (h *ToolHandler) initTools() []tool {
 			handleFunc: h.insert,
 			tool:       newInsertTool(),
 		},
+		{
+			handleFunc: h.listDatabases,
+			tool:       newListDatabases(),
+		},
 	}
 }
 

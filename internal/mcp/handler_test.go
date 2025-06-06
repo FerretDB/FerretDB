@@ -103,6 +103,14 @@ func TestHandle(t *testing.T) {
 			},
 			handleFunc: mh.insert,
 		},
+		"listDatabases": {
+			req: mcp.CallToolRequest{
+				Params: params{
+					Name: "list databases",
+				},
+			},
+			handleFunc: mh.listDatabases,
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			// do not run parallel to avoid datarace
