@@ -541,8 +541,8 @@ func run() {
 
 			lis, e := dataapi.Listen(&dataapi.ListenOpts{
 				TCPAddr: cli.Listen.DataAPIAddr,
-				L:       l,
 				Handler: h,
+				L:       l,
 			})
 			if e != nil {
 				p.Close()
@@ -562,9 +562,9 @@ func run() {
 			l := logging.WithName(logger, "mcp")
 
 			e := mcp.New(&mcp.ServerOpts{
-				TCPAddr:     cli.Listen.MCPAddr,
-				L:           l,
-				ToolHandler: mcp.NewToolHandler(h),
+				TCPAddr: cli.Listen.MCPAddr,
+				Handler: h,
+				L:       l,
 			}).Serve(ctx)
 
 			if e != nil {

@@ -24,6 +24,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
@@ -32,13 +33,14 @@ import (
 type Server struct {
 	opts *ServerOpts
 	s    *server.MCPServer
+	h    *ToolHandler
 }
 
 // ServerOpts represents [Serve] options.
 type ServerOpts struct {
-	L           *slog.Logger
-	ToolHandler *ToolHandler
-	TCPAddr     string
+	TCPAddr string
+	Handler *handler.Handler
+	L       *slog.Logger
 }
 
 // New creates an MCP server.
@@ -46,12 +48,13 @@ func New(opts *ServerOpts) *Server {
 	return &Server{
 		opts: opts,
 		s:    server.NewMCPServer("FerretDB", version.Get().Version),
+		h:    NewToolHandler(opts.Handler),
 	}
 }
 
 // Serve runs the MCP server.
 func (s *Server) Serve(ctx context.Context) error {
-	for _, t := range s.opts.ToolHandler.initTools() {
+	for _, t := range s.h.initTools() {
 		s.s.AddTool(t.tool, withLog(withConnInfo(t.handleFunc), s.opts.L))
 	}
 

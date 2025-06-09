@@ -40,9 +40,9 @@ type Listener struct {
 
 // ListenOpts represents [Listen] options.
 type ListenOpts struct {
-	L       *slog.Logger
-	Handler *handler.Handler
 	TCPAddr string
+	Handler *handler.Handler
+	L       *slog.Logger
 }
 
 // Listen creates a new dataapi handler and starts listener on the given TCP address.
