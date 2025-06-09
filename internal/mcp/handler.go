@@ -32,20 +32,20 @@ type tool struct {
 	handleFunc server.ToolHandlerFunc
 }
 
-// ToolHandler handles MCP request.
-type ToolHandler struct {
+// toolHandler handles MCP request.
+type toolHandler struct {
 	h *handler.Handler
 }
 
-// NewToolHandler creates a new handler with the given parameters.
-func NewToolHandler(h *handler.Handler) *ToolHandler {
-	return &ToolHandler{
+// newToolHandler creates a new handler with the given parameters.
+func newToolHandler(h *handler.Handler) *toolHandler {
+	return &toolHandler{
 		h: h,
 	}
 }
 
 // initTools returns available MCP tools.
-func (h *ToolHandler) initTools() []tool {
+func (h *toolHandler) initTools() []tool {
 	return []tool{{
 		handleFunc: h.listDatabases,
 		tool:       newListDatabases(),
@@ -53,7 +53,7 @@ func (h *ToolHandler) initTools() []tool {
 }
 
 // request sends a request document to the handler and returns decoded response document.
-func (h *ToolHandler) request(ctx context.Context, reqDoc *wirebson.Document) (*wirebson.Document, error) {
+func (h *toolHandler) request(ctx context.Context, reqDoc *wirebson.Document) (*wirebson.Document, error) {
 	req, err := wire.NewOpMsg(reqDoc)
 	if err != nil {
 		return nil, err

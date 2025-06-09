@@ -540,9 +540,9 @@ func run() {
 			l := logging.WithName(logger, "dataapi")
 
 			lis, e := dataapi.Listen(&dataapi.ListenOpts{
-				TCPAddr: cli.Listen.DataAPIAddr,
 				Handler: h,
 				L:       l,
+				TCPAddr: cli.Listen.DataAPIAddr,
 			})
 			if e != nil {
 				p.Close()
@@ -561,15 +561,16 @@ func run() {
 
 			l := logging.WithName(logger, "mcp")
 
-			e := mcp.New(&mcp.ServerOpts{
+			lis := mcp.New(&mcp.ListenerOpts{
 				TCPAddr: cli.Listen.MCPAddr,
 				Handler: h,
 				L:       l,
-			}).Serve(ctx)
+			})
 
+			e := lis.Run(ctx)
 			if e != nil {
 				p.Close()
-				l.LogAttrs(ctx, logging.LevelFatal, "Failed to construct MCP Server", logging.Error(e))
+				l.LogAttrs(ctx, slog.LevelError, "Failed to run MCP listener", logging.Error(e))
 			}
 		}()
 	}

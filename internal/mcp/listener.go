@@ -29,31 +29,31 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
-// Server implements an MCP server.
-type Server struct {
-	opts *ServerOpts
+// Listener implements an MCP server.
+type Listener struct {
+	opts *ListenerOpts
 	s    *server.MCPServer
-	h    *ToolHandler
+	h    *toolHandler
 }
 
-// ServerOpts represents [Serve] options.
-type ServerOpts struct {
-	TCPAddr string
+// ListenerOpts represents [Serve] options.
+type ListenerOpts struct {
 	Handler *handler.Handler
 	L       *slog.Logger
+	TCPAddr string
 }
 
 // New creates an MCP server.
-func New(opts *ServerOpts) *Server {
-	return &Server{
+func New(opts *ListenerOpts) *Listener {
+	return &Listener{
 		opts: opts,
 		s:    server.NewMCPServer("FerretDB", version.Get().Version),
-		h:    NewToolHandler(opts.Handler),
+		h:    newToolHandler(opts.Handler),
 	}
 }
 
-// Serve runs the MCP server.
-func (s *Server) Serve(ctx context.Context) error {
+// Run runs the MCP server.
+func (s *Listener) Run(ctx context.Context) error {
 	for _, t := range s.h.initTools() {
 		s.s.AddTool(t.tool, withLog(withConnInfo(t.handleFunc), s.opts.L))
 	}

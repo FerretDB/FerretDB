@@ -266,9 +266,9 @@ func setupDataAPI(tb testing.TB, auth bool) (addr string, dbName string) {
 
 	var apiLis *Listener
 	apiLis, err = Listen(&ListenOpts{
-		TCPAddr: "127.0.0.1:0",
 		Handler: h,
 		L:       logging.WithName(l, "dataapi"),
+		TCPAddr: "127.0.0.1:0",
 	})
 	require.NoError(tb, err)
 

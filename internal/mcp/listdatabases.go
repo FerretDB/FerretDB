@@ -31,7 +31,7 @@ func newListDatabases() mcp.Tool {
 }
 
 // listDatabases returns a list of databases in a string containing Extended JSON v2 format.
-func (h *ToolHandler) listDatabases(ctx context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (h *toolHandler) listDatabases(ctx context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	req := wirebson.MustDocument(
 		"listDatabases", int32(1),
 	)
