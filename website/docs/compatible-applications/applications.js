@@ -64,7 +64,7 @@ export const categorizedApps = {
       link: 'https://blog.ferretdb.io/migrate-mongodb-data-ferretdb-dsync/'
     }
   ],
-  'Others': [
+  Others: [
     {
       name: 'Novu',
       logo: '/img/integrations/novu-logo.png',
