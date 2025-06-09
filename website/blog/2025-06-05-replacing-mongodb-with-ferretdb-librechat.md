@@ -61,10 +61,11 @@ cp .env.example .env
 ```
 
 You may need to adjust the environment variables in `.env` to suit your setup.
+For instance, you may have set the `UID` and `GID` to `999` in the `.env` file, as it was the case in this guide.
 
 You can run FerretDB alongside LibreChat using Docker Compose.
 
-To do that, add FerretDB and PostgreSQL with DocumentDB extension to your `docker-compose.override.yml` file, as shown below:
+To do that, we'll add the [FerretDB evaluation image](https://docs.ferretdb.io/installation/evaluation/) to your `docker-compose.override.yml` file, as shown below:
 
 ```yaml
 services:
@@ -91,13 +92,13 @@ services:
 
 Replace `<username>` and `<password>` with your desired FerretDB credentials.
 
-In the above `docker-compose.override.yml` file, we use the FerretDB evaluation image (`ferretdb-eval:2`), which is suitable for development and testing purposes, but not recommended for production use.
-It includes the PostgreSQL database with DocumentDB extension, which FerretDB uses as its backend.
+In the above `docker-compose.override.yml` file, we use the FerretDB evaluation image (`ferretdb-eval:2`), which is suitable for development and testing purposes.
+It includes PostgreSQL with DocumentDB extension, which FerretDB uses as its backend.
 
 We also place the `mongodb` service under the `donotstart` profile so it won't start by default.
 This means you need to explicitly update the LibreChat `api` service to not depend on the `mongodb` service in your `docker-compose.yml` file – or you can remove the `mongodb` service entirely from the `docker-compose.yml` file.
 
-If you're new to FerretDB, you can learn more about the [installation instructions here](https://docs.ferretdb.io/installation/ferretdb/).
+If you're new to FerretDB, you can learn more about the [FerretDB installation guide here](https://docs.ferretdb.io/installation/ferretdb/).
 
 ## Using Ollama with LibreChat
 
