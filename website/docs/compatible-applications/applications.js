@@ -63,5 +63,12 @@ export const categorizedApps = {
       logo: '/img/integrations/adiom-logo.png',
       link: 'https://blog.ferretdb.io/migrate-mongodb-data-ferretdb-dsync/'
     }
+  ],
+  'Others': [
+    {
+      name: 'Novu',
+      logo: '/img/integrations/novu-logo.png',
+      link: 'https://blog.ferretdb.io/powering-notification-infrastructure-novu-ferretdb/'
+    }
   ]
 }
