@@ -1,4 +1,8 @@
-FROM --platform=linux/amd64 ghcr.io/ferretdb/postgres-documentdb-dev:17-ferretdb
+# Use production image and full tag close to the release.
+FROM --platform=linux/amd64 ghcr.io/ferretdb/postgres-documentdb:17-0.104.0-ferretdb-2.3.0
+
+# Use moving development image during development.
+# FROM --platform=linux/amd64 ghcr.io/ferretdb/postgres-documentdb-dev:17-ferretdb
 
 RUN --mount=type=cache,target=/var/cache/apt <<EOF
 
