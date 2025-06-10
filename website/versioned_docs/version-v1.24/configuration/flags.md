@@ -15,10 +15,6 @@ Some default values are overridden in [our Docker image](../quickstart-guide/doc
 
 <!-- Keep order in sync with the `--help` output -->
 
-<!-- For <br /> -->
-<!-- markdownlint-capture -->
-<!-- markdownlint-disable MD033 -->
-
 ## General
 
 | Flag              | Description                                                       | Environment Variable     | Default Value                  |
@@ -117,5 +113,3 @@ For example: `file:./?mode=memory`.
 | `--telemetry`            | Enable or disable [basic telemetry](telemetry.md)                               | `FERRETDB_TELEMETRY`            | `undecided`      |
 
 <!-- Do not document `--test-XXX` flags here -->
-
-<!-- markdownlint-restore -->

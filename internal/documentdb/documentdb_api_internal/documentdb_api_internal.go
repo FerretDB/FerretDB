@@ -2674,6 +2674,20 @@ func GenerateUniqueShardDocument(ctx context.Context, conn *pgx.Conn, l *slog.Lo
 	return
 }
 
+// GetBloatStatsWorker is a wrapper for
+//
+//	documentdb_api_internal.get_bloat_stats_worker(p_collection_id bigint, OUT get_bloat_stats_worker documentdb_core.bson).
+func GetBloatStatsWorker(ctx context.Context, conn *pgx.Conn, l *slog.Logger, collectionId int64) (outGetBloatStatsWorker wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.get_bloat_stats_worker", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT get_bloat_stats_worker::bytea FROM documentdb_api_internal.get_bloat_stats_worker($1)", collectionId)
+	if err = row.Scan(&outGetBloatStatsWorker); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.get_bloat_stats_worker", l)
+	}
+	return
+}
+
 // GetShardKeyValue is a wrapper for
 //
 //	documentdb_api_internal.get_shard_key_value(p_shard_key documentdb_core.bson, p_collection_id bigint, p_document documentdb_core.bson, OUT get_shard_key_value bigint).

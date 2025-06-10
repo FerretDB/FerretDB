@@ -33,8 +33,6 @@ FerretDB supports the following vector index kinds:
 - **Hierarchical Navigable Small World (HNSW)**: HNSW is a graph-based index that uses a hierarchical structure to store vectors, suitable for high-speed vector search in memory.
 - **Inverted File (IVF)**: IVF is an inverted file index that partitions the vector space (data sets) into clusters (inverted lists) and performs approximate nearest neighbor search within selected clusters.
 
-<!-- markdownlint-disable MD033 -->
-
 ## Creating an index
 
 Vector index can be created using the usual `createIndexes` command with the following syntax:
@@ -86,6 +84,8 @@ In the following sections, we will demonstrate how to create and use vector inde
 Insert the following documents containing vector embeddings into a `books` collection:
 
 <CodeBlock language="js">{InsertData}</CodeBlock>
+
+{/* TODO https://github.com/FerretDB/FerretDB/issues/5216 */}
 
 The field that we're mostly going to focus on is `vector`, which represents the vector embeddings generated for the `summary` field using the [SentenceTransformer("all-MiniLM-L6-v2") model](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2).
 You can use any embedding model to generate the vectors.
@@ -180,5 +180,3 @@ The query returns the two nearest neighbors of the query vector.
 </TabItem>
 
 </Tabs>
-
-<!-- markdownlint-enable MD033 -->
