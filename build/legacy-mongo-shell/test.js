@@ -12,18 +12,6 @@
   const arr1 = new Float64Array(16384).fill(1).map(x => (Math.random() >= .5) ? 1 : 0)
   const arr2 = new Float64Array(16384).fill(1).map(x => (Math.random() >= .5) ? 1 : 0)
 
-  function hexEncode(str) {
-    var hex, i;
-
-    var result = "";
-    for (i=0; i<str.length; i++) {
-        hex = str.charCodeAt(i).toString(16);
-        result += ("000"+hex).slice(-4);
-    }
-
-    return result
-  }
-
   const init = [
     {
       _id: ObjectId('684211003840ee692afcbc1c'),
@@ -34,7 +22,7 @@
           }
         ]
       },
-      data: Binary.createFromHexString(hexEncode(String.fromCharCode(...arr1)))
+      data: String.fromCharCode(...arr1)
     },
     {
       _id: ObjectId('684211003840ee692afcbc1d'),
@@ -45,7 +33,7 @@
           }
         ]
       },
-      data: Binary.createFromHexString(hexEncode(String.fromCharCode(...arr2)))
+      data: String.fromCharCode(...arr2)
     }
   ];
 
@@ -99,7 +87,7 @@
       ],
       "instance": {
         "_id": ObjectId("684211003840ee692afcbc1c"),
-        data: Binary.createFromHexString(hexEncode(String.fromCharCode(...arr1)))
+        data: String.fromCharCode(...arr1)
       }
     },
     {
@@ -108,7 +96,7 @@
       ],
       "instance": {
         "_id": ObjectId("684211003840ee692afcbc1d"),
-        data: Binary.createFromHexString(hexEncode(String.fromCharCode(...arr2)))
+        data: String.fromCharCode(...arr2)
       }
     }
   ];
