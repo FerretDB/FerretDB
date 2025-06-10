@@ -61,8 +61,7 @@ cp .env.example .env
 ```
 
 You may need to adjust the environment variables in `.env` to suit your setup.
-For instance, you may have set the `UID` and `GID` to `999` in the `.env` file, as it was the case in this guide.
-
+For instance, you may have to set the `UID` and `GID` or it will default to a blank string.
 You can run FerretDB alongside LibreChat using Docker Compose.
 
 To do that, we'll add the [FerretDB evaluation image](https://docs.ferretdb.io/installation/evaluation/) to your `docker-compose.override.yml` file, as shown below:
