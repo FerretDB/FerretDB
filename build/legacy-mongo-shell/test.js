@@ -11,7 +11,6 @@
 
   const arr1 = new Float64Array(16384).fill(1).map(x => (Math.random() >= .5) ? 1 : 0)
   const arr2 = new Float64Array(16384).fill(1).map(x => (Math.random() >= .5) ? 1 : 0)
-  const decoder = new TextDecoder()
 
   const init = [
     {
@@ -23,7 +22,7 @@
           }
         ]
       },
-      data: BinData(9, decoder.decode(arr1))
+      data: BinData(9, String.fromCharCode(...arr1))
     },
     {
       _id: ObjectId('684211003840ee692afcbc1d'),
@@ -34,7 +33,7 @@
           }
         ]
       },
-      data: BinData(9, decoder.decode(arr2))
+      data: BinData(9, String.fromCharCode(...arr2))
     }
   ];
 
@@ -88,7 +87,7 @@
       ],
       "instance": {
         "_id": ObjectId("684211003840ee692afcbc1c"),
-        data: BinData(9, decoder.decode(arr1))
+        data: BinData(9, String.fromCharCode(...arr1))
       }
     },
     {
@@ -97,7 +96,7 @@
       ],
       "instance": {
         "_id": ObjectId("684211003840ee692afcbc1d"),
-        data: BinData(9, decoder.decode(arr2))
+        data: BinData(9, String.fromCharCode(...arr2))
       }
     }
   ];
