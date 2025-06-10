@@ -22,7 +22,7 @@
           }
         ]
       },
-      data: BinData(9, String.fromCharCode(...arr1))
+      data: BinData(9, btoa(String.fromCharCode(...arr1)))
     },
     {
       _id: ObjectId('684211003840ee692afcbc1d'),
@@ -33,7 +33,7 @@
           }
         ]
       },
-      data: BinData(9, String.fromCharCode(...arr2))
+      data: BinData(9, btoa(String.fromCharCode(...arr2)))
     }
   ];
 
@@ -87,7 +87,7 @@
       ],
       "instance": {
         "_id": ObjectId("684211003840ee692afcbc1c"),
-        data: BinData(9, String.fromCharCode(...arr1))
+        data: BinData(9, btoa(String.fromCharCode(...arr1)))
       }
     },
     {
@@ -96,7 +96,7 @@
       ],
       "instance": {
         "_id": ObjectId("684211003840ee692afcbc1d"),
-        data: BinData(9, String.fromCharCode(...arr2))
+        data: BinData(9, btoa(String.fromCharCode(...arr2)))
       }
     }
   ];
