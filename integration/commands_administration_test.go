@@ -2478,10 +2478,7 @@ func TestCompactCommandForce(t *testing.T) {
 			}
 
 			var res bson.D
-			err := s.Collection.Database().RunCommand(
-				s.Ctx,
-				command,
-			).Decode(&res)
+			err := s.Collection.Database().RunCommand(s.Ctx, command).Decode(&res)
 
 			if tc.err != nil {
 				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
@@ -2500,64 +2497,55 @@ func TestCompactCommandForce(t *testing.T) {
 	}
 }
 
-func TestCompactCommandErrors(tt *testing.T) {
-	tt.Parallel()
+func TestCompactCommandNonExistent(t *testing.T) {
+	t.Parallel()
 
 	for name, tc := range map[string]struct {
 		dbName string
+		force  any // optional, defaults to unset
 
-		err              *mongo.CommandError // required
-		altMessage       string              // optional, alternative error message
-		skipForMongoDB   string              // optional, skip test for MongoDB backend with a specific reason
-		failsForFerretDB string
+		err        *mongo.CommandError // required
+		altMessage string              // optional, alternative error message
 	}{
 		"NonExistentDB": {
+			force:  true,
 			dbName: "non-existent",
 			err: &mongo.CommandError{
 				Code:    26,
 				Name:    "NamespaceNotFound",
 				Message: "database does not exist",
 			},
-			altMessage: "Invalid namespace specified 'non-existent.non-existent'",
-
-			skipForMongoDB:   "Only {force:true} can be run on active replica set primary",
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/286",
+			altMessage: "ns does not exist: non-existent.non-existent",
 		},
 		"NonExistentCollection": {
+			force:  true,
 			dbName: "admin",
 			err: &mongo.CommandError{
 				Code:    26,
 				Name:    "NamespaceNotFound",
 				Message: "collection does not exist",
 			},
-			altMessage:       "Invalid namespace specified 'admin.non-existent'",
-			skipForMongoDB:   "Only {force:true} can be run on active replica set primary",
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/286",
+			altMessage: "ns does not exist: admin.non-existent",
 		},
 	} {
-		tt.Run(name, func(tt *testing.T) {
-			tt.Parallel()
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-			var t testing.TB = tt
-			if tc.failsForFerretDB != "" {
-				t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
-			}
+			require.Error(t, tc.err)
 
-			if tc.skipForMongoDB != "" {
-				setup.SkipForMongoDB(t, tc.skipForMongoDB)
-			}
-
-			require.NotNil(t, tc.err, "err must not be nil")
-
-			s := setup.SetupWithOpts(tt, &setup.SetupOpts{
+			s := setup.SetupWithOpts(t, &setup.SetupOpts{
 				DatabaseName: tc.dbName,
 			})
 
+			command := bson.D{
+				{"compact", "non-existent"},
+			}
+			if tc.force != nil {
+				command = append(command, bson.E{Key: "force", Value: tc.force})
+			}
+
 			var res bson.D
-			err := s.Collection.Database().RunCommand(
-				s.Ctx,
-				bson.D{{"compact", "non-existent"}},
-			).Decode(&res)
+			err := s.Collection.Database().RunCommand(s.Ctx, command).Decode(&res)
 
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
