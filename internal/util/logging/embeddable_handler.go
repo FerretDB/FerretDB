@@ -31,7 +31,7 @@ type embeddableHandler struct {
 
 // newEmbeddableHandler creates a new embeddable handler.
 func newEmbeddableHandler(opts *NewHandlerOpts) *embeddableHandler {
-	return &embeddableHandler{opts: opts, m: &sync.Mutex{}}
+	return &embeddableHandler{opts: opts, m: new(sync.Mutex)}
 }
 
 // Enabled implements [slog.Handler].
