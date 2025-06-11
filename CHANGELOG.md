@@ -2,7 +2,7 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
-## [v2.3.0](https://github.com/FerretDB/FerretDB/releases/tag/v2.3.0) (2025-06-10)
+## [v2.3.0](https://github.com/FerretDB/FerretDB/releases/tag/v2.3.0) (2025-06-11)
 
 This version works best with
 [DocumentDB v0.104.0-ferretdb-2.3.0](https://github.com/FerretDB/documentdb/releases/tag/v0.104.0-ferretdb-2.3.0).
@@ -18,23 +18,20 @@ TODO
 ### New Features 🎉
 
 - Add `enableTelemetry` config for embedded FerretDB by @jyz0309 in https://github.com/FerretDB/FerretDB/pull/5109
+- Use DocumentDB's `compat` command by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5242
+
+### Enhancements 🛠
+
+- Improve telemetry settings for embedded package by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5252
 
 ### Documentation 📄
 
-- Cleanup docs by @Fashander in https://github.com/FerretDB/FerretDB/pull/4704
-- Update writing guide by @Fashander in https://github.com/FerretDB/FerretDB/pull/4835
-- Improve debug archive documentation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/4924
-- Add blog post on setting up LibreChat with FerretDB by @Fashander in https://github.com/FerretDB/FerretDB/pull/4999
 - Enable `onInlineAuthors` in blog settings by @Balou9 in https://github.com/FerretDB/FerretDB/pull/5079
-- Document `createIndexes` command by @Fashander in https://github.com/FerretDB/FerretDB/pull/5090
-- Update flags.md by @MSGanesh23 in https://github.com/FerretDB/FerretDB/pull/5103
 - Create compatible apps section by @Fashander in https://github.com/FerretDB/FerretDB/pull/5108
 - Improve insert operations in guides by @Fashander in https://github.com/FerretDB/FerretDB/pull/5131
 - Update versions to point to the next release by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5144
 - Update docker tags in docs by @Fashander in https://github.com/FerretDB/FerretDB/pull/5156
 - Update tags for next release by @Fashander in https://github.com/FerretDB/FerretDB/pull/5157
-- Add documentation for logical operators by @Fashander in https://github.com/FerretDB/FerretDB/pull/5161
-- Document user management commands by @Fashander in https://github.com/FerretDB/FerretDB/pull/5174
 - Do not format MDX as Markdown by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5186
 - Add blog post on Mongo Express compatibility by @Fashander in https://github.com/FerretDB/FerretDB/pull/5194
 - Add blog post for Novu compatibility by @Fashander in https://github.com/FerretDB/FerretDB/pull/5195
@@ -44,16 +41,14 @@ TODO
 
 ### Other Changes 🤖
 
-- Refactor logging attribute handling by @noisersup in https://github.com/FerretDB/FerretDB/pull/4830
 - Use `runtime.Cleanup` for resource tracking by @sahinakyol in https://github.com/FerretDB/FerretDB/pull/5077
 - Add Dependabot configuration for `main-v1` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5098
 - Bump deps by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5159
 - Make `conninfo` a resource by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5166
-- Revert &#34;Update CODEOWNERS&#34; by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5169
+- Revert "Update CODEOWNERS" by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5169
 - Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5170
 - Add `permissions` to GitHub Actions workflows by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5182
 - Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5184
-- Implement MCP prototype by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5193
 - Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5197
 - Add test for inserting zero timestamp by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5199
 - Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5201
@@ -64,10 +59,12 @@ TODO
 - Update TODO comments by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5223
 - Bump Go and deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5236
 - Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5240
+- Build production Docker images for PRs by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5251
 
 ### New Contributors
 
-TODO
+- @sahinakyol made their first contribution in https://github.com/FerretDB/FerretDB/pull/5077
+- @Balou9 made their first contribution in https://github.com/FerretDB/FerretDB/pull/5079
 
 [All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/74?closed=1).
 [All commits](https://github.com/FerretDB/FerretDB/compare/v2.2.0...v2.3.0).

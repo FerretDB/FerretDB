@@ -1,11 +1,10 @@
 export const categorizedApps = {
-  'GUI Client Tools': [
+  guis: [
     // Add compass blog post [https://github.com/FerretDB/FerretDB/issues/1982]
     //   name: 'Compass',
     //   logo: '/img/compatible-applications/compass-logo.png',
     //   link: 'https://docs.ferretdb.io/usage/compatible-applications/overview/#gui-applications'
     // },
-
     {
       name: 'NoSQLBooster',
       logo: '/img/compatible-applications/nosqlbooster-logo.png',
@@ -27,21 +26,21 @@ export const categorizedApps = {
       link: 'https://blog.ferretdb.io/using-mingo-analyze-visualize-ferretdb-data/'
     }
   ],
-  'Deployment Platforms': [
+
+  deploy: [
+    {
+      name: 'CloudNativePG',
+      logo: '/img/compatible-applications/cnpg-logo.png',
+      link: 'https://blog.ferretdb.io/run-ferretdb-postgres-documentdb-extension-cnpg-kubernetes/'
+    },
     {
       name: 'Taikun CloudWorks',
       logo: '/img/compatible-applications/taikun-logo.png',
       link: 'https://blog.ferretdb.io/run-mongodb-workloads-ferretdb-taikun-cloudworks/'
     }
   ],
-  'PostgreSQL Operators': [
-    {
-      name: 'CloudNativePG',
-      logo: '/img/compatible-applications/cnpg-logo.png',
-      link: 'https://blog.ferretdb.io/run-ferretdb-postgres-documentdb-extension-cnpg-kubernetes/'
-    }
-  ],
-  'Monitoring and Observability': [
+
+  monitoring: [
     {
       name: 'Grafana',
       logo: '/img/compatible-applications/grafana-logo.png',
@@ -58,14 +57,16 @@ export const categorizedApps = {
       link: 'https://blog.ferretdb.io/otel-context-propagation-in-ferretdb/'
     }
   ],
-  'Data Migration': [
+
+  migration: [
     {
       name: 'dsync',
       logo: '/img/compatible-applications/adiom-logo.png',
       link: 'https://blog.ferretdb.io/migrate-mongodb-data-ferretdb-dsync/'
     }
   ],
-  Others: [
+
+  others: [
     {
       name: 'Novu',
       logo: '/img/compatible-applications/novu-logo.png',

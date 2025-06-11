@@ -21,12 +21,12 @@ import (
 	_ "embed"
 	"flag"
 	"fmt"
-	"html/template"
 	"io"
 	"log"
 	"log/slog"
 	"os"
 	"strconv"
+	"text/template"
 
 	"github.com/FerretDB/gh"
 	"github.com/google/go-github/v70/github"
