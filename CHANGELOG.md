@@ -7,22 +7,11 @@
 This version works best with
 [DocumentDB v0.104.0-ferretdb-2.3.0](https://github.com/FerretDB/documentdb/releases/tag/v0.104.0-ferretdb-2.3.0).
 
-TODO
-
-### Breaking changes
-
-TODO
-
-### What's Changed
-
 ### New Features 🎉
 
-- Add `enableTelemetry` config for embedded FerretDB by @jyz0309 in https://github.com/FerretDB/FerretDB/pull/5109
+- Add telemetry configuration for embedded FerretDB by @jyz0309 in https://github.com/FerretDB/FerretDB/pull/5109
+- Use DocumentDB's support for `bypassEmptyTsReplacement` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5217
 - Use DocumentDB's `compat` command by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5242
-
-### Enhancements 🛠
-
-- Improve telemetry settings for embedded package by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5252
 
 ### Documentation 📄
 
@@ -30,14 +19,15 @@ TODO
 - Create compatible apps section by @Fashander in https://github.com/FerretDB/FerretDB/pull/5108
 - Improve insert operations in guides by @Fashander in https://github.com/FerretDB/FerretDB/pull/5131
 - Update versions to point to the next release by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5144
-- Update docker tags in docs by @Fashander in https://github.com/FerretDB/FerretDB/pull/5156
-- Update tags for next release by @Fashander in https://github.com/FerretDB/FerretDB/pull/5157
+- Update Docker tags in docs by @Fashander in https://github.com/FerretDB/FerretDB/pull/5156
+- Update Docker tags for next release by @Fashander in https://github.com/FerretDB/FerretDB/pull/5157
 - Do not format MDX as Markdown by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5186
 - Add blog post on Mongo Express compatibility by @Fashander in https://github.com/FerretDB/FerretDB/pull/5194
 - Add blog post for Novu compatibility by @Fashander in https://github.com/FerretDB/FerretDB/pull/5195
 - Update CTS tool to wrap long lines by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5202
 - Disable Markdownlint rule that clashes with MDX by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5210
 - Small documentation tweaks by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5218
+- Prepare v2.3.0 release by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5254
 
 ### Other Changes 🤖
 
@@ -55,11 +45,11 @@ TODO
 - Refactor resource tracking tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5208
 - Unskip test by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5211
 - Use Ollama in local setup by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5215
-- Remove hack for `bypassEmptyTsReplacement` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5217
 - Update TODO comments by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5223
 - Bump Go and deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5236
 - Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5240
 - Build production Docker images for PRs by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5251
+- Improve telemetry configuration for embedded FerretDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5252
 
 ### New Contributors
 
