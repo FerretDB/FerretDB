@@ -115,9 +115,10 @@ func New(config *Config) (*FerretDB, error) {
 		logger = logging.WithName(logging.Logger(logOutput, lOpts, ""), "ferretdb")
 	} else {
 		handler := config.Logger.Handler()
-		lOpts.Base = "custom"
+		lOpts.Base = "embeddable"
 		lOpts.Handler = handler
-		logger = logging.WithName(logging.Logger(nil, lOpts, ""), "ferretdb")
+		baseLogger := logging.Logger(nil, lOpts, "")
+		logger = logging.WithName(baseLogger, "ferretdb")
 	}
 
 	lm := connmetrics.NewListenerMetrics()

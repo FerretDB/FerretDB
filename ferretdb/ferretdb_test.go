@@ -85,13 +85,14 @@ func Example() {
 }
 
 func TestFerretDBWithCustomLogger(t *testing.T) {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
-	}))
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{}))
+	//require.True(t, logger.Enabled(context.Background(), slog.LevelWarn))
+
 	f, err := ferretdb.New(&ferretdb.Config{
 		PostgreSQLURL: testutil.PostgreSQLURL(t),
 		ListenAddr:    "127.0.0.1:0",
 		StateDir:      t.TempDir(),
+		LogLevel:      slog.LevelWarn,
 		Logger:        logger,
 	})
 	require.NoError(t, err)
@@ -113,6 +114,9 @@ func TestFerretDBWithCustomLogger(t *testing.T) {
 	err = client.Ping(ctx, nil)
 	require.NoError(t, err)
 
+	// check that non-existent command is logged
+	client.Database("admin").RunCommand(ctx, bson.D{{Key: "nonExistentCommand", Value: 1}})
+
 	res := client.Database("admin").RunCommand(ctx, bson.D{{Key: "getLog", Value: "global"}})
 
 	var actual bson.D
@@ -121,7 +125,7 @@ func TestFerretDBWithCustomLogger(t *testing.T) {
 
 	require.Len(t, actual, 3)
 	require.Equal(t, "log", actual[0].Key)
-
+	require.Regexp(t, ".*no such command: 'nonExistentCommand'.*", actual[0].Value)
 	require.Equal(t, "ok", actual[2].Key)
 	require.Equal(t, 1.0, actual[2].Value)
 
