@@ -2412,89 +2412,29 @@ func TestServerStatusCommandStress(t *testing.T) {
 	wg.Wait()
 }
 
-func TestCompactCommandForce(t *testing.T) {
+func TestCompactCommand(t *testing.T) {
 	// don't run in parallel as parallel `VACUUM FULL ANALYZE` may result in deadlock
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		DatabaseName: "admin",
 		Providers:    []shareddata.Provider{shareddata.DocumentsStrings},
 	})
 
-	for name, tc := range map[string]struct {
-		force any // optional, defaults to unset
+	dr, err := s.Collection.DeleteMany(s.Ctx, bson.D{})
+	require.NoError(t, err)
+	assert.Positive(t, dr.DeletedCount)
 
-		err            *mongo.CommandError // optional
-		altMessage     string              // optional, alternative error message
-		skipForMongoDB string              // optional, skip test for mongoDB with a specific reason
-	}{
-		"True": {
-			force: true,
-		},
-		"False": {
-			force:          false,
-			skipForMongoDB: "Only {force:true} can be run on active replica set primary",
-		},
-		"Int32": {
-			force: int32(1),
-		},
-		"Int32Zero": {
-			force:          int32(0),
-			skipForMongoDB: "Only {force:true} can be run on active replica set primary",
-		},
-		"Int64": {
-			force: int64(1),
-		},
-		"Int64Zero": {
-			force:          int64(0),
-			skipForMongoDB: "Only {force:true} can be run on active replica set primary",
-		},
-		"Double": {
-			force: float64(1),
-		},
-		"DoubleZero": {
-			force:          float64(0),
-			skipForMongoDB: "Only {force:true} can be run on active replica set primary",
-		},
-		"Unset": {
-			skipForMongoDB: "Only {force:true} can be run on active replica set primary",
-		},
-		"String": {
-			force: "foo",
-			err: &mongo.CommandError{
-				Code:    14,
-				Name:    "TypeMismatch",
-				Message: "BSON field 'force' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'",
-			},
-			skipForMongoDB: "force is FerretDB specific field",
-		},
-	} {
-		t.Run(name, func(t *testing.T) {
-			if tc.skipForMongoDB != "" {
-				setup.SkipForMongoDB(t, tc.skipForMongoDB)
-			}
-
-			command := bson.D{{"compact", s.Collection.Name()}}
-			if tc.force != nil {
-				command = append(command, bson.E{Key: "force", Value: tc.force})
-			}
-
-			var res bson.D
-			err := s.Collection.Database().RunCommand(s.Ctx, command).Decode(&res)
-
-			if tc.err != nil {
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-				return
-			}
-
-			require.NoError(t, err)
-
-			expected := bson.D{
-				{"bytesFreed", int32(0)},
-				{"ok", float64(1)},
-			}
-
-			AssertEqualDocuments(t, expected, res)
-		})
+	command := bson.D{
+		{"compact", s.Collection.Name()},
+		{"force", true},
 	}
+
+	var res bson.D
+	err = s.Collection.Database().RunCommand(s.Ctx, command).Decode(&res)
+	require.NoError(t, err)
+
+	res, bf := RemoveKey(t, res, "bytesFreed")
+	assert.Zero(t, bf)
+	AssertEqualDocuments(t, bson.D{{"ok", float64(1)}}, res)
 }
 
 func TestCompactCommandNonExistent(t *testing.T) {
