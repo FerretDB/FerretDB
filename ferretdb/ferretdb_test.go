@@ -125,6 +125,9 @@ func TestFerretDBWithCustomLogger(t *testing.T) {
 
 	require.Len(t, actual, 3)
 	require.Equal(t, "log", actual[0].Key)
+
+	require.Equal(t, "ok", actual[1].Key)
+	require.Equal(t, 1.0, actual[1].Value)
 	require.Regexp(t, ".*no such command: 'nonExistentCommand'.*", actual[0].Value)
 	require.Equal(t, "ok", actual[2].Key)
 	require.Equal(t, 1.0, actual[2].Value)
