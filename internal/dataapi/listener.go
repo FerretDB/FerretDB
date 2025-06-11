@@ -35,13 +35,13 @@ import (
 type Listener struct {
 	opts *ListenOpts
 	lis  net.Listener
-	srv  *server.Server
+	s    *server.Server
 }
 
 // ListenOpts represents [Listen] options.
 type ListenOpts struct {
-	L       *slog.Logger
 	Handler *handler.Handler
+	L       *slog.Logger
 	TCPAddr string
 }
 
@@ -55,7 +55,7 @@ func Listen(opts *ListenOpts) (*Listener, error) {
 	return &Listener{
 		opts: opts,
 		lis:  lis,
-		srv:  server.New(opts.L, opts.Handler),
+		s:    server.New(opts.L, opts.Handler),
 	}, nil
 }
 
@@ -63,14 +63,14 @@ func Listen(opts *ListenOpts) (*Listener, error) {
 //
 // It exits when handler is stopped and listener closed.
 func (lis *Listener) Run(ctx context.Context) {
-	srvHandler := api.HandlerFromMux(lis.srv, http.NewServeMux())
+	srvHandler := api.HandlerFromMux(lis.s, http.NewServeMux())
 
 	if lis.opts.Handler.Auth {
-		srvHandler = lis.srv.AuthMiddleware(srvHandler)
+		srvHandler = lis.s.AuthMiddleware(srvHandler)
 	}
 
 	srv := &http.Server{
-		Handler:  lis.srv.ConnInfoMiddleware(srvHandler),
+		Handler:  lis.s.ConnInfoMiddleware(srvHandler),
 		ErrorLog: slog.NewLogLogger(lis.opts.L.Handler(), slog.LevelError),
 		BaseContext: func(net.Listener) context.Context {
 			return ctx
