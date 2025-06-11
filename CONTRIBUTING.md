@@ -22,7 +22,11 @@ Still, please leave a comment on it as described above.
 
 ### Requirements
 
-The supported way of contributing to FerretDB is to modify and run it on the host (Linux, macOS, or Windows)
+There are two ways to set up your development environment for FerretDB:
+
+#### Option 1: Local Development (Host machine)
+
+The traditional way of contributing to FerretDB is to modify and run it on the host (Linux, macOS, or Windows)
 with PostgreSQL and other dependencies running inside Docker containers via Docker Compose.
 On Linux, `docker` (with `docker compose` subcommand a.k.a. [Compose V2](https://docs.docker.com/compose/compose-v2/),
 not old `docker-compose` tool) should be installed on the host.
@@ -30,14 +34,32 @@ On macOS and Windows, [Docker Desktop](https://www.docker.com/products/docker-de
 On Windows, it should be [configured to use WSL 2](https://docs.docker.com/desktop/windows/wsl/) without any distro;
 all commands should be run on the host.
 
-You will need Go 1.24 or later on the host.
-If your package manager doesn't provide it yet,
-please install it from [go.dev](https://go.dev/dl/).
+For this setup, you will need:
+- Go 1.24 or later on the host. If your package manager doesn't provide it yet, please install it from [go.dev](https://go.dev/dl/).
+- `git` installed; the version provided by your package manager should do. On Windows, the simplest way to install it might be https://gitforwindows.org.
+- [git-lfs](https://git-lfs.github.com) installed and configured (`git lfs install`).
 
-You will also need `git` installed; the version provided by your package manager should do.
-On Windows, the simplest way to install it might be https://gitforwindows.org.
+#### Option 2: Development Container (VS Code or GitHub Codespaces)
 
-Finally, you will also need [git-lfs](https://git-lfs.github.com) installed and configured (`git lfs install`).
+For a simpler setup that doesn't require installing anything locally (except VS Code and Docker), you can use the Development Container configuration included in this repository. This method runs everything inside Docker containers, including FerretDB itself.
+
+Requirements:
+- [Visual Studio Code](https://code.visualstudio.com/) with the [Remote Development extension pack](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack) installed
+- Docker with Docker Compose (same as Option 1)
+
+To use this option:
+1. Clone the repository
+2. Open the repository folder in VS Code
+3. When prompted "Reopen in Container", click it, or run the command "Remote-Containers: Reopen in Container" from the Command Palette (F1)
+4. VS Code will build the container and connect to it, which might take a few minutes the first time
+
+Once connected to the container, you can:
+- Use the integrated terminal to run tasks (`task -l` to list all available tasks)
+- Build FerretDB with `task build-host`
+- Run FerretDB with `task run`
+- Connect to MongoDB with `task mongosh`
+
+Alternatively, you can use [GitHub Codespaces](https://github.com/features/codespaces) to develop entirely in the cloud without installing anything locally. Simply open the repository in GitHub and click the "Code" button, then select "Open with Codespaces".
 
 ### Making a working copy
 
