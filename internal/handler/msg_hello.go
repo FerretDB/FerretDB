@@ -40,7 +40,6 @@ func (h *Handler) msgHello(connCtx context.Context, req *middleware.Request) (*m
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
 	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -61,7 +60,6 @@ func (h *Handler) msgHello(connCtx context.Context, req *middleware.Request) (*m
 // hello checks client metadata and returns hello's document fields.
 // It also returns response for deprecated `isMaster` and `ismaster` commands.
 func (h *Handler) hello(ctx context.Context, spec wirebson.AnyDocument, tcpHost, name string) (*wirebson.Document, error) {
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
 	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

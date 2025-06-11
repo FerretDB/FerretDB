@@ -100,11 +100,16 @@ docker compose exec -T  <documentdb-container-name> \
   psql -U <username> -d postgres <<EOF
 ALTER SYSTEM SET shared_preload_libraries = 'pg_cron','pg_documentdb_core','pg_documentdb';
 ALTER SYSTEM SET cron.database_name = 'postgres';
+
+ALTER SYSTEM SET documentdb.enableCompact = true;
+
 ALTER SYSTEM SET documentdb.enableLetAndCollationForQueryMatch = true;
 ALTER SYSTEM SET documentdb.enableNowSystemVariable = true;
 ALTER SYSTEM SET documentdb.enableSortbyIdPushDownToPrimaryKey = true;
+
 ALTER SYSTEM SET documentdb.enableSchemaValidation = true;
 ALTER SYSTEM SET documentdb.enableBypassDocumentValidation = true;
+
 ALTER SYSTEM SET documentdb.enableUserCrud = true;
 ALTER SYSTEM SET documentdb.maxUserLimit = 100;
 EOF
