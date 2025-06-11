@@ -64,6 +64,9 @@ func TestDefine(t *testing.T) {
 				developmentImages: []string{
 					"ghcr.io/ferretdb/ferretdb-dev:pr-define-docker-tag",
 				},
+				productionImages: []string{
+					"ghcr.io/ferretdb/ferretdb-dev:pr-define-docker-tag-prod",
+				},
 			},
 		},
 		"pull_request-other": {
@@ -84,6 +87,9 @@ func TestDefine(t *testing.T) {
 				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:pr-define-docker-tag",
+				},
+				productionImages: []string{
+					"ghcr.io/otherorg/otherrepo-dev:pr-define-docker-tag-prod",
 				},
 			},
 		},
@@ -107,6 +113,9 @@ func TestDefine(t *testing.T) {
 				developmentImages: []string{
 					"ghcr.io/ferretdb/ferretdb-dev:pr-mongo-go-driver-29d768e",
 				},
+				productionImages: []string{
+					"ghcr.io/ferretdb/ferretdb-dev:pr-mongo-go-driver-29d768e-prod",
+				},
 			},
 		},
 		"pull_request/dependabot-other": {
@@ -127,6 +136,9 @@ func TestDefine(t *testing.T) {
 				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:pr-mongo-go-driver-29d768e",
+				},
+				productionImages: []string{
+					"ghcr.io/otherorg/otherrepo-dev:pr-mongo-go-driver-29d768e-prod",
 				},
 			},
 		},
@@ -150,6 +162,9 @@ func TestDefine(t *testing.T) {
 				developmentImages: []string{
 					"ghcr.io/ferretdb/ferretdb-dev:pr-define-docker-tag",
 				},
+				productionImages: []string{
+					"ghcr.io/ferretdb/ferretdb-dev:pr-define-docker-tag-prod",
+				},
 			},
 		},
 		"pull_request_target-other": {
@@ -170,6 +185,9 @@ func TestDefine(t *testing.T) {
 				},
 				developmentImages: []string{
 					"ghcr.io/otherorg/otherrepo-dev:pr-define-docker-tag",
+				},
+				productionImages: []string{
+					"ghcr.io/otherorg/otherrepo-dev:pr-define-docker-tag-prod",
 				},
 			},
 		},
