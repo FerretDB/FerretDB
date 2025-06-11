@@ -19,6 +19,7 @@
 //
 // # Telemetry
 //
+// FIXME
 // Please note that the current version of the embeddable package does not allow [telemetry] configuration –
 // it is always set to the `undecided` state. That limitation will be removed [in the future].
 //
@@ -83,7 +84,7 @@ type FerretDB struct {
 func New(config *Config) (*FerretDB, error) {
 	version.Get().Package = "embedded"
 
-	sp, err := state.NewProviderDir(config.StateDir)
+	stateProvider, err := state.NewProviderDir(config.StateDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to set up state provider: %w", err)
 	}
@@ -116,7 +117,7 @@ func New(config *Config) (*FerretDB, error) {
 		F:              telemetry.NewFlag(config.EnabledTelemetry),
 		DNT:            os.Getenv("DO_NOT_TRACK"),
 		ExecName:       os.Args[0],
-		P:              sp,
+		P:              stateProvider,
 		ConnMetrics:    lm.ConnMetrics,
 		L:              logging.WithName(logger, "telemetry"),
 		UndecidedDelay: time.Hour,
@@ -126,7 +127,7 @@ func New(config *Config) (*FerretDB, error) {
 		return nil, fmt.Errorf("failed to create telemetry reporter: %w", err)
 	}
 
-	p, err := documentdb.NewPool(config.PostgreSQLURL, logging.WithName(logger, "pool"), sp)
+	p, err := documentdb.NewPool(config.PostgreSQLURL, logging.WithName(logger, "pool"), stateProvider)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct pool: %w", err)
 	}
@@ -140,7 +141,7 @@ func New(config *Config) (*FerretDB, error) {
 
 		L:             logging.WithName(logger, "handler"),
 		ConnMetrics:   lm.ConnMetrics,
-		StateProvider: sp,
+		StateProvider: stateProvider,
 	}
 
 	h, err := handler.New(handlerOpts)
