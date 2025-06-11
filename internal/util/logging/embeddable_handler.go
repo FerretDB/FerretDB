@@ -17,6 +17,7 @@ package logging
 import (
 	"context"
 	"log/slog"
+	"sync"
 )
 
 // Embeddable handler is a [slog.Handler] for custom logger.
@@ -25,11 +26,12 @@ import (
 //nolint:vet // for readability
 type embeddableHandler struct {
 	opts *NewHandlerOpts
+	m    *sync.Mutex
 }
 
 // newEmbeddableHandler creates a new embeddable handler.
 func newEmbeddableHandler(opts *NewHandlerOpts) *embeddableHandler {
-	return &embeddableHandler{opts: opts}
+	return &embeddableHandler{opts: opts, m: &sync.Mutex{}}
 }
 
 // Enabled implements [slog.Handler].
@@ -53,13 +55,20 @@ func (h *embeddableHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 		return h
 	}
 
+	h.m.Lock()
+	defer h.m.Unlock()
+
 	h.opts.Handler = h.opts.Handler.WithAttrs(attrs)
 
-	return h
+	return &embeddableHandler{opts: h.opts, m: h.m}
 }
 
 // WithGroup implements [slog.Handler].
 func (h *embeddableHandler) WithGroup(name string) slog.Handler {
+	h.m.Lock()
+	defer h.m.Unlock()
+
 	h.opts.Handler = h.opts.Handler.WithGroup(name)
-	return h
+
+	return &embeddableHandler{opts: h.opts, m: h.m}
 }
