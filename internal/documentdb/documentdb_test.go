@@ -65,7 +65,7 @@ func TestNewPool(t *testing.T) {
 		assert.NoError(t, newErr)
 		assert.NoError(t, pingErr)
 
-		assert.Equal(t, version.PostgreSQL, sp.Get().PostgreSQLVersion, "version.PostgreSQL wasn't updated")
+		assert.Equal(t, version.PostgreSQLTest, sp.Get().PostgreSQLVersion, "version.PostgreSQL wasn't updated")
 		assert.Equal(t, version.DocumentDB, sp.Get().DocumentDBVersion, "version.DocumentDB wasn't updated")
 	})
 
@@ -132,6 +132,6 @@ func TestError(t *testing.T) {
 		`Severity:"ERROR", SeverityUnlocalized:"ERROR", Code:"M0003", ` +
 		`Message:"The limit field in delete objects must be 0 or 1. Got -1", Detail:"", Hint:"", ` +
 		`Position:0, InternalPosition:0, InternalQuery:"", Where:"", SchemaName:"", TableName:"", ColumnName:"", ` +
-		`DataTypeName:"", ConstraintName:"", File:"delete.c", Line:479, Routine:"BuildDeletionSpec"}}`
+		`DataTypeName:"", ConstraintName:"", File:"delete.c", Line:509, Routine:"BuildDeletionSpec"}}`
 	assert.Equal(t, expected, fmt.Sprintf("%#v", err))
 }

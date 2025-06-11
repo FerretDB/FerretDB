@@ -1,5 +1,5 @@
 ---
-sidebar_position: 7
+sidebar_position: 8
 slug: /telemetry/ # referenced in many places
 ---
 
@@ -139,8 +139,8 @@ Explicit user action is required (see below) to change an `undecided` state to `
 :::
 
 :::caution
-Telemetry reporting is `undecided` and can't be configured for [embeddable FerretDB](installation/ferretdb/go.md) yet.
-We intend to add [this feature](https://github.com/FerretDB/FerretDB/issues/4750) in the future.
+Telemetry reporting is `undecided` by default for [embeddable FerretDB](installation/ferretdb/go.md).
+You can change this behavior by setting the `EnabledTelemetry` field in the configuration when creating a new embeddable FerretDB instance.
 :::
 
 ### Disable telemetry

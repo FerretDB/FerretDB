@@ -7,7 +7,6 @@ services:
       context: ./build/deps
       dockerfile: postgres-documentdb.Dockerfile
     container_name: ferretdb_postgres
-    platform: linux/amd64
     command: >
       postgres
       -c log_min_duration_statement=1000ms
@@ -98,6 +97,12 @@ services:
       - 4318:4318 # OTLP over HTTP
       - 6831:6831/udp # Compact Thrift from BuildKit
       - 16686:16686 # UI on http://127.0.0.1:16686/
+
+  librechat:
+    build:
+      context: ./build/deps
+      dockerfile: librechat.Dockerfile
+    container_name: librechat_jaeger
 
   trivy:
     build:

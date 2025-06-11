@@ -5,14 +5,14 @@ description: Learn about full-text search parameters and capabilities in FerretD
 
 # Full-text search
 
-import CodeBlock from '@theme/CodeBlock';
-import MyDataSet from '!!raw-loader!./requests/1-insert-text-data.js';
-import CreateIndex from '!!raw-loader!./requests/2-create-text-index.js';
-import SearchQuery from '!!raw-loader!./requests/3-basic-text-search.js';
-import CompoundIndex from '!!raw-loader!./requests/4-compound-text-index.js';
-import RelevanceScore from '!!raw-loader!./requests/5-relevance-score.js';
-import TextSearchResponse from '!!raw-loader!./responses/3-basic-text-search.js';
-import RelevanceScoreResponse from '!!raw-loader!./responses/5-relevance-score.js';
+import CodeBlock from '@theme/CodeBlock'
+import MyDataSet from '!!raw-loader!./requests/1-insert-text-data.js'
+import CreateIndex from '!!raw-loader!./requests/2-create-text-index.js'
+import SearchQuery from '!!raw-loader!./requests/3-basic-text-search.js'
+import CompoundIndex from '!!raw-loader!./requests/4-compound-text-index.js'
+import RelevanceScore from '!!raw-loader!./requests/5-relevance-score.js'
+import TextSearchResponse from '!!raw-loader!./responses/3-basic-text-search.js'
+import RelevanceScoreResponse from '!!raw-loader!./responses/5-relevance-score.js'
 
 Full-text search is a technique for searching words or phrases across a large set of textual data.
 Unlike traditional queries that require exact matches, full-text search tries to understand what you’re searching for and bring up the best results.
@@ -50,8 +50,6 @@ Single full-text index is created on a single field in a collection.
 ### Creating a text index
 
 To create a text index, use the `createIndex` command with the field you want to index and the type set to `'text'`.
-
-<!-- markdownlint-disable MD033 -->
 
 <CodeBlock language="js">{CreateIndex}</CodeBlock>
 
@@ -93,5 +91,3 @@ Let's search for books that contain the words "hunt whales" in the `summary` fie
 Even though the query does not have exact matches, the search returns documents that contain similar words.
 
 <CodeBlock language="js">{RelevanceScoreResponse}</CodeBlock>
-
-<!-- markdownlint-enable MD033 -->

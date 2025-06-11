@@ -30,7 +30,6 @@ func (h *Handler) msgListIndexes(connCtx context.Context, req *middleware.Reques
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
 	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

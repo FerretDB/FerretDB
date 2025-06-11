@@ -30,6 +30,9 @@ labels:
   - name: area/cursors
     color: "#D93F0B"
     description: Issues about cursors
+  - name: area/dataapi
+    color: "#D98F93"
+    description: Issues about Data API
   - name: area/diag
     color: "#909BA6"
     description: Issues about diagnostic commands
@@ -42,6 +45,9 @@ labels:
   - name: area/indexes
     color: "#006B75"
     description: Issues about indexes
+  - name: area/mcp
+    color: "#95921F"
+    description: Issues about MCP
   - name: area/observability
     color: "#E04D33"
     description: Issues about metrics, logs, traces, pprof, etc

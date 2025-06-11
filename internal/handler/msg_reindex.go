@@ -38,7 +38,6 @@ func (h *Handler) msgReIndex(connCtx context.Context, req *middleware.Request) (
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
 	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -117,8 +116,6 @@ func (h *Handler) msgReIndex(connCtx context.Context, req *middleware.Request) (
 		return nil, lazyerrors.Error(err)
 	}
 
-	// this currently fails due to
-	// TODO https://github.com/FerretDB/FerretDB/issues/4730
 	dropDoc, err := dropRes.DecodeDeep()
 	if err != nil {
 		h.L.DebugContext(connCtx, "MsgReIndex: failed to decode DropIndexes response", logging.Error(err))

@@ -324,6 +324,14 @@ tasks:
     cmds:
       - bin/pkgsite{{exeExt}} -http=127.0.0.1:6060 -open
 
+  ollama:
+    desc: "Run Ollama server"
+    cmds:
+      - ollama serve
+    env:
+      # for https://ollama.com/library/phi4-mini
+      OLLAMA_CONTEXT_LENGTH: 131072
+
   psql:
     desc: "Run psql"
     cmds:
@@ -443,7 +451,7 @@ tasks:
           # TODO https://github.com/FerretDB/FerretDB/issues/5019
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          BIN_FILE: 'ferretdb-dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          BIN_FILE: 'ferretdb-dev-{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
           BIN_DIR: bin-dev
 
   build-production:
@@ -464,7 +472,7 @@ tasks:
           # TODO https://github.com/FerretDB/FerretDB/issues/5019
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          BIN_FILE: 'ferretdb-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          BIN_FILE: 'ferretdb-{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
           BIN_DIR: bin
 
   docker-local:
@@ -488,7 +496,7 @@ tasks:
         vars:
           FILE: ferretdb/eval-dev
           TARGET: eval-dev
-          PLATFORM: linux/amd64 # no DocumentDB for linux/arm64 yet
+          PLATFORM: linux/amd64,linux/arm64
           OUTPUT: type=image,push=true
     requires:
       vars: [DOCKER_IMAGES]
@@ -501,7 +509,7 @@ tasks:
         vars:
           FILE: ferretdb/eval
           TARGET: eval
-          PLATFORM: linux/amd64 # no DocumentDB for linux/arm64 yet
+          PLATFORM: linux/amd64,linux/arm64
           OUTPUT: type=image,push=true
     requires:
       vars: [DOCKER_IMAGES]
@@ -587,12 +595,12 @@ tasks:
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          FILE_SUFFIX: 'dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
       - for: [amd64, arm64]
         task: packages-deb-check
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
-          FILE_SUFFIX: 'dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
     vars:
       PACKAGE_VERSION:
         sh: bin/envtool{{exeExt}} package-version
@@ -616,12 +624,12 @@ tasks:
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          FILE_SUFFIX: 'linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: '{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
       - for: [amd64, arm64]
         task: packages-deb-check
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
-          FILE_SUFFIX: 'linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: '{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
     vars:
       PACKAGE_VERSION:
         sh: bin/envtool{{exeExt}} package-version
@@ -657,12 +665,12 @@ tasks:
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          FILE_SUFFIX: 'dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
       - for: [amd64, arm64]
         task: packages-rpm-check
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
-          FILE_SUFFIX: 'dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
     vars:
       PACKAGE_VERSION:
         sh: bin/envtool{{exeExt}} package-version
@@ -686,12 +694,12 @@ tasks:
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          FILE_SUFFIX: 'linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: '{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
       - for: [amd64, arm64]
         task: packages-rpm-check
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
-          FILE_SUFFIX: 'linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: '{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
     vars:
       PACKAGE_VERSION:
         sh: bin/envtool{{exeExt}} package-version
@@ -738,7 +746,7 @@ tasks:
       # TODO --print-width 120 (https://github.com/FerretDB/FerretDB/issues/4636)
       - >
         docker compose run --rm prettier --write --single-quote --trailing-comma none --no-semi
-        --parser markdown "**/*.md" "**/*.mdx"
+        "**/*.md" "**/*.mdx"
 
       - >
         docker compose run --rm markdownlint --config "build/.markdownlint.yml"
@@ -751,15 +759,21 @@ tasks:
     deps: [fmt-docs]
 
   docs-gen:
+    desc: "Generate documentation examples using CTS tool"
     cmds:
       - bin/opendocdb-cts fmt --dir=website/docs/guides
-      - bin/opendocdb-cts convert --dir=website/docs/guides website/docs/guides
+      - bin/opendocdb-cts convert --dir=website/docs/guides website/docs/guides --db=db
+      - task: fmt-docs
+
+  cts:
+    desc: "Run CTS tests against FerretDB"
+    cmds:
+      - bin/opendocdb-cts run --dir=website/docs/guides --uri=mongodb://127.0.0.1:27017/cts
 
   docs:
     desc: "Format, lint and build documentation"
+    deps: [docs-gen]
     cmds:
-      - task: docs-gen
-      - task: fmt-docs
       - docker compose run --rm docusaurus-docs build
 
   blog:

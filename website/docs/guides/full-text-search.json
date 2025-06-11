@@ -1,27 +1,58 @@
 {
-  "1-insert-text-data": {
+  "1-drop-books-collection": {
+    "request": {
+      "drop": "books",
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "nIndexesWas": {
+        "$numberInt": "1"
+      },
+      "ns": "{{.Database}}.books",
+      "ok": {
+        "$numberDouble": "1.0"
+      }
+    }
+  },
+  "2-insert-data": {
     "request": {
       "insert": "books",
       "documents": [
         {
           "_id": "pride_prejudice_1813",
           "title": "Pride and Prejudice",
-          "author": "Jane Austen",
-          "summary": "The novel follows the story of Elizabeth Bennet, a spirited young woman navigating love, societal expectations, and family drama in 19th-century England."
+          "authors": [
+            {
+              "name": "Jane Austen",
+              "nationality": "British"
+            }
+          ],
+          "summary": "This novel portrays the life and challenges of Elizabeth Bennet as she navigates societal expectations, class prejudice, and romance. The book explores the evolving relationship between Elizabeth and Mr. Darcy, shedding light on the virtues of understanding and self-awareness."
         },
         {
           "_id": "moby_dick_1851",
           "title": "Moby Dick",
-          "author": "Herman Melville",
-          "summary": "The narrative follows Ishmael and his voyage aboard the whaling ship Pequod, commanded by Captain Ahab, who is obsessed with hunting the elusive white whale, Moby Dick."
+          "authors": [
+            {
+              "name": "Herman Melville",
+              "nationality": "American"
+            }
+          ],
+          "summary": "Ishmael recounts his journey aboard the whaling ship Pequod under the leadership of the obsessed Captain Ahab, who is obsessed with hunting the legendary white whale, Moby Dick. The novel delves into themes of human struggle against nature and the destructive power of obsession."
         },
         {
           "_id": "frankenstein_1818",
           "title": "Frankenstein",
-          "author": "Mary Shelley",
-          "summary": "Victor Frankenstein, driven by an unquenchable thirst for knowledge, creates a living being, only to face tragic consequences as his creation turns monstrous."
+          "authors": [
+            {
+              "name": "Mary Shelley",
+              "nationality": "British"
+            }
+          ],
+          "summary": "Victor Frankenstein creates life through unorthodox scientific methods but is horrified by his creation. As his creature seeks acceptance, the novel explores themes of responsibility, alienation, and the ethical limits of scientific experimentation."
         }
-      ]
+      ],
+      "$db": "{{.Database}}"
     },
     "response": {
       "n": {
@@ -32,7 +63,7 @@
       }
     }
   },
-  "2-create-text-index": {
+  "3-create-text-index": {
     "request": {
       "createIndexes": "books",
       "indexes": [
@@ -42,7 +73,8 @@
           },
           "name": "summary_text_index"
         }
-      ]
+      ],
+      "$db": "{{.Database}}"
     },
     "response": {
       "numIndexesBefore": {
@@ -51,42 +83,72 @@
       "numIndexesAfter": {
         "$numberInt": "2"
       },
-      "createdCollectionAutomatically": true,
+      "createdCollectionAutomatically": false,
       "ok": {
         "$numberDouble": "1.0"
       }
     }
   },
-  "3-basic-text-search": {
+  "4-basic-text-search": {
     "request": {
       "find": "books",
       "filter": {
         "$text": {
-          "$search": "drama"
+          "$search": "romance"
         }
-      }
+      },
+      "projection": {
+        "title": {
+          "$numberInt": "1"
+        },
+        "authors": {
+          "$numberInt": "1"
+        },
+        "summary": {
+          "$numberInt": "1"
+        }
+      },
+      "$db": "{{.Database}}"
     },
     "response": {
       "cursor": {
+        "id": {
+          "$numberLong": "0"
+        },
+        "ns": "{{.Database}}.books",
         "firstBatch": [
           {
             "_id": "pride_prejudice_1813",
             "title": "Pride and Prejudice",
-            "author": "Jane Austen",
-            "summary": "The novel follows the story of Elizabeth Bennet, a spirited young woman navigating love, societal expectations, and family drama in 19th-century England."
+            "authors": [
+              {
+                "name": "Jane Austen",
+                "nationality": "British"
+              }
+            ],
+            "summary": "This novel portrays the life and challenges of Elizabeth Bennet as she navigates societal expectations, class prejudice, and romance. The book explores the evolving relationship between Elizabeth and Mr. Darcy, shedding light on the virtues of understanding and self-awareness."
           }
-        ],
-        "id": {
-          "$numberLong": "0"
-        },
-        "ns": "db.books"
+        ]
       },
       "ok": {
         "$numberDouble": "1.0"
       }
     }
   },
-  "4-compound-text-index": {
+  "5-drop-text-index": {
+    "request": {
+      "dropIndexes": "books",
+      "index": "summary_text_index",
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "nIndexesWas": {
+        "$numberLong": "2"
+      },
+      "ok": true
+    }
+  },
+  "6-compound-text-index": {
     "request": {
       "createIndexes": "books",
       "indexes": [
@@ -97,7 +159,8 @@
           },
           "name": "title_summary_text_index"
         }
-      ]
+      ],
+      "$db": "{{.Database}}"
     },
     "response": {
       "numIndexesBefore": {
@@ -106,13 +169,13 @@
       "numIndexesAfter": {
         "$numberInt": "2"
       },
-      "createdCollectionAutomatically": true,
+      "createdCollectionAutomatically": false,
       "ok": {
         "$numberDouble": "1.0"
       }
     }
   },
-  "5-relevance-score": {
+  "7-relevance-score": {
     "request": {
       "find": "books",
       "filter": {
@@ -124,7 +187,7 @@
         "title": {
           "$numberInt": "1"
         },
-        "author": {
+        "authors": {
           "$numberInt": "1"
         },
         "summary": {
@@ -138,22 +201,28 @@
         "score": {
           "$meta": "textScore"
         }
-      }
+      },
+      "$db": "{{.Database}}"
     },
     "response": {
       "cursor": {
         "id": {
           "$numberLong": "0"
         },
-        "ns": "db.books",
+        "ns": "{{.Database}}.books",
         "firstBatch": [
           {
             "_id": "moby_dick_1851",
             "title": "Moby Dick",
-            "author": "Herman Melville",
-            "summary": "The narrative follows Ishmael and his voyage aboard the whaling ship Pequod, commanded by Captain Ahab, who is obsessed with hunting the elusive white whale, Moby Dick.",
+            "authors": [
+              {
+                "name": "Herman Melville",
+                "nationality": "American"
+              }
+            ],
+            "summary": "Ishmael recounts his journey aboard the whaling ship Pequod under the leadership of the obsessed Captain Ahab, who is obsessed with hunting the legendary white whale, Moby Dick. The novel delves into themes of human struggle against nature and the destructive power of obsession.",
             "score": {
-              "$numberInt": "3"
+              "$numberDouble": "3.0"
             }
           }
         ]

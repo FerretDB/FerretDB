@@ -1,0 +1,62 @@
+---
+sidebar_position: 2
+slug: /compatible-applications
+---
+
+# Compatible applications
+
+import React from 'react'
+import { categorizedApps } from './applications.js'
+import styles from './grid.module.css'
+
+export const Grid = ({ apps }) => (
+
+<div className={styles.container}>
+  <div className={styles.grid}>
+    {apps.map(({ name, logo, link }) => (
+      <a
+        key={name}
+        href={link}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`${styles.card} card`}
+      >
+        <img src={logo} alt={`${name} logo`} className={styles.logo} />
+        {name}
+      </a>
+    ))}
+  </div>
+</div>
+);
+
+Explore compatible applications tested by the FerretDB team.
+
+<div style={{ marginTop: '3rem' }} />
+
+## GUI Client Tools
+
+<Grid apps={categorizedApps['GUI Client Tools']} />
+
+## Monitoring and Observability
+
+<Grid apps={categorizedApps['Monitoring and Observability']} />
+
+## Data Migration
+
+<Grid apps={categorizedApps['Data Migration']} />
+
+## Deployment Platforms
+
+<Grid apps={categorizedApps['Deployment Platforms']} />
+
+## Postgres Operators
+
+<Grid apps={categorizedApps['PostgreSQL Operators']} />
+
+## Others
+
+<Grid apps={categorizedApps['Others']} />
+
+If you have any questions or suggestions, please reach out to us on any of our [community channels](../introduction.md#community).
+
+**Want to see your application listed here? Click the "Edit this page" button at the bottom of this page to submit a pull request with your application details.**

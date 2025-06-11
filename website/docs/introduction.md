@@ -50,6 +50,11 @@ See our:
 
 :::
 
+## Compatible applications
+
+As an open-source alternative to MongoDB, FerretDB can be used with many applications that already support MongoDB.
+Please check out our [compatible applications](./compatible-applications/index.mdx) page for a list of applications that have been tested by the FerretDB team.
+
 ## Community
 
 - Website and blog: https://www.ferretdb.com/.

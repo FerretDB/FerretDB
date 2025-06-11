@@ -86,7 +86,6 @@ func TestDelete(t *testing.T) {
 		},
 		"ValidString": {
 			deletes: bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}, {"limit", "1"}}},
-			skip:    "https://github.com/FerretDB/FerretDB/issues/1089",
 		},
 		"InvalidFloat": {
 			deletes: bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}, {"limit", 42.13}}},

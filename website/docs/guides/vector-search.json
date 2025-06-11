@@ -1,13 +1,33 @@
 {
-  "1-insert-vector": {
+  "1-drop-books-collection": {
+    "request": {
+      "drop": "books",
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "nIndexesWas": {
+        "$numberInt": "1"
+      },
+      "ns": "{{.Database}}.books",
+      "ok": {
+        "$numberDouble": "1.0"
+      }
+    }
+  },
+  "2-insert-data": {
     "request": {
       "insert": "books",
       "documents": [
         {
           "_id": "pride_prejudice_1813",
           "title": "Pride and Prejudice",
-          "author": "Jane Austen",
-          "summary": "The novel follows the story of Elizabeth Bennet, a spirited young woman navigating love, societal expectations, and family drama in 19th-century England.",
+          "authors": [
+            {
+              "name": "Jane Austen",
+              "nationality": "British"
+            }
+          ],
+          "summary": "This novel portrays the life and challenges of Elizabeth Bennet as she navigates societal expectations, class prejudice, and romance. The book explores the evolving relationship between Elizabeth and Mr. Darcy, shedding light on the virtues of understanding and self-awareness.",
           "vector": [
             {
               "$numberDouble": "0.014391838572919369"
@@ -50,8 +70,13 @@
         {
           "_id": "moby_dick_1851",
           "title": "Moby Dick",
-          "author": "Herman Melville",
-          "summary": "The narrative follows Ishmael and his voyage aboard the whaling ship Pequod, commanded by Captain Ahab, who is obsessed with hunting the elusive white whale, Moby Dick.",
+          "authors": [
+            {
+              "name": "Herman Melville",
+              "nationality": "American"
+            }
+          ],
+          "summary": "Ishmael recounts his journey aboard the whaling ship Pequod under the leadership of the obsessed Captain Ahab, who is obsessed with hunting the legendary white whale, Moby Dick. The novel delves into themes of human struggle against nature and the destructive power of obsession.",
           "vector": [
             {
               "$numberDouble": "-0.0016038859030231833"
@@ -94,8 +119,13 @@
         {
           "_id": "frankenstein_1818",
           "title": "Frankenstein",
-          "author": "Mary Shelley",
-          "summary": "Victor Frankenstein, driven by an unquenchable thirst for knowledge, creates a living being, only to face tragic consequences as his creation turns monstrous.",
+          "authors": [
+            {
+              "name": "Mary Shelley",
+              "nationality": "British"
+            }
+          ],
+          "summary": "Victor Frankenstein creates life through unorthodox scientific methods but is horrified by his creation. As his creature seeks acceptance, the novel explores themes of responsibility, alienation, and the ethical limits of scientific experimentation.",
           "vector": [
             {
               "$numberDouble": "-0.010190412402153015"
@@ -135,7 +165,8 @@
             }
           ]
         }
-      ]
+      ],
+      "$db": "{{.Database}}"
     },
     "response": {
       "n": {
@@ -146,7 +177,7 @@
       }
     }
   },
-  "2-hnsw-index": {
+  "3-hnsw-index": {
     "request": {
       "createIndexes": "books",
       "indexes": [
@@ -169,7 +200,8 @@
             }
           }
         }
-      ]
+      ],
+      "$db": "{{.Database}}"
     },
     "response": {
       "numIndexesBefore": {
@@ -178,13 +210,13 @@
       "numIndexesAfter": {
         "$numberInt": "2"
       },
-      "createdCollectionAutomatically": true,
+      "createdCollectionAutomatically": false,
       "ok": {
         "$numberDouble": "1.0"
       }
     }
   },
-  "3-hnsw-search": {
+  "4-hnsw-search": {
     "request": {
       "aggregate": "books",
       "pipeline": [
@@ -238,108 +270,143 @@
               }
             }
           }
-        }
-      ],
-      "cursor": {}
-    },
-    "response": {
-      "ok": {
-        "$numberDouble": "0.0"
-      },
-      "ns": "db.books",
-      "firstBatch": [
-        {
-          "_id": "moby_dick_1851",
-          "title": "Moby Dick",
-          "author": "Herman Melville",
-          "summary": "The narrative follows Ishmael and his voyage aboard the whaling ship Pequod, commanded by Captain Ahab, who is obsessed with hunting the elusive white whale, Moby Dick.",
-          "vector": [
-            {
-              "$numberDouble": "-0.0016038859030231833"
-            },
-            {
-              "$numberDouble": "0.08863562345504761"
-            },
-            {
-              "$numberDouble": "0.006037247832864523"
-            },
-            {
-              "$numberDouble": "0.044850509613752365"
-            },
-            {
-              "$numberDouble": "-0.019985735416412354"
-            },
-            {
-              "$numberDouble": "-0.017665650695562363"
-            },
-            {
-              "$numberDouble": "0.07435955852270126"
-            },
-            {
-              "$numberDouble": "0.0025448515079915524"
-            },
-            {
-              "$numberDouble": "-0.08427142351865768"
-            },
-            {
-              "$numberDouble": "0.07445722818374634"
-            },
-            {
-              "$numberDouble": "-0.02302693948149681"
-            },
-            {
-              "$numberDouble": "-0.0778273269534111"
-            }
-          ]
         },
         {
-          "_id": "frankenstein_1818",
-          "title": "Frankenstein",
-          "author": "Mary Shelley",
-          "summary": "Victor Frankenstein, driven by an unquenchable thirst for knowledge, creates a living being, only to face tragic consequences as his creation turns monstrous.",
-          "vector": [
-            {
-              "$numberDouble": "-0.010190412402153015"
+          "$project": {
+            "title": {
+              "$numberInt": "1"
             },
-            {
-              "$numberDouble": "0.049356549978256226"
+            "author": {
+              "$first": "$authors.name"
             },
-            {
-              "$numberDouble": "-0.012309172190725803"
+            "summary": {
+              "$numberInt": "1"
             },
-            {
-              "$numberDouble": "0.10420369356870651"
-            },
-            {
-              "$numberDouble": "0.010599562898278236"
-            },
-            {
-              "$numberDouble": "0.057357728481292725"
-            },
-            {
-              "$numberDouble": "0.02385704033076763"
-            },
-            {
-              "$numberDouble": "0.04186723381280899"
-            },
-            {
-              "$numberDouble": "0.003379989881068468"
-            },
-            {
-              "$numberDouble": "0.02957085147500038"
-            },
-            {
-              "$numberDouble": "-0.08477196842432022"
-            },
-            {
-              "$numberDouble": "-0.0017921233084052801"
+            "vector": {
+              "$numberInt": "1"
             }
-          ]
+          }
         }
-      ]
+      ],
+      "cursor": {},
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "cursor": {
+        "id": {
+          "$numberLong": "0"
+        },
+        "ns": "{{.Database}}.books",
+        "firstBatch": [
+          {
+            "_id": "moby_dick_1851",
+            "title": "Moby Dick",
+            "summary": "Ishmael recounts his journey aboard the whaling ship Pequod under the leadership of the obsessed Captain Ahab, who is obsessed with hunting the legendary white whale, Moby Dick. The novel delves into themes of human struggle against nature and the destructive power of obsession.",
+            "vector": [
+              {
+                "$numberDouble": "-0.0016038859030231833"
+              },
+              {
+                "$numberDouble": "0.08863562345504761"
+              },
+              {
+                "$numberDouble": "0.006037247832864523"
+              },
+              {
+                "$numberDouble": "0.044850509613752365"
+              },
+              {
+                "$numberDouble": "-0.019985735416412354"
+              },
+              {
+                "$numberDouble": "-0.017665650695562363"
+              },
+              {
+                "$numberDouble": "0.07435955852270126"
+              },
+              {
+                "$numberDouble": "0.0025448515079915524"
+              },
+              {
+                "$numberDouble": "-0.08427142351865768"
+              },
+              {
+                "$numberDouble": "0.07445722818374634"
+              },
+              {
+                "$numberDouble": "-0.02302693948149681"
+              },
+              {
+                "$numberDouble": "-0.0778273269534111"
+              }
+            ],
+            "author": "Herman Melville"
+          },
+          {
+            "_id": "frankenstein_1818",
+            "title": "Frankenstein",
+            "summary": "Victor Frankenstein creates life through unorthodox scientific methods but is horrified by his creation. As his creature seeks acceptance, the novel explores themes of responsibility, alienation, and the ethical limits of scientific experimentation.",
+            "vector": [
+              {
+                "$numberDouble": "-0.010190412402153015"
+              },
+              {
+                "$numberDouble": "0.049356549978256226"
+              },
+              {
+                "$numberDouble": "-0.012309172190725803"
+              },
+              {
+                "$numberDouble": "0.10420369356870651"
+              },
+              {
+                "$numberDouble": "0.010599562898278236"
+              },
+              {
+                "$numberDouble": "0.057357728481292725"
+              },
+              {
+                "$numberDouble": "0.02385704033076763"
+              },
+              {
+                "$numberDouble": "0.04186723381280899"
+              },
+              {
+                "$numberDouble": "0.003379989881068468"
+              },
+              {
+                "$numberDouble": "0.02957085147500038"
+              },
+              {
+                "$numberDouble": "-0.08477196842432022"
+              },
+              {
+                "$numberDouble": "-0.0017921233084052801"
+              }
+            ],
+            "author": "Mary Shelley"
+          }
+        ]
+      },
+      "ok": {
+        "$numberDouble": "1.0"
+      }
     }
   },
-  "4-ivf-index": {
+  "5-drop-hnsw-index": {
+    "request": {
+      "dropIndexes": "books",
+      "index": "vector_hnsw_index",
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "ok": true,
+      "nIndexesWas": {
+        "$numberLong": "2"
+      }
+    }
+  },
+  "6-ivf-index": {
     "request": {
       "createIndexes": "books",
       "indexes": [
@@ -359,7 +426,8 @@
             }
           }
         }
-      ]
+      ],
+      "$db": "{{.Database}}"
     },
     "response": {
       "numIndexesBefore": {
@@ -368,13 +436,13 @@
       "numIndexesAfter": {
         "$numberInt": "2"
       },
-      "createdCollectionAutomatically": true,
+      "createdCollectionAutomatically": false,
       "ok": {
         "$numberDouble": "1.0"
       }
     }
   },
-  "5-ivf-search": {
+  "7-ivf-search": {
     "request": {
       "aggregate": "books",
       "pipeline": [
@@ -426,105 +494,127 @@
             },
             "returnStoredSource": true
           }
-        }
-      ],
-      "cursor": {}
-    },
-    "response": {
-      "ok": {
-        "$numberDouble": "0.0"
-      },
-      "ns": "db.books",
-      "firstBatch": [
-        {
-          "_id": "frankenstein_1818",
-          "title": "Frankenstein",
-          "author": "Mary Shelley",
-          "summary": "Victor Frankenstein, driven by an unquenchable thirst for knowledge, creates a living being, only to face tragic consequences as his creation turns monstrous.",
-          "vector": [
-            {
-              "$numberDouble": "-0.010190412402153015"
-            },
-            {
-              "$numberDouble": "0.049356549978256226"
-            },
-            {
-              "$numberDouble": "-0.012309172190725803"
-            },
-            {
-              "$numberDouble": "0.10420369356870651"
-            },
-            {
-              "$numberDouble": "0.010599562898278236"
-            },
-            {
-              "$numberDouble": "0.057357728481292725"
-            },
-            {
-              "$numberDouble": "0.02385704033076763"
-            },
-            {
-              "$numberDouble": "0.04186723381280899"
-            },
-            {
-              "$numberDouble": "0.003379989881068468"
-            },
-            {
-              "$numberDouble": "0.02957085147500038"
-            },
-            {
-              "$numberDouble": "-0.08477196842432022"
-            },
-            {
-              "$numberDouble": "-0.0017921233084052801"
-            }
-          ]
         },
         {
-          "_id": "moby_dick_1851",
-          "title": "Moby Dick",
-          "author": "Herman Melville",
-          "summary": "The narrative follows Ishmael and his voyage aboard the whaling ship Pequod, commanded by Captain Ahab, who is obsessed with hunting the elusive white whale, Moby Dick.",
-          "vector": [
-            {
-              "$numberDouble": "-0.0016038859030231833"
+          "$project": {
+            "title": {
+              "$numberInt": "1"
             },
-            {
-              "$numberDouble": "0.08863562345504761"
+            "author": {
+              "$first": "$authors.name"
             },
-            {
-              "$numberDouble": "0.006037247832864523"
+            "summary": {
+              "$numberInt": "1"
             },
-            {
-              "$numberDouble": "0.044850509613752365"
-            },
-            {
-              "$numberDouble": "-0.019985735416412354"
-            },
-            {
-              "$numberDouble": "-0.017665650695562363"
-            },
-            {
-              "$numberDouble": "0.07435955852270126"
-            },
-            {
-              "$numberDouble": "0.0025448515079915524"
-            },
-            {
-              "$numberDouble": "-0.08427142351865768"
-            },
-            {
-              "$numberDouble": "0.07445722818374634"
-            },
-            {
-              "$numberDouble": "-0.02302693948149681"
-            },
-            {
-              "$numberDouble": "-0.0778273269534111"
+            "vector": {
+              "$numberInt": "1"
             }
-          ]
+          }
         }
-      ]
+      ],
+      "cursor": {},
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "cursor": {
+        "id": {
+          "$numberLong": "0"
+        },
+        "ns": "{{.Database}}.books",
+        "firstBatch": [
+          {
+            "_id": "frankenstein_1818",
+            "title": "Frankenstein",
+            "summary": "Victor Frankenstein creates life through unorthodox scientific methods but is horrified by his creation. As his creature seeks acceptance, the novel explores themes of responsibility, alienation, and the ethical limits of scientific experimentation.",
+            "vector": [
+              {
+                "$numberDouble": "-0.010190412402153015"
+              },
+              {
+                "$numberDouble": "0.049356549978256226"
+              },
+              {
+                "$numberDouble": "-0.012309172190725803"
+              },
+              {
+                "$numberDouble": "0.10420369356870651"
+              },
+              {
+                "$numberDouble": "0.010599562898278236"
+              },
+              {
+                "$numberDouble": "0.057357728481292725"
+              },
+              {
+                "$numberDouble": "0.02385704033076763"
+              },
+              {
+                "$numberDouble": "0.04186723381280899"
+              },
+              {
+                "$numberDouble": "0.003379989881068468"
+              },
+              {
+                "$numberDouble": "0.02957085147500038"
+              },
+              {
+                "$numberDouble": "-0.08477196842432022"
+              },
+              {
+                "$numberDouble": "-0.0017921233084052801"
+              }
+            ],
+            "author": "Mary Shelley"
+          },
+          {
+            "_id": "moby_dick_1851",
+            "title": "Moby Dick",
+            "summary": "Ishmael recounts his journey aboard the whaling ship Pequod under the leadership of the obsessed Captain Ahab, who is obsessed with hunting the legendary white whale, Moby Dick. The novel delves into themes of human struggle against nature and the destructive power of obsession.",
+            "vector": [
+              {
+                "$numberDouble": "-0.0016038859030231833"
+              },
+              {
+                "$numberDouble": "0.08863562345504761"
+              },
+              {
+                "$numberDouble": "0.006037247832864523"
+              },
+              {
+                "$numberDouble": "0.044850509613752365"
+              },
+              {
+                "$numberDouble": "-0.019985735416412354"
+              },
+              {
+                "$numberDouble": "-0.017665650695562363"
+              },
+              {
+                "$numberDouble": "0.07435955852270126"
+              },
+              {
+                "$numberDouble": "0.0025448515079915524"
+              },
+              {
+                "$numberDouble": "-0.08427142351865768"
+              },
+              {
+                "$numberDouble": "0.07445722818374634"
+              },
+              {
+                "$numberDouble": "-0.02302693948149681"
+              },
+              {
+                "$numberDouble": "-0.0778273269534111"
+              }
+            ],
+            "author": "Herman Melville"
+          }
+        ]
+      },
+      "ok": {
+        "$numberDouble": "1.0"
+      }
     }
   }
 }
