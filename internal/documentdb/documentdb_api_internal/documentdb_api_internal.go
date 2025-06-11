@@ -1330,6 +1330,76 @@ func BsonMinnTransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, ano
 	return
 }
 
+// BsonOrderby is a wrapper for
+//
+//	documentdb_api_internal.bson_orderby(document documentdb_core.bson, filter documentdb_core.bson, collationstring text, OUT bson_orderby documentdb_core.bson).
+func BsonOrderby(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, filter wirebson.RawDocument, collationstring string) (outBsonOrderby wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_orderby", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_orderby::bytea FROM documentdb_api_internal.bson_orderby($1::bytea, $2::bytea, $3)", document, filter, collationstring)
+	if err = row.Scan(&outBsonOrderby); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_orderby", l)
+	}
+	return
+}
+
+// BsonOrderbyCompare is a wrapper for
+//
+//	documentdb_api_internal.bson_orderby_compare(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, OUT bson_orderby_compare integer).
+func BsonOrderbyCompare(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonOrderbyCompare int32, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_orderby_compare", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_orderby_compare FROM documentdb_api_internal.bson_orderby_compare($1::bytea, $2::bytea)", anonymous, anonymous1)
+	if err = row.Scan(&outBsonOrderbyCompare); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_orderby_compare", l)
+	}
+	return
+}
+
+// BsonOrderbyEq is a wrapper for
+//
+//	documentdb_api_internal.bson_orderby_eq(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, OUT bson_orderby_eq boolean).
+func BsonOrderbyEq(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonOrderbyEq bool, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_orderby_eq", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_orderby_eq FROM documentdb_api_internal.bson_orderby_eq($1::bytea, $2::bytea)", anonymous, anonymous1)
+	if err = row.Scan(&outBsonOrderbyEq); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_orderby_eq", l)
+	}
+	return
+}
+
+// BsonOrderbyGt is a wrapper for
+//
+//	documentdb_api_internal.bson_orderby_gt(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, OUT bson_orderby_gt boolean).
+func BsonOrderbyGt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonOrderbyGt bool, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_orderby_gt", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_orderby_gt FROM documentdb_api_internal.bson_orderby_gt($1::bytea, $2::bytea)", anonymous, anonymous1)
+	if err = row.Scan(&outBsonOrderbyGt); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_orderby_gt", l)
+	}
+	return
+}
+
+// BsonOrderbyLt is a wrapper for
+//
+//	documentdb_api_internal.bson_orderby_lt(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, OUT bson_orderby_lt boolean).
+func BsonOrderbyLt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonOrderbyLt bool, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_orderby_lt", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_orderby_lt FROM documentdb_api_internal.bson_orderby_lt($1::bytea, $2::bytea)", anonymous, anonymous1)
+	if err = row.Scan(&outBsonOrderbyLt); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_orderby_lt", l)
+	}
+	return
+}
+
 // BsonOrderbyPartition is a wrapper for
 //
 //	documentdb_api_internal.bson_orderby_partition(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, anonymous12 boolean, OUT bson_orderby_partition documentdb_core.bson).
@@ -1338,6 +1408,20 @@ func BsonOrderbyPartition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, a
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT bson_orderby_partition::bytea FROM documentdb_api_internal.bson_orderby_partition($1::bytea, $2::bytea, $3)", anonymous, anonymous1, anonymous12)
+	if err = row.Scan(&outBsonOrderbyPartition); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_orderby_partition", l)
+	}
+	return
+}
+
+// BsonOrderbyPartition1 is a wrapper for
+//
+//	documentdb_api_internal.bson_orderby_partition(document documentdb_core.bson, filter documentdb_core.bson, istimerangewindow boolean, collationstring text, OUT bson_orderby_partition documentdb_core.bson).
+func BsonOrderbyPartition1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, filter wirebson.RawDocument, istimerangewindow bool, collationstring string) (outBsonOrderbyPartition wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_orderby_partition", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_orderby_partition::bytea FROM documentdb_api_internal.bson_orderby_partition($1::bytea, $2::bytea, $3, $4)", document, filter, istimerangewindow, collationstring)
 	if err = row.Scan(&outBsonOrderbyPartition); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_orderby_partition", l)
 	}
@@ -2436,6 +2520,20 @@ func CurrentOpWorker(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec w
 	return
 }
 
+// CursorDirectoryCleanup is a wrapper for
+//
+//	documentdb_api_internal.cursor_directory_cleanup(expiry_time_seconds bigint DEFAULT NULL).
+func CursorDirectoryCleanup(ctx context.Context, conn *pgx.Conn, l *slog.Logger, expiryTimeSeconds int64) (err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.cursor_directory_cleanup", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_internal.cursor_directory_cleanup($1)", expiryTimeSeconds)
+	if err = row.Scan(); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.cursor_directory_cleanup", l)
+	}
+	return
+}
+
 // CursorState is a wrapper for
 //
 //	documentdb_api_internal.cursor_state(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, OUT cursor_state boolean).
@@ -2572,6 +2670,20 @@ func GenerateUniqueShardDocument(ctx context.Context, conn *pgx.Conn, l *slog.Lo
 	row := conn.QueryRow(ctx, "SELECT generate_unique_shard_document::bytea FROM documentdb_api_internal.generate_unique_shard_document($1::bytea, $2, $3::bytea, $4)", document, shardKeyValue, uniqueSpec, sparse)
 	if err = row.Scan(&outGenerateUniqueShardDocument); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.generate_unique_shard_document", l)
+	}
+	return
+}
+
+// GetBloatStatsWorker is a wrapper for
+//
+//	documentdb_api_internal.get_bloat_stats_worker(p_collection_id bigint, OUT get_bloat_stats_worker documentdb_core.bson).
+func GetBloatStatsWorker(ctx context.Context, conn *pgx.Conn, l *slog.Logger, collectionId int64) (outGetBloatStatsWorker wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.get_bloat_stats_worker", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT get_bloat_stats_worker::bytea FROM documentdb_api_internal.get_bloat_stats_worker($1)", collectionId)
+	if err = row.Scan(&outGetBloatStatsWorker); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.get_bloat_stats_worker", l)
 	}
 	return
 }

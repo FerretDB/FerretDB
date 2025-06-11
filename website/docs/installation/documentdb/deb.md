@@ -36,6 +36,8 @@ Add the following lines to `postgresql.conf`:
 shared_preload_libraries                      = 'pg_cron,pg_documentdb_core,pg_documentdb'
 cron.database_name                            = 'postgres'
 
+documentdb.enableCompact                      = true
+
 documentdb.enableLetAndCollationForQueryMatch = true
 documentdb.enableNowSystemVariable            = true
 documentdb.enableSortbyIdPushDownToPrimaryKey = true
