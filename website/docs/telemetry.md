@@ -138,11 +138,6 @@ The latter acts as if it is `enabled` with two differences:
 Explicit user action is required (see below) to change an `undecided` state to `enabled` or `disabled`.
 :::
 
-:::caution
-Telemetry reporting is `undecided` by default for [embeddable FerretDB](installation/ferretdb/go.md).
-You can change this behavior by setting the `EnabledTelemetry` field in the configuration when creating a new embeddable FerretDB instance.
-:::
-
 ### Disable telemetry
 
 We urge you not to disable the telemetry reporter, as its insights will help us enhance our software.
