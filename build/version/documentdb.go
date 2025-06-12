@@ -21,7 +21,7 @@ const (
 	DocumentDB = "0.104.0 gitref: HEAD sha:2045d0e buildId:0"
 
 	// DocumentDBURL points to the release page of the DocumentDB version above.
-	DocumentDBURL = "https://github.com/FerretDB/documentdb/releases/tag/v0.104.0-ferretdb-2.3.1"
+	DocumentDBURL = "https://github.com/FerretDB/documentdb/releases/tag/v0.104.0-ferretdb-2.3.0"
 )
 
 // DocumentDBSafeToUpdate represents versions of DocumentDB that FerretDB can update.
