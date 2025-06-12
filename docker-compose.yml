@@ -26,6 +26,14 @@ services:
     volumes:
       - ./build/testscripts:/testscripts
 
+  yugabyte:
+    build:
+      context: ./build/deps
+      dockerfile: yugabyte.Dockerfile
+    container_name: yugabyte
+    command: >
+      bin/yugabyted start --base_dir=/home/yugabyte/yb_data --daemon=false
+
   mongodb:
     build:
       context: ./build/deps
