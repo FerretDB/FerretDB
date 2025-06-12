@@ -55,8 +55,8 @@ func (h *embeddableHandler) Handle(ctx context.Context, record slog.Record) erro
 		if !h.opts.RemoveTime && !record.Time.IsZero() {
 			t := record.Time.Format(timeLayout)
 			h.testAttrs[slog.TimeKey] = t
-
 		}
+
 		if !h.opts.RemoveLevel {
 			h.testAttrs[slog.LevelKey] = record.Level.String()
 		}
@@ -77,6 +77,7 @@ func (h *embeddableHandler) Handle(ctx context.Context, record slog.Record) erro
 			maps.Copy(h.testAttrs, m)
 		}
 	}
+
 	return h.opts.Handler.Handle(ctx, record)
 }
 
@@ -85,6 +86,8 @@ func (h *embeddableHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	if len(attrs) == 0 {
 		return h
 	}
+
+	h.opts.Handler = h.opts.Handler.WithAttrs(attrs)
 
 	return &embeddableHandler{
 		opts:      h.opts,
@@ -98,6 +101,8 @@ func (h *embeddableHandler) WithGroup(name string) slog.Handler {
 	if name == "" {
 		return h
 	}
+
+	h.opts.Handler = h.opts.Handler.WithGroup(name)
 
 	return &embeddableHandler{
 		opts:      h.opts,
