@@ -21,6 +21,7 @@ import (
 	"runtime"
 	"slices"
 	"strconv"
+	"sync"
 )
 
 // Embeddable handler is a [slog.Handler] for custom logger.
@@ -30,6 +31,9 @@ import (
 type embeddableHandler struct {
 	opts *NewHandlerOpts
 	ga   []groupOrAttrs
+
+	// m is used to protect opts.Handler from race conditions.
+	m *sync.Mutex
 
 	testAttrs map[string]any
 }
@@ -87,6 +91,8 @@ func (h *embeddableHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 		return h
 	}
 
+	h.m.Lock()
+	defer h.m.Unlock()
 	h.opts.Handler = h.opts.Handler.WithAttrs(attrs)
 
 	return &embeddableHandler{
@@ -102,6 +108,8 @@ func (h *embeddableHandler) WithGroup(name string) slog.Handler {
 		return h
 	}
 
+	h.m.Lock()
+	defer h.m.Unlock()
 	h.opts.Handler = h.opts.Handler.WithGroup(name)
 
 	return &embeddableHandler{
