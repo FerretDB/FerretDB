@@ -172,6 +172,9 @@ func defineForPR(owner, repo, branch string) *result {
 		developmentImages: []string{
 			fmt.Sprintf("ghcr.io/%s/%s-dev:pr-%s", owner, repo, branch),
 		},
+		productionImages: []string{
+			fmt.Sprintf("ghcr.io/%s/%s-dev:pr-%s-prod", owner, repo, branch),
+		},
 	}
 
 	// PRs are only for testing; no Quay.io and Docker Hub repos
