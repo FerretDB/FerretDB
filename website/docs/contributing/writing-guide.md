@@ -1,5 +1,5 @@
 ---
-sidebar_position: 99
+sidebar_position: 2
 unlisted: true # linked from CONTRIBUTING.md
 ---
 
@@ -136,6 +136,26 @@ response = [
 ]
 ```
 
+For document/collection styled JSON as shown below, use `json` language.
+Our tooling will automatically reformat those blocks.
+
+```json
+{ "_id": 1, "items": ["pens", "pencils", "paper", "erasers", "rulers"] }
+```
+
+In scenarios with multiple commands and responses put together as shown below, use `text` language.
+
+```text
+ferretdb> db.test.insert({a:34})
+{
+  acknowledged: true,
+  insertedIds: { '0': ObjectId('664ff91b7207189218a26a13') }
+}
+
+ferretdb> db.test.find()
+[ { _id: ObjectId('664ff91b7207189218a26a13'), a: 34 } ]
+```
+
 Use `sql` for SQL queries.
 
 ```sql
@@ -167,3 +187,8 @@ ferretdb=# SELECT settings FROM test._ferretdb_settings;
 
 To be sure that you're using the right descriptive term, please check our [glossary page](../reference/glossary.md) for relevant terms and terminologies about FerretDB.
 If the word is not present in the glossary page, please feel free to ask on Slack or in the blog post issue.
+
+## Blog creation
+
+Our [blog post creation process](content-process.md) covers all the necessary steps needed to create a blog post.
+Please follow the instructions to ensure that your blog post is reviewed and published successfully.
