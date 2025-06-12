@@ -4,11 +4,11 @@ title: 'Building Robust Content Management with Payload CMS and FerretDB'
 authors: [alex]
 description: >
   Learn how to combine Payload CMS's powerful content management capabilities with FerretDB's reliable, PostgreSQL-backed database for a robust and flexible content solution.
-image: /img/blog/ferretdb-novu.jpg
+image: /img/blog/ferretdb-payloadcms.jpg
 tags: [compatible applications, open source, community]
 ---
 
-![Powering Your Notification Infrastructure with Novu and FerretDB](/img/blog/ferretdb-novu.jpg)
+![Powering Your Notification Infrastructure with Novu and FerretDB](/img/blog/ferretdb-payloadcms.jpg)
 
 In modern web development, a flexible and efficient Content Management System (CMS) is crucial for managing diverse content effectively.
 Developers increasingly seek powerful tools that offer both control and ease of use.
@@ -18,7 +18,7 @@ Developers increasingly seek powerful tools that offer both control and ease of 
 At FerretDB, we're dedicated to providing a truly open-source alternative to MongoDB, leveraging the reliability and power of PostgreSQL as its backend.
 This means you can get the best of both worlds: a document database experience with the stability of a relational database.
 
-Today, we're thrilled to explore how Payload CMS, the open-source, code-first content management system, seamlessly integrates with FerretDB, offering a powerful and flexible solution for your content management needs.
+In this blog post, we're thrilled to explore how Payload CMS, the open-source, code-first content management system, seamlessly integrates with FerretDB to replace MongoDB, offering a truly open-source solution for your content management needs.
 
 ## What is Payload CMS?
 
@@ -115,133 +115,22 @@ Here's a step-by-step guide to get you started:
    It should connect to FerretDB, initialize the necessary collections, and allow you to access the admin panel.
    You can now start defining your content models and managing data through the Payload CMS admin interface, with all data seamlessly stored in FerretDB.
 
-## Example of PayloadCMS with FerretDB as the backend
+## Example of Payload CMS with FerretDB as the backend
 
 Here's an example of a simple `Pages` collection defined in Payload CMS.
-This collection allows you to create and manage pages with a title, slug, hero section, layout blocks, and metadata.
+This collection allows you to create and manage posts with fields like title, slug, hero section, layout blocks, and metadata.
 
-[Image of Payload CMS page definition with FerretDB as the backend](/img/blog/payload-cms-page.png)
+![Image of Payload CMS page definition with FerretDB as the backend](/img/blog/payloadcms-post.png)
 
 The data will be stored as documents in your FerretDB instance.
 
-Below is a view of the `pages` collection as seen in `mongosh` connected to FerretDB:
+Using a Mongo Client (like Compass), connect to your FerretDB instance and switch to the database you specified in your `.env` file (e.g., `payload-db`).
 
-```sh
-> use payload-db
-switched to db payload-db
-> show collections
-_pages_versions
-_posts_versions
-categories
-form-submissions
-forms
-globals
-media
-pages
-payload-jobs
-payload-locked-documents
-payload-migrations
-payload-preferences
-posts
-redirects
-searches
-users
-```
+Querying the `posts` collection in FerretDB shows the content created through Payload CMS:
 
-And querying the `pages` collection in FerretDB shows the content created through Payload CMS:
+![Image showing Mongo Compass querying the posts collection in FerretDB](/img/blog/payloadcms-ferretdb-compass.png)
 
-```sh
-> db.pages.find()
-[
-  {
-    _id: ObjectId('68498b5b2a5ca579d151452e'),
-    createdAt: ISODate('2025-06-11T13:57:47.107Z'),
-    updatedAt: ISODate('2025-06-11T13:59:31.940Z'),
-    hero: {
-      type: 'lowImpact',
-      richText: {
-        root: {
-          children: [
-            {
-              children: [
-                {
-                  detail: 0,
-                  format: 0,
-                  mode: 'normal',
-                  style: '',
-                  text: 'This is a landing page created using PayloadCMS and FerretDB.',
-                  type: 'text',
-                  version: 1
-                }
-              ],
-              direction: 'ltr',
-              format: '',
-              indent: 0,
-              type: 'paragraph',
-              version: 1,
-              textFormat: 0,
-              textStyle: ''
-            }
-          ],
-          direction: 'ltr',
-          format: '',
-          indent: 0,
-          type: 'root',
-          version: 1
-        }
-      },
-      links: []
-    },
-    layout: [
-      {
-        blockType: 'cta',
-        richText: {
-          root: {
-            children: [
-              {
-                children: [
-                  {
-                    detail: 0,
-                    format: 0,
-                    mode: 'normal',
-                    style: '',
-                    text: 'This is a landing page created using PayloadCMS and FerretDB. Find out more here.',
-                    type: 'text',
-                    version: 1
-                  }
-                ],
-                direction: 'ltr',
-                format: '',
-                indent: 0,
-                type: 'paragraph',
-                version: 1,
-                textFormat: 0,
-                textStyle: ''
-              }
-            ],
-            direction: 'ltr',
-            format: '',
-            indent: 0,
-            type: 'root',
-            version: 1
-          }
-        },
-        links: [],
-        id: '68498baf6f27198bf2cd86c3'
-      }
-    ],
-    meta: {},
-    slugLock: true,
-    _status: 'published',
-    __v: 0,
-    publishedAt: ISODate('2025-06-11T13:59:31.937Z'),
-    title: 'FerretDB and PayloadCMS page',
-    slug: 'ferretdb-and-payloadcms-page'
-  }
-]
-```
-
-That shows the recently created page in the `pages` collection, which includes the title, slug, hero section, layout blocks, and metadata.
+That shows the recently created page in the `posts` collection, which includes the title, slug, hero section, layout blocks, and metadata.
 
 ## Conclusion
 
