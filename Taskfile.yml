@@ -253,7 +253,7 @@ tasks:
 
   test-integration-yugabyte:
     desc: "Run integration tests for yugabyteDB"
-    deps: [ gen-version, test-integration-build ]
+    deps: [gen-version, test-integration-build]
     dir: integration
     cmds:
       - >
@@ -328,7 +328,6 @@ tasks:
         --postgresql-url='postgres://yugabyte:yugabyte@127.0.0.1:5433/yugabyte'
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
         --dev-records-dir=tmp/records
-
 
   # invoked by FerretDB/github-actions/linters action
   lint:
