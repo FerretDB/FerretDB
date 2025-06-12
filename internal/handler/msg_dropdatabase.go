@@ -33,7 +33,6 @@ func (h *Handler) msgDropDatabase(connCtx context.Context, req *middleware.Reque
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
 	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
