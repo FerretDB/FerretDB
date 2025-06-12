@@ -47,8 +47,9 @@ type Handler struct {
 //
 //nolint:vet // for readability
 type NewHandlerOpts struct {
-	Base         string // base handler to create: "console", "text", "json" or "mongo"
+	Base         string // base handler to create: "console", "text", "json", "mongo" or "embeddable"
 	Level        slog.Leveler
+	Handler      slog.Handler
 	RemoveTime   bool
 	RemoveLevel  bool
 	RemoveSource bool
@@ -140,6 +141,8 @@ func NewHandler(out io.Writer, opts *NewHandlerOpts) *Handler {
 		h = slog.NewTextHandler(out, stdOpts)
 	case "json":
 		h = slog.NewJSONHandler(out, stdOpts)
+	case "embeddable":
+		h = newEmbeddableHandler(opts, nil)
 	default:
 		panic(fmt.Sprintf("invalid base handler %q", opts.Base))
 	}
