@@ -17,7 +17,10 @@ package logging
 import (
 	"context"
 	"log/slog"
-	"sync"
+	"maps"
+	"runtime"
+	"slices"
+	"strconv"
 )
 
 // Embeddable handler is a [slog.Handler] for custom logger.
@@ -26,12 +29,14 @@ import (
 //nolint:vet // for readability
 type embeddableHandler struct {
 	opts *NewHandlerOpts
-	m    *sync.Mutex
+	ga   []groupOrAttrs
+
+	testAttrs map[string]any
 }
 
 // newEmbeddableHandler creates a new embeddable handler.
-func newEmbeddableHandler(opts *NewHandlerOpts) *embeddableHandler {
-	return &embeddableHandler{opts: opts, m: new(sync.Mutex)}
+func newEmbeddableHandler(opts *NewHandlerOpts, attrs map[string]any) *embeddableHandler {
+	return &embeddableHandler{opts: opts, testAttrs: attrs}
 }
 
 // Enabled implements [slog.Handler].
@@ -45,8 +50,34 @@ func (h *embeddableHandler) Enabled(ctx context.Context, l slog.Level) bool {
 }
 
 // Handle implements [slog.Handler].
-func (h *embeddableHandler) Handle(ctx context.Context, r slog.Record) error {
-	return h.opts.Handler.Handle(ctx, r)
+func (h *embeddableHandler) Handle(ctx context.Context, record slog.Record) error {
+	if h.testAttrs != nil {
+		if !h.opts.RemoveTime && !record.Time.IsZero() {
+			t := record.Time.Format(timeLayout)
+			h.testAttrs[slog.TimeKey] = t
+
+		}
+		if !h.opts.RemoveLevel {
+			h.testAttrs[slog.LevelKey] = record.Level.String()
+		}
+
+		if !h.opts.RemoveSource {
+			f, _ := runtime.CallersFrames([]uintptr{record.PC}).Next()
+			if f.File != "" {
+				s := shortPath(f.File) + ":" + strconv.Itoa(f.Line)
+				h.testAttrs[slog.SourceKey] = s
+			}
+		}
+
+		if record.Message != "" {
+			h.testAttrs[slog.MessageKey] = record.Message
+		}
+
+		if m := attrs(record, h.ga); len(m) > 0 {
+			maps.Copy(h.testAttrs, m)
+		}
+	}
+	return h.opts.Handler.Handle(ctx, record)
 }
 
 // WithAttrs implements [slog.Handler].
@@ -55,20 +86,22 @@ func (h *embeddableHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 		return h
 	}
 
-	h.m.Lock()
-	defer h.m.Unlock()
-
-	h.opts.Handler = h.opts.Handler.WithAttrs(attrs)
-
-	return &embeddableHandler{opts: h.opts, m: h.m}
+	return &embeddableHandler{
+		opts:      h.opts,
+		ga:        append(slices.Clone(h.ga), groupOrAttrs{attrs: attrs}),
+		testAttrs: h.testAttrs,
+	}
 }
 
 // WithGroup implements [slog.Handler].
 func (h *embeddableHandler) WithGroup(name string) slog.Handler {
-	h.m.Lock()
-	defer h.m.Unlock()
+	if name == "" {
+		return h
+	}
 
-	h.opts.Handler = h.opts.Handler.WithGroup(name)
-
-	return &embeddableHandler{opts: h.opts, m: h.m}
+	return &embeddableHandler{
+		opts:      h.opts,
+		ga:        append(slices.Clone(h.ga), groupOrAttrs{group: name}),
+		testAttrs: h.testAttrs,
+	}
 }

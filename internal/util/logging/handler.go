@@ -142,7 +142,7 @@ func NewHandler(out io.Writer, opts *NewHandlerOpts) *Handler {
 	case "json":
 		h = slog.NewJSONHandler(out, stdOpts)
 	case "embeddable":
-		h = newEmbeddableHandler(opts)
+		h = newEmbeddableHandler(opts, nil)
 	default:
 		panic(fmt.Sprintf("invalid base handler %q", opts.Base))
 	}
