@@ -40,7 +40,7 @@ type embeddableHandler struct {
 
 // newEmbeddableHandler creates a new embeddable handler.
 func newEmbeddableHandler(opts *NewHandlerOpts, attrs map[string]any) *embeddableHandler {
-	return &embeddableHandler{opts: opts, testAttrs: attrs}
+	return &embeddableHandler{opts: opts, testAttrs: attrs, m: new(sync.Mutex)}
 }
 
 // Enabled implements [slog.Handler].
@@ -96,6 +96,7 @@ func (h *embeddableHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	h.opts.Handler = h.opts.Handler.WithAttrs(attrs)
 
 	return &embeddableHandler{
+		m:         h.m,
 		opts:      h.opts,
 		ga:        append(slices.Clone(h.ga), groupOrAttrs{attrs: attrs}),
 		testAttrs: h.testAttrs,
@@ -113,6 +114,7 @@ func (h *embeddableHandler) WithGroup(name string) slog.Handler {
 	h.opts.Handler = h.opts.Handler.WithGroup(name)
 
 	return &embeddableHandler{
+		m:         h.m,
 		opts:      h.opts,
 		ga:        append(slices.Clone(h.ga), groupOrAttrs{group: name}),
 		testAttrs: h.testAttrs,
