@@ -284,7 +284,7 @@ func TestQueryCompatSort(t *testing.T) {
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/241",
 		},
 
-		// FIXME
+		// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/355
 		// "DotNotationIndex": {
 		// 	filter: bson.D{},
 		// 	sort:   bson.D{{"v.0", 1}, {"_id", 1}},
