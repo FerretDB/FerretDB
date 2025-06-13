@@ -69,7 +69,7 @@ func TestDelete(t *testing.T) {
 			deletes: bson.A{bson.D{}},
 			err: &mongo.CommandError{
 				Code:    40414,
-				Name:    "Location40414",
+				Name:    "IDLFailedToParse",
 				Message: "BSON field 'delete.deletes.q' is missing but a required field",
 			},
 		},
@@ -77,7 +77,7 @@ func TestDelete(t *testing.T) {
 			deletes: bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}}},
 			err: &mongo.CommandError{
 				Code:    40414,
-				Name:    "Location40414",
+				Name:    "IDLFailedToParse",
 				Message: "BSON field 'delete.deletes.limit' is missing but a required field",
 			},
 		},
