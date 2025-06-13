@@ -35,7 +35,7 @@ services:
       bin/yugabyted start
       --background=false
       --base_dir=/home/yugabyte/yb_data
-      --initial_scripts_dir=/documentdb/init.sql
+      --initial_scripts_dir=/documentdb
       --master_flags="allowed_preview_flags_csv=ysql_enable_documentdb,ysql_enable_documentdb=true,enable_pg_cron=true"
       --tserver_flags="allowed_preview_flags_csv=ysql_enable_documentdb,ysql_enable_documentdb=true,enable_pg_cron=true"
     ports:
