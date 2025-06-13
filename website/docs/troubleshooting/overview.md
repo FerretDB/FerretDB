@@ -19,7 +19,7 @@ This error occurs because the previous PostgreSQL data directory was created wit
 
 Log error may look like this:
 
-```sh
+```text
 schema "documentdb_api" does not exist
 ```
 

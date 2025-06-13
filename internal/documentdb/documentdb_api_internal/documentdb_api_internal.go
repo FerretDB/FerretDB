@@ -350,6 +350,20 @@ func BsonDollarAddFields1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, d
 	return
 }
 
+// BsonDollarBucketAuto is a wrapper for
+//
+//	documentdb_api_internal.bson_dollar_bucket_auto(document documentdb_core.bson, spec documentdb_core.bson).
+func BsonDollarBucketAuto(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, spec wirebson.RawDocument) (err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_dollar_bucket_auto", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_internal.bson_dollar_bucket_auto($1::bytea, $2::bytea)", document, spec)
+	if err = row.Scan(); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_dollar_bucket_auto", l)
+	}
+	return
+}
+
 // BsonDollarEq is a wrapper for
 //
 //	documentdb_api_internal.bson_dollar_eq(anonymous documentdb_core.bson, anonymous1 documentdb_api_internal.bsonindexbounds, OUT bson_dollar_eq boolean).
