@@ -32,7 +32,6 @@ services:
       dockerfile: yugabyte.Dockerfile
     container_name: ferretdb_yugabyte
     command: >
-      # start YugabyteDB in the foreground
       bin/yugabyted start
       --background=false
       --base_dir=/home/yugabyte/yb_data
