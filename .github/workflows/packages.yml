@@ -26,7 +26,7 @@ on:
     tags:
       - "*"
   schedule:
-    - cron: "10 1 * * 1" # after cleanup
+    - cron: "10 1 * * 1" # after cleanup and DocumentDB
 
 # Do not run this workflow in parallel for any PR change or branch/tag push
 # to prevent concurrent pushes for the same Docker image tag
