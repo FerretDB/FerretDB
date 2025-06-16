@@ -34,6 +34,9 @@ jobs:
     # comment out to enable this job
     if: false
 
+    permissions:
+      contents: read
+
     steps:
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code

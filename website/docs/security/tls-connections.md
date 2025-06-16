@@ -3,7 +3,7 @@ sidebar_position: 2
 description: Learn to secure connections using TLS
 ---
 
-# TLS Connections
+# TLS connections
 
 It is possible to encrypt connections between FerretDB and clients by using TLS.
 All you need to do is to start the server with the following flags or environment variables:
