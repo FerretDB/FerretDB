@@ -28,7 +28,7 @@ const (
 var DocumentDBSafeToUpdate = []string{
 	"0.102.0 gitref: HEAD sha:80462f5 buildId:0", // v2.1.0
 	"0.103.0 gitref: HEAD sha:7514232 buildId:0", // v2.2.0
-	"0.104.0 gitref: HEAD sha:2045d0e buildId:0", // v2.3.0
+	"0.104.0 gitref: HEAD sha:2045d0e buildId:0", // v2.3.0, v2.3.1
 }
 
 // PostgreSQLTest is a version of PostgreSQL used by tests.
