@@ -66,7 +66,7 @@ This is important because the `main` branch may change frequently, and links to 
 For example, if you want to link to the FerretDB Data API OpenAPI 3.0 specification, use the following link:
 
 ```text
-[FerretDB Data API OpenAPI 3.0 specification](https://raw.githubusercontent.com/FerretDB/FerretDB/refs/tags/v2.3.1/internal/dataapi/api/openapi.json)
+[FerretDB Data API OpenAPI 3.0 specification](https://raw.githubusercontent.com/FerretDB/FerretDB/refs/tags/v2.4.0/internal/dataapi/api/openapi.json)
 ```
 
 ## Images
@@ -111,7 +111,23 @@ It can also be used to highlight specific texts, including URLs, file names, and
 
 Always specify the language in Markdown code blocks.
 
-For MongoDB shell commands, use `js` language.
+### MongoDB shell commands and results
+
+#### Documentation
+
+For our documentation, we use the CTS tool to test and validate the code snippets for the MongoDB shell commands and responses.
+Related MongoDB shell commands and responses should reside in the same directory as the documentation file in extended JSON format.
+See this [TTL indexes example](../guides/ttl-indexes.json) for reference.
+The code snippet prefix `1-` (found in `1-<file-name>.json` file) in ascending order is used to enforce the order in the documentation and their execution within the CTS tool.
+
+The CTS tool will be responsible for generating the formatted code snippets which can be imported into MDX files.
+Run `task docs-gen` to generate the formatted code snippets.
+The generated code snippets will be stored in `.js` files under `website/docs/guides/<extended-json-file-name>` directory.
+
+#### Blog posts
+
+For blog posts, please use `js` language for MongoDB shell commands.
+
 Our tooling will automatically reformat those blocks.
 
 ```js
@@ -135,6 +151,10 @@ response = [
   }
 ]
 ```
+
+### Other code blocks
+
+The following formatting instructions apply for both documentation and blog posts.
 
 Use `sql` for SQL queries.
 
