@@ -44,9 +44,9 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      - YCQL_USER=username
-      - YCQL_PASSWORD=password
-      - YCQL_DB=yugabyte
+      - YSQL_USER=username
+      - YSQL_PASSWORD=password
+      - YSQL_DB=postgres
     volumes:
       - ./build/yugabyte/init.sql:/documentdb/init.sql
 
