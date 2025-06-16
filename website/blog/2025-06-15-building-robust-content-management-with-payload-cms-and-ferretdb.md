@@ -107,7 +107,7 @@ Here's a step-by-step guide to get you started:
 3. **Confirm the database connection string:** You can always confirm or update the database connection string of your project from the `.env` file, and ensure the `DATABASE_URI` environment variable points to your FerretDB instance.
 
    ```text
-   DATABASE_URI= mongodb://username:password@localhost:27017/payload-db
+   DATABASE_URI=mongodb://username:password@localhost:27017/payload-db
    ```
 
 4. **Launch Payload CMS and test:** Once configured, launch your Payload CMS application (e.g., `npm run dev` or `yarn dev`).
