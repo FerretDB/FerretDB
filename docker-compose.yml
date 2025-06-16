@@ -36,10 +36,17 @@ services:
       --background=false
       --base_dir=/home/yugabyte/yb_data
       --initial_scripts_dir=/documentdb
+      --ysql_enable_auth=true
       --master_flags="allowed_preview_flags_csv=ysql_enable_documentdb,ysql_enable_documentdb=true,enable_pg_cron=true"
       --tserver_flags="allowed_preview_flags_csv=ysql_enable_documentdb,ysql_enable_documentdb=true,enable_pg_cron=true"
     ports:
       - 5433:5433
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - YCQL_USER=username
+      - YCQL_PASSWORD=password
+      - YCQL_DB=yugabyte
     volumes:
       - ./build/yugabyte/init.sql:/documentdb/init.sql
 

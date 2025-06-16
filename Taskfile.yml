@@ -273,7 +273,7 @@ tasks:
         -coverprofile=integration-yugabyte.txt
         ./...
         -target-backend=ferretdb
-        -postgresql-url='postgres://yugabyte:yugabyte@127.0.0.1:5433/yugabyte'
+        -postgresql-url='postgres://username:password@127.0.0.1:5433/yugabyte'
         -compat-url='mongodb://username:password@127.0.0.1:47017/?replicaSet=rs0'
         -no-xfail={{.NO_XFAIL}}
 
@@ -321,7 +321,6 @@ tasks:
       - >
         bin/ferretdb{{exeExt}}
         --mode={{.MODE}}
-        --no-auth
         --listen-addr=:27017
         --listen-data-api-addr=127.0.0.1:8899
         --proxy-addr=127.0.0.1:37017
