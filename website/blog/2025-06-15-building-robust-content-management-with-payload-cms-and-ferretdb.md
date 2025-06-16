@@ -44,7 +44,7 @@ Connecting Payload CMS to your FerretDB instance is straightforward, as Payload 
 Here's a step-by-step guide to get you started:
 
 1. **Ensure FerretDB is running:** Make sure your FerretDB instance is active and accessible.
-   If you haven't set it up yet, refer to our[FerretDB Installation Guide](https://docs.ferretdb.io/installation/ferretdb/).
+   If you haven't set it up yet, refer to our [FerretDB Installation Guide](https://docs.ferretdb.io/installation/ferretdb/).
 
 2. **Set up a new Payload CMS project (if you don't have one):** You can quickly scaffold a new Payload CMS project using their CLI:
 
