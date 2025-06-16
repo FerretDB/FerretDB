@@ -46,7 +46,7 @@ services:
     environment:
       - YSQL_USER=username
       - YSQL_PASSWORD=password
-      - YSQL_DB=postgres
+      - YSQL_DB=yugabyte # documentdb extension is installed in yugabyte database
     volumes:
       - ./build/yugabyte/init.sql:/documentdb/init.sql
 

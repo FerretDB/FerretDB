@@ -16,6 +16,7 @@ vars:
   RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
   BUILD_TAGS: ferretdb_dev
   MODE: diff-normal
+  POSTGRESQL_URL: 'postgres://username:password@127.0.0.1:5432/postgres'
   SERVICES: postgres mongodb mongodb-secure jaeger yugabyte
 
 tasks:
@@ -295,7 +296,7 @@ tasks:
         --listen-addr=:27017
         --listen-data-api-addr=127.0.0.1:8899
         --proxy-addr=127.0.0.1:37017
-        --postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
+        --postgresql-url={{.POSTGRESQL_URL}}
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
         --dev-records-dir=tmp/records
 
@@ -309,24 +310,24 @@ tasks:
         --listen-addr=:27017
         --listen-data-api-addr=127.0.0.1:8899
         --proxy-addr=127.0.0.1:47017
-        --postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
+        --postgresql-url={{.POSTGRESQL_URL}}
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
         --dev-repl-set-name=rs0
         --dev-records-dir=tmp/records
 
   run-yugabyte:
     desc: "Run yugabyteDB without auth"
-    deps: [build-host]
     cmds:
-      - >
-        bin/ferretdb{{exeExt}}
-        --mode={{.MODE}}
-        --listen-addr=:27017
-        --listen-data-api-addr=127.0.0.1:8899
-        --proxy-addr=127.0.0.1:37017
-        --postgresql-url='postgres://yugabyte:yugabyte@127.0.0.1:5433/yugabyte'
-        --otel-traces-url=http://127.0.0.1:4318/v1/traces
-        --dev-records-dir=tmp/records
+      - task: run
+        vars:
+          POSTGRESQL_URL: postgres://username:password@127.0.0.1:5433/yugabyte
+
+  run-yugabyte-secure:
+    desc: "Run yugabyteDB with auth"
+    cmds:
+      - task: run
+        vars:
+          POSTGRESQL_URL: postgres://username:password@127.0.0.1:5433/yugabyte
 
   # invoked by FerretDB/github-actions/linters action
   lint:
