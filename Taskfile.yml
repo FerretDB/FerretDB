@@ -16,7 +16,7 @@ vars:
   RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
   BUILD_TAGS: ferretdb_dev
   MODE: diff-normal
-  POSTGRESQL_URL: 'postgres://username:password@127.0.0.1:5432/postgres'
+  POSTGRESQL_URL: "postgres://username:password@127.0.0.1:5432/postgres"
   SERVICES: postgres mongodb mongodb-secure jaeger yugabyte
 
 tasks:
@@ -320,14 +320,14 @@ tasks:
     cmds:
       - task: run
         vars:
-          POSTGRESQL_URL: postgres://username:password@127.0.0.1:5433/yugabyte
+          POSTGRESQL_URL: 'postgres://username:password@127.0.0.1:5433/yugabyte'
 
   run-yugabyte-secure:
     desc: "Run yugabyteDB with auth"
     cmds:
       - task: run-secure
         vars:
-          POSTGRESQL_URL: postgres://username:password@127.0.0.1:5433/yugabyte
+          POSTGRESQL_URL: 'postgres://username:password@127.0.0.1:5433/yugabyte'
 
   # invoked by FerretDB/github-actions/linters action
   lint:
