@@ -320,14 +320,14 @@ tasks:
     cmds:
       - task: run
         vars:
-          POSTGRESQL_URL: "postgres://username:password@127.0.0.1:5433/username"
+          POSTGRESQL_URL: "postgres://username:password@127.0.0.1:5433/yugabyte"
 
   run-yugabyte-secure:
     desc: "Run yugabyteDB with auth"
     cmds:
       - task: run-secure
         vars:
-          POSTGRESQL_URL: "postgres://username:password@127.0.0.1:5433/username"
+          POSTGRESQL_URL: "postgres://username:password@127.0.0.1:5433/yugabyte"
 
   # invoked by FerretDB/github-actions/linters action
   lint:
