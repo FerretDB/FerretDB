@@ -406,6 +406,20 @@ func BsonDollarExtractMergeFilter(ctx context.Context, conn *pgx.Conn, l *slog.L
 	return
 }
 
+// BsonDollarFullscan is a wrapper for
+//
+//	documentdb_api_internal.bson_dollar_fullscan(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, OUT bson_dollar_fullscan boolean).
+func BsonDollarFullscan(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonDollarFullscan bool, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_dollar_fullscan", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_dollar_fullscan FROM documentdb_api_internal.bson_dollar_fullscan($1::bytea, $2::bytea)", anonymous, anonymous1)
+	if err = row.Scan(&outBsonDollarFullscan); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_dollar_fullscan", l)
+	}
+	return
+}
+
 // BsonDollarGt is a wrapper for
 //
 //	documentdb_api_internal.bson_dollar_gt(anonymous documentdb_core.bson, anonymous1 documentdb_api_internal.bsonindexbounds, OUT bson_dollar_gt boolean).
@@ -3258,6 +3272,20 @@ func TriggerValidateDbname(ctx context.Context, conn *pgx.Conn, l *slog.Logger) 
 	row := conn.QueryRow(ctx, "SELECT trigger_validate_dbname FROM documentdb_api_internal.trigger_validate_dbname()")
 	if err = row.Scan(&outTriggerValidateDbname); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.trigger_validate_dbname", l)
+	}
+	return
+}
+
+// UpdateBsonDocument is a wrapper for
+//
+//	documentdb_api_internal.update_bson_document(document documentdb_core.bson, updatespec documentdb_core.bson, queryspec documentdb_core.bson, arrayfilters documentdb_core.bson DEFAULT NULL, OUT newdocument documentdb_core.bson).
+func UpdateBsonDocument(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, updateSpec wirebson.RawDocument, querySpec wirebson.RawDocument, arrayfilters wirebson.RawDocument) (outNewdocument wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.update_bson_document", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT newdocument::bytea FROM documentdb_api_internal.update_bson_document($1::bytea, $2::bytea, $3::bytea, $4::bytea)", document, updateSpec, querySpec, arrayfilters)
+	if err = row.Scan(&outNewdocument); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.update_bson_document", l)
 	}
 	return
 }
