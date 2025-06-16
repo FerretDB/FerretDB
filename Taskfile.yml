@@ -325,7 +325,7 @@ tasks:
   run-yugabyte-secure:
     desc: "Run yugabyteDB with auth"
     cmds:
-      - task: run
+      - task: run-secure
         vars:
           POSTGRESQL_URL: postgres://username:password@127.0.0.1:5433/yugabyte
 
