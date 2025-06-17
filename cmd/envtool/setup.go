@@ -76,7 +76,7 @@ func setupMongoDB(ctx context.Context, logger *slog.Logger, uri, name string) er
 
 // setupYugabyte configures yugabyte containers by creating username:password credential, because
 // the user created upon docker container startup cannot authenticate with mongodb uri.
-// It waits for the port to be available, extension to be installed, before creating the user.
+// It waits for the port to be available before creating the user.
 func setupYugabyte(ctx context.Context, uri string, l *slog.Logger) error {
 	if err := waitForPort(ctx, 5433, l); err != nil {
 		return lazyerrors.Error(err)
@@ -95,6 +95,7 @@ func setupYugabyte(ctx context.Context, uri string, l *slog.Logger) error {
 	defer pool.Close()
 
 	var retry int64
+
 	for ctx.Err() == nil {
 		err = pool.WithConn(func(conn *pgx.Conn) error {
 			_, err = documentdb_api.BinaryExtendedVersion(ctx, conn, l)
@@ -110,8 +111,6 @@ func setupYugabyte(ctx context.Context, uri string, l *slog.Logger) error {
 		retry++
 		ctxutil.SleepWithJitter(ctx, time.Second, retry)
 	}
-
-	l.InfoContext(ctx, "Creating User")
 
 	spec := must.NotFail(wirebson.MustDocument(
 		"createUser", "username",
@@ -129,9 +128,13 @@ func setupYugabyte(ctx context.Context, uri string, l *slog.Logger) error {
 	).Encode())
 
 	err = pool.WithConn(func(conn *pgx.Conn) error {
-		_, err = documentdb_api.CreateUser(ctx, conn, l, spec)
-		return err
+		_, e := documentdb_api.CreateUser(ctx, conn, l, spec)
+		return e
 	})
+
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
 
 	return nil
 }
