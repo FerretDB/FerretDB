@@ -44,8 +44,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      - YSQL_USER=username
-      - YSQL_PASSWORD=password
+      - YSQL_USER=yb-user # this user cannot authenticate against mongodb uri usage
+      - YSQL_PASSWORD=yb-pass
       - YSQL_DB=yugabyte # documentdb extension is installed in yugabyte database
     volumes:
       - ./build/yugabyte/init.sql:/documentdb/init.sql
