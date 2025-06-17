@@ -1,5 +1,5 @@
 ---
-slug: visually-explore-ferretdb-data-mongo-express
+slug: visually-explore-ferretdb-data-mongo-compass
 title: 'Visually Explore Your FerretDB Data with MongoDB Compass'
 authors: [alex]
 description: >
