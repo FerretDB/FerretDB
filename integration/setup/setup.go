@@ -62,7 +62,7 @@ var (
 
 // Other globals.
 var (
-	allBackends = []string{"ferretdb", "mongodb"}
+	allBackends = []string{"ferretdb", "ferretdb-yugabyte", "mongodb"}
 )
 
 // WireConn defines if and how wire client connection is established.
@@ -261,8 +261,14 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 	collection := database.Collection(collectionName)
 
 	// drop remnants of the previous failed run
-	_ = collection.Drop(ctx)
-	if ownDatabase {
+	if *targetBackendF == "ferretdb-yugabyte" {
+		// delete documents, as drop collection fails for ferretdb-yugabyte
+		_, _ = collection.DeleteMany(ctx, bson.D{})
+	} else {
+		_ = collection.Drop(ctx)
+	}
+
+	if ownDatabase && *targetBackendF != "ferretdb-yugabyte" {
 		_ = database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}})
 		_ = database.Drop(ctx)
 	}
@@ -271,6 +277,14 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 	tb.Cleanup(func() {
 		if tb.Failed() {
 			tb.Logf("Keeping %s.%s for debugging", databaseName, collectionName)
+			return
+		}
+
+		if *targetBackendF == "ferretdb-yugabyte" {
+			// delete documents, as drop collection fails for ferretdb-yugabyte
+			_, err := collection.DeleteMany(ctx, bson.D{})
+			require.NoError(tb, err)
+
 			return
 		}
 
