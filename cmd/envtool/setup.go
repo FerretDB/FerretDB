@@ -91,7 +91,7 @@ func setupYugabyte(ctx context.Context, uri string, l *slog.Logger) error {
 	// many error level logs are expected until the extension is available
 	doNotLog := slog.New(slog.NewJSONHandler(io.Discard, nil))
 
-	pool, err := documentdb.NewPool(uri, l, sp)
+	pool, err := documentdb.NewPool(uri, doNotLog, sp)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -135,15 +135,24 @@ func setupYugabyte(ctx context.Context, uri string, l *slog.Logger) error {
 		),
 	).Encode())
 
+	var res wirebson.RawDocument
+
 	err = pool.WithConn(func(conn *pgx.Conn) error {
-		_, e := documentdb_api.CreateUser(ctx, conn, l, spec)
+		var e error
+		res, e = documentdb_api.CreateUser(ctx, conn, l, spec)
+
 		return e
 	})
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	l.InfoContext(ctx, "User created")
+	d, err := res.Decode()
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	l.InfoContext(ctx, "User created", slog.String("response", d.LogMessage()))
 
 	return nil
 }
