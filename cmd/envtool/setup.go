@@ -131,7 +131,6 @@ func setupYugabyte(ctx context.Context, uri string, l *slog.Logger) error {
 		_, e := documentdb_api.CreateUser(ctx, conn, l, spec)
 		return e
 	})
-
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
