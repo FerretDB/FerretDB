@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/url"
@@ -87,6 +88,9 @@ func setupYugabyte(ctx context.Context, uri string, l *slog.Logger) error {
 		return lazyerrors.Error(err)
 	}
 
+	// many error level logs are expected until the extension is available
+	doNotLog := slog.New(slog.NewJSONHandler(io.Discard, nil))
+
 	pool, err := documentdb.NewPool(uri, l, sp)
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -98,7 +102,7 @@ func setupYugabyte(ctx context.Context, uri string, l *slog.Logger) error {
 
 	for ctx.Err() == nil {
 		err = pool.WithConn(func(conn *pgx.Conn) error {
-			_, err = documentdb_api.BinaryExtendedVersion(ctx, conn, l)
+			_, err = documentdb_api.BinaryExtendedVersion(ctx, conn, doNotLog)
 			return err
 		})
 
@@ -110,6 +114,10 @@ func setupYugabyte(ctx context.Context, uri string, l *slog.Logger) error {
 
 		retry++
 		ctxutil.SleepWithJitter(ctx, time.Second, retry)
+	}
+
+	if err != nil {
+		return lazyerrors.Error(err)
 	}
 
 	spec := must.NotFail(wirebson.MustDocument(
@@ -134,6 +142,8 @@ func setupYugabyte(ctx context.Context, uri string, l *slog.Logger) error {
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
+
+	l.InfoContext(ctx, "User created")
 
 	return nil
 }
