@@ -3,18 +3,18 @@ slug: visually-explore-ferretdb-data-mongo-express
 title: 'Visually Explore Your FerretDB Data with MongoDB Compass'
 authors: [alex]
 description: >
-  Connect MongoDB Compass to your FerretDB instances to visually explore and manage your PostgreSQL-backed document data. This guide shows you how to get started easily.
+  Connect MongoDB Compass to your FerretDB instances to visually explore and manage your data.
 image: /img/blog/ferretdb-compass.jpg
 tags: [mongodb gui, compatible applications, tutorial]
 ---
 
 ![Visually Explore Your FerretDB Data with MongoDB Compass](/img/blog/ferretdb-compass.jpg)
 
-Managing and exploring your database can be significantly streamlined with the right graphical user interface (GUI) tool.
+Managing and exploring your database can be significantly improved with the right graphical user interface (GUI) tool.
 
 <!--truncate-->
 
-For MongoDB users,[MongoDB Compass](https://www.mongodb.com/products/compass) is a go-to choice, offering a rich environment for data exploration, query building, and performance monitoring.
+For many MongoDB users,[MongoDB Compass](https://www.mongodb.com/products/compass) is a go-to choice, offering a rich environment for data exploration, query building, and performance monitoring.
 
 At [FerretDB](https://www.ferretdb.com/), we're dedicated to providing a truly open-source alternative to MongoDB, leveraging the reliability and power of PostgreSQL as its backend.
 
@@ -46,7 +46,7 @@ Here's what you need to do:
 4. **Connect and Explore:** Once connected, Compass will display your FerretDB databases and collections.
    You can now visually explore your data, run queries, and perform various administrative tasks.
 
-## Example: Running `serverStatus` Command in Compass
+## Example: Exploring FerretDB Data with Compass
 
 As an example, here we showcase the `serverStatus` command being run in Compass on a FerretDB instance.
 This command provides an overview of the server's status and statistics.
@@ -56,10 +56,15 @@ You can navigate to the "Performance" or "Shell" tab within Compass to execute s
 
 ![GUI connection to Compass showing serverStatus](/img/blog/compass-serverstatus.png)
 
+We can also run queries, view documents, and manage collections just like you would with MongoDB.
+
+Here's an example of a simple query in Compass to find books with British authors:
+
+![Querying a collection in FerretDB using Compass](/img/blog/compass-query.png)
+
 ## Conclusion
 
-Integrating MongoDB Compass with FerretDB provides a familiar, powerful, and intuitive graphical interface for managing your FerretDB, a PostgreSQL-backed document databases.
-You can also leverage other existing tools in your ecosystem while benefiting from the reliability and features of PostgreSQL.
+Using MongoDB Compass with FerretDB provides a familiar, powerful, and intuitive graphical interface for managing your FerretDB.
 
 We're continuously working to expand our integrations and support for various tools.
 Stay tuned for more updates, and feel free to reach out to us if you have any questions or suggestions!
