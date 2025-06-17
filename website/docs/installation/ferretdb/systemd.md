@@ -16,7 +16,7 @@ The unit file connects to a local postgresql server by default.
 You can overwrite the [configuration](../../configuration/flags.md)
 by using the `systemctl edit ferretdb` command.
 This'll open a text editor that'll allow you to override the systemd options of choice.
-For example, you can reference an external file for your postgres URl and password:
+For example, you can reference an external file for your postgres URL and password:
 
 ```systemd
 ### Editing /etc/systemd/system/ferretdb.service.d/override.conf
