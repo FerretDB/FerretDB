@@ -172,6 +172,9 @@ func defineForPR(owner, repo, branch string) *result {
 		developmentImages: []string{
 			fmt.Sprintf("ghcr.io/%s/%s-dev:pr-%s", owner, repo, branch),
 		},
+		productionImages: []string{
+			fmt.Sprintf("ghcr.io/%s/%s-dev:pr-%s-prod", owner, repo, branch),
+		},
 	}
 
 	// PRs are only for testing; no Quay.io and Docker Hub repos
@@ -232,7 +235,7 @@ func defineForBranch(owner, repo, branch string) (*result, error) {
 	return res, nil
 }
 
-// defineForTag defines Docker image names and tags for prerelease tag builds.
+// defineForTag defines Docker image names and tags for tag builds.
 func defineForTag(owner, repo string, tags []string) *result {
 	res := new(result)
 

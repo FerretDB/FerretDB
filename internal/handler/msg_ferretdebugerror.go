@@ -36,7 +36,6 @@ func (h *Handler) msgFerretDebugError(connCtx context.Context, req *middleware.R
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
 	doc, err := spec.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

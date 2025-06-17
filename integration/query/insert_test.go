@@ -29,7 +29,9 @@ import (
 func TestInsertZeroTimestamp(tt *testing.T) {
 	tt.Parallel()
 
-	s := setup.SetupWithOpts(tt, &setup.SetupOpts{WireConn: setup.WireConnAuth})
+	var t testing.TB = tt
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{WireConn: setup.WireConnAuth})
 
 	_, resp, err := s.WireConn.Request(s.Ctx, wire.MustOpMsg(
 		"insert", s.Collection.Name(),
@@ -44,32 +46,81 @@ func TestInsertZeroTimestamp(tt *testing.T) {
 		),
 		"$db", s.Collection.Database().Name(),
 	))
-	require.NoError(tt, err)
+	require.NoError(t, err)
 
 	actual, err := resp.(*wire.OpMsg).Document()
-	require.NoError(tt, err)
-	require.Equal(tt, 1.0, actual.Get("ok"))
+	require.NoError(t, err)
+	require.Equal(t, 1.0, actual.Get("ok"))
 
 	_, resp, err = s.WireConn.Request(s.Ctx, wire.MustOpMsg(
 		"find", s.Collection.Name(),
 		"$db", s.Collection.Database().Name(),
 	))
-	require.NoError(tt, err)
+	require.NoError(t, err)
 
 	actual, err = resp.(*wire.OpMsg).DocumentDeep()
-	require.NoError(tt, err)
-	require.Equal(tt, 1.0, actual.Get("ok"))
+	require.NoError(t, err)
+	require.Equal(t, 1.0, actual.Get("ok"))
 
 	batch := actual.Get("cursor").(*wirebson.Document).Get("firstBatch").(*wirebson.Array)
 
 	d := batch.Get(0).(*wirebson.Document).Get("d").(*wirebson.Document)
-	assert.Equal(tt, wirebson.Timestamp(0), d.Get("dv"))
+	assert.Equal(t, wirebson.Timestamp(0), d.Get("dv"))
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1608
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/1608")
+	t = setup.FailsForFerretDB(t, "https://github.com/FerretDB/FerretDB/issues/1608")
 
 	v := batch.Get(0).(*wirebson.Document).Get("v").(wirebson.Timestamp)
 	assert.NotEqual(t, wirebson.Timestamp(0), v)
 	assert.NotZero(t, v.I())
 	assert.InDelta(t, time.Now().Unix(), v.T(), 5.0)
+}
+
+func TestInsertZeroTimestampBypass(tt *testing.T) {
+	tt.Parallel()
+
+	var t testing.TB = tt
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{WireConn: setup.WireConnAuth})
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/5073
+	t = setup.FailsForMongoDB(t, "https://github.com/FerretDB/FerretDB/issues/5073")
+
+	_, resp, err := s.WireConn.Request(s.Ctx, wire.MustOpMsg(
+		"insert", s.Collection.Name(),
+		"documents", wirebson.MustArray(
+			wirebson.MustDocument(
+				"_id", "id",
+				"v", wirebson.Timestamp(0),
+				"d", wirebson.MustDocument(
+					"dv", wirebson.Timestamp(0),
+				),
+			),
+		),
+		"bypassEmptyTsReplacement", true,
+		"$db", s.Collection.Database().Name(),
+	))
+	require.NoError(t, err)
+
+	actual, err := resp.(*wire.OpMsg).Document()
+	require.NoError(t, err)
+	require.Equal(t, 1.0, actual.Get("ok"))
+
+	_, resp, err = s.WireConn.Request(s.Ctx, wire.MustOpMsg(
+		"find", s.Collection.Name(),
+		"$db", s.Collection.Database().Name(),
+	))
+	require.NoError(t, err)
+
+	actual, err = resp.(*wire.OpMsg).DocumentDeep()
+	require.NoError(t, err)
+	require.Equal(t, 1.0, actual.Get("ok"))
+
+	batch := actual.Get("cursor").(*wirebson.Document).Get("firstBatch").(*wirebson.Array)
+
+	d := batch.Get(0).(*wirebson.Document).Get("d").(*wirebson.Document)
+	assert.Equal(t, wirebson.Timestamp(0), d.Get("dv"))
+
+	v := batch.Get(0).(*wirebson.Document).Get("v").(wirebson.Timestamp)
+	assert.Equal(t, wirebson.Timestamp(0), v)
 }
