@@ -91,7 +91,7 @@ func setupListener(tb testing.TB, ctx context.Context, opts *ListenerOpts, logge
 	require.Empty(tb, *targetURLF, "-target-url must be empty for in-process FerretDB")
 
 	switch *targetBackendF {
-	case "ferretdb", "ferretdb-yugabyte":
+	case "ferretdb":
 		require.NotEmpty(tb, *postgreSQLURLF, "-postgresql-url must be set for %q", *targetBackendF)
 
 	case "mongodb":

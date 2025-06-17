@@ -273,7 +273,7 @@ tasks:
         -coverpkg=../...
         -coverprofile=integration-yugabyte.txt
         ./...
-        -target-backend=ferretdb-yugabyte
+        -target-backend=ferretdb
         -postgresql-url='postgres://username:password@127.0.0.1:5433/yugabyte'
         -compat-url='mongodb://username:password@127.0.0.1:47017/?replicaSet=rs0'
         -no-xfail={{.NO_XFAIL}}
