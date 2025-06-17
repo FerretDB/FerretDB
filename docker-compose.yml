@@ -31,6 +31,7 @@ services:
       context: ./build/deps
       dockerfile: yugabyte.Dockerfile
     container_name: ferretdb_yugabyte
+    # postgresql.conf is populated by "ysql_pg_conf_csv" flag
     # https://docs.yugabyte.com/preview/reference/configuration/yugabyted/#pass-additional-flags-to-yb-master-and-yb-tserver
     command: >
       bin/yugabyted start

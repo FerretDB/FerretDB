@@ -75,9 +75,11 @@ func setupMongoDB(ctx context.Context, logger *slog.Logger, uri, name string) er
 	return ctx.Err()
 }
 
-// setupYugabyte configures yugabyte containers by creating username:password credential, because
-// the user created upon docker container startup cannot authenticate with mongodb uri.
-// It waits for the port to be available before creating the user.
+// setupYugabyte configures yugabyte containers by creating username:password
+// credential, the user created upon docker container initialization
+// cannot authenticate with FerretDB.
+// It waits for the port to be available, extension to be created
+// before creating the user.
 func setupYugabyte(ctx context.Context, uri string, l *slog.Logger) error {
 	if err := waitForPort(ctx, 5433, l); err != nil {
 		return lazyerrors.Error(err)
@@ -88,7 +90,7 @@ func setupYugabyte(ctx context.Context, uri string, l *slog.Logger) error {
 		return lazyerrors.Error(err)
 	}
 
-	// many error level logs are expected until the extension is available
+	// many error level logs are expected until the extension is created
 	doNotLog := slog.New(slog.NewJSONHandler(io.Discard, nil))
 
 	pool, err := documentdb.NewPool(uri, doNotLog, sp)
@@ -110,7 +112,7 @@ func setupYugabyte(ctx context.Context, uri string, l *slog.Logger) error {
 			break
 		}
 
-		l.InfoContext(ctx, "Waiting documentdb extension to be installed", logging.Error(err))
+		l.InfoContext(ctx, "Waiting documentdb extension to be created", logging.Error(err))
 
 		retry++
 		ctxutil.SleepWithJitter(ctx, time.Second, retry)
@@ -184,10 +186,10 @@ func waitForPort(ctx context.Context, port uint16, l *slog.Logger) error {
 }
 
 // setup runs all setup commands.
-func setup(ctx context.Context, l *slog.Logger) error {
+func setup(ctx context.Context, logger *slog.Logger) error {
 	h, err := debug.Listen(&debug.ListenOpts{
 		TCPAddr: "127.0.0.1:8089",
-		L:       logging.WithName(l, "debug"),
+		L:       logging.WithName(logger, "debug"),
 		R:       prometheus.DefaultRegisterer,
 	})
 	if err != nil {
@@ -196,15 +198,15 @@ func setup(ctx context.Context, l *slog.Logger) error {
 
 	go h.Serve(ctx)
 
-	if err = setupMongoDB(ctx, l, "mongodb://username:password@127.0.0.1:47017/", "mongodb-secure"); err != nil {
+	if err = setupMongoDB(ctx, logger, "mongodb://username:password@127.0.0.1:47017/", "mongodb-secure"); err != nil {
 		return lazyerrors.Error(err)
 	}
 
 	yugabyteURI := "postgres://yb-user:yb-pass@127.0.0.1:5433/yugabyte"
-	if err = setupYugabyte(ctx, yugabyteURI, logging.WithName(l, "yugabyte")); err != nil {
+	if err = setupYugabyte(ctx, yugabyteURI, logging.WithName(logger, "yugabyte")); err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	l.InfoContext(ctx, "Done")
+	logger.InfoContext(ctx, "Done")
 	return nil
 }
