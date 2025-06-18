@@ -75,12 +75,12 @@ func setupMongoDB(ctx context.Context, logger *slog.Logger, uri, name string) er
 	return ctx.Err()
 }
 
-// setupYugabyte configures yugabyte containers by creating username:password
-// credential, the user created upon docker container initialization
+// setupYugabyteDB configures YugabyteDB containers by creating username:password
+// credential, the user created upon Docker container initialization
 // cannot authenticate with FerretDB.
 // It waits for the port to be available, extension to be created
 // before creating the user.
-func setupYugabyte(ctx context.Context, uri string, l *slog.Logger) error {
+func setupYugabyteDB(ctx context.Context, uri string, l *slog.Logger) error {
 	if err := waitForPort(ctx, 5433, l); err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -112,7 +112,7 @@ func setupYugabyte(ctx context.Context, uri string, l *slog.Logger) error {
 			break
 		}
 
-		l.InfoContext(ctx, "Waiting documentdb extension to be created", logging.Error(err))
+		l.InfoContext(ctx, "Waiting for DocumentDB extension to be created", logging.Error(err))
 
 		retry++
 		ctxutil.SleepWithJitter(ctx, time.Second, retry)
@@ -202,8 +202,8 @@ func setup(ctx context.Context, logger *slog.Logger) error {
 		return lazyerrors.Error(err)
 	}
 
-	yugabyteURI := "postgres://yb-user:yb-pass@127.0.0.1:5433/yugabyte"
-	if err = setupYugabyte(ctx, yugabyteURI, logging.WithName(logger, "yugabyte")); err != nil {
+	yugabyteDBURI := "postgres://yb-user:yb-pass@127.0.0.1:5433/yugabyte"
+	if err = setupYugabyteDB(ctx, yugabyteDBURI, logging.WithName(logger, "yugabytedb")); err != nil {
 		return lazyerrors.Error(err)
 	}
 

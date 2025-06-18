@@ -17,7 +17,7 @@ vars:
   BUILD_TAGS: ferretdb_dev
   MODE: diff-normal
   POSTGRESQL_URL: "postgres://username:password@127.0.0.1:5432/postgres"
-  SERVICES: postgres mongodb mongodb-secure jaeger yugabyte
+  SERVICES:  jaeger mongodb mongodb-secure postgres yugabytedb
 
 tasks:
   # invoked when `task` is run without arguments
@@ -289,15 +289,15 @@ tasks:
         --dev-repl-set-name=rs0
         --dev-records-dir=tmp/records
 
-  run-yugabyte:
-    desc: "Run yugabyteDB without auth"
+  run-yugabytedb:
+    desc: "Run YugabyteDB without auth"
     cmds:
       - task: run
         vars:
           POSTGRESQL_URL: "postgres://username:password@127.0.0.1:5433/yugabyte"
 
-  run-yugabyte-secure:
-    desc: "Run yugabyteDB with auth"
+  run-yugabytedb-secure:
+    desc: "Run YugabyteDB with auth"
     cmds:
       - task: run-secure
         vars:

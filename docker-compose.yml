@@ -26,11 +26,11 @@ services:
     volumes:
       - ./build/testscripts:/testscripts
 
-  yugabyte:
+  yugabytedb:
     build:
       context: ./build/deps
-      dockerfile: yugabyte.Dockerfile
-    container_name: ferretdb_yugabyte
+      dockerfile: yugabytedb.Dockerfile
+    container_name: ferretdb_yugabytedb
     # postgresql.conf is populated by "ysql_pg_conf_csv" flag
     # https://docs.yugabyte.com/preview/reference/configuration/yugabyted/#pass-additional-flags-to-yb-master-and-yb-tserver
     command: >
@@ -50,7 +50,7 @@ services:
       - YSQL_PASSWORD=yb-pass
       - YSQL_DB=yugabyte # documentdb extension is installed in yugabyte database
     volumes:
-      - ./build/yugabyte/init.sql:/documentdb/init.sql
+      - ./build/yugabytedb/init.sql:/documentdb/init.sql
 
   mongodb:
     build:
