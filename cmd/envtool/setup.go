@@ -77,13 +77,8 @@ func setupMongoDB(ctx context.Context, logger *slog.Logger, uri, name string) er
 // setupYugabyteDB configures YugabyteDB containers by creating username:password
 // credential, the user created upon Docker container initialization
 // cannot authenticate with FerretDB.
-// It waits for the port to be available, extension to be created
-// before creating the user.
+// It waits for DocumentDB extension to be created before creating the user.
 func setupYugabyteDB(ctx context.Context, uri string, l *slog.Logger) error {
-	if err := waitForPort(ctx, 5433, l); err != nil {
-		return lazyerrors.Error(err)
-	}
-
 	sp, err := state.NewProvider("")
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -153,32 +148,6 @@ func setupYugabyteDB(ctx context.Context, uri string, l *slog.Logger) error {
 	l.InfoContext(ctx, "User created", slog.String("response", d.LogMessage()))
 
 	return nil
-}
-
-// waitForPort waits for the given port to be available until ctx is canceled.
-func waitForPort(ctx context.Context, port uint16, l *slog.Logger) error {
-	addr := fmt.Sprintf("127.0.0.1:%d", port)
-	l.InfoContext(ctx, "Waiting for addr to be up", slog.String("addr", addr))
-
-	var retry int64
-
-	for ctx.Err() == nil {
-		conn, err := net.Dial("tcp", addr)
-		if err == nil {
-			if err = conn.Close(); err != nil {
-				return lazyerrors.Error(err)
-			}
-
-			return nil
-		}
-
-		l.InfoContext(ctx, "Connecting", slog.String("addr", addr), logging.Error(err))
-
-		retry++
-		ctxutil.SleepWithJitter(ctx, time.Second, retry)
-	}
-
-	return fmt.Errorf("failed to connect to %s", addr)
 }
 
 // setup runs all setup commands.
