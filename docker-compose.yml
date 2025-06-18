@@ -33,13 +33,14 @@ services:
     container_name: ferretdb_yugabytedb
     # postgresql.conf is populated by "ysql_pg_conf_csv" flag
     # https://docs.yugabyte.com/preview/reference/configuration/yugabyted/#pass-additional-flags-to-yb-master-and-yb-tserver
+    # ysql_output_buffer_size is set to default*8 to mitigate error https://docs.yugabyte.com/preview/architecture/transactions/read-restart-error/
     command: >
       bin/yugabyted start
       --background=false
       --initial_scripts_dir=/yugabytedb
       --ysql_enable_auth=true
-      --master_flags="allowed_preview_flags_csv=ysql_enable_documentdb,ysql_enable_documentdb=true,enable_pg_cron=true,ysql_pg_conf_csv={documentdb.enableUserCrud = true,documentdb.maxUserLimit = 100}"
-      --tserver_flags="allowed_preview_flags_csv=ysql_enable_documentdb,ysql_enable_documentdb=true,enable_pg_cron=true,ysql_pg_conf_csv={documentdb.enableUserCrud = true,documentdb.maxUserLimit = 100}"
+      --master_flags="allowed_preview_flags_csv=ysql_enable_documentdb,ysql_enable_documentdb=true,enable_pg_cron=true,ysql_pg_conf_csv={documentdb.enableUserCrud = true,documentdb.maxUserLimit = 100},ysql_output_buffer_size=2097152"
+      --tserver_flags="allowed_preview_flags_csv=ysql_enable_documentdb,ysql_enable_documentdb=true,enable_pg_cron=true,ysql_pg_conf_csv={documentdb.enableUserCrud = true,documentdb.maxUserLimit = 100},ysql_output_buffer_size=2097152"
     ports:
       - 5433:5433
     extra_hosts:
