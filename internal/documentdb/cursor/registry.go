@@ -127,7 +127,7 @@ func (r *Registry) NewCursor(id int64, continuation wirebson.RawDocument, conn *
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/270
 	if len(continuation) == 0 {
 		if persist {
-			r.l.Warn(
+			r.l.Debug(
 				"Not persisting connection with empty continuation",
 				slog.Int64("id", id), slog.Any("continuation", cont), slog.Bool("persist", persist),
 			)
@@ -136,7 +136,7 @@ func (r *Registry) NewCursor(id int64, continuation wirebson.RawDocument, conn *
 		}
 
 		if id != 0 {
-			r.l.Warn(
+			r.l.Debug(
 				"Not storing cursor with empty continuation",
 				slog.Int64("id", id), slog.Any("continuation", cont), slog.Bool("persist", persist),
 			)
@@ -203,7 +203,7 @@ func (r *Registry) UpdateCursor(id int64, continuation wirebson.RawDocument) {
 
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/270
 	if len(continuation) == 0 {
-		r.l.Warn(
+		r.l.Debug(
 			"Closing instead of updating cursor with empty continuation",
 			slog.Int64("id", id), slog.Any("continuation", cont), slog.Bool("persist", persist),
 		)
