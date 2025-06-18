@@ -180,7 +180,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task: [postgresql, yugabyte]
+        task: [postgresql, yugabytedb]
         shard_index: [1, 2, 3, 4, 5]
         shard_total: [5]
         include:
