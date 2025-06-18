@@ -3,7 +3,7 @@ export const categorizedApps = {
     {
       name: 'Compass',
       logo: '/img/compatible-applications/compass-logo.png',
-      link: 'https://docs.ferretdb.io/usage/compatible-applications/overview/#gui-applications'
+      link: 'https://blog.ferretdb.io/visually-explore-ferretdb-data-mongo-compass/'
     },
     {
       name: 'NoSQLBooster',
