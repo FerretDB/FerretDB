@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"log/slog"
 	"net"
 	"net/url"
@@ -90,10 +89,7 @@ func setupYugabyteDB(ctx context.Context, uri string, l *slog.Logger) error {
 		return lazyerrors.Error(err)
 	}
 
-	// many error level logs are expected until the extension is created
-	doNotLog := slog.New(slog.NewJSONHandler(io.Discard, nil))
-
-	pool, err := documentdb.NewPool(uri, doNotLog, sp)
+	pool, err := documentdb.NewPool(uri, l, sp)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -104,7 +100,7 @@ func setupYugabyteDB(ctx context.Context, uri string, l *slog.Logger) error {
 
 	for ctx.Err() == nil {
 		err = pool.WithConn(func(conn *pgx.Conn) error {
-			_, err = documentdb_api.BinaryExtendedVersion(ctx, conn, doNotLog)
+			_, err = documentdb_api.BinaryExtendedVersion(ctx, conn, l)
 			return err
 		})
 
