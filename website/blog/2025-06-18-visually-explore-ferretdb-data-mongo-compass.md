@@ -33,7 +33,7 @@ Here's what you need to do:
    In the Compass connection window, you'll typically input a connection string.
    Your FerretDB connection string should look like this:
 
-   ```sh
+   ```text
    mongodb://<username>:<password>@<host>:<port>/<database>
    ```
 
