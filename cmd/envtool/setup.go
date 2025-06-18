@@ -74,9 +74,8 @@ func setupMongoDB(ctx context.Context, logger *slog.Logger, uri, name string) er
 	return ctx.Err()
 }
 
-// setupYugabyteDB configures YugabyteDB containers by creating username:password
-// credential, the user created upon Docker container initialization
-// cannot authenticate with FerretDB.
+// setupYugabyteDB configures YugabyteDB container by creating a user.
+// The user created upon Docker container initialization cannot authenticate with FerretDB.
 // It waits for DocumentDB extension to be created before creating the user.
 func setupYugabyteDB(ctx context.Context, uri string, l *slog.Logger) error {
 	sp, err := state.NewProvider("")
@@ -113,6 +112,15 @@ func setupYugabyteDB(ctx context.Context, uri string, l *slog.Logger) error {
 		return lazyerrors.Error(err)
 	}
 
+	if err = createUser(ctx, pool, l); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	return nil
+}
+
+// createUser creates username:password credentials using the given pool.
+func createUser(ctx context.Context, pool *documentdb.Pool, l *slog.Logger) error {
 	spec := must.NotFail(wirebson.MustDocument(
 		"createUser", "username",
 		"pwd", "password",
@@ -130,11 +138,11 @@ func setupYugabyteDB(ctx context.Context, uri string, l *slog.Logger) error {
 
 	var res wirebson.RawDocument
 
-	err = pool.WithConn(func(conn *pgx.Conn) error {
-		var e error
-		res, e = documentdb_api.CreateUser(ctx, conn, l, spec)
+	err := pool.WithConn(func(conn *pgx.Conn) error {
+		var err error
+		res, err = documentdb_api.CreateUser(ctx, conn, l, spec)
 
-		return e
+		return err
 	})
 	if err != nil {
 		return lazyerrors.Error(err)
