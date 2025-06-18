@@ -16,7 +16,7 @@ vars:
   RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
   BUILD_TAGS: ferretdb_dev
   MODE: diff-normal
-  SERVICES:  jaeger mongodb mongodb-secure postgres yugabytedb
+  SERVICES: jaeger mongodb mongodb-secure postgres yugabytedb
 
 tasks:
   # invoked when `task` is run without arguments
