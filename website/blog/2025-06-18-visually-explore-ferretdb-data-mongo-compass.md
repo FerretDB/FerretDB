@@ -14,7 +14,7 @@ Managing and exploring your database can be significantly improved with the righ
 
 <!--truncate-->
 
-For many MongoDB users,[MongoDB Compass](https://www.mongodb.com/products/compass) is a go-to choice, offering a rich environment for data exploration, query building, and performance monitoring.
+For many MongoDB users, [MongoDB Compass](https://www.mongodb.com/products/compass) is a go-to choice, offering a rich environment for data exploration, query building, and performance monitoring.
 
 At [FerretDB](https://www.ferretdb.com/), we're dedicated to providing a truly open-source alternative to MongoDB, leveraging the reliability and power of PostgreSQL as its backend.
 
