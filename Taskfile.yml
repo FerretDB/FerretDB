@@ -251,8 +251,8 @@ tasks:
         -target-backend=mongodb
         -no-xfail={{.NO_XFAIL}}
 
-  test-integration-yugabyte:
-    desc: "Run integration tests for yugabyteDB"
+  test-integration-yugabytedb:
+    desc: "Run integration tests for YugabyteDB"
     deps: [gen-version, test-integration-build]
     dir: integration
     cmds:
@@ -262,7 +262,7 @@ tasks:
         --shard-total={{.SHARD_TOTAL}}
         --run='{{.TEST_RUN}}'
         --skip='{{.TEST_SKIP}}'
-        --raw-prefix=yugabyte-{{.SHARD_INDEX}}-{{.SHARD_TOTAL}}
+        --raw-prefix=yugabytedb-{{.SHARD_INDEX}}-{{.SHARD_TOTAL}}
         --
         -count=1
         -timeout={{.TEST_TIMEOUT}}
@@ -270,10 +270,10 @@ tasks:
         -tags={{.BUILD_TAGS}}
         -shuffle=on
         -coverpkg=../...
-        -coverprofile=integration-yugabyte.txt
+        -coverprofile=integration-yugabytedb.txt
         ./...
         -target-backend=ferretdb
-        -postgresql-url='postgres://username:password@127.0.0.1:5433/yugabyte'
+        -postgresql-url='postgres://yugabytedb-user:yugabytedb-pass@127.0.0.1:5433/yugabyte'
         -compat-url='mongodb://username:password@127.0.0.1:47017/?replicaSet=rs0'
         -no-xfail={{.NO_XFAIL}}
 
