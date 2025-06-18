@@ -265,6 +265,8 @@ tasks:
         --raw-prefix=yugabytedb-{{.SHARD_INDEX}}-{{.SHARD_TOTAL}}
         --
         -count=1
+        -parallel=1
+        -p=1
         -timeout={{.TEST_TIMEOUT}}
         {{.RACE_FLAG}}
         -tags={{.BUILD_TAGS}}
