@@ -252,7 +252,7 @@ tasks:
         -no-xfail={{.NO_XFAIL}}
 
   test-integration-yugabytedb:
-    desc: "Run integration tests for YugabyteDB"
+    desc: "Run integration tests for YugabyteDB sequentially"
     deps: [gen-version, test-integration-build]
     dir: integration
     cmds:
