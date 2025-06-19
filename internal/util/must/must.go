@@ -38,6 +38,12 @@ func NoError(err error) {
 	}
 }
 
+func BeNil(v any) {
+	if v != nil {
+		panic(fmt.Sprintf("v has non-nil value (%#v)", v))
+	}
+}
+
 // BeZero panics if argument has non-zero value.
 //
 // Use that function only for static initialization, test code, or code that "can't" fail.

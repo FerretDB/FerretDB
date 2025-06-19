@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
+	"io"
 	"log/slog"
 	"runtime"
 	"testing"
@@ -40,40 +41,42 @@ func TestHandler(t *testing.T) {
 	r.AddAttrs(slog.String("k3", "dup"))
 
 	for base, expected := range map[string]string{
-		"console": `2024-05-31T09:26:42.000Z	INFO	logging/handler_test.go:34	` +
+		"console": `2024-05-31T09:26:42.000Z	INFO	logging/handler_test.go:35	` +
 			"multi\nline\nmessage\t" +
 			`{"g2":{"g1":{"k1":42,"k2":7000000000},"g3":{"s":"a"},"i":1,"k3":"dup","name":"test.logger"}}` + "\n",
-		"mongo": `{"t":{"$date":"2024-05-31T09:26:42Z"},"s":"I","c":"","ctx":"logging/handler_test.go:34",` +
+		"mongo": `{"t":{"$date":"2024-05-31T09:26:42Z"},"s":"I","c":"","ctx":"logging/handler_test.go:35",` +
 			`"msg":"multi\nline\nmessage",` +
 			`"attr":{"g2":{"g1":{"k1":42,"k2":7000000000},"k3":"dup","g3":{"s":"a"},"i":1,"name":"test.logger"}}}` + "\n",
-		"text": `time=2024-05-31T09:26:42.000Z level=INFO source=logging/handler_test.go:34 ` +
+		"text": `time=2024-05-31T09:26:42.000Z level=INFO source=logging/handler_test.go:35 ` +
 			`msg="multi\nline\nmessage" ` +
 			`g2.i=1 g2.g3.s=a g2.name=test.logger g2.g1.k1=42 g2.g1.k2=7s g2.k3=s g2.k3=dup` + "\n",
 		"json": `{"time":"2024-05-31T09:26:42Z","level":"INFO","source":` +
 			`{"function":"github.com/FerretDB/FerretDB/v2/internal/util/logging.TestHandler",` +
-			`"file":"logging/handler_test.go","line":34},"msg":"multi\nline\nmessage"` +
+			`"file":"logging/handler_test.go","line":35},"msg":"multi\nline\nmessage"` +
 			`,"g2":{"i":1,"g3":{"s":"a"},"name":"test.logger","g1":{"k1":42,"k2":7000000000},"k3":"s","k3":"dup"}}` + "\n",
 		"embeddable": `time=2024-05-31T09:26:42.000Z level=INFO msg="multi\nline\nmessage" ` +
-			`g2.i=1 g2.g3.s=a g2.name=test.logger g2.g1.k1=42 g2.g1.k2=7s g2.k3=s g2.k3=dup` + "\n",
+			`g2.i=1 g2.g3.s=a g2.name=test.logger g2.g1.k1=42 g2.g1.k2=7s g2.k3=s g2.k3=dup g2.time=2024-05-31T09:26:42.000Z ` +
+			`g2.level=INFO g2.source=logging/handler_test.go:35` + "\n",
 	} {
 		t.Run(base, func(t *testing.T) {
 			t.Parallel()
 
 			var buf bytes.Buffer
-			var h slog.Handler
 
-			if base == "embeddable" {
-				h = NewHandler(nil, &NewHandlerOpts{
-					EmbeddedHandler: slog.NewTextHandler(&buf, new(slog.HandlerOptions)),
-					Base:            base,
-					Level:           slog.LevelInfo,
-				})
-			} else {
-				h = NewHandler(&buf, &NewHandlerOpts{
-					Base:  base,
-					Level: slog.LevelInfo,
-				})
+			//var embeddedHandler slog.Handler
+			var out io.Writer
+			embeddedHandler := slog.NewTextHandler(&buf, new(slog.HandlerOptions))
+
+			if base != "embeddable" {
+				embeddedHandler = nil
+				out = &buf
 			}
+
+			var h slog.Handler = NewHandler(out, &NewHandlerOpts{
+				Base:            base,
+				Level:           slog.LevelInfo,
+				EmbeddedHandler: embeddedHandler,
+			})
 			h = h.WithGroup("g2")
 			h = h.WithAttrs([]slog.Attr{
 				slog.Int("i", 1),
