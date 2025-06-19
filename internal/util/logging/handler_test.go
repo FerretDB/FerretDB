@@ -63,7 +63,6 @@ func TestHandler(t *testing.T) {
 
 			var buf bytes.Buffer
 
-			//var embeddedHandler slog.Handler
 			var out io.Writer
 			embeddedHandler := slog.NewTextHandler(&buf, new(slog.HandlerOptions))
 
