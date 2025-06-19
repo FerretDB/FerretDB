@@ -115,7 +115,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           files: ./integration/integration-${{ inputs.task }}.txt
-          flags: integration,${{ inputs.task }}-${{ inputs.shard_index }},filter-${{ !inputs.disable_pushdown }}
+          flags: integration,${{ inputs.task }}-${{ inputs.shard_index }}
           disable_file_fixes: true
           fail_ci_if_error: true
           verbose: true
@@ -125,7 +125,7 @@ jobs:
         uses: coverallsapp/github-action@v2
         with:
           file: ./integration/integration-${{ inputs.task }}.txt
-          flag-name: integration-${{ inputs.task }}-${{ inputs.shard_index }}-filter-${{ !inputs.disable_pushdown }}
+          flag-name: integration-${{ inputs.task }}-${{ inputs.shard_index }}
           parallel: true
 
       # we don't want them on CI
