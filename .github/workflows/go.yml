@@ -230,6 +230,7 @@ jobs:
       shard_total: 1
       test_timeout: 5m
       no_xfail: true
+      coveralls: true
 
   # https://github.com/lemurheavy/coveralls-public/issues/1636
   submit-coveralls:

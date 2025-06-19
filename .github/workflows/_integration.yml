@@ -13,9 +13,8 @@ on:
         required: true
         type: number
       coveralls:
-        required: false
+        required: true
         type: boolean
-        default: false
       test_timeout:
         required: false
         type: string
@@ -110,6 +109,24 @@ jobs:
           name: logs-${{ inputs.task }}-${{ inputs.shard_index }}-${{ inputs.shard_total }}
           path: logs.zip
           retention-days: 3
+
+      - name: Upload coverage information to codecov
+        if: always()
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./integration/integration-${{ inputs.task }}.txt
+          flags: integration,${{ inputs.task }}-${{ inputs.shard_index }},filter-${{ !inputs.disable_pushdown }}
+          disable_file_fixes: true
+          fail_ci_if_error: true
+          verbose: true
+
+      - name: Upload coverage information to coveralls
+        if: always() && inputs.coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          file: ./integration/integration-${{ inputs.task }}.txt
+          flag-name: integration-${{ inputs.task }}-${{ inputs.shard_index }}-filter-${{ !inputs.disable_pushdown }}
+          parallel: true
 
       # we don't want them on CI
       - name: Clean test and fuzz caches
