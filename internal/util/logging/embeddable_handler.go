@@ -55,34 +55,57 @@ func (h *embeddableHandler) Enabled(ctx context.Context, l slog.Level) bool {
 
 // Handle implements [slog.Handler].
 func (h *embeddableHandler) Handle(ctx context.Context, record slog.Record) error {
-	if h.testAttrs != nil {
-		if !h.opts.RemoveTime && !record.Time.IsZero() {
-			t := record.Time.Format(timeLayout)
+	if !h.opts.RemoveTime && !record.Time.IsZero() {
+		t := record.Time.Format(timeLayout)
+		record.Add(slog.Attr{
+			Key:   slog.TimeKey,
+			Value: slog.StringValue(t),
+		})
+
+		if h.testAttrs != nil {
 			h.testAttrs[slog.TimeKey] = t
 		}
+	}
 
-		if !h.opts.RemoveLevel {
+	if !h.opts.RemoveLevel {
+		record.Add(slog.Attr{
+			Key:   slog.LevelKey,
+			Value: slog.StringValue(record.Level.String()),
+		})
+
+		if h.testAttrs != nil {
 			h.testAttrs[slog.LevelKey] = record.Level.String()
 		}
+	}
 
-		if !h.opts.RemoveSource {
-			f, _ := runtime.CallersFrames([]uintptr{record.PC}).Next()
-			if f.File != "" {
-				s := shortPath(f.File) + ":" + strconv.Itoa(f.Line)
+	if !h.opts.RemoveSource {
+		f, _ := runtime.CallersFrames([]uintptr{record.PC}).Next()
+		if f.File != "" {
+			s := shortPath(f.File) + ":" + strconv.Itoa(f.Line)
+			record.Add(slog.Attr{
+				Key:   slog.SourceKey,
+				Value: slog.StringValue(s),
+			})
+
+			if h.testAttrs != nil {
 				h.testAttrs[slog.SourceKey] = s
 			}
 		}
+	}
 
-		if record.Message != "" {
+	if record.Message != "" {
+		if h.testAttrs != nil {
 			h.testAttrs[slog.MessageKey] = record.Message
 		}
+	}
 
-		if m := attrs(record, h.ga); len(m) > 0 {
+	if m := attrs(record, h.ga); len(m) > 0 {
+		if h.testAttrs != nil {
 			maps.Copy(h.testAttrs, m)
 		}
 	}
 
-	return h.opts.Handler.Handle(ctx, record)
+	return h.opts.EmbeddedHandler.Handle(ctx, record)
 }
 
 // WithAttrs implements [slog.Handler].
@@ -93,7 +116,7 @@ func (h *embeddableHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 
 	h.m.Lock()
 	defer h.m.Unlock()
-	h.opts.Handler = h.opts.Handler.WithAttrs(attrs)
+	h.opts.EmbeddedHandler = h.opts.EmbeddedHandler.WithAttrs(attrs)
 
 	return &embeddableHandler{
 		m:         h.m,
@@ -111,7 +134,7 @@ func (h *embeddableHandler) WithGroup(name string) slog.Handler {
 
 	h.m.Lock()
 	defer h.m.Unlock()
-	h.opts.Handler = h.opts.Handler.WithGroup(name)
+	h.opts.EmbeddedHandler = h.opts.EmbeddedHandler.WithGroup(name)
 
 	return &embeddableHandler{
 		m:         h.m,

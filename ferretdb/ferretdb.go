@@ -67,7 +67,7 @@ type Config struct {
 
 	// Logger is a custom logger.
 	// If nil, a default logger will be created.
-	// If not nil, the LogLevel and LogOutput are ignored.
+	// If not nil, the LogOutput are ignored.
 	Logger *slog.Logger
 
 	// Defaults to undecided.
@@ -101,23 +101,23 @@ func New(config *Config) (*FerretDB, error) {
 		logOutput = io.Discard
 	}
 
+	var embeddedHandler slog.Handler
+	logBase := "console"
+
+	if config.Logger != nil {
+		logBase = "embeddable"
+		embeddedHandler = config.Logger.Handler()
+		logOutput = nil
+	}
+
 	lOpts := &logging.NewHandlerOpts{
-		SkipChecks: true,
-		Level:      logLevel,
+		Base:            logBase,
+		Level:           logLevel,
+		EmbeddedHandler: embeddedHandler,
+		SkipChecks:      true,
 	}
 
-	var logger *slog.Logger
-
-	if config.Logger == nil {
-		lOpts.Base = "console"
-		logger = logging.WithName(logging.Logger(logOutput, lOpts, ""), "ferretdb")
-	} else {
-		handler := config.Logger.Handler()
-		lOpts.Base = "embeddable"
-		lOpts.Handler = handler
-		baseLogger := logging.Logger(nil, lOpts, "")
-		logger = logging.WithName(baseLogger, "ferretdb")
-	}
+	logger := logging.WithName(logging.Logger(logOutput, lOpts, ""), "ferretdb")
 
 	lm := connmetrics.NewListenerMetrics()
 

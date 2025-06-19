@@ -59,16 +59,14 @@ func TestHandler(t *testing.T) {
 		t.Run(base, func(t *testing.T) {
 			t.Parallel()
 
-			var (
-				buf bytes.Buffer
-				h   slog.Handler
-			)
+			var buf bytes.Buffer
+			var h slog.Handler
 
 			if base == "embeddable" {
 				h = NewHandler(nil, &NewHandlerOpts{
-					Handler: slog.NewTextHandler(&buf, new(slog.HandlerOptions)),
-					Base:    base,
-					Level:   slog.LevelInfo,
+					EmbeddedHandler: slog.NewTextHandler(&buf, new(slog.HandlerOptions)),
+					Base:            base,
+					Level:           slog.LevelInfo,
 				})
 			} else {
 				h = NewHandler(&buf, &NewHandlerOpts{

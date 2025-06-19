@@ -47,12 +47,12 @@ type Handler struct {
 //
 //nolint:vet // for readability
 type NewHandlerOpts struct {
-	Base         string // base handler to create: "console", "text", "json", "mongo" or "embeddable"
-	Level        slog.Leveler
-	Handler      slog.Handler
-	RemoveTime   bool
-	RemoveLevel  bool
-	RemoveSource bool
+	Base            string // base handler to create: "console", "text", "json", "mongo" or "embeddable"
+	Level           slog.Leveler
+	EmbeddedHandler slog.Handler // embeddedHandler is only for embeddable base handler
+	RemoveTime      bool
+	RemoveLevel     bool
+	RemoveSource    bool
 
 	// When unset, causes handler to panic on messages with leading/trailing spaces or ending punctuation.
 	// We can't enable checks everywhere because we don't control messages from third-party packages.
@@ -142,6 +142,10 @@ func NewHandler(out io.Writer, opts *NewHandlerOpts) *Handler {
 	case "json":
 		h = slog.NewJSONHandler(out, stdOpts)
 	case "embeddable":
+		// embeddable handler implicitly doesn't use io.Writer
+		// instead it uses opts.EmbeddedHandler
+		must.BeZero(out)
+		must.NotBeZero(opts.EmbeddedHandler)
 		h = newEmbeddableHandler(opts, nil)
 	default:
 		panic(fmt.Sprintf("invalid base handler %q", opts.Base))

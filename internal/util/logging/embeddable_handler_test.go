@@ -32,8 +32,8 @@ func TestEmbeddableHandler(t *testing.T) {
 		testAttrs = map[string]any{}
 
 		opts := &NewHandlerOpts{
-			Handler: slog.NewTextHandler(os.Stdout, new(slog.HandlerOptions)),
-			Level:   slog.LevelDebug,
+			EmbeddedHandler: slog.NewTextHandler(os.Stdout, new(slog.HandlerOptions)),
+			Level:           slog.LevelDebug,
 		}
 
 		return newEmbeddableHandler(opts, testAttrs)
