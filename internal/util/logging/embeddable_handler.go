@@ -92,6 +92,7 @@ func (h *embeddableHandler) Handle(ctx context.Context, record slog.Record) erro
 					Value: slog.StringValue(s),
 				},
 			})
+
 			if h.testAttrs != nil {
 				h.testAttrs[slog.SourceKey] = s
 			}
@@ -99,7 +100,6 @@ func (h *embeddableHandler) Handle(ctx context.Context, record slog.Record) erro
 	}
 
 	if record.Message != "" {
-
 		if h.testAttrs != nil {
 			h.testAttrs[slog.MessageKey] = record.Message
 		}
