@@ -1,0 +1,63 @@
+---
+sidebar_position: 1
+description: Create users for authenticated connections
+---
+
+# `createUser`
+
+import CodeBlock from '@theme/CodeBlock';
+
+
+The `createUser` commands helps you create new users for authenticated connections.
+It relies on PostgreSQL's authentication mechanisms to manage user credentials.
+Read more about [authentication in FerretDB](../../security/authentication.md).
+
+```js
+db.runCommand({
+  createUser: '<username>',
+  pwd: '<password>',
+  roles: [
+    {
+      role: [],
+      db: '<database>'
+    }
+  ]
+})
+```
+
+:::note
+Authorization is not yet supported.
+Set `role` as an empty array (`[]`) when creating a user.
+:::
+
+## Example
+
+The following example demonstrates how to create a new user with the `createUser` command.
+
+```js
+db.runCommand({
+  createUser: 'newuser',
+  pwd: 'newpassword',
+  roles: [
+    {
+      role: [],
+      db: 'test'
+    }
+    ]
+})
+```
+
+## Implementation notes and constraints
+
+- The `createUser` command creates a new user in PostgreSQL with the specified username and password.
+- The `roles` field is currently not used and should be set as an empty array (`[]`).
+- Learn more about authentication in FerretDB in the [authentication documentation](../../security/authentication.md).
+
+
+## Additional information
+
+Please find more information about authentication and user management commands in the following sections:
+
+- [Authentication](../../security/authentication.md)
+
+<!-- markdownlint-enable MD033 -->
