@@ -70,20 +70,13 @@ func TestHandle(t *testing.T) {
 
 	mh := NewToolHandler(h)
 
-	//nolint:vet // for testing
-	type params struct {
-		Name      string    `json:"name"`
-		Arguments any       `json:"arguments,omitempty"`
-		Meta      *mcp.Meta `json:"_meta,omitempty"`
-	}
-
 	for name, tc := range map[string]struct {
 		req        mcp.CallToolRequest
 		handleFunc server.ToolHandlerFunc
 	}{
 		"listDatabases": {
 			req: mcp.CallToolRequest{
-				Params: params{
+				Params: mcp.CallToolParams{
 					Name: "list databases",
 				},
 			},
