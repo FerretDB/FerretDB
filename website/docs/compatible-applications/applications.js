@@ -71,6 +71,11 @@ export const categorizedApps = {
       name: 'Novu',
       logo: '/img/compatible-applications/novu-logo.png',
       link: 'https://blog.ferretdb.io/powering-notification-infrastructure-novu-ferretdb/'
+    },
+    {
+      name: 'Payload CMS',
+      logo: '/img/compatible-applications/payloadcms-logo.png',
+      link: 'https://blog.ferretdb.io/building-robust-content-management-with-payload-cms-and-ferretdb/'
     }
   ]
 }
