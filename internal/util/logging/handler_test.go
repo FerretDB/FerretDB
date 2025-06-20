@@ -55,7 +55,7 @@ func TestHandler(t *testing.T) {
 			`"file":"logging/handler_test.go","line":35},"msg":"multi\nline\nmessage"` +
 			`,"g2":{"i":1,"g3":{"s":"a"},"name":"test.logger","g1":{"k1":42,"k2":7000000000},"k3":"s","k3":"dup"}}` + "\n",
 		"embeddable": `time=2024-05-31T09:26:42.000Z level=INFO msg="multi\nline\nmessage" ` +
-			`g2.i=1 g2.g3.s=a g2.name=test.logger g2.time=2024-05-31T09:26:42.000Z g2.level=INFO` +
+			`g2.i=1 g2.g3.s=a g2.name=test.logger g2.time=2024-05-31T09:26:42.000Z g2.level=INFO ` +
 			`g2.source=logging/handler_test.go:35 g2.g1.k1=42 g2.g1.k2=7s g2.k3=s g2.k3=dup` +
 			"\n",
 	} {
