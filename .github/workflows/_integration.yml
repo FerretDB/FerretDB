@@ -12,9 +12,6 @@ on:
       shard_total:
         required: true
         type: number
-      coveralls:
-        required: true
-        type: boolean
       test_timeout:
         required: false
         type: string
@@ -121,7 +118,7 @@ jobs:
           verbose: true
 
       - name: Upload coverage information to coveralls
-        if: always() && inputs.coveralls
+        if: always()
         uses: coverallsapp/github-action@v2
         with:
           file: ./integration/integration-${{ inputs.task }}.txt
