@@ -48,6 +48,7 @@ const (
 	ErrCommandNotSupported                         = Code(115)     // CommandNotSupported
 	ErrNamespaceNotSharded                         = Code(118)     // NamespaceNotSharded
 	ErrDocumentFailedValidation                    = Code(121)     // DocumentFailedValidation
+	ErrCursorInUse                                 = Code(143)     // CursorInUse
 	ErrExceededMemoryLimit                         = Code(146)     // ExceededMemoryLimit
 	ErrDurationOverflow                            = Code(159)     // DurationOverflow
 	ErrViewDepthLimitExceeded                      = Code(165)     // ViewDepthLimitExceeded
@@ -588,6 +589,7 @@ var pgCodes = map[string]Code{
 	"M000U": ErrCommandNotSupported,                         // 115
 	"M000V": ErrNamespaceNotSharded,                         // 118
 	"M00CO": ErrDocumentFailedValidation,                    // 121
+	"M00EL": ErrCursorInUse,                                 // 143
 	"M000W": ErrExceededMemoryLimit,                         // 146
 	"M000X": ErrDurationOverflow,                            // 159
 	"M000Y": ErrViewDepthLimitExceeded,                      // 165

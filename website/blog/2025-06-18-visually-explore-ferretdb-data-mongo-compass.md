@@ -14,21 +14,27 @@ Managing and exploring your database can be significantly improved with the righ
 
 <!--truncate-->
 
-For many MongoDB users, [MongoDB Compass](https://www.mongodb.com/products/compass) is a go-to choice, offering a rich environment for data exploration, query building, and performance monitoring.
+For many MongoDB users, [MongoDB Compass](https://www.mongodb.com/products/compass) is a go-to choice,
+offering a rich environment for data exploration, query building, and performance monitoring.
 
-At [FerretDB](https://www.ferretdb.com/), we're dedicated to providing a truly open-source alternative to MongoDB, leveraging the reliability and power of PostgreSQL as its backend.
+At [FerretDB](https://www.ferretdb.com/), we're dedicated to providing a truly open-source alternative to MongoDB,
+leveraging the reliability and power of PostgreSQL as its backend.
 
-In this guide, we're excited to show you how effortlessly you can connect and manage your FerretDB databases using MongoDB Compass.
+In this guide, we're excited to show you how effortlessly you can connect and manage your FerretDB databases
+using MongoDB Compass.
 
 ## Connecting MongoDB Compass to FerretDB
 
-Connecting MongoDB Compass to your FerretDB instance is very straightforward, following the standard MongoDB connection process.
+Connecting MongoDB Compass to your FerretDB instance is very straightforward,
+following the standard MongoDB connection process.
 Here's what you need to do:
 
 1. **Ensure FerretDB is running:** Make sure your FerretDB instance is active and accessible.
-   If you haven't set it up yet, refer to our [FerretDB Installation Guide](https://docs.ferretdb.io/installation/ferretdb/).
+   If you haven't set it up yet, refer to our
+   [FerretDB Installation Guide](https://docs.ferretdb.io/installation/ferretdb/).
 2. **Launch MongoDB Compass:** Open the MongoDB Compass application on your system.
-   If you don't have it installed, you can download it from the [MongoDB Compass download page](https://www.mongodb.com/try/download/compass).
+   If you don't have it installed, you can download it from the
+   [MongoDB Compass download page](https://www.mongodb.com/try/download/compass).
 3. Configure the Connection:
    In the Compass connection window, you'll typically input a connection string.
    Your FerretDB connection string should look like this:
@@ -51,12 +57,13 @@ Here's what you need to do:
 As an example, here we showcase the `serverStatus` command being run in Compass on a FerretDB instance.
 This command provides an overview of the server's status and statistics.
 
-The image clearly demonstrates that Compass is successfully communicating with FerretDB and retrieving server-side information, just as it would with a native MongoDB instance.
+The image clearly demonstrates that Compass is successfully communicating with FerretDB
+and retrieving server-side information.
 You can navigate to the "Performance" or "Shell" tab within Compass to execute such commands.
 
 ![GUI connection to Compass showing serverStatus](/img/blog/compass-serverstatus.png)
 
-We can also run queries, view documents, and manage collections just like you would with MongoDB.
+We can also run queries, view documents, and manage collections.
 
 Here's an example of a simple query in Compass to find books with British authors:
 
@@ -64,7 +71,8 @@ Here's an example of a simple query in Compass to find books with British author
 
 ## Conclusion
 
-Using MongoDB Compass with FerretDB provides a familiar, powerful, and intuitive graphical interface for managing your FerretDB.
+Using MongoDB Compass with FerretDB provides a familiar, powerful,
+and intuitive graphical interface for managing your FerretDB.
 
 We're continuously working to expand our integrations and support for various tools.
 Stay tuned for more updates, and feel free to reach out to us if you have any questions or suggestions!
