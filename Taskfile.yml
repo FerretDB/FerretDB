@@ -268,6 +268,7 @@ tasks:
         --no-auth
         --listen-addr=:27017
         --listen-data-api-addr=127.0.0.1:8899
+        --listen-mcp-addr=127.0.0.1:8081
         --proxy-addr=127.0.0.1:37017
         --postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
@@ -329,8 +330,15 @@ tasks:
     cmds:
       - ollama serve
     env:
-      # for https://ollama.com/library/phi4-mini
-      OLLAMA_CONTEXT_LENGTH: 131072
+      # 131072 for https://ollama.com/library/phi4-mini
+      #  40960 https://ollama.com/library/qwen3
+      OLLAMA_CONTEXT_LENGTH: 40960
+      OLLAMA_DEBUG: 2
+
+  mcphost:
+    desc: "Run mcphost for local Ollama server"
+    cmds:
+      - bin/mcphost --config build/mcp/mcphost.json --model ollama:qwen3:0.6b
 
   psql:
     desc: "Run psql"
