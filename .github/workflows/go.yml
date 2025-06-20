@@ -164,6 +164,7 @@ jobs:
           verbose: true
 
       - name: Upload coverage information to coveralls
+        if: always()
         uses: coverallsapp/github-action@v2
         with:
           file: ./cover.txt
