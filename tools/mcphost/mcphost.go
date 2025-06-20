@@ -52,8 +52,13 @@ func NewMCPHost(ctx context.Context, l *slog.Logger) (*mcpHost, error) {
 	}
 
 	cmd := exec.CommandContext(ctx, bin, "--config", config, "--model", "ollama:qwen3:0.6b")
-	cmd.Dir = filepath.Join("..", "..")
 	cmd.Stderr = os.Stderr
+
+	l.InfoContext(ctx, "Starting MCP host", slog.String("command", cmd.String()))
+
+	if err = cmd.Start(); err != nil {
+		return nil, err
+	}
 
 	return &mcpHost{
 		cmd: cmd,
