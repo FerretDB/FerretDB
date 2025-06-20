@@ -58,12 +58,25 @@ func (h *embeddableHandler) Handle(ctx context.Context, record slog.Record) erro
 	if !h.opts.RemoveTime && !record.Time.IsZero() {
 		t := record.Time.Format(timeLayout)
 
+		h.opts.EmbeddedHandler = h.opts.EmbeddedHandler.WithAttrs([]slog.Attr{
+			{
+				Key:   slog.TimeKey,
+				Value: slog.StringValue(t),
+			},
+		})
+
 		if h.testAttrs != nil {
 			h.testAttrs[slog.TimeKey] = t
 		}
 	}
 
 	if !h.opts.RemoveLevel {
+		h.opts.EmbeddedHandler = h.opts.EmbeddedHandler.WithAttrs([]slog.Attr{
+			{
+				Key:   slog.LevelKey,
+				Value: slog.StringValue(record.Level.String()),
+			},
+		})
 		if h.testAttrs != nil {
 			h.testAttrs[slog.LevelKey] = record.Level.String()
 		}
@@ -73,6 +86,12 @@ func (h *embeddableHandler) Handle(ctx context.Context, record slog.Record) erro
 		f, _ := runtime.CallersFrames([]uintptr{record.PC}).Next()
 		if f.File != "" {
 			s := shortPath(f.File) + ":" + strconv.Itoa(f.Line)
+			h.opts.EmbeddedHandler = h.opts.EmbeddedHandler.WithAttrs([]slog.Attr{
+				{
+					Key:   slog.SourceKey,
+					Value: slog.StringValue(s),
+				},
+			})
 			if h.testAttrs != nil {
 				h.testAttrs[slog.SourceKey] = s
 			}
@@ -80,6 +99,7 @@ func (h *embeddableHandler) Handle(ctx context.Context, record slog.Record) erro
 	}
 
 	if record.Message != "" {
+
 		if h.testAttrs != nil {
 			h.testAttrs[slog.MessageKey] = record.Message
 		}
