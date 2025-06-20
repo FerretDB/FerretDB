@@ -50,9 +50,10 @@ type NewHandlerOpts struct {
 	Base            string // base handler to create: "console", "text", "json", "mongo" or "embeddable"
 	Level           slog.Leveler
 	EmbeddedHandler slog.Handler // embeddedHandler is only for embeddable base handler
-	RemoveTime      bool
-	RemoveLevel     bool
-	RemoveSource    bool
+	// when EmbeddableHandler is set, RemoveTime, RemoveLevel, RemoveSource are ignored
+	RemoveTime   bool
+	RemoveLevel  bool
+	RemoveSource bool
 
 	// When unset, causes handler to panic on messages with leading/trailing spaces or ending punctuation.
 	// We can't enable checks everywhere because we don't control messages from third-party packages.
