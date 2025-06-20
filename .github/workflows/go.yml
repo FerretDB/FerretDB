@@ -240,6 +240,7 @@ jobs:
 
     steps:
       - name: Submit coveralls
+        if: always()
         uses: coverallsapp/github-action@v2
         with:
           parallel-finished: true
