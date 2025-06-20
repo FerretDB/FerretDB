@@ -2,6 +2,17 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v2.3.1](https://github.com/FerretDB/FerretDB/releases/tag/v2.3.1) (2025-06-12)
+
+Hotfix release to restore compatibility with various tools such as `mongoimport` and `mongorestore`.
+
+### Fixed Bugs 🐛
+
+- Revert "Remove hack for `bypassEmptyTsReplacement` (#5217)" by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5256
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/78?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v2.3.0...v2.3.1).
+
 ## [v2.3.0](https://github.com/FerretDB/FerretDB/releases/tag/v2.3.0) (2025-06-11)
 
 This version works best with
