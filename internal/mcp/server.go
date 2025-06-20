@@ -32,6 +32,7 @@ import (
 type Server struct {
 	opts *ServerOpts
 	s    *server.MCPServer
+	sse  *server.SSEServer
 }
 
 // ServerOpts represents [Serve] options.
@@ -59,11 +60,28 @@ func (s *Server) Serve(ctx context.Context) error {
 
 	// can authentication be added?
 	// TODO https://github.com/FerretDB/FerretDB/issues/5209
-	sseServer := server.NewSSEServer(s.s, server.WithBaseURL(s.opts.TCPAddr))
+	s.sse = server.NewSSEServer(s.s, server.WithBaseURL(s.opts.TCPAddr))
 
-	if err := sseServer.Start(s.opts.TCPAddr); err != nil {
+	if err := s.sse.Start(s.opts.TCPAddr); err != nil {
 		return lazyerrors.Error(err)
 	}
+
+	return nil
+}
+
+// Shutdown stops the MCP server.
+func (s *Server) Shutdown(ctx context.Context) error {
+	if s.s == nil {
+		return nil
+	}
+
+	if err := s.sse.Shutdown(ctx); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	s.opts.L.InfoContext(ctx, "MCP server stopped")
+
+	s.s = nil
 
 	return nil
 }
