@@ -112,6 +112,20 @@ func Compact(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.
 	return
 }
 
+// ConnectionStatus is a wrapper for
+//
+//	documentdb_api.connection_status(p_spec documentdb_core.bson, OUT connection_status documentdb_core.bson).
+func ConnectionStatus(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outConnectionStatus wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.connection_status", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT connection_status::bytea FROM documentdb_api.connection_status($1::bytea)", spec)
+	if err = row.Scan(&outConnectionStatus); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api.connection_status", l)
+	}
+	return
+}
+
 // CountQuery is a wrapper for
 //
 //	documentdb_api.count_query(database text, countspec documentdb_core.bson, OUT document documentdb_core.bson).

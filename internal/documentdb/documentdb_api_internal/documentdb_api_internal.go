@@ -2590,6 +2590,20 @@ func DbStatsWorker(ctx context.Context, conn *pgx.Conn, l *slog.Logger, collecti
 	return
 }
 
+// DeleteCursors is a wrapper for
+//
+//	documentdb_api_internal.delete_cursors(cursorids ARRAY, OUT delete_cursors documentdb_core.bson).
+func DeleteCursors(ctx context.Context, conn *pgx.Conn, l *slog.Logger, cursorids struct{}) (outDeleteCursors wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.delete_cursors", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT delete_cursors::bytea FROM documentdb_api_internal.delete_cursors($1)", cursorids)
+	if err = row.Scan(&outDeleteCursors); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.delete_cursors", l)
+	}
+	return
+}
+
 // DeleteOne is a wrapper for
 //
 //	documentdb_api_internal.delete_one(p_collection_id bigint, p_shard_key_value bigint, p_query documentdb_core.bson, p_sort documentdb_core.bson, p_return_document boolean, p_return_fields documentdb_core.bson, OUT o_is_row_deleted boolean, OUT o_result_deleted_document documentdb_core.bson).
