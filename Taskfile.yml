@@ -16,7 +16,7 @@ vars:
   RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
   BUILD_TAGS: ferretdb_dev
   MODE: diff-normal
-  SERVICES: postgres mongodb mongodb-secure jaeger
+  SERVICES: jaeger mongodb mongodb-secure postgres yugabytedb
 
 tasks:
   # invoked when `task` is run without arguments
@@ -251,6 +251,34 @@ tasks:
         -target-backend=mongodb
         -no-xfail={{.NO_XFAIL}}
 
+  test-integration-yugabytedb:
+    desc: "Run integration tests for YugabyteDB sequentially"
+    deps: [gen-version, test-integration-build]
+    dir: integration
+    cmds:
+      - >
+        ../bin/envtool{{exeExt}} tests run
+        --shard-index={{.SHARD_INDEX}}
+        --shard-total={{.SHARD_TOTAL}}
+        --run='{{.TEST_RUN}}'
+        --skip='{{.TEST_SKIP}}'
+        --raw-prefix=yugabytedb-{{.SHARD_INDEX}}-{{.SHARD_TOTAL}}
+        --
+        -count=1
+        -parallel=1
+        -p=1
+        -timeout={{.TEST_TIMEOUT}}
+        {{.RACE_FLAG}}
+        -tags={{.BUILD_TAGS}}
+        -shuffle=on
+        -coverpkg=../...
+        -coverprofile=integration-yugabytedb.txt
+        ./...
+        -target-backend=ferretdb-yugabytedb
+        -postgresql-url='postgres://yugabytedb-user:yugabytedb-pass@127.0.0.1:5433/yugabyte'
+        -compat-url='mongodb://username:password@127.0.0.1:47017/?replicaSet=rs0'
+        -no-xfail={{.NO_XFAIL}}
+
   bench-unit:
     desc: "Run unit benchmarks"
     cmds:
@@ -284,6 +312,36 @@ tasks:
         --listen-data-api-addr=127.0.0.1:8899
         --proxy-addr=127.0.0.1:47017
         --postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
+        --otel-traces-url=http://127.0.0.1:4318/v1/traces
+        --dev-repl-set-name=rs0
+        --dev-records-dir=tmp/records
+
+  run-yugabytedb:
+    desc: "Run YugabyteDB without auth"
+    deps: [build-host]
+    cmds:
+      - >
+        bin/ferretdb{{exeExt}}
+        --mode={{.MODE}}
+        --no-auth
+        --listen-addr=:27017
+        --listen-data-api-addr=127.0.0.1:8899
+        --proxy-addr=127.0.0.1:37017
+        --postgresql-url='postgres://yugabytedb-user:yugabytedb-pass@127.0.0.1:5433/yugabyte'
+        --otel-traces-url=http://127.0.0.1:4318/v1/traces
+        --dev-records-dir=tmp/records
+
+  run-yugabytedb-secure:
+    desc: "Run YugabyteDB with auth"
+    deps: [build-host]
+    cmds:
+      - >
+        bin/ferretdb{{exeExt}}
+        --mode={{.MODE}}
+        --listen-addr=:27017
+        --listen-data-api-addr=127.0.0.1:8899
+        --proxy-addr=127.0.0.1:47017
+        --postgresql-url='postgres://yugabytedb-user:yugabytedb-pass@127.0.0.1:5433/yugabyte'
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
         --dev-repl-set-name=rs0
         --dev-records-dir=tmp/records
