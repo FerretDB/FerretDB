@@ -51,7 +51,6 @@ func Startup() {
 		Level:       slog.LevelDebug,
 		RemoveTime:  true,
 		RemoveLevel: true,
-		NoDPanic:    *noDPanicF,
 	}
 	logging.SetupDefault(opts, "")
 	l := slog.Default()
