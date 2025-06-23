@@ -70,7 +70,7 @@ func TestServer(t *testing.T) {
 	s := New(&ServerOpts{
 		L:           l,
 		ToolHandler: NewToolHandler(h),
-		TCPAddr:     "127.0.0.1:0",
+		TCPAddr:     "127.0.0.1:8081",
 	})
 
 	serverDone := make(chan struct{})
