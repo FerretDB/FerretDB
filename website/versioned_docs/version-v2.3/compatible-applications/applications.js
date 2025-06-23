@@ -1,10 +1,10 @@
 export const categorizedApps = {
   guis: [
-    // Add compass blog post [https://github.com/FerretDB/FerretDB/issues/1982]
-    //   name: 'Compass',
-    //   logo: '/img/compatible-applications/compass-logo.png',
-    //   link: 'https://docs.ferretdb.io/usage/compatible-applications/overview/#gui-applications'
-    // },
+    {
+      name: 'Compass',
+      logo: '/img/compatible-applications/compass-logo.png',
+      link: 'https://blog.ferretdb.io/visually-explore-ferretdb-data-mongo-compass/'
+    },
     {
       name: 'NoSQLBooster',
       logo: '/img/compatible-applications/nosqlbooster-logo.png',
