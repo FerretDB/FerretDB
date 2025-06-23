@@ -16,6 +16,9 @@ package mcp
 
 import (
 	"context"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -85,9 +88,61 @@ func TestServer(t *testing.T) {
 		<-serverDone
 	})
 
-	res, err := testutil.AskMCPHost(ctx, "list databases")
+	res, err := askMCPHost(ctx, "list databases")
 	require.NoError(t, err)
 
 	t.Log(string(res))
 	require.Contains(t, string(res), "Calling ferretdb__listDatabases")
+}
+
+func TestMCPHost(t *testing.T) {
+	res, err := askMCPHost(t.Context(), "list databases")
+	require.NoError(t, err)
+
+	t.Log(string(res))
+	require.Contains(t, string(res), "Calling ferretdb__listDatabases")
+}
+
+// askMCPHost runs MCP host in non-interactive mode with the given prompt and returns the output.
+// Non-interactive mode is used for the ease of testing.
+func askMCPHost(ctx context.Context, prompt string) ([]byte, error) {
+	rootDir := getRoot()
+
+	bin := filepath.Join(rootDir, "bin", "mcphost")
+	if _, err := os.Stat(bin); err != nil {
+		return nil, err
+	}
+
+	bin, err := filepath.Abs(bin)
+	if err != nil {
+		return nil, err
+	}
+
+	config := filepath.Join(rootDir, "build", "mcp", "mcphost.json")
+	if _, err = os.Stat(config); err != nil {
+		return nil, err
+	}
+
+	config, err = filepath.Abs(config)
+	if err != nil {
+		return nil, err
+	}
+
+	cmd := exec.CommandContext(ctx, bin, "--config", config, "--model", "ollama:qwen3:0.6b", "--prompt", prompt)
+
+	return cmd.CombinedOutput()
+}
+
+// getRoot finds the repository root directory by looking for the go.mod file.
+func getRoot() string {
+	var dir string
+
+	for {
+		goModFile := filepath.Join(dir, "go.mod")
+		if _, err := os.Stat(goModFile); err == nil {
+			return dir
+		}
+
+		dir = filepath.Join("..", dir)
+	}
 }
