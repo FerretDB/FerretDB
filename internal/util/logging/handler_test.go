@@ -99,3 +99,40 @@ func TestShortPath(t *testing.T) {
 	assert.Equal(t, "util/debug.go", shortPath("github.com/FerretDB/FerretDB/v2/internal/util/debug.go"))
 	assert.Equal(t, "internal/debug.go", shortPath("github.com/FerretDB/FerretDB/v2/internal/debug.go"))
 }
+
+func TestDPanic(t *testing.T) {
+	t.Parallel()
+
+	pc, _, _, _ := runtime.Caller(0)
+	r := slog.NewRecord(time.Date(2025, 6, 23, 11, 19, 12, 0, time.UTC), LevelDPanic, "Missing", pc)
+
+	t.Run("DPanic", func(t *testing.T) {
+		t.Parallel()
+
+		var buf bytes.Buffer
+		var h slog.Handler = NewHandler(&buf, &NewHandlerOpts{
+			Base:     "console",
+			Level:    slog.LevelInfo,
+			NoDPanic: false,
+		})
+
+		assert.Panics(t, func() {
+			_ = h.Handle(t.Context(), r)
+		})
+	})
+
+	t.Run("NoDPanic", func(t *testing.T) {
+		t.Parallel()
+
+		var buf bytes.Buffer
+		var h slog.Handler = NewHandler(&buf, &NewHandlerOpts{
+			Base:     "console",
+			Level:    slog.LevelInfo,
+			NoDPanic: true,
+		})
+
+		assert.NotPanics(t, func() {
+			_ = h.Handle(t.Context(), r)
+		})
+	})
+}

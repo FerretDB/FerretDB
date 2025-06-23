@@ -55,6 +55,8 @@ var (
 
 	benchDocsF = flag.Int("bench-docs", 1000, "benchmarks: number of documents to generate per iteration")
 
+	noDPanicF = flag.Bool("no-dpanic", false, "LevelDPanic log level does not panic")
+
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
 	logLevelF   = flag.String("log-level", slog.LevelDebug.String(), "log level for tests")
