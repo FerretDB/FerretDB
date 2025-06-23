@@ -75,8 +75,7 @@ func TestServer(t *testing.T) {
 	go func() {
 		defer close(serverDone)
 
-		err = s.Serve(ctx)
-		assert.NoError(t, err)
+		_ = s.Serve(ctx)
 	}()
 
 	t.Cleanup(func() {
@@ -85,5 +84,10 @@ func TestServer(t *testing.T) {
 
 		<-serverDone
 	})
-	// use mcphost
+
+	res, err := testutil.AskMCPHost(ctx, "list databases")
+	require.NoError(t, err)
+
+	t.Log(string(res))
+	require.Contains(t, string(res), "Calling ferretdb__listDatabases")
 }

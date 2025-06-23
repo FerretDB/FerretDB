@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package mcphost provides a host to interact with the MCP server.
-package mcphost
+package testutil
 
 import (
 	"context"
@@ -25,7 +24,9 @@ import (
 // AskMCPHost runs MCP host in non-interactive mode with the given prompt and returns the output.
 // Non-interactive mode is used for the ease of testing.
 func AskMCPHost(ctx context.Context, prompt string) ([]byte, error) {
-	bin := filepath.Join("..", "..", "bin", "mcphost")
+	rootDir := getRoot()
+
+	bin := filepath.Join(rootDir, "bin", "mcphost")
 	if _, err := os.Stat(bin); err != nil {
 		return nil, err
 	}
@@ -35,7 +36,7 @@ func AskMCPHost(ctx context.Context, prompt string) ([]byte, error) {
 		return nil, err
 	}
 
-	config := filepath.Join("..", "..", "build", "mcp", "mcphost.json")
+	config := filepath.Join(rootDir, "build", "mcp", "mcphost.json")
 	if _, err = os.Stat(config); err != nil {
 		return nil, err
 	}
@@ -48,4 +49,18 @@ func AskMCPHost(ctx context.Context, prompt string) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, bin, "--config", config, "--model", "ollama:qwen3:0.6b", "--prompt", prompt)
 
 	return cmd.CombinedOutput()
+}
+
+// getRoot finds the repository root directory by looking for the go.mod file.
+func getRoot() string {
+	var dir string
+
+	for {
+		goModFile := filepath.Join(dir, "go.mod")
+		if _, err := os.Stat(goModFile); err == nil {
+			return dir
+		}
+
+		dir = filepath.Join("..", dir)
+	}
 }
