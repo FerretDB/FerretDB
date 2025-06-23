@@ -121,7 +121,7 @@ func setupYugabyteDB(ctx context.Context, uri string, l *slog.Logger) error {
 
 // createUser creates username:password credentials using the given pool.
 // The created user can authenticate with FerretDB and also with
-// PosgreSQL directly using `psql` or other tools.
+// PostgreSQL directly using `psql` or other tools.
 func createUser(ctx context.Context, pool *documentdb.Pool, l *slog.Logger) error {
 	spec := must.NotFail(wirebson.MustDocument(
 		"createUser", "username",
