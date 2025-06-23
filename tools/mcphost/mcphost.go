@@ -17,20 +17,14 @@ package mcphost
 
 import (
 	"context"
-	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
 )
 
-// mcpHost represents a host for the MCP server, running the mcphost binary.
-type mcpHost struct {
-	cmd *exec.Cmd
-	l   *slog.Logger
-}
-
-// NewMCPHost creates a new mcpHost instance that runs the mcphost binary.
-func NewMCPHost(ctx context.Context, l *slog.Logger) (*mcpHost, error) {
+// AskMCPHost runs MCP host in non-interactive mode with the given prompt and returns the output.
+// Non-interactive mode is used for the ease of testing.
+func AskMCPHost(ctx context.Context, prompt string) ([]byte, error) {
 	bin := filepath.Join("..", "..", "bin", "mcphost")
 	if _, err := os.Stat(bin); err != nil {
 		return nil, err
@@ -51,17 +45,7 @@ func NewMCPHost(ctx context.Context, l *slog.Logger) (*mcpHost, error) {
 		return nil, err
 	}
 
-	cmd := exec.CommandContext(ctx, bin, "--config", config, "--model", "ollama:qwen3:0.6b")
-	cmd.Stderr = os.Stderr
+	cmd := exec.CommandContext(ctx, bin, "--config", config, "--model", "ollama:qwen3:0.6b", "--prompt", prompt)
 
-	l.InfoContext(ctx, "Starting MCP host", slog.String("command", cmd.String()))
-
-	if err = cmd.Start(); err != nil {
-		return nil, err
-	}
-
-	return &mcpHost{
-		cmd: cmd,
-		l:   l,
-	}, nil
+	return cmd.CombinedOutput()
 }

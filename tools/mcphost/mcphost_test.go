@@ -15,13 +15,15 @@
 package mcphost
 
 import (
-	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
 func TestMCPHost(t *testing.T) {
-	_, err := NewMCPHost(t.Context(), slog.Default())
+	res, err := AskMCPHost(t.Context(), "list databases")
 	require.NoError(t, err)
+
+	t.Log(string(res))
+	require.Contains(t, string(res), "Calling ferretdb__listDatabases")
 }
