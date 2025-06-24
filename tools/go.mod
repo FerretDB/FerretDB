@@ -159,8 +159,8 @@ require (
 	github.com/klauspost/pgzip v1.2.6 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/mark3labs/mcp-go v0.31.0 // indirect
-	github.com/mark3labs/mcphost v0.14.1 // indirect
+	github.com/mark3labs/mcp-go v0.32.0 // indirect
+	github.com/mark3labs/mcphost v0.15.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
