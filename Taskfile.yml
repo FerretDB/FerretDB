@@ -324,7 +324,7 @@ tasks:
 
   security-trivy:
     cmds:
-      - docker compose run --rm trivy --config=./build/trivy.yml filesystem .
+      - docker compose run --rm trivy --config=./build/trivy.yml filesystem --ignorefile=./build/.trivyignore .
 
   godocs:
     desc: "Serve Go code documentation"
