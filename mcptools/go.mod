@@ -1,6 +1,8 @@
-module github.com/chilagrow/FerretDB/mcptools
+module github.com/FerretDB/FerretDB/mcptools
 
 go 1.24.4
+
+toolchain go1.24.4
 
 tool github.com/mark3labs/mcphost
 
