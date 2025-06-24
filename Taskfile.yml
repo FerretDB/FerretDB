@@ -40,6 +40,13 @@ tasks:
       - go mod verify
       - go generate -x
 
+  init-mcptools:
+    dir: mcptools
+    cmds:
+      - go mod tidy
+      - go mod verify
+      - go generate -x
+
   init-tools-golangci:
     dir: tools/golangci
     cmds:
@@ -55,7 +62,7 @@ tasks:
 
   init:
     desc: "Install development tools"
-    deps: [init-tools, init-tools-golangci, init-integration]
+    deps: [init-tools, init-tools-golangci, init-mcptools, init-integration]
     cmds:
       - go mod tidy
       - go mod verify
