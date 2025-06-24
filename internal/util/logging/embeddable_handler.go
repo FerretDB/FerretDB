@@ -24,8 +24,9 @@ import (
 	"sync"
 )
 
-// Embeddable handler is a [slog.Handler] for custom logger.
-// It is used to make sure that the config.LogLevel is effective.
+// EmbeddableHandler is a [slog.Handler] that wraps another handler.
+// It provides additional functionality like level filtering, attribute manipulation,
+// and thread-safe access to the embedded handler.
 //
 //nolint:vet // for readability
 type embeddableHandler struct {
@@ -120,8 +121,8 @@ func (h *embeddableHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 		return h
 	}
 
-	h.m.Lock()
-	defer h.m.Unlock()
+	//h.m.Lock()
+	//defer h.m.Unlock()
 	h.opts.EmbeddedHandler = h.opts.EmbeddedHandler.WithAttrs(attrs)
 
 	return &embeddableHandler{
@@ -138,8 +139,8 @@ func (h *embeddableHandler) WithGroup(name string) slog.Handler {
 		return h
 	}
 
-	h.m.Lock()
-	defer h.m.Unlock()
+	//h.m.Lock()
+	//defer h.m.Unlock()
 	h.opts.EmbeddedHandler = h.opts.EmbeddedHandler.WithGroup(name)
 
 	return &embeddableHandler{

@@ -64,18 +64,18 @@ func TestHandler(t *testing.T) {
 
 			var buf bytes.Buffer
 
-			var out io.Writer
-			embeddedHandler := slog.NewTextHandler(&buf, new(slog.HandlerOptions))
+			var out io.Writer = &buf
+			var handler slog.Handler
 
-			if base != "embeddable" {
-				embeddedHandler = nil
-				out = &buf
+			if base == "embeddable" {
+				handler = slog.NewTextHandler(&buf, new(slog.HandlerOptions))
+				out = nil
 			}
 
 			var h slog.Handler = NewHandler(out, &NewHandlerOpts{
 				Base:            base,
 				Level:           slog.LevelInfo,
-				EmbeddedHandler: embeddedHandler,
+				EmbeddedHandler: handler,
 			})
 			h = h.WithGroup("g2")
 			h = h.WithAttrs([]slog.Attr{
