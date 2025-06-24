@@ -119,39 +119,26 @@ jobs:
         with:
           cache-key: test
 
-      - name: Setup Ollama
-        run: |
-          curl -fsSL https://ollama.com/install.sh | sudo -E sh
-
-      - name: Fetch model for Ollama
-        run: |
-          ollama pull qwen3:0.6b
-
-      - name: Start Ollama in the background
-        run: |
-          ollama serve &
-        env:
-          # 131072 for https://ollama.com/library/phi4-mini
-          #  40960 https://ollama.com/library/qwen3
-          OLLAMA_CONTEXT_LENGTH: 40960
-          OLLAMA_DEBUG: 2
-
       - name: Install Task
         run: go generate -x
         working-directory: tools
 
-#       FIXME
-#      - name: Setup Ollama
-#        run: |
-#          bin/task ollama-setup
-#
-#      - name: Fetch model for Ollama
-#        run: |
-#          bin/task ollama-model
-#
-#      - name: Start Ollama in the background
-#        run: |
-#          bin/task ollama &
+      # REMOVE ME
+      - name: Install mcphost
+        run: go generate -x
+        working-directory: mcptools
+
+      - name: Setup Ollama
+        run: |
+          bin/task ollama-setup
+
+      - name: Fetch model for Ollama
+        run: |
+          bin/task ollama-model
+
+      - name: Start Ollama in the background
+        run: |
+          bin/task ollama &
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
