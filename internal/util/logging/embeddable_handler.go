@@ -21,7 +21,6 @@ import (
 	"runtime"
 	"slices"
 	"strconv"
-	"sync"
 )
 
 // EmbeddableHandler is a [slog.Handler] that wraps another handler.
@@ -33,15 +32,12 @@ type embeddableHandler struct {
 	opts *NewHandlerOpts
 	ga   []groupOrAttrs
 
-	// m is used to protect opts.Handler from race conditions.
-	m *sync.Mutex
-
 	testAttrs map[string]any
 }
 
 // newEmbeddableHandler creates a new embeddable handler.
 func newEmbeddableHandler(opts *NewHandlerOpts, attrs map[string]any) *embeddableHandler {
-	return &embeddableHandler{opts: opts, testAttrs: attrs, m: new(sync.Mutex)}
+	return &embeddableHandler{opts: opts, testAttrs: attrs}
 }
 
 // Enabled implements [slog.Handler].
@@ -121,12 +117,9 @@ func (h *embeddableHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 		return h
 	}
 
-	//h.m.Lock()
-	//defer h.m.Unlock()
 	h.opts.EmbeddedHandler = h.opts.EmbeddedHandler.WithAttrs(attrs)
 
 	return &embeddableHandler{
-		m:         h.m,
 		opts:      h.opts,
 		ga:        append(slices.Clone(h.ga), groupOrAttrs{attrs: attrs}),
 		testAttrs: h.testAttrs,
@@ -139,12 +132,9 @@ func (h *embeddableHandler) WithGroup(name string) slog.Handler {
 		return h
 	}
 
-	//h.m.Lock()
-	//defer h.m.Unlock()
 	h.opts.EmbeddedHandler = h.opts.EmbeddedHandler.WithGroup(name)
 
 	return &embeddableHandler{
-		m:         h.m,
 		opts:      h.opts,
 		ga:        append(slices.Clone(h.ga), groupOrAttrs{group: name}),
 		testAttrs: h.testAttrs,
