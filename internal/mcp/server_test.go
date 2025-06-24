@@ -95,14 +95,6 @@ func TestServer(t *testing.T) {
 	require.Contains(t, string(res), "Calling ferretdb__listDatabases")
 }
 
-func TestMCPHost(t *testing.T) {
-	res, err := askMCPHost(t.Context(), "list databases")
-	require.NoError(t, err)
-
-	t.Log(string(res))
-	require.Contains(t, string(res), "Calling ferretdb__listDatabases")
-}
-
 // askMCPHost runs MCP host in non-interactive mode with the given prompt and returns the output.
 // Non-interactive mode is used for the ease of testing.
 func askMCPHost(ctx context.Context, prompt string) ([]byte, error) {

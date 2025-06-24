@@ -325,6 +325,16 @@ tasks:
     cmds:
       - bin/pkgsite{{exeExt}} -http=127.0.0.1:6060 -open
 
+  ollama-setup:
+    desc: "Setup Ollama"
+    cmds:
+      - curl -fsSL https://ollama.com/install.sh | sudo -E sh
+
+  ollama-model:
+    desc: "Pull model"
+    cmds:
+      - ollama pull qwen3:0.6b
+
   ollama:
     desc: "Run Ollama server"
     cmds:

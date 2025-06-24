@@ -123,6 +123,18 @@ jobs:
         run: go generate -x
         working-directory: tools
 
+      - name: Setup Ollama
+        run: |
+          bin/task ollama-setup
+
+      - name: Fetch model for Ollama
+        run: |
+          bin/task ollama-model
+
+      - name: Start Ollama in the background
+        run: |
+          bin/task ollama &
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
