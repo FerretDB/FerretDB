@@ -76,6 +76,11 @@ export const categorizedApps = {
       name: 'Payload CMS',
       logo: '/img/compatible-applications/payloadcms-logo.png',
       link: 'https://blog.ferretdb.io/building-robust-content-management-with-payload-cms-and-ferretdb/'
+    },
+    {
+      name: 'Librechat',
+      logo: '/img/compatible-applications/librechat-logo.png',
+      link: 'https://blog.ferretdb.io/replacing-mongodb-with-ferretdb-librechat/'
     }
   ]
 }
