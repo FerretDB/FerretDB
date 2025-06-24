@@ -41,7 +41,6 @@ type Handler struct {
 	out           io.Writer
 	skipChecks    bool
 	recentEntries *circularBuffer
-	noDPanic      bool
 }
 
 // NewHandlerOpts represents [NewHandler] options.
@@ -60,7 +59,6 @@ type NewHandlerOpts struct {
 	SkipChecks bool
 
 	// for testing only
-	NoDPanic          bool // if true, LevelDPanic does not panic in development builds
 	recentEntriesSize int
 }
 
@@ -155,7 +153,6 @@ func NewHandler(out io.Writer, opts *NewHandlerOpts) *Handler {
 		out:           out,
 		skipChecks:    opts.SkipChecks,
 		recentEntries: newCircularBuffer(opts.recentEntriesSize),
-		noDPanic:      opts.NoDPanic,
 	}
 }
 
@@ -197,7 +194,7 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 	//nolint:exhaustive // levels smaller than LevelDPanic are handled above
 	switch r.Level {
 	case LevelDPanic:
-		if devbuild.Enabled && !h.noDPanic {
+		if devbuild.Enabled {
 			panic(r.Message)
 		}
 
