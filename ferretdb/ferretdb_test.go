@@ -84,7 +84,7 @@ func Example() {
 	// Output: mongodb://127.0.0.1:17027/
 }
 
-func TestFerretDBWithCustomLogger(t *testing.T) {
+func TestEmbeddableLogger(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, new(slog.HandlerOptions)))
 
 	f, err := ferretdb.New(&ferretdb.Config{
@@ -104,17 +104,24 @@ func TestFerretDBWithCustomLogger(t *testing.T) {
 		close(done)
 	}()
 
-	uri := f.MongoDBURI()
-	require.NotEmpty(t, uri)
+	t.Cleanup(func() {
+		cancel()
+		<-done
+	})
 
-	client, err := mongo.Connect(options.Client().ApplyURI(uri))
+	client, err := mongo.Connect(options.Client().ApplyURI(f.MongoDBURI()))
 	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err = client.Disconnect(ctx)
+		require.NoError(t, err)
+	})
 
 	err = client.Ping(ctx, nil)
 	require.NoError(t, err)
 
-	// check that non-existent command is logged
-	client.Database("admin").RunCommand(ctx, bson.D{{Key: "nonExistentCommand", Value: 1}})
+	err = client.Database("admin").RunCommand(ctx, bson.D{{Key: "nonExistentCommand", Value: 1}}).Err()
+	require.EqualError(t, err, "(CommandNotFound) no such command: 'nonExistentCommand'")
 
 	res := client.Database("admin").RunCommand(ctx, bson.D{{Key: "getLog", Value: "global"}})
 
@@ -127,12 +134,6 @@ func TestFerretDBWithCustomLogger(t *testing.T) {
 	require.Contains(t, fmt.Sprint(actual[0].Value), "no such command: 'nonExistentCommand'")
 	require.Equal(t, "ok", actual[2].Key)
 	require.Equal(t, 1.0, actual[2].Value)
-
-	err = client.Disconnect(ctx)
-	require.NoError(t, err)
-
-	cancel()
-	<-done
 }
 
 func TestFerretDB(t *testing.T) {

@@ -65,9 +65,7 @@ type Config struct {
 	// Defaults to [io.Discard], effectively disabling logging.
 	LogOutput io.Writer
 
-	// Logger is a custom logger.
-	// If nil, a default logger will be created.
-	// If not nil, the LogOutput are ignored.
+	// If Logger is set, [LogOutput] is ignored.
 	Logger *slog.Logger
 
 	// Defaults to undecided.
