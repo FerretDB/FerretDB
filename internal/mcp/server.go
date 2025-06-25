@@ -36,7 +36,7 @@ type Server struct {
 	sse  *server.SSEServer
 }
 
-// ServerOpts represents [Serve] options.
+// ServerOpts represents options configurable for [Server].
 type ServerOpts struct {
 	L           *slog.Logger
 	ToolHandler *ToolHandler

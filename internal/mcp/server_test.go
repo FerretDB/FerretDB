@@ -26,7 +26,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
-	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
@@ -35,22 +34,19 @@ func TestServer(t *testing.T) {
 	t.Parallel()
 
 	ctx := t.Context()
-
 	uri := testutil.PostgreSQLURL(t)
 	l := testutil.Logger(t)
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	p, err := documentdb.NewPool(uri, logging.WithName(l, "pool"), sp)
+	p, err := documentdb.NewPool(uri, l, sp)
 	require.NoError(t, err)
 
-	handlerOpts := &handler.NewOpts{
+	h, err := handler.New(&handler.NewOpts{
 		Pool:          p,
-		L:             logging.WithName(l, "handler"),
+		L:             l,
 		StateProvider: sp,
-	}
-
-	h, err := handler.New(handlerOpts)
+	})
 	require.NoError(t, err)
 
 	handlerCtx, cancel := context.WithCancel(ctx)
