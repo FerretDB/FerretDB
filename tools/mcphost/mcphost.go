@@ -15,4 +15,4 @@
 // Package mcphost generates tool for mcphost module.
 package mcphost
 
-//go:generate go build -v -o ../bin/ tool
+//go:generate go build -v -o ../../bin/ tool
