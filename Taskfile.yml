@@ -268,8 +268,7 @@ tasks:
         -parallel=1
         -p=1
         -timeout={{.TEST_TIMEOUT}}
-        {{.RACE_FLAG}}
-        -tags={{.BUILD_TAGS}}
+        -tags=ferretdb_yugabytedb
         -shuffle=on
         -coverpkg=../...
         -coverprofile=integration-yugabytedb.txt
