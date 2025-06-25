@@ -1,7 +1,7 @@
 github.com/AlekSi/pointer v1.2.0 h1:glcy/gc4h8HnG2Z3ZECSzZ1IX1x2JxRVuDzaJwQE0+w=
 github.com/AlekSi/pointer v1.2.0/go.mod h1:gZGfd3dpW4vEc/UlyfKKi1roIqcCgwOIvb0tSNSBle0=
-github.com/FerretDB/wire v0.1.2 h1:fL3beAgZ8cX+rKKirJ0k7GEdmjQq4e6n2iRlnGCF3m4=
-github.com/FerretDB/wire v0.1.2/go.mod h1:bXVDsxwA8ugBIfpD/eLYjHjdC7U95ygaWVX7RW2UysY=
+github.com/FerretDB/wire v0.1.3 h1:97SsixRVOoI9Kxka+ASoLnUyDcPGRx9BzUd3FUcRksw=
+github.com/FerretDB/wire v0.1.3/go.mod h1:bXVDsxwA8ugBIfpD/eLYjHjdC7U95ygaWVX7RW2UysY=
 github.com/FerretDB/xfail v0.1.0 h1:NmwdtwCmQ12X4VutLL+XilG/vbLRbG6RUVQabnI1JiQ=
 github.com/FerretDB/xfail v0.1.0/go.mod h1:u34yzRVZdvuc/fjegLYi+FztscWts9pP9ZUJ7wY9OyE=
 github.com/arl/statsviz v0.6.0 h1:jbW1QJkEYQkufd//4NDYRSNBpwJNrdzPahF7ZmoGdyE=
