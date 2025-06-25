@@ -132,6 +132,7 @@ func (h *embeddableHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 		opts:      h.opts,
 		ga:        append(slices.Clone(h.ga), groupOrAttrs{attrs: attrs}),
 		testAttrs: h.testAttrs,
+		mu:        h.mu,
 	}
 }
 
@@ -150,5 +151,6 @@ func (h *embeddableHandler) WithGroup(name string) slog.Handler {
 		opts:      h.opts,
 		ga:        append(slices.Clone(h.ga), groupOrAttrs{group: name}),
 		testAttrs: h.testAttrs,
+		mu:        h.mu,
 	}
 }
