@@ -21,6 +21,7 @@ import (
 	"runtime"
 	"slices"
 	"strconv"
+	"sync"
 )
 
 // EmbeddableHandler is a [slog.Handler] that wraps another handler.
@@ -31,13 +32,15 @@ import (
 type embeddableHandler struct {
 	opts *NewHandlerOpts
 	ga   []groupOrAttrs
+	// mu is used to ensure that the embeddable handler is not modified while it is being used.
+	mu *sync.Mutex
 
 	testAttrs map[string]any
 }
 
 // newEmbeddableHandler creates a new embeddable handler.
 func newEmbeddableHandler(opts *NewHandlerOpts, attrs map[string]any) *embeddableHandler {
-	return &embeddableHandler{opts: opts, testAttrs: attrs}
+	return &embeddableHandler{opts: opts, testAttrs: attrs, mu: new(sync.Mutex)}
 }
 
 // Enabled implements [slog.Handler].
@@ -52,6 +55,9 @@ func (h *embeddableHandler) Enabled(ctx context.Context, l slog.Level) bool {
 
 // Handle implements [slog.Handler].
 func (h *embeddableHandler) Handle(ctx context.Context, record slog.Record) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
 	if !h.opts.RemoveTime && !record.Time.IsZero() {
 		t := record.Time.Format(timeLayout)
 
@@ -113,6 +119,9 @@ func (h *embeddableHandler) Handle(ctx context.Context, record slog.Record) erro
 
 // WithAttrs implements [slog.Handler].
 func (h *embeddableHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
 	if len(attrs) == 0 {
 		return h
 	}
@@ -128,6 +137,9 @@ func (h *embeddableHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 
 // WithGroup implements [slog.Handler].
 func (h *embeddableHandler) WithGroup(name string) slog.Handler {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
 	if name == "" {
 		return h
 	}
