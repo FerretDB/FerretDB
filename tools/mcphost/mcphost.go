@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package mcptools generates tools for MCP.
-package mcptools
+// Package mcphost generates tool for mcphost module.
+package mcphost
 
 //go:generate go build -v -o ../bin/ tool

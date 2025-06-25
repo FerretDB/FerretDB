@@ -1,9 +1,12 @@
-module github.com/FerretDB/FerretDB/mcptools
-
-go 1.24.4
-
-// due to requiring an earlier version of module github.com/getkin/kin-openapi, it's a separate package from `tools`
+// Use separate (sub-)module due to requiring an earlier version of module github.com/getkin/kin-openapi.
 // https://github.com/cloudwego/eino#dependencies
+// TODO https://github.com/cloudwego/eino/issues/291
+module github.com/FerretDB/FerretDB/v2/tools/mcphost
+
+go 1.24
+
+toolchain go1.24.4
+
 tool github.com/mark3labs/mcphost
 
 require (
