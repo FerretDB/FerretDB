@@ -283,6 +283,7 @@ tasks:
         --mode={{.MODE}}
         --listen-addr=:27017
         --listen-data-api-addr=127.0.0.1:8899
+        --listen-mcp-addr=127.0.0.1:8081
         --proxy-addr=127.0.0.1:47017
         --postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
@@ -341,7 +342,7 @@ tasks:
       - ollama serve
     env:
       # 131072 for https://ollama.com/library/phi4-mini
-      #  40960 https://ollama.com/library/qwen3
+      # 40960 for https://ollama.com/library/qwen3
       OLLAMA_CONTEXT_LENGTH: 40960
       OLLAMA_DEBUG: 2
 

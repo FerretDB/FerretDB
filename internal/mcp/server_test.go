@@ -88,53 +88,66 @@ func TestServer(t *testing.T) {
 		<-serverDone
 	})
 
-	res, err := askMCPHost(ctx, "list databases")
-	require.NoError(t, err)
-
-	t.Log(string(res))
-	require.Contains(t, string(res), "Calling ferretdb__listDatabases")
+	res := askMCPHost(t, ctx, "list databases")
+	t.Log(res)
+	//        ┃ 🔧 Calling ferretdb__listDatabases
+	//        ┃  Tool Call (25 Jun 2025 11:21 AM)
+	//
+	//        ┃ ferretdb__listDatabases: {}
+	//        ┃ {"content":[{"type":"text","text":"{\"databases\":[],\"totalSize\":{\"$numberI
+	//        ┃ nt\":\"18377875\"},\"ok\":{\"$numberDouble\":\"1.0\"}}"}]}
+	require.Contains(t, res, "Calling ferretdb__listDatabases")
+	require.Contains(t, res, "ferretdb__listDatabases: {}")
+	require.Contains(t, res, `\"ok\":{\"$numberDouble\":\"1.0\"}`)
 }
 
 // askMCPHost runs MCP host in non-interactive mode with the given prompt and returns the output.
 // Non-interactive mode is used for the ease of testing.
-func askMCPHost(ctx context.Context, prompt string) ([]byte, error) {
-	rootDir := getRoot()
+func askMCPHost(tb testing.TB, ctx context.Context, prompt string) string {
+	tb.Helper()
+
+	rootDir := getRoot(tb)
 
 	bin := filepath.Join(rootDir, "bin", "mcphost")
-	if _, err := os.Stat(bin); err != nil {
-		return nil, err
-	}
+	_, err := os.Stat(bin)
+	require.NoError(tb, err)
 
-	bin, err := filepath.Abs(bin)
-	if err != nil {
-		return nil, err
-	}
+	bin, err = filepath.Abs(bin)
+	require.NoError(tb, err)
 
 	config := filepath.Join(rootDir, "build", "mcp", "mcphost.json")
-	if _, err = os.Stat(config); err != nil {
-		return nil, err
-	}
+	_, err = os.Stat(bin)
+	require.NoError(tb, err)
 
 	config, err = filepath.Abs(config)
-	if err != nil {
-		return nil, err
-	}
+	require.NoError(tb, err)
 
 	cmd := exec.CommandContext(ctx, bin, "--config", config, "--model", "ollama:qwen3:0.6b", "--prompt", prompt)
 
-	return cmd.CombinedOutput()
+	res, err := cmd.CombinedOutput()
+	require.NoError(tb, err)
+
+	return string(res)
 }
 
 // getRoot finds the repository root directory by looking for the go.mod file.
-func getRoot() string {
-	var dir string
+func getRoot(tb testing.TB) string {
+	tb.Helper()
+
+	dir, err := os.Getwd()
+	require.NoError(tb, err)
 
 	for {
 		goModFile := filepath.Join(dir, "go.mod")
-		if _, err := os.Stat(goModFile); err == nil {
+		if _, err = os.Stat(goModFile); err == nil {
 			return dir
 		}
 
-		dir = filepath.Join("..", dir)
+		parentDir := filepath.Dir(dir)
+		if parentDir == dir {
+			tb.Fatal("Failed to find root directory: no go.mod file found")
+		}
+
+		dir = parentDir
 	}
 }
