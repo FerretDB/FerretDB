@@ -78,13 +78,11 @@ func TestServer(t *testing.T) {
 	go func() {
 		defer close(serverDone)
 
-		_ = s.Serve(ctx)
+		err = s.Serve(ctx)
+		assert.NoError(t, err)
 	}()
 
 	t.Cleanup(func() {
-		err = s.Shutdown(ctx)
-		assert.NoError(t, err)
-
 		<-serverDone
 	})
 

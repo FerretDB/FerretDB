@@ -16,8 +16,10 @@ package mcp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -31,7 +33,6 @@ import (
 // Server implements an MCP server.
 type Server struct {
 	opts *ServerOpts
-	s    *server.MCPServer
 	sse  *server.SSEServer
 }
 
@@ -44,44 +45,47 @@ type ServerOpts struct {
 
 // New creates an MCP server.
 func New(opts *ServerOpts) *Server {
-	return &Server{
-		opts: opts,
-		s:    server.NewMCPServer("FerretDB", version.Get().Version),
-	}
-}
+	s := server.NewMCPServer("FerretDB", version.Get().Version)
 
-// Serve runs the MCP server.
-func (s *Server) Serve(ctx context.Context) error {
-	for _, t := range s.opts.ToolHandler.initTools() {
-		s.s.AddTool(t.tool, withLog(withConnInfo(t.handleFunc), s.opts.L))
+	for _, t := range opts.ToolHandler.initTools() {
+		s.AddTool(t.tool, withLog(withConnInfo(t.handleFunc), opts.L))
 	}
-
-	s.opts.L.InfoContext(ctx, fmt.Sprintf("Starting MCP server on http://%s/", s.opts.TCPAddr))
 
 	// can authentication be added?
 	// TODO https://github.com/FerretDB/FerretDB/issues/5209
-	s.sse = server.NewSSEServer(s.s, server.WithBaseURL(s.opts.TCPAddr))
+	sse := server.NewSSEServer(s, server.WithBaseURL(opts.TCPAddr))
 
-	if err := s.sse.Start(s.opts.TCPAddr); err != nil {
-		return lazyerrors.Error(err)
+	return &Server{
+		opts: opts,
+		sse:  sse,
 	}
-
-	return nil
 }
 
-// Shutdown stops the MCP server.
-func (s *Server) Shutdown(ctx context.Context) error {
-	if s.s == nil {
-		return nil
-	}
+// Serve runs the MCP server until the context is done.
+func (s *Server) Serve(ctx context.Context) error {
+	s.opts.L.InfoContext(ctx, fmt.Sprintf("Starting MCP server on http://%s/", s.opts.TCPAddr))
+	done := make(chan struct{})
 
-	if err := s.sse.Shutdown(ctx); err != nil {
+	defer func() {
+		<-done
+	}()
+
+	go func() {
+		defer close(done)
+
+		err := s.sse.Start(s.opts.TCPAddr)
+		if !errors.Is(err, http.ErrServerClosed) {
+			s.opts.L.LogAttrs(ctx, logging.LevelDPanic, "Start exited with unexpected error", logging.Error(err))
+		}
+	}()
+
+	<-ctx.Done()
+
+	if err := s.sse.Shutdown(context.Background()); err != nil {
 		return lazyerrors.Error(err)
 	}
 
 	s.opts.L.InfoContext(ctx, "MCP server stopped")
-
-	s.s = nil
 
 	return nil
 }

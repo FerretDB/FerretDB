@@ -561,13 +561,13 @@ func run() {
 
 			l := logging.WithName(logger, "mcp")
 
-			e := mcp.New(&mcp.ServerOpts{
+			s := mcp.New(&mcp.ServerOpts{
 				TCPAddr:     cli.Listen.MCPAddr,
 				L:           l,
 				ToolHandler: mcp.NewToolHandler(h),
-			}).Serve(ctx)
+			})
 
-			if e != nil {
+			if e := s.Serve(ctx); e != nil {
 				p.Close()
 				l.LogAttrs(ctx, logging.LevelFatal, "Failed to construct MCP Server", logging.Error(e))
 			}
