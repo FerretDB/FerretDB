@@ -47,6 +47,13 @@ tasks:
       - go mod verify
       - go generate -x
 
+  init-tools-mcphost:
+    dir: tools/mcphost
+    cmds:
+      - go mod tidy
+      - go mod verify
+      - go generate -x
+
   init-integration:
     dir: integration
     cmds:
@@ -55,7 +62,7 @@ tasks:
 
   init:
     desc: "Install development tools"
-    deps: [init-tools, init-tools-golangci, init-integration]
+    deps: [init-tools, init-tools-golangci, init-tools-mcphost, init-integration]
     cmds:
       - go mod tidy
       - go mod verify
@@ -347,7 +354,7 @@ tasks:
 
   security-trivy:
     cmds:
-      - docker compose run --rm trivy --config=./build/trivy.yml filesystem .
+      - docker compose run --rm trivy --config=./build/trivy.yml filesystem --ignorefile=./build/.trivyignore .
 
   godocs:
     desc: "Serve Go code documentation"
