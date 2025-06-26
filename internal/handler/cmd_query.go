@@ -86,7 +86,7 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *middleware.Request) (
 		return middleware.ResponseReply(reply)
 
 	case "saslContinue":
-		if slices.Contains(q.FieldNames(), "$db") {
+		if q.Get("$db") != nil {
 			return nil, mongoerrors.NewWithArgument(
 				mongoerrors.ErrLocation40621,
 				"$db is not allowed in OP_QUERY requests",

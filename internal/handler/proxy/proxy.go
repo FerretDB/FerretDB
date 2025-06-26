@@ -89,18 +89,7 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middlew
 	deadline, _ := ctx.Deadline()
 	_ = h.conn.SetDeadline(deadline)
 
-	var body wire.MsgBody
-
-	switch {
-	case req.OpMsg != nil:
-		body = req.OpMsg
-	case req.OpQuery != nil:
-		body = req.OpQuery
-	default:
-		return nil, lazyerrors.New("request body is nil")
-	}
-
-	if err := wire.WriteMessage(h.bufw, req.WireHeader(), body); err != nil {
+	if err := wire.WriteMessage(h.bufw, req.WireHeader(), req.WireBody()); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 

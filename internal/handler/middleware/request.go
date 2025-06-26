@@ -15,25 +15,39 @@
 package middleware
 
 import (
+	"fmt"
 	"sync"
 	"sync/atomic"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
+
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // Request represents incoming command from the client.
+//
+// It may be constructed from [*wire.MsgHeader] and [wire.MsgBody] (for the wire protocol listener)
+// or from [*wirebson.Document] (for data API and MCP listeners).
 type Request struct {
-	// the order of fields is weird to make the struct smaller due to alignment
+	// The order of fields is weird to make the struct smaller due to alignment.
+	// All fields are protected by rw.
 
+	rw sync.RWMutex
+
+	// we should unexport both and replace with a single wire.MsgBody field
 	OpMsg   *wire.OpMsg
 	OpQuery *wire.OpQuery
 
-	header *wire.MsgHeader // protected by rw
-	rw     sync.RWMutex
+	doc    *wirebson.Document
+	header *wire.MsgHeader
 }
 
 // RequestWire creates a new request from the given wire protocol header and body.
 func RequestWire(header *wire.MsgHeader, body wire.MsgBody) *Request {
+	must.NotBeZero(header)
+	must.NotBeZero(body)
+
 	req := &Request{
 		header: header,
 	}
@@ -44,10 +58,22 @@ func RequestWire(header *wire.MsgHeader, body wire.MsgBody) *Request {
 	case *wire.OpQuery:
 		req.OpQuery = body
 	default:
-		panic("unsupported body type")
+		panic(fmt.Sprintf("unsupported body type %T", body))
 	}
 
 	return req
+}
+
+// RequestDoc creates a new request from the given document.
+// It freezes the document.
+func RequestDoc(doc *wirebson.Document) *Request {
+	must.NotBeZero(doc)
+
+	doc.Freeze()
+
+	return &Request{
+		doc: doc,
+	}
 }
 
 // WireHeader returns the request header for the wire protocol.
@@ -57,9 +83,9 @@ func RequestWire(header *wire.MsgHeader, body wire.MsgBody) *Request {
 func (req *Request) WireHeader() *wire.MsgHeader {
 	req.rw.RLock()
 
-	if h := req.header; h != nil {
-		defer req.rw.RUnlock()
-		return h
+	if req.header != nil {
+		req.rw.RUnlock()
+		return req.header
 	}
 
 	req.rw.RUnlock()
@@ -67,8 +93,8 @@ func (req *Request) WireHeader() *wire.MsgHeader {
 	defer req.rw.Unlock()
 
 	// a concurrent call might have set it already; check again
-	if h := req.header; h != nil {
-		return h
+	if req.header != nil {
+		return req.header
 	}
 
 	req.header = &wire.MsgHeader{
@@ -79,12 +105,14 @@ func (req *Request) WireHeader() *wire.MsgHeader {
 	switch {
 	case req.OpMsg != nil:
 		req.header.OpCode = wire.OpCodeMsg
-		b, _ = req.OpMsg.MarshalBinary()
+		b = must.NotFail(req.OpMsg.MarshalBinary())
 	case req.OpQuery != nil:
 		req.header.OpCode = wire.OpCodeQuery
-		b, _ = req.OpQuery.MarshalBinary()
+		b = must.NotFail(req.OpQuery.MarshalBinary())
 	default:
-		panic("unsupported body type")
+		req.header.OpCode = wire.OpCodeMsg
+		req.OpMsg = must.NotFail(wire.NewOpMsg(req.doc))
+		b = must.NotFail(req.OpMsg.MarshalBinary())
 	}
 
 	req.header.MessageLength = int32(wire.MsgHeaderLen + len(b))
@@ -93,15 +121,68 @@ func (req *Request) WireHeader() *wire.MsgHeader {
 }
 
 // WireBody returns the request body for the wire protocol.
+//
+// It Request was constructed with one, it is returned unmodified.
+// Otherwise, a new [*wire.OpMsg] is created, cached, and returned.
 func (req *Request) WireBody() wire.MsgBody {
+	req.rw.RLock()
+
 	switch {
 	case req.OpMsg != nil:
+		req.rw.RUnlock()
 		return req.OpMsg
 	case req.OpQuery != nil:
+		req.rw.RUnlock()
 		return req.OpQuery
-	default:
-		panic("empty body")
 	}
+
+	req.rw.RUnlock()
+	req.rw.Lock()
+	defer req.rw.Unlock()
+
+	must.NotBeZero(req.doc)
+	req.OpMsg = must.NotFail(wire.NewOpMsg(req.doc))
+
+	return req.OpMsg
+}
+
+// Document returns the request document.
+//
+// It Request was constructed with one, it is returned unmodified.
+// If request body contains a single document, it is freezed, cached, and returned.
+// Otherwise, this function panics.
+func (req *Request) Document() *wirebson.Document {
+	req.rw.RLock()
+
+	if req.doc != nil {
+		req.rw.RUnlock()
+		return req.doc
+	}
+
+	req.rw.RUnlock()
+	req.rw.Lock()
+	defer req.rw.Unlock()
+
+	var doc *wirebson.Document
+
+	switch {
+	case req.OpMsg != nil:
+		doc = must.NotFail(req.OpMsg.Document())
+	case req.OpQuery != nil:
+		doc = must.NotFail(req.OpQuery.Query())
+	default:
+		panic("not reached")
+	}
+
+	doc.Freeze()
+	req.doc = doc
+
+	return req.doc
+}
+
+// DocumentRaw returns the raw request document.
+func (req *Request) DocumentRaw() wirebson.RawDocument {
+	return must.NotFail(req.Document().Encode())
 }
 
 // lastRequestID stores last generated request ID.
