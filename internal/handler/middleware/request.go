@@ -122,7 +122,7 @@ func (req *Request) WireHeader() *wire.MsgHeader {
 
 // WireBody returns the request body for the wire protocol.
 //
-// It Request was constructed with one, it is returned unmodified.
+// If Request was constructed with one, it is returned unmodified.
 // Otherwise, a new [*wire.OpMsg] is created, cached, and returned.
 func (req *Request) WireBody() wire.MsgBody {
 	req.rw.RLock()
@@ -149,7 +149,7 @@ func (req *Request) WireBody() wire.MsgBody {
 // Document returns the request document.
 //
 // It Request was constructed with one, it is returned unmodified.
-// If request body contains a single document, it is freezed, cached, and returned.
+// If request body contains a single document, it is frozen, cached, and returned.
 // Otherwise, this function panics.
 func (req *Request) Document() *wirebson.Document {
 	req.rw.RLock()
