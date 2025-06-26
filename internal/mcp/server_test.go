@@ -110,7 +110,7 @@ func askMCPHost(tb testing.TB, ctx context.Context, prompt string) string {
 	require.NoError(tb, err)
 
 	config := filepath.Join(rootDir, "build", "mcp", "mcphost.json")
-	_, err = os.Stat(bin)
+	_, err = os.Stat(config)
 	require.NoError(tb, err)
 
 	config, err = filepath.Abs(config)
