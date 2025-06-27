@@ -20,8 +20,8 @@ services:
     environment:
       # UTC−03:30/−02:30. Set to catch timezone problems.
       - TZ=America/St_Johns
-      - POSTGRES_USER=username
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=pg-user
+      - POSTGRES_PASSWORD=pg-pass
       - POSTGRES_DB=postgres
     volumes:
       - ./build/testscripts:/testscripts
@@ -45,8 +45,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      - YSQL_USER=yugabytedb-user # this user cannot authenticate against FerretDB
-      - YSQL_PASSWORD=yugabytedb-pass
+      - YSQL_USER=pg-user # this user cannot authenticate against FerretDB
+      - YSQL_PASSWORD=pg-pass
       - YSQL_DB=yugabyte # DocumentDB extension is installed in yugabyte database
     volumes:
       - ./build/yugabytedb/init.sql:/yugabytedb/init.sql

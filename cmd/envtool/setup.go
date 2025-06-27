@@ -74,10 +74,10 @@ func setupMongoDB(ctx context.Context, logger *slog.Logger, uri, name string) er
 	return ctx.Err()
 }
 
-// setupYugabyteDB configures YugabyteDB container by creating a user.
-// The user created upon Docker container initialization cannot authenticate with FerretDB.
+// setupPostgreSQL configures PostgreSQL by creating a new user, because
+// the user created upon Docker container initialization is slightly different.
 // It waits for DocumentDB extension to be created before creating the user.
-func setupYugabyteDB(ctx context.Context, uri string, l *slog.Logger) error {
+func setupPostgreSQL(ctx context.Context, uri string, l *slog.Logger) error {
 	sp, err := state.NewProvider("")
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -119,9 +119,7 @@ func setupYugabyteDB(ctx context.Context, uri string, l *slog.Logger) error {
 	return nil
 }
 
-// createUser creates username:password credentials using the given pool.
-// The created user can authenticate with FerretDB and also with
-// PostgreSQL directly using `psql` or other tools.
+// createUser creates username:password credentials using `createUser` command.
 func createUser(ctx context.Context, pool *documentdb.Pool, l *slog.Logger) error {
 	spec := must.NotFail(wirebson.MustDocument(
 		"createUser", "username",
@@ -177,8 +175,13 @@ func setup(ctx context.Context, logger *slog.Logger) error {
 		return lazyerrors.Error(err)
 	}
 
-	yugabyteDBURI := "postgres://yugabytedb-user:yugabytedb-pass@127.0.0.1:5433/yugabyte"
-	if err = setupYugabyteDB(ctx, yugabyteDBURI, logging.WithName(logger, "yugabytedb")); err != nil {
+	documentDBURI := "postgres://pg-user:pg-pass@127.0.0.1:5432/postgres"
+	if err = setupPostgreSQL(ctx, documentDBURI, logging.WithName(logger, "documentdb")); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	yugabyteDBURI := "postgres://pg-user:pg-pass@127.0.0.1:5433/yugabyte"
+	if err = setupPostgreSQL(ctx, yugabyteDBURI, logging.WithName(logger, "yugabytedb")); err != nil {
 		return lazyerrors.Error(err)
 	}
 
