@@ -12,19 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testutil
+// Package mcphost generates tool for mcphost module.
+package mcphost
 
-import "testing"
-
-// PostgreSQLURL returns PostgreSQL URL for testing.
-//
-// It skips the test if it is in short mode.
-func PostgreSQLURL(tb testing.TB) string {
-	tb.Helper()
-
-	if testing.Short() {
-		tb.Skip("skipping in -short mode")
-	}
-
-	return "postgres://pg-user:pg-pass@127.0.0.1:5432/postgres"
-}
+//go:generate go build -v -o ../../bin/ tool

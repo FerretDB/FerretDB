@@ -66,6 +66,19 @@ export const categorizedApps = {
     }
   ],
 
+  cms: [
+    {
+      name: 'Payload CMS',
+      logo: '/img/compatible-applications/payloadcms-logo.png',
+      link: 'https://blog.ferretdb.io/building-robust-content-management-with-payload-cms-and-ferretdb/'
+    },
+    {
+      name: 'NodeBB',
+      logo: '/img/compatible-applications/nodebb-logo.png',
+      link: 'https://blog.ferretdb.io/building-scalable-community-forums-nodebb-and-ferretdb/'
+    }
+  ],
+
   others: [
     {
       name: 'Novu',
@@ -73,9 +86,9 @@ export const categorizedApps = {
       link: 'https://blog.ferretdb.io/powering-notification-infrastructure-novu-ferretdb/'
     },
     {
-      name: 'Payload CMS',
-      logo: '/img/compatible-applications/payloadcms-logo.png',
-      link: 'https://blog.ferretdb.io/building-robust-content-management-with-payload-cms-and-ferretdb/'
+      name: 'Librechat',
+      logo: '/img/compatible-applications/librechat-logo.png',
+      link: 'https://blog.ferretdb.io/replacing-mongodb-with-ferretdb-librechat/'
     }
   ]
 }
