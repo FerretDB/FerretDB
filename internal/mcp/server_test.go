@@ -16,7 +16,6 @@ package mcp
 
 import (
 	"context"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
@@ -100,48 +99,12 @@ func TestServer(t *testing.T) {
 func askMCPHost(tb testing.TB, ctx context.Context, prompt string) string {
 	tb.Helper()
 
-	rootDir := getRoot(tb)
-
-	bin := filepath.Join(rootDir, "bin", "mcphost")
-	_, err := os.Stat(bin)
-	require.NoError(tb, err)
-
-	bin, err = filepath.Abs(bin)
-	require.NoError(tb, err)
-
-	config := filepath.Join(rootDir, "build", "mcp", "mcphost.json")
-	_, err = os.Stat(config)
-	require.NoError(tb, err)
-
-	config, err = filepath.Abs(config)
-	require.NoError(tb, err)
+	bin := filepath.Join(testutil.BinDir, "mcphost")
+	config := filepath.Join(testutil.RootDir, "build", "mcp", "mcphost.json")
 
 	cmd := exec.CommandContext(ctx, bin, "--config", config, "--model", "ollama:qwen3:0.6b", "--prompt", prompt)
-
 	res, err := cmd.CombinedOutput()
 	require.NoError(tb, err)
 
 	return string(res)
-}
-
-// getRoot finds the repository root directory by looking for the go.mod file.
-func getRoot(tb testing.TB) string {
-	tb.Helper()
-
-	dir, err := os.Getwd()
-	require.NoError(tb, err)
-
-	for {
-		goModFile := filepath.Join(dir, "go.mod")
-		if _, err = os.Stat(goModFile); err == nil {
-			return dir
-		}
-
-		parentDir := filepath.Dir(dir)
-		if parentDir == dir {
-			tb.Fatal("Failed to find root directory: no go.mod file found")
-		}
-
-		dir = parentDir
-	}
 }

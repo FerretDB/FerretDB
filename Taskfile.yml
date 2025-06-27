@@ -334,7 +334,7 @@ tasks:
       - bin/pkgsite{{exeExt}} -http=127.0.0.1:6060 -open
 
   ollama-model:
-    desc: "Pull model"
+    desc: "Pull Ollama model"
     cmds:
       - ollama pull qwen3:0.6b
 
