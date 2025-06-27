@@ -56,8 +56,8 @@ Here's a step-by-step guide to get you started:
 
    ```js
    db.createUser({
-     username: 'nodebb',
-     password: '<password>',
+     user: 'nodebb',
+     pwd: '<password>',
      roles: []
    })
    ```
