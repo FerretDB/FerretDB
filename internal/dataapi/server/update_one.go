@@ -36,7 +36,7 @@ func (s *Server) UpdateOne(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req api.UpdateRequestBody
-	if err := decodeJsonRequest(r, &req); err != nil {
+	if err := decodeJSONRequest(r, &req); err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
@@ -52,7 +52,7 @@ func (s *Server) UpdateOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	msg, err := prepareOpMsg(
+	msg, err := prepareRequest(
 		"update", req.Collection,
 		"$db", req.Database,
 		"updates", wirebson.MustArray(updateDoc),
@@ -85,5 +85,5 @@ func (s *Server) UpdateOne(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	s.writeJsonResponse(ctx, w, res)
+	s.writeJSONResponse(ctx, w, res)
 }
