@@ -26,5 +26,5 @@ func PostgreSQLURL(tb testing.TB) string {
 		tb.Skip("skipping in -short mode")
 	}
 
-	return "postgres://username:password@127.0.0.1:5432/postgres"
+	return "postgres://pg-user:pg-pass@127.0.0.1:5432/postgres"
 }
