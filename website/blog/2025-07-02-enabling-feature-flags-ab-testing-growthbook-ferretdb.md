@@ -18,9 +18,9 @@ GrowthBook offers a powerful open-source solution for these critical tasks.
 
 At [FerretDB](https://www.ferretdb.com/), we're dedicated to providing a truly open-source alternative to MongoDB, leveraging the reliability and power of PostgreSQL as its backend.
 
-This blog post explores how GrowthBook, an open-source feature flagging and A/B testing platform, seamlessly integrates with FerretDB, offering a robust and high-performing solution for your growth initiatives.
+In this blog post, we explore how GrowthBook, an open-source feature flagging and A/B testing platform, seamlessly integrates with FerretDB, offering a robust and high-performing solution for your growth initiatives.
 
-## **What is GrowthBook?**
+## What is GrowthBook?
 
 [GrowthBook](https://www.growthbook.io/) is an open-source platform designed to help product teams and developers manage feature flags and run A/B tests.
 It empowers organizations to:
@@ -36,7 +36,7 @@ GrowthBook focuses on providing a powerful, developer-friendly platform that int
 ## Why Use GrowthBook with FerretDB?
 
 GrowthBook uses MongoDB as the supported database backend for its self-hosted deployments, enabling it to store login credentials, cached experiment results, and metadata.
-Given that FerretDB is designed to be a true open source alternative to MongoDB, it can serve as a drop-in replacement in GrowthBook.
+Given that FerretDB is designed to be a truly open source alternative to MongoDB, it can serve as a drop-in replacement in GrowthBook.
 This powerful combination offers several compelling advantages:
 
 - **Open-source:** Both GrowthBook and FerretDB are open-source projects, providing transparency, flexibility, and strong community backing.
@@ -59,14 +59,13 @@ Here's a step-by-step guide to get you started with a self-hosted GrowthBook ins
      -p 3000:3000 \
      -p 3100:3100 \
      -v growthbook_uploads:/usr/local/src/app/packages/back-end/uploads \
-     -e MONGODB_URI="mongodb://<username>:<password>@<host-address>:27017/growthbook/" \
+     -e MONGODB_URI="mongodb://<username>:<password>@<host-address>:27017/growthbook" \
      growthbook/growthbook:latest
    ```
 
-   Replace `<username>`, `<password>`, and `<host>` with your FerretDB connection details.
+   Replace `<username>`, `<password>`, and `<host-address>` with your FerretDB connection details.
    The `growthbook` database will be created automatically if it doesn't exist.
    Ensure that the FerretDB instance is accessible to the GrowthBook container.
-   If you're running FerretDB locally, set the host address as `host.docker.internal` to enable the GrowthBook container to connect to your local FerretDB instance.
 
 3. **Launch GrowthBook:**
    GrowthBook should connect to FerretDB, initialize its database, and be accessible via its web interface.
@@ -77,7 +76,7 @@ You can now log into GrowthBook, define feature flags and create experiments, wi
 ## Example of GrowthBook data in FerretDB
 
 After setting up GrowthBook, create a feature flag or an experiment to see how GrowthBook interacts with FerretDB.
-In the image below,, an experiment named `ferretdb-experiment` is created.
+In the image below, an experiment named `ferretdb-experiment` is created.
 
 ![A screenshot of the GrowthBook dashboard showing an experiment named "ferretdb-experiment" with a description and status.](/img/blog/growthbook-experiment.png)
 
@@ -95,7 +94,7 @@ This output demonstrates that GrowthBook successfully writes and reads its docum
 ## Conclusion
 
 The integration of GrowthBook and FerretDB provides a robust, scalable, and fully open-source solution for managing your feature flags and A/B tests.
-By leveraging FerretDB, you can run their entire workloads in open source, without vendor lock-in or restrictive licenses.
+By leveraging FerretDB, you can run your entire workloads in open source, without vendor lock-in or restrictive licenses.
 
 - [Ready to get started? Try FerretDB today](https://github.com/FerretDB/FerretDB)
 - [Have questions, suggestions, or requests? Join our community](https://docs.ferretdb.io/#community)
