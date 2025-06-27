@@ -52,9 +52,8 @@ func TestServer(t *testing.T) {
 	handlerDone := make(chan struct{})
 
 	go func() {
-		defer close(handlerDone)
-
 		h.Run(handlerCtx)
+		close(handlerDone)
 	}()
 
 	t.Cleanup(func() {
@@ -71,10 +70,9 @@ func TestServer(t *testing.T) {
 	serverDone := make(chan struct{})
 
 	go func() {
-		defer close(serverDone)
-
 		err = s.Serve(ctx)
 		assert.NoError(t, err)
+		close(serverDone)
 	}()
 
 	t.Cleanup(func() {
