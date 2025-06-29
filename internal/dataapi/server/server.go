@@ -83,7 +83,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		msg := must.NotFail(prepareOpMsg(
+		msg := must.NotFail(prepareRequest(
 			"saslStart", int32(1),
 			"mechanism", "SCRAM-SHA-256",
 			"payload", wirebson.Binary{B: []byte(payload)},
@@ -109,7 +109,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		msg = must.NotFail(prepareOpMsg(
+		msg = must.NotFail(prepareRequest(
 			"saslContinue", int32(1),
 			"conversationId", convId,
 			"payload", wirebson.Binary{B: []byte(payload)},
@@ -156,9 +156,9 @@ func (s *Server) ConnInfoMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// writeJsonResponse marshals provided res document into extended json and
+// writeJSONResponse marshals provided res document into extended JSON and
 // writes it to provided [http.ResponseWriter].
-func (s *Server) writeJsonResponse(ctx context.Context, w http.ResponseWriter, res wirebson.AnyDocument) {
+func (s *Server) writeJSONResponse(ctx context.Context, w http.ResponseWriter, res wirebson.AnyDocument) {
 	l := s.l
 
 	resRaw, err := res.Encode()
@@ -248,11 +248,11 @@ func prepareDocument(pairs ...any) (*wirebson.Document, error) {
 	return wirebson.NewDocument(docPairs...)
 }
 
-// prepareOpMsg creates a new OpMsg from the given pairs of field names and values,
+// prepareRequest creates a new middleware request from the given pairs of field names and values,
 // which can be used as handler command msg.
 //
 // If any of pair values is nil it's ignored.
-func prepareOpMsg(pairs ...any) (*middleware.Request, error) {
+func prepareRequest(pairs ...any) (*middleware.Request, error) {
 	doc, err := prepareDocument(pairs...)
 	if err != nil {
 		return nil, err
@@ -266,9 +266,9 @@ func prepareOpMsg(pairs ...any) (*middleware.Request, error) {
 	return &middleware.Request{OpMsg: req}, nil
 }
 
-// decodeJsonRequest takes request with json body and decodes it into
+// decodeJSONRequest takes request with JSON body and decodes it into
 // provided oapi generated request struct.
-func decodeJsonRequest(r *http.Request, out any) error {
+func decodeJSONRequest(r *http.Request, out any) error {
 	if !strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
 		return lazyerrors.New("Content-Type must be set to application/json")
 	}

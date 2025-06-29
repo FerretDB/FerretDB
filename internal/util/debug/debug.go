@@ -126,8 +126,8 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 
 	http.Handle("/debug/livez", promhttp.InstrumentHandlerDuration(
 		probeDurations.MustCurryWith(prometheus.Labels{"probe": "livez"}),
-		http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			ctx, cancel := context.WithTimeout(req.Context(), 5*time.Second)
+		http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 			defer cancel()
 
 			if !opts.Livez(ctx) {
@@ -144,8 +144,8 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 
 	http.Handle("/debug/readyz", promhttp.InstrumentHandlerDuration(
 		probeDurations.MustCurryWith(prometheus.Labels{"probe": "readyz"}),
-		http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			ctx, cancel := context.WithTimeout(req.Context(), 5*time.Second)
+		http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 			defer cancel()
 
 			if !opts.Livez(ctx) {
@@ -199,8 +199,8 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 		rw.Write(page.Bytes())
 	})
 
-	http.HandleFunc("/", func(rw http.ResponseWriter, req *http.Request) {
-		http.Redirect(rw, req, "/debug", http.StatusSeeOther)
+	http.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
+		http.Redirect(rw, r, "/debug", http.StatusSeeOther)
 	})
 
 	lis, err := net.Listen("tcp", opts.TCPAddr)

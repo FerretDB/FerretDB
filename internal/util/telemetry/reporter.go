@@ -150,7 +150,11 @@ func (r *Reporter) Run(ctx context.Context) {
 
 	// send one last time before exiting only if explicitly enabled (not undecided)
 	if s := r.P.Get(); s.Telemetry != nil && *s.Telemetry {
-		r.sendReport(ctx, report)
+		// ctx is already canceled, but we want to inherit its values
+		lastCtx, lastCancel := ctxutil.WithDelay(ctx)
+		defer lastCancel(nil)
+
+		r.sendReport(lastCtx, report)
 	}
 
 	r.writeReport(report)
