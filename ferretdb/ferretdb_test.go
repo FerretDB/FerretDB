@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"os"
 	"os/exec"
 	"testing"
 
@@ -81,6 +82,58 @@ func Example() {
 	<-done
 
 	// Output: mongodb://127.0.0.1:17027/
+}
+
+func TestEmbeddableLogger(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(os.Stdout, new(slog.HandlerOptions)))
+
+	f, err := ferretdb.New(&ferretdb.Config{
+		PostgreSQLURL: testutil.PostgreSQLURL(t),
+		ListenAddr:    "127.0.0.1:0",
+		StateDir:      t.TempDir(),
+		LogLevel:      slog.LevelWarn,
+		Logger:        logger,
+	})
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(testutil.Ctx(t))
+	done := make(chan struct{})
+
+	go func() {
+		f.Run(ctx)
+		close(done)
+	}()
+
+	t.Cleanup(func() {
+		cancel()
+		<-done
+	})
+
+	client, err := mongo.Connect(options.Client().ApplyURI(f.MongoDBURI()))
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err = client.Disconnect(ctx)
+		require.NoError(t, err)
+	})
+
+	err = client.Ping(ctx, nil)
+	require.NoError(t, err)
+
+	err = client.Database("admin").RunCommand(ctx, bson.D{{Key: "nonExistentCommand", Value: 1}}).Err()
+	require.EqualError(t, err, "(CommandNotFound) no such command: 'nonExistentCommand'")
+
+	res := client.Database("admin").RunCommand(ctx, bson.D{{Key: "getLog", Value: "global"}})
+
+	var actual bson.D
+	err = res.Decode(&actual)
+	require.NoError(t, err)
+
+	require.Len(t, actual, 3)
+	require.Equal(t, "log", actual[0].Key)
+	require.Contains(t, fmt.Sprint(actual[0].Value), "no such command: 'nonExistentCommand'")
+	require.Equal(t, "ok", actual[2].Key)
+	require.Equal(t, 1.0, actual[2].Value)
 }
 
 func TestFerretDB(t *testing.T) {
