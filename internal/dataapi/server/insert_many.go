@@ -36,12 +36,12 @@ func (s *Server) InsertMany(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req api.InsertManyRequestBody
-	if err := decodeJsonRequest(r, &req); err != nil {
+	if err := decodeJSONRequest(r, &req); err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
-	msg, err := prepareOpMsg(
+	msg, err := prepareRequest(
 		"insert", req.Collection,
 		"$db", req.Database,
 		"documents", req.Documents,
@@ -61,5 +61,5 @@ func (s *Server) InsertMany(w http.ResponseWriter, r *http.Request) {
 		"n", float64(1),
 	))
 
-	s.writeJsonResponse(ctx, w, res)
+	s.writeJSONResponse(ctx, w, res)
 }

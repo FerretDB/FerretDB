@@ -48,6 +48,7 @@ const (
 	ErrCommandNotSupported                         = Code(115)     // CommandNotSupported
 	ErrNamespaceNotSharded                         = Code(118)     // NamespaceNotSharded
 	ErrDocumentFailedValidation                    = Code(121)     // DocumentFailedValidation
+	ErrCursorInUse                                 = Code(143)     // CursorInUse
 	ErrExceededMemoryLimit                         = Code(146)     // ExceededMemoryLimit
 	ErrDurationOverflow                            = Code(159)     // DurationOverflow
 	ErrViewDepthLimitExceeded                      = Code(165)     // ViewDepthLimitExceeded
@@ -309,6 +310,18 @@ const (
 	ErrLocation40236                               = Code(40236)   // Location40236
 	ErrLocation40237                               = Code(40237)   // Location40237
 	ErrLocation40238                               = Code(40238)   // Location40238
+	ErrLocation40239                               = Code(40239)   // Location40239
+	ErrLocation40240                               = Code(40240)   // Location40240
+	ErrLocation40241                               = Code(40241)   // Location40241
+	ErrLocation40242                               = Code(40242)   // Location40242
+	ErrLocation40243                               = Code(40243)   // Location40243
+	ErrLocation40244                               = Code(40244)   // Location40244
+	ErrLocation40245                               = Code(40245)   // Location40245
+	ErrLocation40246                               = Code(40246)   // Location40246
+	ErrLocation40257                               = Code(40257)   // Location40257
+	ErrLocation40258                               = Code(40258)   // Location40258
+	ErrLocation40260                               = Code(40260)   // Location40260
+	ErrLocation40261                               = Code(40261)   // Location40261
 	ErrLocation40272                               = Code(40272)   // Location40272
 	ErrLocation40319                               = Code(40319)   // Location40319
 	ErrLocation40321                               = Code(40321)   // Location40321
@@ -576,6 +589,7 @@ var pgCodes = map[string]Code{
 	"M000U": ErrCommandNotSupported,                         // 115
 	"M000V": ErrNamespaceNotSharded,                         // 118
 	"M00CO": ErrDocumentFailedValidation,                    // 121
+	"M00EL": ErrCursorInUse,                                 // 143
 	"M000W": ErrExceededMemoryLimit,                         // 146
 	"M000X": ErrDurationOverflow,                            // 159
 	"M000Y": ErrViewDepthLimitExceeded,                      // 165
@@ -831,6 +845,18 @@ var pgCodes = map[string]Code{
 	"M00DT": ErrLocation40236,                               // 40236
 	"M008Y": ErrLocation40237,                               // 40237
 	"M007P": ErrLocation40238,                               // 40238
+	"M00E9": ErrLocation40239,                               // 40239
+	"M00EA": ErrLocation40240,                               // 40240
+	"M00EB": ErrLocation40241,                               // 40241
+	"M00EC": ErrLocation40242,                               // 40242
+	"M00ED": ErrLocation40243,                               // 40243
+	"M00EE": ErrLocation40244,                               // 40244
+	"M00EF": ErrLocation40245,                               // 40245
+	"M00EG": ErrLocation40246,                               // 40246
+	"M00EH": ErrLocation40257,                               // 40257
+	"M00EI": ErrLocation40258,                               // 40258
+	"M00EJ": ErrLocation40260,                               // 40260
+	"M00EK": ErrLocation40261,                               // 40261
 	"M007Q": ErrLocation40272,                               // 40272
 	"M007R": ErrLocation40319,                               // 40319
 	"M007S": ErrLocation40321,                               // 40321

@@ -84,13 +84,13 @@ func filterExpvar(ctx context.Context, r io.ReadCloser, l *slog.Logger) io.ReadC
 
 // archiveHandler returns a handler that creates a zip archive with various debug information.
 func archiveHandler(l *slog.Logger) http.HandlerFunc {
-	return func(rw http.ResponseWriter, req *http.Request) {
+	return func(rw http.ResponseWriter, r *http.Request) {
 		name := fmt.Sprintf("ferretdb-%s.zip", time.Now().Format("2006-01-02-15-04-05"))
 
 		rw.Header().Set("Content-Type", "application/zip")
 		rw.Header().Set("Content-Disposition", "attachment; filename="+name)
 
-		ctx := req.Context()
+		ctx := r.Context()
 		zipWriter := zip.NewWriter(rw)
 		errs := map[string]error{}
 
