@@ -6,10 +6,12 @@ toolchain go1.24.4
 
 replace github.com/FerretDB/FerretDB/v2 => ../
 
+// replace github.com/FerretDB/wire => ../../wire
+
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/FerretDB/FerretDB/v2 v2.0.0-00010101000000-000000000000
-	github.com/FerretDB/wire v0.1.5
+	github.com/FerretDB/wire v0.1.6
 	github.com/FerretDB/xfail v0.1.0
 	github.com/google/uuid v1.6.0
 	github.com/prometheus/client_golang v1.22.0

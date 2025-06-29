@@ -33,17 +33,9 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgReIndex(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	doc := req.Document()
 
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
@@ -129,7 +121,7 @@ func (h *Handler) msgReIndex(connCtx context.Context, req *middleware.Request) (
 		"indexes", indexesBefore,
 	).Encode())
 
-	createRes, err := h.createIndexes(connCtx, conn, command, dbName, createSpec)
+	createRes, err := h.createIndexes(connCtx, conn.Conn(), command, dbName, createSpec)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

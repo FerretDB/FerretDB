@@ -17,6 +17,7 @@ package handler
 import (
 	"context"
 
+	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgx/v5"
 
@@ -30,7 +31,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgInsert(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	doc, spec, seq, err := req.OpMsg.Sections()
+	doc, spec, seq, err := req.WireBody().(*wire.OpMsg).Sections()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

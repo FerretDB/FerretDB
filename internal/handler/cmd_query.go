@@ -20,6 +20,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
@@ -32,13 +33,11 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) CmdQuery(connCtx context.Context, query *middleware.Request) (*middleware.Response, error) {
-	q, err := query.OpQuery.Query()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
+	q := query.Document()
 	cmd := q.Command()
-	collection := query.OpQuery.FullCollectionName
+	queryBody := query.WireBody().(*wire.OpQuery)
+	collection := queryBody.FullCollectionName
+	toReturn := queryBody.NumberToReturn
 
 	suffix := ".$cmd"
 	if !strings.HasSuffix(collection, suffix) {
@@ -50,10 +49,10 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *middleware.Request) (
 		))
 	}
 
-	if query.OpQuery.NumberToReturn != 1 && query.OpQuery.NumberToReturn != -1 {
+	if toReturn != 1 && toReturn != -1 {
 		return nil, mongoerrors.NewWithArgument(
 			mongoerrors.ErrLocation16979,
-			fmt.Sprintf("Bad numberToReturn (%d) for $cmd type ns - can only be 1 or -1", query.OpQuery.NumberToReturn),
+			fmt.Sprintf("Bad numberToReturn (%d) for $cmd type ns - can only be 1 or -1", toReturn),
 			"OpQuery: "+cmd,
 		)
 	}
