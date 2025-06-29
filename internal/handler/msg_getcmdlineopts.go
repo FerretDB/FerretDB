@@ -20,7 +20,6 @@ import (
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
@@ -28,12 +27,9 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgGetCmdLineOpts(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	doc := req.Document()
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 

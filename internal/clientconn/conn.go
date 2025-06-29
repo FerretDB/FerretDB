@@ -45,7 +45,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
-	"github.com/FerretDB/FerretDB/v2/internal/handler/proxy"
+	"github.com/FerretDB/FerretDB/v2/internal/handlers/proxy"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"

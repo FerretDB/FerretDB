@@ -12,12 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package middleware provides wrappers for command handlers.
 package middleware
 
-import "context"
+import (
+	"context"
+
+	oldmiddleware "github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
+)
 
 // HandleFunc represents a function/method that processes a single request.
 //
 // The passed context is canceled when the client disconnects.
-type HandleFunc func(ctx context.Context, req *Request) (resp *Response, err error)
+type HandleFunc func(ctx context.Context, req *oldmiddleware.Request) (resp *oldmiddleware.Response, err error)

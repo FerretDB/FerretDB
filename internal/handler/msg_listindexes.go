@@ -25,15 +25,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgListIndexes(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	doc := req.Document()
 
 	dbName, err := getRequiredParam[string](doc, "$db")
 	if err != nil {
@@ -45,7 +37,7 @@ func (h *Handler) msgListIndexes(connCtx context.Context, req *middleware.Reques
 		return nil, err
 	}
 
-	page, cursorID, err := h.Pool.ListIndexes(connCtx, dbName, spec)
+	page, cursorID, err := h.Pool.ListIndexes(connCtx, dbName, req.DocumentRaw())
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

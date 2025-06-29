@@ -20,7 +20,8 @@ import (
 	"log/slog"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
+	oldmiddleware "github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
+	"github.com/FerretDB/FerretDB/v2/internal/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
@@ -35,7 +36,7 @@ type command struct {
 	// The passed context is canceled when the client disconnects.
 	//
 	// Currently, it is the same as [middleware.HandleFunc], but it does not have to be.
-	handler func(context.Context, *middleware.Request) (*middleware.Response, error)
+	handler middleware.HandleFunc
 
 	// Help is shown in the `listCommands` command output.
 	// If empty, that command is hidden, but still can be used.
@@ -339,7 +340,7 @@ func (h *Handler) initCommands() {
 //
 // Context must contain [*conninfo.ConnInfo].
 func auth(next middleware.HandleFunc, l *slog.Logger, command string) middleware.HandleFunc {
-	return func(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	return func(ctx context.Context, req *oldmiddleware.Request) (*oldmiddleware.Response, error) {
 		conv := conninfo.Get(ctx).Conv()
 		succeed := conv.Succeed()
 		username := conv.Username()
@@ -366,7 +367,7 @@ func auth(next middleware.HandleFunc, l *slog.Logger, command string) middleware
 
 // notImplemented returns a handler that returns an error indicating that the command is not implemented.
 func notImplemented(command string) middleware.HandleFunc {
-	return func(context.Context, *middleware.Request) (*middleware.Response, error) {
+	return func(context.Context, *oldmiddleware.Request) (*oldmiddleware.Response, error) {
 		return nil, mongoerrors.New(
 			mongoerrors.ErrNotImplemented,
 			fmt.Sprintf("Command %s is not implemented", command),
@@ -376,7 +377,7 @@ func notImplemented(command string) middleware.HandleFunc {
 
 // notFound returns a handler that returns not found error.
 func notFound(command string) middleware.HandleFunc {
-	return func(context.Context, *middleware.Request) (*middleware.Response, error) {
+	return func(context.Context, *oldmiddleware.Request) (*oldmiddleware.Response, error) {
 		return nil, mongoerrors.New(
 			mongoerrors.ErrCommandNotFound,
 			fmt.Sprintf("no such command: '%s'", command),
