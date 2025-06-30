@@ -1316,13 +1316,6 @@ func TestAuthReconnect(t *testing.T) {
 	s := setup.SetupWithOpts(t, nil)
 	ctx := s.Ctx
 
-	conn, err := wireclient.Connect(ctx, s.MongoDBURI, testutil.Logger(t))
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		_ = conn.Close()
-	})
-
 	u, err := url.Parse(s.MongoDBURI)
 	require.NoError(t, err)
 
@@ -1333,19 +1326,41 @@ func TestAuthReconnect(t *testing.T) {
 	serverFirst := must.NotFail(conv.Step(""))
 	var serverLast string
 
+	var c net.Conn
+	dialer := new(net.Dialer)
+	c, err = dialer.DialContext(ctx, "tcp", u.Host)
+	require.NoError(t, err)
+
+	d, _ := ctx.Deadline()
+	err = c.SetReadDeadline(d)
+	require.NoError(t, err)
+
+	w := bufio.NewWriter(c)
+	r := bufio.NewReader(c)
+
 	t.Run("SASLStart", func(t *testing.T) {
-		var body wire.MsgBody
-		_, body, err = conn.Request(ctx, wire.MustOpMsg(
+		reqBody := wire.MustOpMsg(
 			"saslStart", int32(1),
 			"mechanism", "SCRAM-SHA-256",
 			"payload", wirebson.Binary{B: []byte(serverFirst)},
 			"options", wirebson.MustDocument("skipEmptyExchange", true),
 			"$db", "admin",
-		))
+		)
+
+		header := &wire.MsgHeader{
+			MessageLength: int32(len(must.NotFail(reqBody.MarshalBinary())) + wire.MsgHeaderLen),
+			OpCode:        wire.OpCodeMsg,
+		}
+
+		require.NoError(t, wire.WriteMessage(w, header, reqBody))
+		require.NoError(t, w.Flush())
+
+		var resBody wire.MsgBody
+		_, resBody, err = wire.ReadMessage(r)
 		require.NoError(t, err)
 
 		var res *wirebson.Document
-		res, err = body.(*wire.OpMsg).Document()
+		res, err = resBody.(*wire.OpMsg).Document()
 		require.NoError(t, err)
 
 		serverPayload, ok := res.Get("payload").(wirebson.Binary)
@@ -1370,17 +1385,27 @@ func TestAuthReconnect(t *testing.T) {
 		clientFirst, err = conv.Step(serverLast)
 		require.NoError(t, err)
 
-		var body wire.MsgBody
-		_, body, err = conn.Request(ctx, wire.MustOpMsg(
+		reqBody := wire.MustOpMsg(
 			"saslContinue", int32(1),
 			"conversationId", int32(1),
 			"payload", wirebson.Binary{B: []byte(clientFirst)},
 			"$db", "admin",
-		))
+		)
+
+		header := &wire.MsgHeader{
+			MessageLength: int32(len(must.NotFail(reqBody.MarshalBinary())) + wire.MsgHeaderLen),
+			OpCode:        wire.OpCodeMsg,
+		}
+
+		require.NoError(t, wire.WriteMessage(w, header, reqBody))
+		require.NoError(t, w.Flush())
+
+		var resBody wire.MsgBody
+		_, resBody, err = wire.ReadMessage(r)
 		require.NoError(t, err)
 
 		var res *wirebson.Document
-		res, err = body.(*wire.OpMsg).Document()
+		res, err = resBody.(*wire.OpMsg).Document()
 		require.NoError(t, err)
 
 		serverPayload, ok := res.Get("payload").(wirebson.Binary)
@@ -1404,22 +1429,18 @@ func TestAuthReconnect(t *testing.T) {
 	})
 
 	t.Run("ReconnectWithoutAuth", func(t *testing.T) {
-		err = conn.Close()
-		require.NoError(t, err)
+		require.NoError(t, c.Close())
 
-		var c net.Conn
-
-		c, err = new(net.Dialer).DialContext(ctx, "tcp", u.Host)
-		require.NoError(t, err)
-
-		d, _ := ctx.Deadline()
-		err = c.SetReadDeadline(d)
+		c, err = dialer.DialContext(ctx, "tcp", u.Host)
 		require.NoError(t, err)
 
 		t.Cleanup(func() {
 			err = c.Close()
 			require.NoError(t, err)
 		})
+
+		w = bufio.NewWriter(c)
+		r = bufio.NewReader(c)
 
 		reqBody := wire.MustOpMsg(
 			"find", "test",
@@ -1431,15 +1452,11 @@ func TestAuthReconnect(t *testing.T) {
 			OpCode:        wire.OpCodeMsg,
 		}
 
-		w := bufio.NewWriter(c)
-		err = wire.WriteMessage(w, header, reqBody)
-		require.NoError(t, err)
-
-		err = w.Flush()
-		require.NoError(t, err)
+		require.NoError(t, wire.WriteMessage(w, header, reqBody))
+		require.NoError(t, w.Flush())
 
 		var resBody wire.MsgBody
-		_, resBody, err = wire.ReadMessage(bufio.NewReader(c))
+		_, resBody, err = wire.ReadMessage(r)
 		require.NoError(t, err)
 
 		var res *wirebson.Document
