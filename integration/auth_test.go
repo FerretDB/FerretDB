@@ -1331,10 +1331,6 @@ func TestAuthReconnect(t *testing.T) {
 	c, err = dialer.DialContext(ctx, "tcp", u.Host)
 	require.NoError(t, err)
 
-	d, _ := ctx.Deadline()
-	err = c.SetReadDeadline(d)
-	require.NoError(t, err)
-
 	w := bufio.NewWriter(c)
 	r := bufio.NewReader(c)
 
