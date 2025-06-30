@@ -15,6 +15,8 @@
 package integration
 
 import (
+	"bufio"
+	"net"
 	"net/url"
 	"testing"
 	"time"
@@ -22,6 +24,7 @@ import (
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/FerretDB/wire/wireclient"
+	"github.com/FerretDB/wire/wiretest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	xdgscram "github.com/xdg-go/scram"
@@ -1304,4 +1307,154 @@ func TestSASLContinueOpQueryErrors(t *testing.T) {
 			testutil.AssertEqual(t, tc.reply, res)
 		})
 	}
+}
+
+// TestAuthReconnect tests for authenticated client disconnects then client reconnects without authenticating.
+func TestAuthReconnect(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, nil)
+	ctx := s.Ctx
+
+	conn, err := wireclient.Connect(ctx, s.MongoDBURI, testutil.Logger(t))
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		_ = conn.Close()
+	})
+
+	u, err := url.Parse(s.MongoDBURI)
+	require.NoError(t, err)
+
+	username := u.User.Username()
+	password, _ := u.User.Password()
+
+	conv := must.NotFail(xdgscram.SHA256.NewClient(username, password, "")).NewConversation()
+	serverFirst := must.NotFail(conv.Step(""))
+	var serverLast string
+
+	t.Run("SASLStart", func(t *testing.T) {
+		var body wire.MsgBody
+		_, body, err = conn.Request(ctx, wire.MustOpMsg(
+			"saslStart", int32(1),
+			"mechanism", "SCRAM-SHA-256",
+			"payload", wirebson.Binary{B: []byte(serverFirst)},
+			"options", wirebson.MustDocument("skipEmptyExchange", true),
+			"$db", "admin",
+		))
+		require.NoError(t, err)
+
+		var res *wirebson.Document
+		res, err = body.(*wire.OpMsg).Document()
+		require.NoError(t, err)
+
+		serverPayload, ok := res.Get("payload").(wirebson.Binary)
+		assert.True(t, ok)
+
+		res = res.Copy()
+		FixCluster(t, res)
+
+		expectedComparable := wirebson.MustDocument(
+			"conversationId", int32(1),
+			"done", false,
+			"payload", serverPayload,
+			"ok", float64(1),
+		)
+		wiretest.AssertEqual(t, expectedComparable, res)
+
+		serverLast = string(res.Get("payload").(wirebson.Binary).B)
+	})
+
+	t.Run("SASLContinue", func(t *testing.T) {
+		var clientFirst string
+		clientFirst, err = conv.Step(serverLast)
+		require.NoError(t, err)
+
+		var body wire.MsgBody
+		_, body, err = conn.Request(ctx, wire.MustOpMsg(
+			"saslContinue", int32(1),
+			"conversationId", int32(1),
+			"payload", wirebson.Binary{B: []byte(clientFirst)},
+			"$db", "admin",
+		))
+		require.NoError(t, err)
+
+		var res *wirebson.Document
+		res, err = body.(*wire.OpMsg).Document()
+		require.NoError(t, err)
+
+		serverPayload, ok := res.Get("payload").(wirebson.Binary)
+		assert.True(t, ok)
+
+		res = res.Copy()
+		FixCluster(t, res)
+
+		expectedComparable := wirebson.MustDocument(
+			"conversationId", int32(1),
+			"done", true,
+			"payload", serverPayload,
+			"ok", float64(1),
+		)
+		wiretest.AssertEqual(t, expectedComparable, res)
+
+		_, err = conv.Step(string(serverPayload.B))
+		require.NoError(t, err)
+
+		require.True(t, conv.Valid())
+	})
+
+	t.Run("ReconnectWithoutAuth", func(t *testing.T) {
+		err = conn.Close()
+		require.NoError(t, err)
+
+		var c net.Conn
+
+		c, err = new(net.Dialer).DialContext(ctx, "tcp", u.Host)
+		require.NoError(t, err)
+
+		d, _ := ctx.Deadline()
+		err = c.SetReadDeadline(d)
+		require.NoError(t, err)
+
+		t.Cleanup(func() {
+			err = c.Close()
+			require.NoError(t, err)
+		})
+
+		reqBody := wire.MustOpMsg(
+			"find", "test",
+			"$db", "admin",
+		)
+
+		header := &wire.MsgHeader{
+			MessageLength: int32(len(must.NotFail(reqBody.MarshalBinary())) + wire.MsgHeaderLen),
+			OpCode:        wire.OpCodeMsg,
+		}
+
+		w := bufio.NewWriter(c)
+		err = wire.WriteMessage(w, header, reqBody)
+		require.NoError(t, err)
+
+		err = w.Flush()
+		require.NoError(t, err)
+
+		var resBody wire.MsgBody
+		_, resBody, err = wire.ReadMessage(bufio.NewReader(c))
+		require.NoError(t, err)
+
+		var res *wirebson.Document
+		res, err = resBody.(*wire.OpMsg).Document()
+		require.NoError(t, err)
+
+		res = res.Copy()
+		FixCluster(t, res)
+
+		expected := wirebson.MustDocument(
+			"ok", float64(0),
+			"errmsg", "Command find requires authentication",
+			"code", int32(13),
+			"codeName", "Unauthorized",
+		)
+		wiretest.AssertEqual(t, expected, res)
+	})
 }
