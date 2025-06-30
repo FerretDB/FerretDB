@@ -833,7 +833,7 @@ func TestHelloSpeculative(t *testing.T) {
 		require.NoError(t, err)
 
 		var res *wirebson.Document
-		res, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
+		res, err = must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).Decode()
 		require.NoError(t, err)
 
 		serverPayload, ok := res.Get("payload").(wirebson.Binary)
@@ -869,7 +869,7 @@ func TestHelloSpeculative(t *testing.T) {
 		require.NoError(t, err)
 
 		var res *wirebson.Document
-		res, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
+		res, err = must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).Decode()
 		require.NoError(t, err)
 
 		serverPayload, ok := res.Get("payload").(wirebson.Binary)
@@ -900,7 +900,7 @@ func TestHelloSpeculative(t *testing.T) {
 		require.NoError(t, err)
 
 		var res *wirebson.Document
-		res, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
+		res, err = must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).Decode()
 		require.NoError(t, err)
 
 		FixCluster(t, res)
@@ -1194,7 +1194,7 @@ func TestSASLStartErrors(t *testing.T) {
 			require.NoError(t, err)
 
 			var res *wirebson.Document
-			res, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
+			res, err = must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).Decode()
 			require.NoError(t, err)
 
 			FixCluster(t, res)
