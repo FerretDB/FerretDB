@@ -36,12 +36,12 @@ func (s *Server) Find(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req api.FindManyRequestBody
-	if err := decodeJsonRequest(r, &req); err != nil {
+	if err := decodeJSONRequest(r, &req); err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
-	msg, err := prepareOpMsg(
+	msg, err := prepareRequest(
 		"find", req.Collection,
 		"$db", req.Database,
 		"filter", req.Filter,
@@ -68,5 +68,5 @@ func (s *Server) Find(w http.ResponseWriter, r *http.Request) {
 		"documents", must.NotFail(cursor.Decode()).Get("firstBatch"),
 	))
 
-	s.writeJsonResponse(ctx, w, res)
+	s.writeJSONResponse(ctx, w, res)
 }

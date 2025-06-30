@@ -62,8 +62,6 @@ func TestState(t *testing.T) {
 			err:      "telemetry can't be enabled",
 		},
 	} {
-		tc := tc
-
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 

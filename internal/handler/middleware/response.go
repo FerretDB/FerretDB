@@ -22,10 +22,35 @@ import (
 )
 
 // Response represents outgoing result to the client.
+//
+// It may be constructed from [wirebson.AnyDocument] (for the DocumentDB handler),
+// or from [*wire.MsgHeader] and [wire.MsgBody] (for the proxy handler).
 type Response struct {
+	// The order of fields is weird to make the struct smaller due to alignment.
+
 	OpMsg   *wire.OpMsg
 	OpReply *wire.OpReply
 	header  *wire.MsgHeader
+}
+
+// ResponseMsg creates a new [*wire.OpMsg] response from the given document.
+func ResponseMsg(doc wirebson.AnyDocument) (*Response, error) {
+	msg, err := wire.NewOpMsg(doc)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &Response{OpMsg: msg}, nil
+}
+
+// ResponseReply creates a new [*wire.OpReply] response from the given document.
+func ResponseReply(doc wirebson.AnyDocument) (*Response, error) {
+	reply, err := wire.NewOpReply(doc)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &Response{OpReply: reply}, nil
 }
 
 // ResponseWire creates a new response from the given wire protocol header and body.
@@ -54,26 +79,6 @@ func ResponseWire(header *wire.MsgHeader, body wire.MsgBody) (*Response, error) 
 	}
 
 	return resp, nil
-}
-
-// ResponseMsg creates a new OP_MSG response from the given document.
-func ResponseMsg(doc wirebson.AnyDocument) (*Response, error) {
-	msg, err := wire.NewOpMsg(doc)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &Response{OpMsg: msg}, nil
-}
-
-// ResponseReply creates a new OP_REPLY response from the given document.
-func ResponseReply(doc wirebson.AnyDocument) (*Response, error) {
-	reply, err := wire.NewOpReply(doc)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &Response{OpReply: reply}, nil
 }
 
 // WireHeader returns the request header for the wire protocol.
