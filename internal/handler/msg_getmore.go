@@ -27,39 +27,33 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgGetMore(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	dbName, err := getRequiredParam[string](doc, "$db")
-	if err != nil {
-		return nil, err
-	}
-
-	v := doc.Get("getMore")
-
-	cursorID, ok := v.(int64)
-	if !ok {
-		m := fmt.Sprintf("BSON field 'getMore.getMore' is the wrong type '%T', expected type 'long'", v)
-		return nil, mongoerrors.NewWithArgument(mongoerrors.ErrTypeMismatch, m, "getMore")
-	}
+	doc := req.Document()
 
 	userID, sessionID, err := h.s.CreateOrUpdateByLSID(connCtx, doc)
 	if err != nil {
 		return nil, err
 	}
 
+	command := doc.Command()
+
+	dbName, err := getRequiredParam[string](doc, "$db")
+	if err != nil {
+		return nil, err
+	}
+
+	v := doc.Get(command)
+
+	cursorID, ok := v.(int64)
+	if !ok {
+		m := fmt.Sprintf("BSON field 'getMore.getMore' is the wrong type '%T', expected type 'long'", v)
+		return nil, mongoerrors.NewWithArgument(mongoerrors.ErrTypeMismatch, m, command)
+	}
+
 	if err = h.s.ValidateCursor(userID, sessionID, cursorID); err != nil {
 		return nil, err
 	}
 
-	page, err := h.Pool.GetMore(connCtx, dbName, spec, cursorID)
+	page, err := h.Pool.GetMore(connCtx, dbName, req.DocumentRaw(), cursorID)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
