@@ -300,7 +300,7 @@ tasks:
         --dev-records-dir=tmp/records
 
   run-yugabytedb:
-    desc: "Run YugabyteDB without auth"
+    desc: "Run FerretDB with YugabyteDB without auth"
     deps: [build-host]
     cmds:
       - >
@@ -315,7 +315,7 @@ tasks:
         --dev-records-dir=tmp/records
 
   run-yugabytedb-secure:
-    desc: "Run YugabyteDB with auth"
+    desc: "Run FerretDB with YugabyteDB with auth"
     deps: [build-host]
     cmds:
       - >
