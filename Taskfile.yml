@@ -324,7 +324,7 @@ tasks:
         --listen-addr=:27017
         --listen-data-api-addr=127.0.0.1:8899
         --proxy-addr=127.0.0.1:47017
-        --postgresql-url='postgres://upg-user:pg-pass@127.0.0.1:5433/yugabyte'
+        --postgresql-url='postgres://pg-user:pg-pass@127.0.0.1:5433/yugabyte'
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
         --dev-repl-set-name=rs0
         --dev-records-dir=tmp/records
