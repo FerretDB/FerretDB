@@ -75,7 +75,7 @@ func (h *Handler) msgCreateUser(connCtx context.Context, req *middleware.Request
 			return lazyerrors.Error(err)
 		}
 
-		q = fmt.Sprintf("GRANT documentdb_admin_role TO %s WITH ADMIN OPTION", sanitizedUser)
+		q = fmt.Sprintf("GRANT documentdb_admin_role, documentdb_readonly_role TO %s WITH ADMIN OPTION", sanitizedUser)
 		if _, err = conn.Exec(connCtx, q); err != nil {
 			return lazyerrors.Error(err)
 		}
