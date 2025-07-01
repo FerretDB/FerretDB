@@ -25,7 +25,6 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
@@ -33,21 +32,14 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgCreateUser(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.DocumentRaw()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	doc := req.Document()
 
-	doc, err := spec.DecodeDeep()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/913
+	doc = doc.Copy()
 	doc.Remove("mechanisms")
 
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/911
@@ -64,16 +56,15 @@ func (h *Handler) msgCreateUser(connCtx context.Context, req *middleware.Request
 		)
 
 		must.NoError(doc.Replace("roles", roles))
-		spec = must.NotFail(doc.Encode())
 	}
 
 	user, _ := doc.Get("createUser").(string)
 
 	var res wirebson.RawDocument
 
+	var err error
 	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
-		if res, err = documentdb_api.CreateUser(connCtx, conn, h.L, spec); err != nil {
-			h.L.ErrorContext(connCtx, "Failed to create user", slog.Any("spec", spec), logging.Error(err))
+		if res, err = documentdb_api.CreateUser(connCtx, conn, h.L, must.NotFail(doc.Encode())); err != nil {
 			return lazyerrors.Error(err)
 		}
 

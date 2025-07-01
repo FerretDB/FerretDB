@@ -25,7 +25,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/xdg-go/scram"
 
@@ -99,7 +98,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 		}
 
 		resDoc := must.NotFail(must.NotFail(res.OpMsg.RawDocument()).Decode())
-		convId := resDoc.Get("conversationId").(int32)
+		convID := resDoc.Get("conversationId").(int32)
 
 		payloadBytes := resDoc.Get("payload").(wirebson.Binary).B
 
@@ -111,7 +110,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 
 		msg = must.NotFail(prepareRequest(
 			"saslContinue", int32(1),
-			"conversationId", convId,
+			"conversationId", convID,
 			"payload", wirebson.Binary{B: []byte(payload)},
 			"$db", "admin",
 		))
@@ -255,15 +254,10 @@ func prepareDocument(pairs ...any) (*wirebson.Document, error) {
 func prepareRequest(pairs ...any) (*middleware.Request, error) {
 	doc, err := prepareDocument(pairs...)
 	if err != nil {
-		return nil, err
-	}
-
-	req, err := wire.NewOpMsg(doc)
-	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &middleware.Request{OpMsg: req}, nil
+	return middleware.RequestDoc(doc), nil
 }
 
 // decodeJSONRequest takes request with JSON body and decodes it into
