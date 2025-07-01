@@ -154,7 +154,7 @@ func createUser(ctx context.Context, pool *documentdb.Pool, l *slog.Logger) erro
 	}
 
 	switch ok := d.Get("ok").(type) {
-	// TODO https://github.com/FerretDB/FerretDB/tree/main/internal/handler
+	// TODO https://github.com/FerretDB/FerretDB/issues/5313
 	case float64, int32:
 		if ok != 1 {
 			return lazyerrors.Errorf("Failed to create user: %s", d.LogMessage())
