@@ -33,7 +33,6 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/debug"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 )
 
@@ -121,7 +120,7 @@ func setupPostgreSQLDocumentDB(ctx context.Context, uri string, l *slog.Logger) 
 
 // createUser creates username:password credentials using `createUser` command.
 func createUser(ctx context.Context, pool *documentdb.Pool, l *slog.Logger) error {
-	spec := must.NotFail(wirebson.MustDocument(
+	doc := wirebson.MustDocument(
 		"createUser", "username",
 		"pwd", "password",
 		"roles", wirebson.MustArray(
@@ -134,13 +133,13 @@ func createUser(ctx context.Context, pool *documentdb.Pool, l *slog.Logger) erro
 				"db", "admin",
 			),
 		),
-	).Encode())
+	)
 
 	var res wirebson.RawDocument
 
 	err := pool.WithConn(func(conn *pgx.Conn) error {
 		var err error
-		res, err = documentdb_api.CreateUser(ctx, conn, l, spec)
+		res, err = documentdb.CreateUser(ctx, conn, l, doc)
 
 		return err
 	})

@@ -16,13 +16,12 @@ package handler
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
@@ -58,25 +57,11 @@ func (h *Handler) msgCreateUser(connCtx context.Context, req *middleware.Request
 		must.NoError(doc.Replace("roles", roles))
 	}
 
-	user, _ := doc.Get("createUser").(string)
-
 	var res wirebson.RawDocument
 
 	var err error
 	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
-		if res, err = documentdb_api.CreateUser(connCtx, conn, h.L, must.NotFail(doc.Encode())); err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		sanitizedUser := pgx.Identifier{user}.Sanitize()
-
-		q := fmt.Sprintf("ALTER ROLE %s CREATEROLE", sanitizedUser)
-		if _, err = conn.Exec(connCtx, q); err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		q = fmt.Sprintf("GRANT documentdb_admin_role, documentdb_readonly_role TO %s WITH ADMIN OPTION", sanitizedUser)
-		if _, err = conn.Exec(connCtx, q); err != nil {
+		if res, err = documentdb.CreateUser(connCtx, conn, h.L, doc); err != nil {
 			return lazyerrors.Error(err)
 		}
 
