@@ -16,6 +16,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"github.com/FerretDB/wire/wirebson"
@@ -24,6 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
@@ -65,11 +67,22 @@ func (h *Handler) msgCreateUser(connCtx context.Context, req *middleware.Request
 		spec = must.NotFail(doc.Encode())
 	}
 
+	user, _ := doc.Get("createUser").(string)
+
 	var res wirebson.RawDocument
 
 	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
-		res, err = documentdb_api.CreateUser(connCtx, conn, h.L, spec)
-		return err
+		if res, err = documentdb_api.CreateUser(connCtx, conn, h.L, spec); err != nil {
+			h.L.ErrorContext(connCtx, "Failed to create user", slog.Any("spec", spec), logging.Error(err))
+			return lazyerrors.Error(err)
+		}
+
+		q := fmt.Sprintf("ALTER ROLE %s CREATEROLE", pgx.Identifier{user}.Sanitize())
+		if _, err = conn.Exec(connCtx, q); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		return nil
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
