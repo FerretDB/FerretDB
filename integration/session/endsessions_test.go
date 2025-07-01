@@ -179,7 +179,7 @@ func TestEndSessionsUnauthenticated(t *testing.T) {
 	))
 	require.NoError(t, err)
 
-	res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+	res, err := must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).DecodeDeep()
 	require.NoError(t, err)
 
 	integration.FixCluster(t, res)
@@ -205,7 +205,7 @@ func endSessions(t testing.TB, ctx context.Context, conn *wireclient.Conn, dbNam
 	_, resBody, err := conn.Request(ctx, msg)
 	require.NoError(t, err)
 
-	res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+	res, err := must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).DecodeDeep()
 	require.NoError(t, err)
 
 	integration.FixCluster(t, res)
