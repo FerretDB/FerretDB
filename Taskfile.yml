@@ -229,7 +229,7 @@ tasks:
         -coverprofile=integration-postgresql.txt
         ./...
         -target-backend=ferretdb
-        -postgresql-url='postgres://pg-user:pg-pass@127.0.0.1:5432/postgres'
+        -postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
         -compat-url='mongodb://username:password@127.0.0.1:47017/?replicaSet=rs0'
         -no-xfail={{.NO_XFAIL}}
 
@@ -269,8 +269,6 @@ tasks:
     desc: "Run FerretDB without auth"
     deps: [build-host]
     cmds:
-      # Use pg-user:pg-pass because username:password created by `createUser` command
-      # does not have permission to create/update/delete users.
       - >
         bin/ferretdb{{exeExt}}
         --mode={{.MODE}}
@@ -278,7 +276,7 @@ tasks:
         --listen-addr=:27017
         --listen-data-api-addr=127.0.0.1:8899
         --proxy-addr=127.0.0.1:37017
-        --postgresql-url='postgres://pg-user:pg-pass@127.0.0.1:5432/postgres'
+        --postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
         --dev-records-dir=tmp/records
 
@@ -286,15 +284,13 @@ tasks:
     desc: "Run FerretDB with auth"
     deps: [build-host]
     cmds:
-      # Use pg-user:pg-pass because username:password created by `createUser` command
-      # does not have permission to create/update/delete users.
       - >
         bin/ferretdb{{exeExt}}
         --mode={{.MODE}}
         --listen-addr=:27017
         --listen-data-api-addr=127.0.0.1:8899
         --proxy-addr=127.0.0.1:47017
-        --postgresql-url='postgres://upg-user:pg-pass@127.0.0.1:5432/postgres'
+        --postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
         --dev-repl-set-name=rs0
         --dev-records-dir=tmp/records
@@ -376,9 +372,7 @@ tasks:
   psql:
     desc: "Run psql"
     cmds:
-      # Use pg-user:pg-pass because username:password created by `createUser` command
-      # does not have permission to create/update/delete users.
-      - docker compose exec postgres psql -p 5432 -U pg-user -d postgres
+      - docker compose exec postgres psql -p 5432 -U username -d postgres
 
   mongosh:
     desc: "Run MongoDB shell (`mongosh`)"
@@ -406,9 +400,7 @@ tasks:
   testsql:
     desc: "Run pgTAP with test.sql script"
     cmds:
-      # Use pg-user:pg-pass because username:password created by `createUser` command
-      # does not have permission to create/update/delete users.
-      - docker compose exec postgres pg_prove --ext .sql --verbose -p 5432 -U pg-user -d postgres /testscripts/
+      - docker compose exec postgres pg_prove --ext .sql --verbose -p 5432 -U username -d postgres /testscripts/
 
   testjs:
     desc: "Run legacy MongoDB shell (`mongo`) with test.js script"
