@@ -73,8 +73,9 @@ func setupMongoDB(ctx context.Context, logger *slog.Logger, uri, name string) er
 	return ctx.Err()
 }
 
-// setupPostgreSQLDocumentDB configures PostgreSQL with DocumentDB extension by creating a new user,
-// because the user created upon Docker container initialization is slightly different.
+// setupPostgreSQLDocumentDB configures PostgreSQL with DocumentDB extension
+// by creating a new user, because the user created upon Docker container
+// initialization is slightly different.
 // It waits for DocumentDB extension to be created before creating the user.
 func setupPostgreSQLDocumentDB(ctx context.Context, uri string, l *slog.Logger) error {
 	sp, err := state.NewProvider("")
@@ -118,7 +119,7 @@ func setupPostgreSQLDocumentDB(ctx context.Context, uri string, l *slog.Logger) 
 	return nil
 }
 
-// createUser creates username:password credentials using `createUser` command.
+// createUser creates username:password credentials.
 func createUser(ctx context.Context, pool *documentdb.Pool, l *slog.Logger) error {
 	doc := wirebson.MustDocument(
 		"createUser", "username",
@@ -150,6 +151,16 @@ func createUser(ctx context.Context, pool *documentdb.Pool, l *slog.Logger) erro
 	d, err := res.Decode()
 	if err != nil {
 		return lazyerrors.Error(err)
+	}
+
+	switch ok := d.Get("ok").(type) {
+	// TODO https://github.com/FerretDB/FerretDB/tree/main/internal/handler
+	case float64, int32:
+		if ok != 1 {
+			return lazyerrors.Errorf("Failed to create user: %s", d.LogMessage())
+		}
+	default:
+		panic("unexpected type")
 	}
 
 	l.InfoContext(ctx, "User created", slog.String("response", d.LogMessage()))

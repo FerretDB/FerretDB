@@ -61,11 +61,8 @@ func (h *Handler) msgCreateUser(connCtx context.Context, req *middleware.Request
 
 	var err error
 	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
-		if res, err = documentdb.CreateUser(connCtx, conn, h.L, doc); err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		return nil
+		res, err = documentdb.CreateUser(connCtx, conn, h.L, doc)
+		return err
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)

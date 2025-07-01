@@ -26,7 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// CreateUser creates a new user and grants them the necessary role and permissions
+// CreateUser creates a new user and grants it the necessary role and permissions
 // to create/update/delete users.
 func CreateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, doc *wirebson.Document) (wirebson.RawDocument, error) {
 	user, _ := doc.Get("createUser").(string)
