@@ -66,4 +66,21 @@ func TestExtract(t *testing.T) {
 		"udt_name":           "bson",
 	}
 	require.Equal(t, expected, rows[1])
+
+	expected = map[string]any{
+		"specific_schema":    "documentdb_api",
+		"specific_name":      "aggregate_cursor_first_page_19119",
+		"routine_name":       "aggregate_cursor_first_page",
+		"routine_type":       "FUNCTION",
+		"routine_data_type":  "record",
+		"routine_udt_schema": "pg_catalog",
+		"routine_udt_name":   "record",
+		"parameter_name":     "cursorid",
+		"parameter_mode":     "IN",
+		"parameter_default":  "0", // ensure DEFAULT is set https://www.postgresql.org/docs/current/infoschema-parameters.html
+		"data_type":          "bigint",
+		"udt_schema":         "pg_catalog",
+		"udt_name":           "int8",
+	}
+	require.Equal(t, expected, rows[2])
 }

@@ -48,7 +48,9 @@ func main() {
 		l.Log(ctx, logging.LevelFatal, "-schemas flag is empty")
 	}
 
-	// DOCUMENTDB_GEN_URL=postgres://username:password@127.0.0.1:5432/postgres
+	// use the owner of schema pg-user:pg-pass to ensure parameter_default is set
+	// https://www.postgresql.org/docs/current/infoschema-parameters.html
+	// DOCUMENTDB_GEN_URL=postgres://pg-user:pg-pass@127.0.0.1:5432/postgres
 	uri := os.Getenv("DOCUMENTDB_GEN_URL")
 	if uri == "" {
 		l.InfoContext(ctx, "DOCUMENTDB_GEN_URL not set, skipping code generation")

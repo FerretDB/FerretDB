@@ -21,7 +21,7 @@ import (
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
@@ -61,7 +61,7 @@ func (h *Handler) msgCreateUser(connCtx context.Context, req *middleware.Request
 
 	var err error
 	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
-		res, err = documentdb_api.CreateUser(connCtx, conn, h.L, must.NotFail(doc.Encode()))
+		res, err = documentdb.CreateUser(connCtx, conn, h.L, doc)
 		return err
 	})
 	if err != nil {

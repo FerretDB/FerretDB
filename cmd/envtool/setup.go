@@ -23,12 +23,17 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/FerretDB/wire/wirebson"
+	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/debug"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 )
 
 // setupMongoDB configures MongoDB containers.
@@ -68,6 +73,101 @@ func setupMongoDB(ctx context.Context, logger *slog.Logger, uri, name string) er
 	return ctx.Err()
 }
 
+// setupPostgreSQLDocumentDB configures PostgreSQL with DocumentDB extension
+// by creating a new user, because the user created upon Docker container
+// initialization is slightly different.
+// It waits for DocumentDB extension to be created before creating the user.
+func setupPostgreSQLDocumentDB(ctx context.Context, uri string, l *slog.Logger) error {
+	sp, err := state.NewProvider("")
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	pool, err := documentdb.NewPool(uri, l, sp)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	defer pool.Close()
+
+	var retry int64
+
+	for ctx.Err() == nil {
+		err = pool.WithConn(func(conn *pgx.Conn) error {
+			_, err = documentdb_api.BinaryExtendedVersion(ctx, conn, l)
+			return err
+		})
+
+		if err == nil {
+			break
+		}
+
+		l.InfoContext(ctx, "Waiting for DocumentDB extension to be created", logging.Error(err))
+
+		retry++
+		ctxutil.SleepWithJitter(ctx, time.Second, retry)
+	}
+
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if err = createUser(ctx, pool, l); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	return nil
+}
+
+// createUser creates username:password credentials.
+func createUser(ctx context.Context, pool *documentdb.Pool, l *slog.Logger) error {
+	doc := wirebson.MustDocument(
+		"createUser", "username",
+		"pwd", "password",
+		"roles", wirebson.MustArray(
+			wirebson.MustDocument(
+				"role", "clusterAdmin",
+				"db", "admin",
+			),
+			wirebson.MustDocument(
+				"role", "readWriteAnyDatabase",
+				"db", "admin",
+			),
+		),
+	)
+
+	var res wirebson.RawDocument
+
+	err := pool.WithConn(func(conn *pgx.Conn) error {
+		var err error
+		res, err = documentdb.CreateUser(ctx, conn, l, doc)
+
+		return err
+	})
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	d, err := res.Decode()
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	switch ok := d.Get("ok").(type) {
+	// TODO https://github.com/FerretDB/FerretDB/tree/main/internal/handler
+	case float64, int32:
+		if ok != 1 {
+			return lazyerrors.Errorf("Failed to create user: %s", d.LogMessage())
+		}
+	default:
+		panic("unexpected type")
+	}
+
+	l.InfoContext(ctx, "User created", slog.String("response", d.LogMessage()))
+
+	return nil
+}
+
 // setup runs all setup commands.
 func setup(ctx context.Context, logger *slog.Logger) error {
 	h, err := debug.Listen(&debug.ListenOpts{
@@ -82,6 +182,11 @@ func setup(ctx context.Context, logger *slog.Logger) error {
 	go h.Serve(ctx)
 
 	if err = setupMongoDB(ctx, logger, "mongodb://username:password@127.0.0.1:47017/", "mongodb-secure"); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	uri := "postgres://pg-user:pg-pass@127.0.0.1:5432/postgres"
+	if err = setupPostgreSQLDocumentDB(ctx, uri, logging.WithName(logger, "documentdb")); err != nil {
 		return lazyerrors.Error(err)
 	}
 
