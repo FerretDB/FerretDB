@@ -27,8 +27,8 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// CreateUser creates a new user and grants it the necessary role and permissions
-// to create/update/delete users.
+// CreateUser creates a new user and grants users with clusterAdmin role
+// necessary permissions to create/update/delete users.
 func CreateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, doc *wirebson.Document) (wirebson.RawDocument, error) {
 	user, _ := doc.Get("createUser").(string)
 	sanitizedUser := pgx.Identifier{user}.Sanitize()
@@ -42,6 +42,25 @@ func CreateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, doc *wirebs
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
+
+		var clusterAdmin bool
+		roles := doc.Get("roles")
+
+		if roles != nil {
+			for role := range doc.Get("roles").(*wirebson.Array).Values() {
+				if roleName := role.(*wirebson.Document).Get("role").(string); roleName == "clusterAdmin" {
+					clusterAdmin = true
+
+					break
+				}
+			}
+		}
+
+		if !clusterAdmin {
+			return nil
+		}
+
+		l.DebugContext(ctx, "Updating user with CREATEROLE and ADMIN OPTION", slog.String("user", user))
 
 		q := fmt.Sprintf("ALTER ROLE %s CREATEROLE", sanitizedUser)
 		if _, err = tx.Exec(ctx, q); err != nil {
