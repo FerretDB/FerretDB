@@ -44,9 +44,9 @@ func CreateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, doc *wirebs
 		}
 
 		var clusterAdmin bool
-		roles := doc.Get("roles")
 
-		if roles != nil {
+		if roles := doc.Get("roles"); roles != nil {
+			// valid types of "roles" is checked already by [documentdb_api.CreateUser]
 			for role := range doc.Get("roles").(*wirebson.Array).Values() {
 				if roleName := role.(*wirebson.Document).Get("role").(string); roleName == "clusterAdmin" {
 					clusterAdmin = true
