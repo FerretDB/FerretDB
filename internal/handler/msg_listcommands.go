@@ -48,7 +48,7 @@ func (h *Handler) msgListCommands(connCtx context.Context, req *middleware.Reque
 		))))
 	}
 
-	return middleware.ResponseMsg(wirebson.MustDocument(
+	return middleware.ResponseDoc(req, wirebson.MustDocument(
 		"commands", cmdList,
 		"ok", float64(1),
 	))

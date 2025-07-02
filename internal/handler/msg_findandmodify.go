@@ -50,5 +50,5 @@ func (h *Handler) msgFindAndModify(connCtx context.Context, req *middleware.Requ
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }

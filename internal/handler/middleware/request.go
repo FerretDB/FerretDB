@@ -17,7 +17,6 @@ package middleware
 import (
 	"fmt"
 	"sync"
-	"sync/atomic"
 
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
@@ -30,9 +29,6 @@ import (
 // It may be constructed from [*wire.MsgHeader] and [wire.MsgBody] (for the wire protocol listener)
 // or from [*wirebson.Document] (for data API and MCP listeners).
 type Request struct {
-	// The order of fields is weird to make the struct smaller due to alignment.
-	// All fields are protected by rw.
-
 	rw     sync.RWMutex
 	header *wire.MsgHeader
 	body   wire.MsgBody
@@ -50,7 +46,11 @@ func RequestWire(header *wire.MsgHeader, body wire.MsgBody) *Request {
 	}
 
 	switch body := body.(type) {
-	case *wire.OpMsg, *wire.OpQuery:
+	case *wire.OpMsg:
+		must.BeTrue(header.OpCode == wire.OpCodeMsg)
+		req.body = body
+	case *wire.OpQuery:
+		must.BeTrue(header.OpCode == wire.OpCodeQuery)
 		req.body = body
 	default:
 		panic(fmt.Sprintf("unsupported body type %T", body))
@@ -95,6 +95,7 @@ func (req *Request) setHeaderBody() {
 
 	req.body = must.NotFail(wire.NewOpMsg(req.raw))
 
+	// TODO https://github.com/FerretDB/wire/issues/139
 	b := must.NotFail(req.body.MarshalBinary())
 
 	req.header = &wire.MsgHeader{
@@ -230,12 +231,4 @@ func (req *Request) DocumentRaw() wirebson.RawDocument {
 	req.setRaw()
 
 	return req.raw
-}
-
-// lastRequestID stores last generated request ID.
-var lastRequestID atomic.Int32
-
-func init() {
-	// so generated IDs are noticeably different from IDs from typical clients
-	lastRequestID.Store(1_000_000_000)
 }

@@ -78,5 +78,5 @@ func (h *Handler) msgDrop(connCtx context.Context, req *middleware.Request) (*mi
 
 	must.NoError(res.Add("ok", float64(1)))
 
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }

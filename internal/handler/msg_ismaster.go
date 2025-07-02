@@ -40,7 +40,7 @@ func (h *Handler) msgIsMaster(connCtx context.Context, req *middleware.Request) 
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }
 
 // checkClientMetadata checks if the message does not contain client metadata after it was received already.
