@@ -46,7 +46,7 @@ func TestOpQuery(t *testing.T) {
 		_, resBody, err := conn.Request(ctx, q)
 		require.NoError(t, err)
 
-		resMsg, err := resBody.(*wire.OpReply).RawDocument().Decode()
+		resMsg, err := resBody.(*wire.OpReply).DocumentRaw().Decode()
 		require.NoError(t, err)
 
 		ok := resMsg.Get("ok")
@@ -68,7 +68,7 @@ func TestOpQuery(t *testing.T) {
 		_, resBody, err := conn.Request(ctx, q)
 		require.NoError(t, err)
 
-		resMsg, err := resBody.(*wire.OpReply).RawDocument().Decode()
+		resMsg, err := resBody.(*wire.OpReply).DocumentRaw().Decode()
 		require.NoError(t, err)
 
 		ok := resMsg.Get("ok")
@@ -90,7 +90,7 @@ func TestOpQuery(t *testing.T) {
 		_, resBody, err := conn.Request(ctx, q)
 		require.NoError(t, err)
 
-		res, err := resBody.(*wire.OpReply).RawDocument().Decode()
+		res, err := resBody.(*wire.OpReply).DocumentRaw().Decode()
 		require.NoError(t, err)
 
 		FixCluster(t, res)
@@ -132,7 +132,7 @@ func TestOpQueryIsMaster(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotZero(t, resHeader.RequestID)
 
-			res, err := resBody.(*wire.OpReply).RawDocument().Decode()
+			res, err := resBody.(*wire.OpReply).DocumentRaw().Decode()
 			require.NoError(t, err)
 
 			connectionID := res.Get("connectionId")
@@ -201,7 +201,7 @@ func TestOpQueryIsMasterHelloOk(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotZero(t, resHeader.RequestID)
 
-			res, err := resBody.(*wire.OpReply).RawDocument().Decode()
+			res, err := resBody.(*wire.OpReply).DocumentRaw().Decode()
 			require.NoError(t, err)
 
 			connectionID := res.Get("connectionId")
@@ -262,7 +262,7 @@ func TestOpQueryHello(tt *testing.T) {
 	_, resBody, err := conn.Request(ctx, q)
 	require.NoError(t, err)
 
-	res, err := resBody.(*wire.OpReply).RawDocument().Decode()
+	res, err := resBody.(*wire.OpReply).DocumentRaw().Decode()
 	require.NoError(t, err)
 
 	connectionID := res.Get("connectionId")
