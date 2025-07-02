@@ -17,7 +17,6 @@ package mcp
 import (
 	"context"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -54,12 +53,7 @@ func (h *ToolHandler) initTools() []tool {
 
 // request sends a request document to the handler and returns decoded response document.
 func (h *ToolHandler) request(ctx context.Context, reqDoc *wirebson.Document) (*wirebson.Document, error) {
-	req, err := wire.NewOpMsg(reqDoc)
-	if err != nil {
-		return nil, err
-	}
-
-	res, err := h.h.Handle(ctx, &middleware.Request{OpMsg: req})
+	res, err := h.h.Handle(ctx, middleware.RequestDoc(reqDoc))
 	if err != nil {
 		return nil, err
 	}
