@@ -75,7 +75,6 @@ func CreateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, doc *wirebs
 
 		return nil
 	})
-
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
