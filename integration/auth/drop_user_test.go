@@ -64,7 +64,7 @@ func TestDropUserCommand(t *testing.T) {
 			expected: bson.D{
 				{"ok", float64(1)},
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/939",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5313",
 		},
 	}
 
