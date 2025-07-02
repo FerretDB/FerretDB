@@ -49,7 +49,7 @@ func CreateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, doc *wirebs
 		}
 	}()
 
-	res, err = documentdb_api.CreateUser(ctx, tx, l, must.NotFail(doc.Encode()))
+	res, err = documentdb_api.CreateUser(ctx, tx.Conn(), l, must.NotFail(doc.Encode()))
 	if err != nil {
 		err = lazyerrors.Error(err)
 
