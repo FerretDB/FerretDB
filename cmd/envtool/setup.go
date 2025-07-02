@@ -73,11 +73,10 @@ func setupMongoDB(ctx context.Context, logger *slog.Logger, uri, name string) er
 	return ctx.Err()
 }
 
-// setupPostgreSQLDocumentDB configures PostgreSQL with DocumentDB extension
-// by creating a new user, because the user created upon Docker container
-// initialization is slightly different.
+// setupUser creates username:password credentials, because the user created
+// upon Docker container initialization behaves slightly different.
 // It waits for DocumentDB extension to be created before creating the user.
-func setupPostgreSQLDocumentDB(ctx context.Context, uri string, l *slog.Logger) error {
+func setupUser(ctx context.Context, uri string, l *slog.Logger) error {
 	sp, err := state.NewProvider("")
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -112,15 +111,6 @@ func setupPostgreSQLDocumentDB(ctx context.Context, uri string, l *slog.Logger) 
 		return lazyerrors.Error(err)
 	}
 
-	if err = createUser(ctx, pool, l); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	return nil
-}
-
-// createUser creates username:password credentials.
-func createUser(ctx context.Context, pool *documentdb.Pool, l *slog.Logger) error {
 	doc := wirebson.MustDocument(
 		"createUser", "username",
 		"pwd", "password",
@@ -138,8 +128,7 @@ func createUser(ctx context.Context, pool *documentdb.Pool, l *slog.Logger) erro
 
 	var res wirebson.RawDocument
 
-	err := pool.WithConn(func(conn *pgx.Conn) error {
-		var err error
+	err = pool.WithConn(func(conn *pgx.Conn) error {
 		res, err = documentdb.CreateUser(ctx, conn, l, doc)
 
 		return err
@@ -190,7 +179,7 @@ func setup(ctx context.Context, logger *slog.Logger) error {
 	}
 
 	uri := "postgres://pg-user:pg-pass@127.0.0.1:5432/postgres"
-	if err = setupPostgreSQLDocumentDB(ctx, uri, logging.WithName(logger, "documentdb")); err != nil {
+	if err = setupUser(ctx, uri, logging.WithName(logger, "documentdb")); err != nil {
 		return lazyerrors.Error(err)
 	}
 
