@@ -235,7 +235,7 @@ func TestFindLsidErrors(t *testing.T) {
 		_, resBody, err := conn.Request(ctx, msg)
 		require.NoError(t, err)
 
-		res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+		res, err := must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).DecodeDeep()
 		require.NoError(t, err)
 
 		integration.FixCluster(t, res)
@@ -260,7 +260,7 @@ func TestFindLsidErrors(t *testing.T) {
 		_, resBody, err := conn.Request(ctx, msg)
 		require.NoError(t, err)
 
-		res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+		res, err := must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).DecodeDeep()
 		require.NoError(t, err)
 
 		integration.FixCluster(t, res)
@@ -285,7 +285,7 @@ func TestFindLsidErrors(t *testing.T) {
 		_, resBody, err := conn.Request(ctx, msg)
 		require.NoError(t, err)
 
-		res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+		res, err := must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).DecodeDeep()
 		require.NoError(t, err)
 
 		integration.FixCluster(t, res)
@@ -310,7 +310,7 @@ func TestFindLsidErrors(t *testing.T) {
 		_, resBody, err := conn.Request(ctx, msg)
 		require.NoError(t, err)
 
-		res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+		res, err := must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).DecodeDeep()
 		require.NoError(t, err)
 
 		integration.FixCluster(t, res)
@@ -335,7 +335,7 @@ func TestFindLsidErrors(t *testing.T) {
 		_, resBody, err := conn.Request(ctx, msg)
 		require.NoError(t, err)
 
-		res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+		res, err := must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).DecodeDeep()
 		require.NoError(t, err)
 
 		integration.FixCluster(t, res)
@@ -510,7 +510,7 @@ func startSession(t testing.TB, ctx context.Context, conn *wireclient.Conn) wire
 	require.NoError(t, err)
 
 	var res *wirebson.Document
-	res, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+	res, err = must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).DecodeDeep()
 	require.NoError(t, err)
 
 	integration.FixCluster(t, res)
@@ -553,7 +553,7 @@ func killCursors(t testing.TB, ctx context.Context, conn *wireclient.Conn, dbNam
 	_, resBody, err := conn.Request(ctx, msg)
 	require.NoError(t, err)
 
-	res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+	res, err := must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).DecodeDeep()
 	require.NoError(t, err)
 
 	integration.FixCluster(t, res)
@@ -602,7 +602,7 @@ func find(t testing.TB, ctx context.Context, conn *wireclient.Conn, db, coll str
 	_, resBody, err := conn.Request(ctx, msg)
 	require.NoError(t, err)
 
-	res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+	res, err := must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).DecodeDeep()
 	require.NoError(t, err)
 
 	integration.FixCluster(t, res)
@@ -665,7 +665,7 @@ func getMore(t testing.TB, ctx context.Context, conn *wireclient.Conn, db, coll 
 	_, resBody, err := conn.Request(ctx, msg)
 	require.NoError(t, err)
 
-	res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+	res, err := must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).DecodeDeep()
 	require.NoError(t, err)
 
 	integration.FixCluster(t, res)

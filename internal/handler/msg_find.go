@@ -25,9 +25,11 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgFind(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	doc, err := req.OpMsg.Document()
+	doc := req.Document()
+
+	userID, sessionID, err := h.s.CreateOrUpdateByLSID(connCtx, doc)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	dbName, err := getRequiredParam[string](doc, "$db")
@@ -35,17 +37,7 @@ func (h *Handler) msgFind(connCtx context.Context, req *middleware.Request) (*mi
 		return nil, err
 	}
 
-	userID, sessionID, err := h.s.CreateOrUpdateByLSID(connCtx, doc)
-	if err != nil {
-		return nil, err
-	}
-
-	spec, err := req.OpMsg.DocumentRaw()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	page, cursorID, err := h.Pool.Find(connCtx, dbName, spec)
+	page, cursorID, err := h.Pool.Find(connCtx, dbName, req.DocumentRaw())
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

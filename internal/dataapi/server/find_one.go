@@ -36,12 +36,12 @@ func (s *Server) FindOne(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req api.FindOneRequestBody
-	if err := decodeJsonRequest(r, &req); err != nil {
+	if err := decodeJSONRequest(r, &req); err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
-	msg, err := prepareOpMsg(
+	msg, err := prepareRequest(
 		"find", req.Collection,
 		"$db", req.Database,
 		"filter", req.Filter,
@@ -59,7 +59,7 @@ func (s *Server) FindOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resRaw := must.NotFail(resMsg.OpMsg.RawDocument())
+	resRaw := must.NotFail(resMsg.OpMsg.DocumentRaw())
 	cursor := must.NotFail(resRaw.Decode()).Get("cursor").(wirebson.AnyDocument)
 	firstBatch := must.NotFail(cursor.Decode()).Get("firstBatch").(wirebson.AnyArray)
 
@@ -74,5 +74,5 @@ func (s *Server) FindOne(w http.ResponseWriter, r *http.Request) {
 		"document", doc,
 	))
 
-	s.writeJsonResponse(ctx, w, res)
+	s.writeJSONResponse(ctx, w, res)
 }

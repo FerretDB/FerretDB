@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/wire/wirebson"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
@@ -32,17 +33,9 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgDataSize(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	doc := req.Document()
 
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
@@ -63,13 +56,12 @@ func (h *Handler) msgDataSize(connCtx context.Context, req *middleware.Request) 
 
 	started := time.Now()
 
-	conn, err := h.Pool.Acquire()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-	defer conn.Release()
+	var pageRaw wirebson.RawDocument
 
-	pageRaw, err := documentdb_api.CollStats(connCtx, conn.Conn(), h.L, db, collection, float64(1))
+	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
+		pageRaw, err = documentdb_api.CollStats(connCtx, conn, h.L, db, collection, float64(1))
+		return err
+	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

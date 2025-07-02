@@ -20,6 +20,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/FerretDB/wire"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
@@ -135,14 +136,9 @@ func (h *Handler) Run(ctx context.Context) {
 
 // Handle processes a request.
 func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	switch {
-	case req.OpMsg != nil:
-		doc, err := req.OpMsg.Section0()
-		if err != nil {
-			return nil, err
-		}
-
-		msgCmd := doc.Command()
+	switch req.WireBody().(type) {
+	case *wire.OpMsg:
+		msgCmd := req.Document().Command()
 
 		cmd, ok := h.commands[msgCmd]
 		if ok && cmd.handler != nil {
@@ -150,7 +146,7 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middlew
 		}
 
 		return notFound(msgCmd)(ctx, req)
-	case req.OpQuery != nil:
+	case *wire.OpQuery:
 		return h.CmdQuery(ctx, req)
 	default:
 		panic("unsupported request")
