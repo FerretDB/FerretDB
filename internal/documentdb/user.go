@@ -16,6 +16,7 @@ package documentdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -23,31 +24,58 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // CreateUser creates a new user and grants it the necessary role and permissions
 // to create/update/delete users.
-func CreateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, doc *wirebson.Document) (wirebson.RawDocument, error) {
+// It uses a transaction to ensure that roles and permissions are set atomically.
+func CreateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, doc *wirebson.Document) (res wirebson.RawDocument, err error) { //nolint:lll // for readability
 	user, _ := doc.Get("createUser").(string)
-
-	res, err := documentdb_api.CreateUser(ctx, conn, l, must.NotFail(doc.Encode()))
-	if err != nil {
-		return nil, err
-	}
-
 	sanitizedUser := pgx.Identifier{user}.Sanitize()
 
+	var tx pgx.Tx
+
+	if tx, err = conn.Begin(ctx); err != nil {
+		err = lazyerrors.Error(err)
+
+		return
+	}
+
+	defer func() {
+		if e := tx.Rollback(ctx); e != nil && !errors.Is(e, pgx.ErrTxClosed) && err == nil {
+			err = lazyerrors.Error(e)
+		}
+	}()
+
+	res, err = documentdb_api.CreateUser(ctx, tx, l, must.NotFail(doc.Encode()))
+	if err != nil {
+		err = lazyerrors.Error(err)
+
+		return
+	}
+
 	q := fmt.Sprintf("ALTER ROLE %s CREATEROLE", sanitizedUser)
-	if _, err = conn.Exec(ctx, q); err != nil {
-		return nil, err
+	if _, err = tx.Exec(ctx, q); err != nil {
+		err = lazyerrors.Error(err)
+
+		return
 	}
 
 	// ADMIN OPTION is necessary for creating users
 	q = fmt.Sprintf("GRANT documentdb_admin_role, documentdb_readonly_role TO %s WITH ADMIN OPTION", sanitizedUser)
-	if _, err = conn.Exec(ctx, q); err != nil {
-		return nil, err
+	if _, err = tx.Exec(ctx, q); err != nil {
+		err = lazyerrors.Error(err)
+
+		return
 	}
 
-	return res, nil
+	if err = tx.Commit(ctx); err != nil {
+		err = lazyerrors.Error(err)
+
+		return
+	}
+
+	return
 }
