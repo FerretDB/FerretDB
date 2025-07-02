@@ -74,7 +74,7 @@ func (h *Handler) msgDataSize(connCtx context.Context, req *middleware.Request) 
 	count := page.Get("count").(int32)
 	size := page.Get("totalSize")
 
-	res := must.NotFail(wirebson.NewDocument())
+	res := wirebson.MakeDocument(5)
 
 	if count != 0 {
 		must.NoError(res.Add("estimate", false))

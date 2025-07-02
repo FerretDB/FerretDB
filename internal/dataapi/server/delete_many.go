@@ -68,9 +68,9 @@ func (s *Server) DeleteMany(w http.ResponseWriter, r *http.Request) {
 
 	resDoc := must.NotFail(must.NotFail(resMsg.OpMsg.DocumentRaw()).Decode())
 
-	res := must.NotFail(wirebson.NewDocument(
+	res := wirebson.MustDocument(
 		"deletedCount", resDoc.Get("n"),
-	))
+	)
 
 	s.writeJSONResponse(ctx, w, res)
 }

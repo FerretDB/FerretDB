@@ -272,12 +272,12 @@ func TestSASLContinueErrors(t *testing.T) {
 		conv := client.NewConversation()
 		payload := must.NotFail(conv.Step(""))
 
-		msg := must.NotFail(wire.NewOpMsg(must.NotFail(must.NotFail(wirebson.NewDocument(
+		msg := wire.MustOpMsg(
 			"saslStart", int32(1),
 			"mechanism", "SCRAM-SHA-256",
 			"payload", wirebson.Binary{B: []byte(payload)},
 			"$db", "admin",
-		)).Encode())))
+		)
 
 		var resBody wire.MsgBody
 		_, resBody, err = conn.Request(ctx, msg)

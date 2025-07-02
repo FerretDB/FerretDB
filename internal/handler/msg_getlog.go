@@ -29,7 +29,6 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // msgGetLog implements `getLog` command.
@@ -66,10 +65,10 @@ func (h *Handler) msgGetLog(connCtx context.Context, req *middleware.Request) (*
 
 	switch getLog {
 	case "*":
-		res = must.NotFail(wirebson.NewDocument(
-			"names", must.NotFail(wirebson.NewArray("global", "startupWarnings")),
+		res = wirebson.MustDocument(
+			"names", wirebson.MustArray("global", "startupWarnings"),
 			"ok", float64(1),
-		))
+		)
 
 	case "global":
 		// TODO https://github.com/FerretDB/FerretDB/issues/4750
@@ -78,11 +77,11 @@ func (h *Handler) msgGetLog(connCtx context.Context, req *middleware.Request) (*
 			return nil, lazyerrors.Error(err)
 		}
 
-		res = must.NotFail(wirebson.NewDocument(
+		res = wirebson.MustDocument(
 			"log", log,
 			"totalLinesWritten", int32(log.Len()),
 			"ok", float64(1),
-		))
+		)
 
 	case "startupWarnings":
 		state := h.StateProvider.Get()
@@ -176,11 +175,11 @@ func (h *Handler) msgGetLog(connCtx context.Context, req *middleware.Request) (*
 				return nil, lazyerrors.Error(err)
 			}
 		}
-		res = must.NotFail(wirebson.NewDocument(
+		res = wirebson.MustDocument(
 			"log", log,
 			"totalLinesWritten", int32(log.Len()),
 			"ok", float64(1),
-		))
+		)
 
 	default:
 		return nil, mongoerrors.New(
