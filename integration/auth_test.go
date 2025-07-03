@@ -296,23 +296,23 @@ func TestSASLContinueErrors(t *testing.T) {
 
 		FixCluster(t, res)
 
-		expected := must.NotFail(wirebson.NewDocument(
+		expected := wirebson.MustDocument(
 			"conversationId", int32(1),
 			"done", false,
 			"payload", wirebson.Binary{},
 			"ok", float64(1),
-		))
+		)
 
 		testutil.AssertEqual(t, expected, res)
 
 		payload = "invalid"
 
-		msg = must.NotFail(wire.NewOpMsg(must.NotFail(must.NotFail(wirebson.NewDocument(
+		msg = wire.MustOpMsg(
 			"saslContinue", int32(1),
 			"conversationId", int32(1),
 			"payload", wirebson.Binary{B: []byte(payload)},
 			"$db", "admin",
-		)).Encode())))
+		)
 
 		_, resBody, err = conn.Request(ctx, msg)
 		require.NoError(t, err)
@@ -331,12 +331,12 @@ func TestSASLContinueErrors(t *testing.T) {
 
 		testutil.AssertEqual(t, expected, res)
 
-		msg = must.NotFail(wire.NewOpMsg(must.NotFail(must.NotFail(wirebson.NewDocument(
+		msg = wire.MustOpMsg(
 			"saslContinue", int32(1),
 			"conversationId", int32(1),
 			"payload", wirebson.Binary{},
 			"$db", "admin",
-		)).Encode())))
+		)
 
 		_, resBody, err = conn.Request(ctx, msg)
 		require.NoError(t, err)
@@ -357,10 +357,10 @@ func TestSASLContinueErrors(t *testing.T) {
 	})
 
 	t.Run("NoAuthenticatedUser", func(t *testing.T) {
-		msg := must.NotFail(wire.NewOpMsg(must.NotFail(must.NotFail(wirebson.NewDocument(
+		msg := wire.MustOpMsg(
 			"connectionStatus", int64(1),
 			"$db", testutil.DatabaseName(t),
-		)).Encode())))
+		)
 
 		var resBody wire.MsgBody
 		_, resBody, err = conn.Request(ctx, msg)
@@ -384,11 +384,11 @@ func TestSASLContinueErrors(t *testing.T) {
 	})
 
 	t.Run("FindFails", func(t *testing.T) {
-		msg := must.NotFail(wire.NewOpMsg(must.NotFail(must.NotFail(wirebson.NewDocument(
+		msg := wire.NewOpMsg(wirebson.MustDocument(
 			"find", "values",
 			"filter", must.NotFail(wirebson.NewDocument()),
 			"$db", testutil.DatabaseName(t),
-		)).Encode())))
+		))
 
 		var resBody wire.MsgBody
 		_, resBody, err = conn.Request(ctx, msg)
@@ -420,12 +420,12 @@ func TestSASLContinueNoConversation(t *testing.T) {
 
 	ctx, conn := s.Ctx, s.WireConn
 
-	msg := must.NotFail(wire.NewOpMsg(must.NotFail(must.NotFail(wirebson.NewDocument(
+	msg := wire.MustOpMsg(
 		"saslContinue", int32(1),
 		"conversationId", int32(1),
 		"payload", wirebson.Binary{},
 		"$db", "admin",
-	)).Encode())))
+	)
 
 	_, resBody, err := conn.Request(ctx, msg)
 	require.NoError(t, err)
@@ -1187,7 +1187,7 @@ func TestSASLStartErrors(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			q := must.NotFail(wire.NewOpMsg(must.NotFail(tc.msg.Encode())))
+			q := must.NotFail(wire.NewOpMsg(tc.msg))
 
 			var resBody wire.MsgBody
 			_, resBody, err = conn.Request(ctx, q)
