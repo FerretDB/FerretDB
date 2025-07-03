@@ -213,6 +213,40 @@ func TestSmokeDataAPI(t *testing.T) {
 	})
 }
 
+func TestNoAuth(t *testing.T) {
+	t.Parallel()
+
+	addr, db := setupDataAPI(t, false)
+	coll := testutil.CollectionName(t)
+	ctx := testutil.Ctx(t)
+
+	findURI := "http://" + addr + "/action/find"
+	findReq := bytes.NewBuffer([]byte(
+		`{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {}
+		}`,
+	))
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, findURI, findReq)
+	require.NoError(t, err)
+
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, res.Body.Close())
+	})
+
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	body, err := io.ReadAll(res.Body)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"documents":[]}`, string(body))
+}
+
 func TestBasicAuthDoesNotPersist(t *testing.T) {
 	t.Parallel()
 
