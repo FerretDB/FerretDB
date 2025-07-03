@@ -50,7 +50,7 @@ func (h *Handler) msgServerStatus(connCtx context.Context, req *middleware.Reque
 		return nil, lazyerrors.Error(err)
 	}
 
-	metricsDoc := wirebson.MakeDocument(0)
+	metricsDoc := wirebson.MustDocument()
 
 	metrics := h.ConnMetrics.GetResponses()
 	for _, commands := range metrics {

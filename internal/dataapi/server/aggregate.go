@@ -45,7 +45,7 @@ func (s *Server) Aggregate(w http.ResponseWriter, r *http.Request) {
 		"aggregate", req.Collection,
 		"$db", req.Database,
 		"pipeline", req.Pipeline,
-		"cursor", wirebson.MakeDocument(0),
+		"cursor", wirebson.MustDocument(),
 	)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)

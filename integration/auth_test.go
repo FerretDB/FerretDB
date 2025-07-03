@@ -374,8 +374,8 @@ func TestSASLContinueErrors(t *testing.T) {
 
 		expected := wirebson.MustDocument(
 			"authInfo", wirebson.MustDocument(
-				"authenticatedUsers", wirebson.MakeArray(0),
-				"authenticatedUserRoles", wirebson.MakeArray(0),
+				"authenticatedUsers", wirebson.MustArray(),
+				"authenticatedUserRoles", wirebson.MustArray(),
 			),
 			"ok", float64(1),
 		)

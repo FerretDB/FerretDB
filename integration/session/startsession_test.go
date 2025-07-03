@@ -571,9 +571,9 @@ func killCursors(t testing.TB, ctx context.Context, conn *wireclient.Conn, dbNam
 
 	expected := wirebson.MustDocument(
 		"cursorsKilled", wirebson.MustArray(cursorID),
-		"cursorsNotFound", wirebson.MakeArray(0),
-		"cursorsAlive", wirebson.MakeArray(0),
-		"cursorsUnknown", wirebson.MakeArray(0),
+		"cursorsNotFound", wirebson.MustArray(),
+		"cursorsAlive", wirebson.MustArray(),
+		"cursorsUnknown", wirebson.MustArray(),
 		"ok", float64(1),
 	)
 
