@@ -86,5 +86,5 @@ func (h *Handler) msgSetFreeMonitoring(connCtx context.Context, req *middleware.
 		"ok", float64(1),
 	))
 
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }

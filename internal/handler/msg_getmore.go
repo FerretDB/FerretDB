@@ -58,5 +58,5 @@ func (h *Handler) msgGetMore(connCtx context.Context, req *middleware.Request) (
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.ResponseMsg(page)
+	return middleware.ResponseDoc(req, page)
 }

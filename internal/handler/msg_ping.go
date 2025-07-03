@@ -44,7 +44,7 @@ func (h *Handler) msgPing(connCtx context.Context, req *middleware.Request) (*mi
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.ResponseMsg(wirebson.MustDocument(
+	return middleware.ResponseDoc(req, wirebson.MustDocument(
 		"ok", float64(1),
 	))
 }

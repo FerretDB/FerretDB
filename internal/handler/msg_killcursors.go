@@ -110,7 +110,7 @@ func (h *Handler) msgKillCursors(connCtx context.Context, req *middleware.Reques
 		must.NoError(cursorsKilled.Add(id))
 	}
 
-	return middleware.ResponseMsg(wirebson.MustDocument(
+	return middleware.ResponseDoc(req, wirebson.MustDocument(
 		"cursorsKilled", cursorsKilled,
 		"cursorsNotFound", cursorsNotFound,
 		"cursorsAlive", cursorsAlive,

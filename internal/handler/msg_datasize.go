@@ -85,5 +85,5 @@ func (h *Handler) msgDataSize(connCtx context.Context, req *middleware.Request) 
 	must.NoError(res.Add("ok", float64(1)))
 	must.NoError(res.Add("size", size))
 
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }

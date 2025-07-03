@@ -33,7 +33,7 @@ func (h *Handler) msgGetCmdLineOpts(connCtx context.Context, req *middleware.Req
 		return nil, err
 	}
 
-	return middleware.ResponseMsg(wirebson.MustDocument(
+	return middleware.ResponseDoc(req, wirebson.MustDocument(
 		"argv", must.NotFail(wirebson.NewArray("ferretdb")),
 		"parsed", must.NotFail(wirebson.NewDocument()),
 		"ok", float64(1),

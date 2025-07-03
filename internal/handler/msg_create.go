@@ -69,7 +69,7 @@ func (h *Handler) msgCreate(connCtx context.Context, req *middleware.Request) (*
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.ResponseMsg(wirebson.MustDocument(
+	return middleware.ResponseDoc(req, wirebson.MustDocument(
 		"ok", float64(1),
 	))
 }
