@@ -24,10 +24,10 @@ In this blog post, we're excited to explore how HeyForm seamlessly integrates wi
 [HeyForm](https://heyform.net/) is an open-source form builder designed to simplify the creation, deployment, and management of online forms.
 It provides a user-friendly interface and powerful features, including:
 
-* **Customizable templates:** Start from pre-built templates or design your own.
-* **Workflow automation:** Integrate forms into your existing workflows.
-* **Data management:** Collect, view, and export submission data.
-* **Self-hostable:** Full control over your data and infrastructure.
+- **Customizable templates:** Start from pre-built templates or design your own.
+- **Workflow automation:** Integrate forms into your existing workflows.
+- **Data management:** Collect, view, and export submission data.
+- **Self-hostable:** Full control over your data and infrastructure.
 
 HeyForm focuses on providing a flexible and developer-friendly platform that helps you gather information efficiently and integrate it into your applications.
 
