@@ -56,6 +56,19 @@ type Server struct {
 func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
+
+		auth := r.Header.Get("Authorization")
+		if bearer := strings.HasPrefix(auth, "Bearer "); bearer {
+			bearerToken := strings.TrimPrefix(auth, "Bearer ")
+
+			// check token
+			_ = bearerToken
+
+			next.ServeHTTP(w, r.WithContext(ctx))
+
+			return
+		}
+
 		username, password, ok := r.BasicAuth()
 
 		if !ok {
