@@ -46,7 +46,7 @@ func (h *Handler) msgHello(connCtx context.Context, req *middleware.Request) (*m
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }
 
 // hello checks client metadata and returns hello's document fields.
