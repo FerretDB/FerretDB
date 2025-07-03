@@ -83,7 +83,7 @@ Here's a step-by-step guide to get you started:
          - POSTGRES_DB=postgres
        volumes:
          # Persist FerretDB data
-         - ferret_data:/var/lib/postgresql/data
+         - ferretdb_data:/var/lib/postgresql/data
 
      keydb:
        image: eqalpha/keydb
@@ -94,7 +94,7 @@ Here's a step-by-step guide to get you started:
          - keydb:/data
 
    volumes:
-     ferret_data:
+     ferretdb_data:
      keydb:
    ```
 
@@ -221,7 +221,7 @@ Query the `formmodels` collection by running `db.formmodels.findOne()` to see th
     enableQuestionList: true
   },
   projectId: 'HjOiBwoM',
-  name: 'ferret-form',
+  name: 'ferretdb-form',
   createdAt: ISODate('2025-07-01T19:17:43.272Z'),
   updatedAt: ISODate('2025-07-01T19:50:09.958Z'),
   __v: 0,
