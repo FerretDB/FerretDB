@@ -64,9 +64,9 @@ func (s *Server) Find(w http.ResponseWriter, r *http.Request) {
 	resRaw := must.NotFail(resMsg.OpMsg.DocumentRaw())
 	cursor := must.NotFail(resRaw.Decode()).Get("cursor").(wirebson.AnyDocument)
 
-	res := must.NotFail(wirebson.NewDocument(
+	res := wirebson.MustDocument(
 		"documents", must.NotFail(cursor.Decode()).Get("firstBatch"),
-	))
+	)
 
 	s.writeJSONResponse(ctx, w, res)
 }

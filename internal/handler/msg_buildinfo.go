@@ -52,7 +52,7 @@ func (h *Handler) msgBuildInfo(connCtx context.Context, req *middleware.Request)
 	return middleware.ResponseDoc(req, wirebson.MustDocument(
 		"version", info.MongoDBVersion,
 		"gitVersion", info.Commit,
-		"modules", wirebson.MakeArray(0),
+		"modules", wirebson.MustArray(),
 		"sysInfo", "deprecated",
 		"versionArray", versionArray,
 		"bits", int32(strconv.IntSize),

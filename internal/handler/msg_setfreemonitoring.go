@@ -23,7 +23,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 )
 
@@ -82,9 +81,9 @@ func (h *Handler) msgSetFreeMonitoring(connCtx context.Context, req *middleware.
 		return nil, err
 	}
 
-	res := must.NotFail(wirebson.NewDocument(
+	res := wirebson.MustDocument(
 		"ok", float64(1),
-	))
+	)
 
 	return middleware.ResponseDoc(req, res)
 }
