@@ -81,5 +81,5 @@ func (h *Handler) msgCollStats(connCtx context.Context, req *middleware.Request)
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }

@@ -74,7 +74,7 @@ func (h *Handler) msgHostInfo(connCtx context.Context, req *middleware.Request) 
 		os = "Windows"
 	}
 
-	return middleware.ResponseMsg(wirebson.MustDocument(
+	return middleware.ResponseDoc(req, wirebson.MustDocument(
 		"system", must.NotFail(wirebson.NewDocument(
 			"currentTime", now,
 			"hostname", hostname,

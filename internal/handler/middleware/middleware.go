@@ -15,9 +15,15 @@
 // Package middleware provides wrappers for command handlers.
 package middleware
 
-import "context"
+import (
+	"context"
+	"sync/atomic"
+)
 
 // HandleFunc represents a function/method that processes a single request.
 //
 // The passed context is canceled when the client disconnects.
 type HandleFunc func(ctx context.Context, req *Request) (resp *Response, err error)
+
+// lastRequestID stores last generated request ID.
+var lastRequestID atomic.Int32

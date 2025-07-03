@@ -117,5 +117,5 @@ func (h *Handler) msgServerStatus(connCtx context.Context, req *middleware.Reque
 		"ok", float64(1),
 	))
 
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }
