@@ -213,7 +213,7 @@ func TestSmokeDataAPI(t *testing.T) {
 	})
 }
 
-func TestAuthDoesNotPersist(t *testing.T) {
+func TestBasicAuthDoesNotPersist(t *testing.T) {
 	t.Parallel()
 
 	addr, db := setupDataAPI(t, true)
@@ -229,7 +229,7 @@ func TestAuthDoesNotPersist(t *testing.T) {
 		}`,
 	))
 
-	t.Run("FindWithAuthHeader", func(t *testing.T) {
+	t.Run("BasicAuth", func(t *testing.T) {
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, findURI, findReq)
 		require.NoError(t, err)
 
@@ -238,6 +238,10 @@ func TestAuthDoesNotPersist(t *testing.T) {
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, res.Body.Close())
+		})
+
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 
 		body, err := io.ReadAll(res.Body)
@@ -245,7 +249,7 @@ func TestAuthDoesNotPersist(t *testing.T) {
 		assert.JSONEq(t, `{"documents":[]}`, string(body))
 	})
 
-	t.Run("FindWithoutAuthHeader", func(t *testing.T) {
+	t.Run("BasicAuthDoesNotPersist", func(t *testing.T) {
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, findURI, findReq)
 		require.NoError(t, err)
 
@@ -253,6 +257,67 @@ func TestAuthDoesNotPersist(t *testing.T) {
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, res.Body.Close())
+		})
+
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"error":"no authentication methods were specified", "error_code":"InvalidParameter"}`, string(body))
+	})
+}
+
+func TestBearerToken(t *testing.T) {
+	t.Parallel()
+
+	addr, db := setupDataAPI(t, true)
+	coll := testutil.CollectionName(t)
+	ctx := testutil.Ctx(t)
+
+	findURI := "http://" + addr + "/action/find"
+	findReq := bytes.NewBuffer([]byte(
+		`{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {}
+		}`,
+	))
+	bearerToken := "BEARER_TOKEN"
+
+	t.Run("BearerToken", func(t *testing.T) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, findURI, findReq)
+		require.NoError(t, err)
+
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Add("Authorization", "Bearer "+bearerToken)
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, res.Body.Close())
+		})
+
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"documents":[]}`, string(body))
+	})
+
+	t.Run("BearerTokenPersists", func(t *testing.T) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, findURI, findReq)
+		require.NoError(t, err)
+
+		req.Header.Set("Content-Type", "application/json")
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, res.Body.Close())
+		})
+
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 
 		body, err := io.ReadAll(res.Body)
