@@ -96,7 +96,6 @@ Here's a step-by-step guide to get you started:
    volumes:
      ferret_data:
      keydb:
-
    ```
 
    Replace `<username>` and `<password>` with your FerretDB connection details.
