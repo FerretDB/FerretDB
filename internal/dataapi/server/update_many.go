@@ -70,10 +70,10 @@ func (s *Server) UpdateMany(w http.ResponseWriter, r *http.Request) {
 
 	resDoc := must.NotFail(must.NotFail(resMsg.OpMsg.DocumentRaw()).Decode())
 
-	res := must.NotFail(wirebson.NewDocument(
+	res := wirebson.MustDocument(
 		"matchedCount", resDoc.Get("n"),
 		"modifiedCount", resDoc.Get("nModified"),
-	))
+	)
 
 	if upsertedRaw := resDoc.Get("upserted"); upsertedRaw != nil {
 		upserted := must.NotFail(upsertedRaw.(wirebson.AnyArray).Decode())

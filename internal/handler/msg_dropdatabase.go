@@ -50,7 +50,7 @@ func (h *Handler) msgDropDatabase(connCtx context.Context, req *middleware.Reque
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.ResponseMsg(wirebson.MustDocument(
+	return middleware.ResponseDoc(req, wirebson.MustDocument(
 		"ok", float64(1),
 	))
 }

@@ -46,7 +46,7 @@ func (h *Handler) msgHello(connCtx context.Context, req *middleware.Request) (*m
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }
 
 // hello checks client metadata and returns hello's document fields.
@@ -56,7 +56,7 @@ func (h *Handler) hello(ctx context.Context, doc *wirebson.Document, tcpHost, na
 		return nil, lazyerrors.Error(err)
 	}
 
-	res := must.NotFail(wirebson.NewDocument())
+	res := wirebson.MustDocument()
 
 	switch doc.Command() {
 	case "hello":
@@ -82,7 +82,7 @@ func (h *Handler) hello(ctx context.Context, doc *wirebson.Document, tcpHost, na
 		}
 
 		must.NoError(res.Add("setName", name))
-		must.NoError(res.Add("hosts", must.NotFail(wirebson.NewArray(tcpHost))))
+		must.NoError(res.Add("hosts", wirebson.MustArray(tcpHost)))
 	}
 
 	must.NoError(res.Add("maxBsonObjectSize", maxBsonObjectSize))

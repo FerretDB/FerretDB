@@ -70,7 +70,7 @@ func (h *Handler) msgDrop(connCtx context.Context, req *middleware.Request) (*mi
 		return nil, lazyerrors.Error(err)
 	}
 
-	res := must.NotFail(wirebson.NewDocument())
+	res := wirebson.MakeDocument(3)
 	if dropped {
 		must.NoError(res.Add("nIndexesWas", int32(1))) // TODO https://github.com/FerretDB/FerretDB/issues/2337
 		must.NoError(res.Add("ns", dbName+"."+collectionName))
@@ -78,5 +78,5 @@ func (h *Handler) msgDrop(connCtx context.Context, req *middleware.Request) (*mi
 
 	must.NoError(res.Add("ok", float64(1)))
 
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }
