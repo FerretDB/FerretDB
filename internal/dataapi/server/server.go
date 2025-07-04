@@ -24,6 +24,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/xdg-go/scram"
@@ -48,6 +49,8 @@ func New(l *slog.Logger, handler *handler.Handler) *Server {
 type Server struct {
 	l       *slog.Logger
 	handler *handler.Handler
+
+	m sync.Map
 }
 
 // AuthMiddleware handles SCRAM authentication based on the username and password specified in request.
@@ -60,10 +63,12 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 		if bearer := strings.HasPrefix(auth, "Bearer "); bearer {
 			bearerToken := strings.TrimPrefix(auth, "Bearer ")
 
-			// check token
-			_ = bearerToken
+			if _, ok := s.m.Load(bearerToken); !ok {
+				http.Error(w, "token is not valid", http.StatusUnauthorized)
+				return
+			}
 
-			next.ServeHTTP(w, r.WithContext(ctx))
+			next.ServeHTTP(w, r)
 
 			return
 		}

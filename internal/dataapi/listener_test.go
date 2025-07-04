@@ -352,11 +352,11 @@ func TestBearerToken(t *testing.T) {
 			require.NoError(t, res.Body.Close())
 		})
 
-		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+		assert.Equal(t, http.StatusUnauthorized, res.StatusCode)
 
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
-		assert.JSONEq(t, `{"error":"no authentication methods were specified", "error_code":"InvalidParameter"}`, string(body))
+		assert.Equal(t, "token is not valid\n", string(body))
 	})
 }
 
