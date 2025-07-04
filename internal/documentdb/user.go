@@ -47,11 +47,9 @@ func CreateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, doc *wirebs
 
 		if roles := doc.Get("roles"); roles != nil {
 			// valid value of "roles" is checked already by [documentdb_api.CreateUser]
-			rolesV := roles.(wirebson.AnyArray)
-
 			var rolesArr *wirebson.Array
 
-			if rolesArr, err = rolesV.Decode(); err != nil {
+			if rolesArr, err = roles.(wirebson.AnyArray).Decode(); err != nil {
 				return lazyerrors.Error(err)
 			}
 
