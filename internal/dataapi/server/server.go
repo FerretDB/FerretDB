@@ -18,6 +18,7 @@ package server
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -155,6 +156,15 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
+
+		b := make([]byte, 32)
+		if _, err = rand.Read(b); err != nil {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusInternalServerError)
+		}
+
+		token := fmt.Sprintf("%x", b)
+		s.m.Store(token, true)
+		w.Header().Set("Authorization", "Bearer "+token)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
