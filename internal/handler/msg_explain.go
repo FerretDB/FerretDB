@@ -136,17 +136,17 @@ func (h *Handler) msgExplain(connCtx context.Context, req *middleware.Request) (
 		}
 	}
 
-	serverInfo := must.NotFail(wirebson.NewDocument(
+	serverInfo := wirebson.MustDocument(
 		"host", hostname,
 		"port", int32(port),
 		"version", version.Get().MongoDBVersion,
 		"gitVersion", version.Get().Commit,
 
 		// our extensions
-		"ferretdb", must.NotFail(wirebson.NewDocument(
+		"ferretdb", wirebson.MustDocument(
 			"version", version.Get().Version,
-		)),
-	))
+		),
+	)
 
 	res, err := wirebson.NewDocument(
 		"queryPlanner", queryPlan,

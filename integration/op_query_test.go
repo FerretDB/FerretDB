@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
@@ -95,12 +94,12 @@ func TestOpQuery(t *testing.T) {
 
 		FixCluster(t, res)
 
-		expected := must.NotFail(wirebson.NewDocument(
+		expected := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "Bad numberToReturn (0) for $cmd type ns - can only be 1 or -1",
 			"code", int32(16979),
 			"codeName", "Location16979",
-		))
+		)
 
 		testutil.AssertEqual(t, expected, res)
 	})
@@ -156,7 +155,7 @@ func TestOpQueryIsMaster(t *testing.T) {
 
 			FixCluster(t, res)
 
-			expectedComparable := must.NotFail(wirebson.NewDocument(
+			expectedComparable := wirebson.MustDocument(
 				"ismaster", true,
 				"maxBsonObjectSize", int32(16777216),
 				"maxMessageSizeBytes", int32(48000000),
@@ -166,7 +165,7 @@ func TestOpQueryIsMaster(t *testing.T) {
 				"maxWireVersion", int32(21),
 				"readOnly", false,
 				"ok", float64(1),
-			))
+			)
 			testutil.AssertEqual(t, expectedComparable, res)
 		})
 	}
@@ -225,7 +224,7 @@ func TestOpQueryIsMasterHelloOk(t *testing.T) {
 
 			FixCluster(t, res)
 
-			expectedComparable := must.NotFail(wirebson.NewDocument(
+			expectedComparable := wirebson.MustDocument(
 				"helloOk", true,
 				"ismaster", true,
 				"maxBsonObjectSize", int32(16777216),
@@ -236,7 +235,7 @@ func TestOpQueryIsMasterHelloOk(t *testing.T) {
 				"maxWireVersion", int32(21),
 				"readOnly", false,
 				"ok", float64(1),
-			))
+			)
 			testutil.AssertEqual(t, expectedComparable, res)
 		})
 	}
@@ -286,7 +285,7 @@ func TestOpQueryHello(tt *testing.T) {
 
 	FixCluster(t, res)
 
-	expectedComparable := must.NotFail(wirebson.NewDocument(
+	expectedComparable := wirebson.MustDocument(
 		"isWritablePrimary", true,
 		"maxBsonObjectSize", int32(16777216),
 		"maxMessageSizeBytes", int32(48000000),
@@ -296,6 +295,6 @@ func TestOpQueryHello(tt *testing.T) {
 		"maxWireVersion", int32(21),
 		"readOnly", false,
 		"ok", float64(1),
-	))
+	)
 	testutil.AssertEqual(t, expectedComparable, res)
 }

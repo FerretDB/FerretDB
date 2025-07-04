@@ -28,7 +28,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // msgHostInfo implements `hostInfo` command.
@@ -75,19 +74,19 @@ func (h *Handler) msgHostInfo(connCtx context.Context, req *middleware.Request) 
 	}
 
 	return middleware.ResponseDoc(req, wirebson.MustDocument(
-		"system", must.NotFail(wirebson.NewDocument(
+		"system", wirebson.MustDocument(
 			"currentTime", now,
 			"hostname", hostname,
 			"cpuAddrSize", int32(strconv.IntSize),
 			"numCores", int32(runtime.GOMAXPROCS(-1)),
 			"cpuArch", runtime.GOARCH,
-		)),
-		"os", must.NotFail(wirebson.NewDocument(
+		),
+		"os", wirebson.MustDocument(
 			"type", os,
 			"name", osName,
 			"version", osVersion,
-		)),
-		"extra", must.NotFail(wirebson.NewDocument()),
+		),
+		"extra", wirebson.MustDocument(),
 		"ok", float64(1),
 	))
 }
