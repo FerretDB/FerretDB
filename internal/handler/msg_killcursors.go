@@ -69,10 +69,10 @@ func (h *Handler) msgKillCursors(connCtx context.Context, req *middleware.Reques
 	}
 
 	var ids []int64
-	cursorsKilled := wirebson.MakeArray(0)
-	cursorsNotFound := wirebson.MakeArray(0)
-	cursorsAlive := wirebson.MakeArray(0)
-	cursorsUnknown := wirebson.MakeArray(0)
+	cursorsKilled := wirebson.MustArray()
+	cursorsNotFound := wirebson.MustArray()
+	cursorsAlive := wirebson.MustArray()
+	cursorsUnknown := wirebson.MustArray()
 
 	for i := range cursors.Len() {
 		v := cursors.Get(i)

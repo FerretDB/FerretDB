@@ -70,9 +70,9 @@ func (s *Server) FindOne(w http.ResponseWriter, r *http.Request) {
 		doc = must.NotFail(docs.Get(0).(wirebson.AnyDocument).Encode())
 	}
 
-	res := must.NotFail(wirebson.NewDocument(
+	res := wirebson.MustDocument(
 		"document", doc,
-	))
+	)
 
 	s.writeJSONResponse(ctx, w, res)
 }

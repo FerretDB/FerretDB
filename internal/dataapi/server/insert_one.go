@@ -68,9 +68,9 @@ func (s *Server) InsertOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := must.NotFail(wirebson.NewDocument(
+	res := wirebson.MustDocument(
 		"n", float64(1),
-	))
+	)
 
 	s.writeJSONResponse(ctx, w, res)
 }

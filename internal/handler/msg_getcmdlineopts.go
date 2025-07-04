@@ -20,7 +20,6 @@ import (
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // msgGetCmdLineOpts implements `getCmdLineOpts` command.
@@ -34,8 +33,8 @@ func (h *Handler) msgGetCmdLineOpts(connCtx context.Context, req *middleware.Req
 	}
 
 	return middleware.ResponseDoc(req, wirebson.MustDocument(
-		"argv", must.NotFail(wirebson.NewArray("ferretdb")),
-		"parsed", must.NotFail(wirebson.NewDocument()),
+		"argv", wirebson.MustArray("ferretdb"),
+		"parsed", wirebson.MustDocument(),
 		"ok", float64(1),
 	))
 }
