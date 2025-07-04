@@ -105,15 +105,16 @@ func setupUser(ctx context.Context, uri string, l *slog.Logger) error {
 		})
 
 		if err == nil {
-			if err = checkResponse(res); err == nil {
-				l.InfoContext(ctx, "User dropped")
+			l.InfoContext(ctx, "Drop user called", slog.String("response", res.LogMessage()))
 
-				break
-			}
+			break
 		}
 
 		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "42704" && pgErr.Message == `role "username" does not exist` {
+
+		// remove this check once the issue is solved
+		// TODO https://github.com/FerretDB/FerretDB/issues/5323
+		if errors.As(err, &pgErr) && pgErr.Code == "42704" {
 			err = nil
 
 			break
@@ -153,35 +154,26 @@ func setupUser(ctx context.Context, uri string, l *slog.Logger) error {
 		return lazyerrors.Error(err)
 	}
 
-	if err = checkResponse(res); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	l.InfoContext(ctx, "User created")
-
-	return nil
-}
-
-// checkResponse checks DocumentDB API response contains successful response.
-func checkResponse(res wirebson.RawDocument) error {
-	doc, err := res.Decode()
+	d, err := res.Decode()
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	switch ok := doc.Get("ok").(type) {
+	switch ok := d.Get("ok").(type) {
 	case float64:
 		if ok != float64(1) {
-			return lazyerrors.Errorf("Unsuccessful response: %s", doc.LogMessage())
+			return lazyerrors.Errorf("Failed to create user: %s", d.LogMessage())
 		}
 	case int32:
 		// TODO https://github.com/FerretDB/FerretDB/issues/5313
 		if ok != int32(1) {
-			return lazyerrors.Errorf("Unsuccessful response: %s", doc.LogMessage())
+			return lazyerrors.Errorf("Failed to create user: %s", d.LogMessage())
 		}
 	default:
 		panic("unexpected type")
 	}
+
+	l.InfoContext(ctx, "User created", slog.String("response", d.LogMessage()))
 
 	return nil
 }
