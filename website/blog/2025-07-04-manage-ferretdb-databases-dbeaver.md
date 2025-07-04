@@ -60,7 +60,7 @@ Here's a step-by-step guide:
    In the "Main" tab, fill in the connection details by entering the host, port, and authentication information for your FerretDB instance.
    If you have [authentication enabled on your FerretDB instance](https://docs.ferretdb.io/security/authentication/), select the appropriate authentication method (e.g., "SCRAM-SHA-256") and enter your Username and Password.
 
-   ![Image Suggestion: A screenshot of DBeaver's "New Database Connection" wizard](/img/blog/dbeaver-connection.png)
+   ![A screenshot of DBeaver's 'New Database Connection' wizard](/img/blog/dbeaver-connection.png)
 
 5. **Test Connection:** Click the "Test Connection..." button.
    If the connection is successful, you'll see a confirmation message.
