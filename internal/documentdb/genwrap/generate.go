@@ -46,11 +46,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 )
-
-// DB defines functions used for database operations.
-type DB interface {
-	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
-}
 `))
 
 // headerData contains information needed for generating header.
@@ -68,7 +63,7 @@ func {{.FuncName}}({{.Params}}) ({{.Returns}}) {
 	ctx, span := otel.Tracer("").Start(ctx, "{{.SQLFuncName}}", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := db.QueryRow({{.QueryRowArgs}})
+	row := conn.QueryRow({{.QueryRowArgs}})
 	if err = row.Scan({{.ScanArgs}}); err != nil {
 		err = mongoerrors.Make(ctx, err, "{{.SQLFuncName}}", l)
 	}
@@ -135,7 +130,7 @@ func generateGoFunction(writer io.Writer, data *templateData) error {
 	}
 	data.QueryRowArgs = queryRowArgs
 
-	params := "ctx context.Context, db DB, l *slog.Logger"
+	params := "ctx context.Context, conn *pgx.Conn, l *slog.Logger"
 	if data.Params != "" {
 		params = fmt.Sprintf("%s, %s", params, data.Params)
 	}

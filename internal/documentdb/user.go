@@ -16,7 +16,6 @@ package documentdb
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 
@@ -28,54 +27,63 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// CreateUser creates a new user and grants it the necessary role and permissions
-// to create/update/delete users.
-// It uses a transaction to ensure that roles and permissions are set atomically.
-func CreateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, doc *wirebson.Document) (res wirebson.RawDocument, err error) { //nolint:lll // for readability
+// CreateUser creates a new user.
+// Users with the `clusterAdmin` role are given PostgreSQL's SUPERUSER privileges.
+func CreateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, doc *wirebson.Document) (wirebson.RawDocument, error) {
 	user, _ := doc.Get("createUser").(string)
 	sanitizedUser := pgx.Identifier{user}.Sanitize()
 
-	var tx pgx.Tx
+	var res wirebson.RawDocument
 
-	if tx, err = conn.Begin(ctx); err != nil {
-		err = lazyerrors.Error(err)
+	err := pgx.BeginTxFunc(ctx, conn, pgx.TxOptions{}, func(tx pgx.Tx) error {
+		var err error
 
-		return
-	}
-
-	defer func() {
-		if e := tx.Rollback(ctx); e != nil && !errors.Is(e, pgx.ErrTxClosed) && err == nil {
-			err = lazyerrors.Error(e)
+		res, err = documentdb_api.CreateUser(ctx, tx.Conn(), l, must.NotFail(doc.Encode()))
+		if err != nil {
+			return lazyerrors.Error(err)
 		}
-	}()
 
-	res, err = documentdb_api.CreateUser(ctx, tx, l, must.NotFail(doc.Encode()))
+		var clusterAdmin bool
+
+		if roles := doc.Get("roles"); roles != nil {
+			// valid value of "roles" is checked already by [documentdb_api.CreateUser]
+			var rolesArr *wirebson.Array
+
+			if rolesArr, err = roles.(wirebson.AnyArray).Decode(); err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			for role := range rolesArr.Values() {
+				var roleDoc *wirebson.Document
+
+				if roleDoc, err = role.(wirebson.AnyDocument).Decode(); err != nil {
+					return lazyerrors.Error(err)
+				}
+
+				if roleName := roleDoc.Get("role").(string); roleName == "clusterAdmin" {
+					clusterAdmin = true
+
+					break
+				}
+			}
+		}
+
+		if !clusterAdmin {
+			return nil
+		}
+
+		l.DebugContext(ctx, "Updating user to SUPERUSER", slog.String("user", user))
+
+		q := fmt.Sprintf("ALTER ROLE %s SUPERUSER", sanitizedUser)
+		if _, err = tx.Exec(ctx, q); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		return nil
+	})
 	if err != nil {
-		err = lazyerrors.Error(err)
-
-		return
+		return nil, lazyerrors.Error(err)
 	}
 
-	q := fmt.Sprintf("ALTER ROLE %s CREATEROLE", sanitizedUser)
-	if _, err = tx.Exec(ctx, q); err != nil {
-		err = lazyerrors.Error(err)
-
-		return
-	}
-
-	// ADMIN OPTION is necessary for creating users
-	q = fmt.Sprintf("GRANT documentdb_admin_role, documentdb_readonly_role TO %s WITH ADMIN OPTION", sanitizedUser)
-	if _, err = tx.Exec(ctx, q); err != nil {
-		err = lazyerrors.Error(err)
-
-		return
-	}
-
-	if err = tx.Commit(ctx); err != nil {
-		err = lazyerrors.Error(err)
-
-		return
-	}
-
-	return
+	return res, nil
 }
