@@ -17,6 +17,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -25,6 +26,7 @@ import (
 
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
@@ -33,6 +35,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/debug"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 )
 
@@ -73,9 +76,9 @@ func setupMongoDB(ctx context.Context, logger *slog.Logger, uri, name string) er
 	return ctx.Err()
 }
 
-// setupUser creates username:password credentials, because the user created
-// upon Docker container initialization behaves slightly different.
-// It waits for DocumentDB extension to be created before creating the user.
+// setupUser waits for the given PostgreSQL URI to become available, and creates
+// an admin user with fixed credentials `username:password` using DocumentDB API.
+// It drops the user first if it exists.
 func setupUser(ctx context.Context, uri string, l *slog.Logger) error {
 	sp, err := state.NewProvider("")
 	if err != nil {
@@ -91,13 +94,22 @@ func setupUser(ctx context.Context, uri string, l *slog.Logger) error {
 
 	var retry int64
 
+	dropUser := must.NotFail(wirebson.MustDocument("dropUser", "username").Encode())
+
 	for ctx.Err() == nil {
 		err = pool.WithConn(func(conn *pgx.Conn) error {
-			_, err = documentdb_api.BinaryExtendedVersion(ctx, conn, l)
+			_, err = documentdb_api.DropUser(ctx, conn, l, dropUser)
 			return err
 		})
 
 		if err == nil {
+			break
+		}
+
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "42704" && pgErr.Message == `role "username" does not exist` {
+			err = nil
+
 			break
 		}
 
@@ -111,7 +123,7 @@ func setupUser(ctx context.Context, uri string, l *slog.Logger) error {
 		return lazyerrors.Error(err)
 	}
 
-	doc := wirebson.MustDocument(
+	createUser := wirebson.MustDocument(
 		"createUser", "username",
 		"pwd", "password",
 		"roles", wirebson.MustArray(
@@ -129,7 +141,7 @@ func setupUser(ctx context.Context, uri string, l *slog.Logger) error {
 	var res wirebson.RawDocument
 
 	err = pool.WithConn(func(conn *pgx.Conn) error {
-		res, err = documentdb.CreateUser(ctx, conn, l, doc)
+		res, err = documentdb.CreateUser(ctx, conn, l, createUser)
 
 		return err
 	})
@@ -179,7 +191,7 @@ func setup(ctx context.Context, logger *slog.Logger) error {
 	}
 
 	uri := "postgres://pg-user:pg-pass@127.0.0.1:5432/postgres"
-	if err = setupUser(ctx, uri, logging.WithName(logger, "documentdb")); err != nil {
+	if err = setupUser(ctx, uri, logging.WithName(logger, "postgres")); err != nil {
 		return lazyerrors.Error(err)
 	}
 

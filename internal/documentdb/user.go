@@ -27,8 +27,8 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// CreateUser creates a new user and grants users with clusterAdmin role
-// necessary permissions to create/update/delete users.
+// CreateUser creates a new user.
+// Users with the `clusterAdmin` role are given PostgreSQL's SUPERUSER privileges.
 func CreateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, doc *wirebson.Document) (wirebson.RawDocument, error) {
 	user, _ := doc.Get("createUser").(string)
 	sanitizedUser := pgx.Identifier{user}.Sanitize()
@@ -46,9 +46,23 @@ func CreateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, doc *wirebs
 		var clusterAdmin bool
 
 		if roles := doc.Get("roles"); roles != nil {
-			// valid types of "roles" is checked already by [documentdb_api.CreateUser]
-			for role := range doc.Get("roles").(*wirebson.Array).Values() {
-				if roleName := role.(*wirebson.Document).Get("role").(string); roleName == "clusterAdmin" {
+			// valid value of "roles" is checked already by [documentdb_api.CreateUser]
+			rolesV := roles.(wirebson.AnyArray)
+
+			var rolesArr *wirebson.Array
+
+			if rolesArr, err = rolesV.Decode(); err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			for role := range rolesArr.Values() {
+				var roleDoc *wirebson.Document
+
+				if roleDoc, err = role.(wirebson.AnyDocument).Decode(); err != nil {
+					return lazyerrors.Error(err)
+				}
+
+				if roleName := roleDoc.Get("role").(string); roleName == "clusterAdmin" {
 					clusterAdmin = true
 
 					break
@@ -60,15 +74,9 @@ func CreateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, doc *wirebs
 			return nil
 		}
 
-		l.DebugContext(ctx, "Updating user with CREATEROLE and ADMIN OPTION", slog.String("user", user))
+		l.DebugContext(ctx, "Updating user to SUPERUSER", slog.String("user", user))
 
-		q := fmt.Sprintf("ALTER ROLE %s CREATEROLE", sanitizedUser)
-		if _, err = tx.Exec(ctx, q); err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		// ADMIN OPTION is necessary for creating users
-		q = fmt.Sprintf("GRANT documentdb_admin_role, documentdb_readonly_role TO %s WITH ADMIN OPTION", sanitizedUser)
+		q := fmt.Sprintf("ALTER ROLE %s SUPERUSER", sanitizedUser)
 		if _, err = tx.Exec(ctx, q); err != nil {
 			return lazyerrors.Error(err)
 		}
