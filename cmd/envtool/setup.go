@@ -78,7 +78,7 @@ func setupMongoDB(ctx context.Context, logger *slog.Logger, uri, name string) er
 
 // setupUser waits for the given PostgreSQL URI to become available, and creates
 // an admin user with fixed credentials `username:password` using DocumentDB API.
-// It drops the user first if it exists.
+// It drops the user before creating one.
 func setupUser(ctx context.Context, uri string, l *slog.Logger) error {
 	sp, err := state.NewProvider("")
 	if err != nil {
