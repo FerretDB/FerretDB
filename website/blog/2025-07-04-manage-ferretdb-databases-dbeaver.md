@@ -82,7 +82,7 @@ db.books.find({ 'authors.nationality': 'British' })
 
 Running this in DBeaver's SQL editor would yield the matching documents, which you can see in the results grid.
 
-![Image Suggestion: A screenshot of DBeaver's data editor showing the books collection](/img/blog/dbeaver-collection.png)
+![DBeaver's data editor showing the books collection](/img/blog/dbeaver-collection.png)
 
 This output demonstrates DBeaver's seamless interaction with FerretDB, allowing you to manage and query your document data using familiar tools and methods.
 
