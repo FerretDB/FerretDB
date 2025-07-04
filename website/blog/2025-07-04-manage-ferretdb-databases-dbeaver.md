@@ -66,7 +66,7 @@ Here's a step-by-step guide:
    If the connection is successful, you'll see a confirmation message.
    Then click Finish.
    The new connection will appear in your "Database Navigator."
-6. **Explore Your Data:** Expand your new FerretDB connection in the "Database Navigator". You can now browse databases, collections, view documents, and execute queries in the SQL editor or the dedicated MongoDB shell.
+6. **Explore Your Data:** Expand your new FerretDB connection in the "Database Navigator". You can now browse databases, collections, view documents, and execute queries in the script editor or the dedicated MongoDB shell.
 
 ## Exploring FerretDB data with DBeaver
 
@@ -80,7 +80,7 @@ Here's how you might query the books collection to find all books authored by Br
 db.books.find({ 'authors.nationality': 'British' })
 ```
 
-Running this in DBeaver's SQL editor would yield the matching documents, which you can see in the results grid.
+Running this in DBeaver's script editor would yield the matching documents, which you can see in the results grid.
 
 ![DBeaver's data editor showing the books collection](/img/blog/dbeaver-collection.png)
 
