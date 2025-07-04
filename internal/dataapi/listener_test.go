@@ -213,6 +213,180 @@ func TestSmokeDataAPI(t *testing.T) {
 	})
 }
 
+func TestNoAuth(t *testing.T) {
+	t.Parallel()
+
+	addr, db := setupDataAPI(t, false)
+	coll := testutil.CollectionName(t)
+	ctx := testutil.Ctx(t)
+
+	findURI := "http://" + addr + "/action/find"
+	findReq := bytes.NewBuffer([]byte(
+		`{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {}
+		}`,
+	))
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, findURI, findReq)
+	require.NoError(t, err)
+
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, res.Body.Close())
+	})
+
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	body, err := io.ReadAll(res.Body)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"documents":[]}`, string(body))
+}
+
+func TestBasicAuthDoesNotPersist(t *testing.T) {
+	t.Parallel()
+
+	addr, db := setupDataAPI(t, true)
+	coll := testutil.CollectionName(t)
+	ctx := testutil.Ctx(t)
+
+	findURI := "http://" + addr + "/action/find"
+	findReq := bytes.NewBuffer([]byte(
+		`{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {}
+		}`,
+	))
+
+	t.Run("BasicAuth", func(t *testing.T) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, findURI, findReq)
+		require.NoError(t, err)
+
+		req.Header.Set("Content-Type", "application/json")
+		req.SetBasicAuth("username", "password")
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, res.Body.Close())
+		})
+
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"documents":[]}`, string(body))
+	})
+
+	t.Run("BasicAuthDoesNotPersist", func(t *testing.T) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, findURI, findReq)
+		require.NoError(t, err)
+
+		req.Header.Set("Content-Type", "application/json")
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, res.Body.Close())
+		})
+
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"error":"no authentication methods were specified", "error_code":"InvalidParameter"}`, string(body))
+	})
+}
+
+func TestBearerToken(t *testing.T) {
+	t.Parallel()
+
+	addr, db := setupDataAPI(t, true)
+	coll := testutil.CollectionName(t)
+	ctx := testutil.Ctx(t)
+
+	findURI := "http://" + addr + "/action/find"
+	findReq := bytes.NewBuffer([]byte(
+		`{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {}
+		}`,
+	))
+
+	var token string
+
+	t.Run("BasicAuth", func(t *testing.T) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, findURI, findReq)
+		require.NoError(t, err)
+		req.SetBasicAuth("username", "password")
+
+		req.Header.Set("Content-Type", "application/json")
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, res.Body.Close())
+		})
+
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"documents":[]}`, string(body))
+
+		authorization := res.Header.Get("Authorization")
+		assert.True(t, strings.HasPrefix(authorization, "Bearer "))
+
+		token = strings.TrimPrefix(authorization, "Bearer ")
+		assert.NotEmpty(t, token)
+	})
+
+	t.Run("InvalidBearerToken", func(t *testing.T) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, findURI, findReq)
+		require.NoError(t, err)
+
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer INVALID_BEARER_TOKEN")
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, res.Body.Close())
+		})
+
+		assert.Equal(t, http.StatusUnauthorized, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+		assert.Equal(t, "token is not valid\n", string(body))
+	})
+
+	t.Run("BearerToken", func(t *testing.T) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, findURI, findReq)
+		require.NoError(t, err)
+
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+token)
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, res.Body.Close())
+		})
+
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		assert.JSONEq(t, `{"documents":[]}`, string(body))
+	})
+}
+
 // postJSON sends POST request with provided JSON to data API under provided uri.
 // It handles necessary headers, as well as authentication.
 func postJSON(tb testing.TB, uri, jsonBody string) (*http.Response, error) {

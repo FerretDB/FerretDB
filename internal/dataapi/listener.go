@@ -24,6 +24,7 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/server"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
@@ -70,10 +71,13 @@ func (lis *Listener) Run(ctx context.Context) {
 	}
 
 	srv := &http.Server{
-		Handler:  lis.srv.ConnInfoMiddleware(srvHandler),
+		Handler:  srvHandler,
 		ErrorLog: slog.NewLogLogger(lis.opts.L.Handler(), slog.LevelError),
 		BaseContext: func(net.Listener) context.Context {
 			return ctx
+		},
+		ConnContext: func(ctx context.Context, c net.Conn) context.Context {
+			return conninfo.Ctx(ctx, conninfo.New())
 		},
 	}
 

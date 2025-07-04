@@ -18,17 +18,18 @@ package server
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/xdg-go/scram"
 
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
@@ -49,6 +50,8 @@ func New(l *slog.Logger, handler *handler.Handler) *Server {
 type Server struct {
 	l       *slog.Logger
 	handler *handler.Handler
+
+	m sync.Map
 }
 
 // AuthMiddleware handles SCRAM authentication based on the username and password specified in request.
@@ -56,6 +59,21 @@ type Server struct {
 func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
+
+		auth := r.Header.Get("Authorization")
+		if bearer := strings.HasPrefix(auth, "Bearer "); bearer {
+			bearerToken := strings.TrimPrefix(auth, "Bearer ")
+
+			if _, ok := s.m.Load(bearerToken); !ok {
+				http.Error(w, "token is not valid", http.StatusUnauthorized)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+
+			return
+		}
+
 		username, password, ok := r.BasicAuth()
 
 		if !ok {
@@ -139,19 +157,16 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
+		b := make([]byte, 32)
+		if _, err = rand.Read(b); err != nil {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusInternalServerError)
+		}
+
+		token := fmt.Sprintf("%x", b)
+		s.m.Store(token, true)
+		w.Header().Set("Authorization", "Bearer "+token)
+
 		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
-// ConnInfoMiddleware returns a handler function that creates a new [*conninfo.ConnInfo],
-// calls the next handler, and closes the connection info after the request is done.
-func (s *Server) ConnInfoMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		connInfo := conninfo.New()
-
-		defer connInfo.Close()
-
-		next.ServeHTTP(w, r.WithContext(conninfo.Ctx(r.Context(), connInfo)))
 	})
 }
 
