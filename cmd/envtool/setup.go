@@ -17,7 +17,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -26,16 +25,13 @@ import (
 
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
-	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/debug"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 )
 
@@ -78,7 +74,6 @@ func setupMongoDB(ctx context.Context, logger *slog.Logger, uri, name string) er
 
 // setupUser waits for the given PostgreSQL URI to become available, and creates
 // an admin user with fixed credentials `username:password` using DocumentDB API.
-// It drops the user before creating one.
 func setupUser(ctx context.Context, uri string, l *slog.Logger) error {
 	sp, err := state.NewProvider("")
 	if err != nil {
@@ -93,42 +88,6 @@ func setupUser(ctx context.Context, uri string, l *slog.Logger) error {
 	defer pool.Close()
 
 	var retry int64
-
-	dropUser := must.NotFail(wirebson.MustDocument("dropUser", "username").Encode())
-
-	var res wirebson.RawDocument
-
-	for ctx.Err() == nil {
-		err = pool.WithConn(func(conn *pgx.Conn) error {
-			res, err = documentdb_api.DropUser(ctx, conn, l, dropUser)
-			return err
-		})
-
-		if err == nil {
-			l.InfoContext(ctx, "Drop user called", slog.String("response", res.LogMessage()))
-
-			break
-		}
-
-		var pgErr *pgconn.PgError
-
-		// remove this check once the issue is solved
-		// TODO https://github.com/FerretDB/FerretDB/issues/5323
-		if errors.As(err, &pgErr) && pgErr.Code == "42704" {
-			err = nil
-
-			break
-		}
-
-		l.InfoContext(ctx, "Waiting for DocumentDB extension to be created", logging.Error(err))
-
-		retry++
-		ctxutil.SleepWithJitter(ctx, time.Second, retry)
-	}
-
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
 
 	createUser := wirebson.MustDocument(
 		"createUser", "username",
@@ -145,11 +104,24 @@ func setupUser(ctx context.Context, uri string, l *slog.Logger) error {
 		),
 	)
 
-	err = pool.WithConn(func(conn *pgx.Conn) error {
-		res, err = documentdb.CreateUser(ctx, conn, l, createUser)
+	var res wirebson.RawDocument
 
-		return err
-	})
+	for ctx.Err() == nil {
+		err = pool.WithConn(func(conn *pgx.Conn) error {
+			res, err = documentdb.CreateUser(ctx, conn, l, createUser)
+			return err
+		})
+
+		if err == nil {
+			break
+		}
+
+		l.InfoContext(ctx, "Waiting for DocumentDB extension to be created", logging.Error(err))
+
+		retry++
+		ctxutil.SleepWithJitter(ctx, time.Second, retry)
+	}
+
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
