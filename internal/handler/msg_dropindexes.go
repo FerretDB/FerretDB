@@ -59,5 +59,5 @@ func (h *Handler) msgDropIndexes(connCtx context.Context, req *middleware.Reques
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }

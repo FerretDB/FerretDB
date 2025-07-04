@@ -49,7 +49,7 @@ func (h *Handler) msgKillAllSessions(connCtx context.Context, req *middleware.Re
 			_ = h.Pool.KillCursor(connCtx, cursorID)
 		}
 
-		return middleware.ResponseMsg(wirebson.MustDocument(
+		return middleware.ResponseDoc(req, wirebson.MustDocument(
 			"ok", float64(1),
 		))
 	}
@@ -60,7 +60,7 @@ func (h *Handler) msgKillAllSessions(connCtx context.Context, req *middleware.Re
 		_ = h.Pool.KillCursor(connCtx, cursorID)
 	}
 
-	return middleware.ResponseMsg(wirebson.MustDocument(
+	return middleware.ResponseDoc(req, wirebson.MustDocument(
 		"ok", float64(1),
 	))
 }

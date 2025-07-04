@@ -269,15 +269,7 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 		must.NoError(err)
 
 		proxyHeader = resp.WireHeader()
-
-		switch {
-		case resp.OpMsg != nil:
-			proxyBody = resp.OpMsg
-		case resp.OpReply != nil:
-			proxyBody = resp.OpReply
-		default:
-			panic("response body is nil")
-		}
+		proxyBody = resp.WireBody()
 	}
 
 	// handle request unless we are in proxy mode
@@ -426,7 +418,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		if err == nil {
 			var res *middleware.Response
 			if res, err = c.h.Handle(connCtx, middleware.RequestWire(reqHeader, query)); res != nil {
-				resBody = res.OpReply
+				resBody = res.WireBody()
 			}
 		}
 

@@ -35,7 +35,7 @@ func (h *Handler) msgListCommands(connCtx context.Context, req *middleware.Reque
 		return nil, err
 	}
 
-	cmdList := must.NotFail(wirebson.NewDocument())
+	cmdList := wirebson.MustDocument()
 
 	for _, name := range slices.Sorted(maps.Keys(h.commands)) {
 		help := h.commands[name].Help
@@ -43,12 +43,12 @@ func (h *Handler) msgListCommands(connCtx context.Context, req *middleware.Reque
 			continue
 		}
 
-		must.NoError(cmdList.Add(name, must.NotFail(wirebson.NewDocument(
+		must.NoError(cmdList.Add(name, wirebson.MustDocument(
 			"help", help,
-		))))
+		)))
 	}
 
-	return middleware.ResponseMsg(wirebson.MustDocument(
+	return middleware.ResponseDoc(req, wirebson.MustDocument(
 		"commands", cmdList,
 		"ok", float64(1),
 	))

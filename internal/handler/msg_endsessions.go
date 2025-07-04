@@ -39,7 +39,7 @@ func (h *Handler) msgEndSessions(connCtx context.Context, req *middleware.Reques
 
 	h.s.EndSessions(connCtx, ids)
 
-	return middleware.ResponseMsg(wirebson.MustDocument(
+	return middleware.ResponseDoc(req, wirebson.MustDocument(
 		"ok", float64(1),
 	))
 }

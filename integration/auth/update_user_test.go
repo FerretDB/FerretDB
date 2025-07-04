@@ -146,7 +146,7 @@ func TestUpdateUserCommand(t *testing.T) {
 				}}},
 				{"ok", float64(1)},
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/939",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5313",
 		},
 		"PasswordChange": {
 			username: "a_user",
@@ -165,7 +165,7 @@ func TestUpdateUserCommand(t *testing.T) {
 				}}},
 				{"ok", float64(1)},
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/939",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5313",
 		},
 		"PasswordChangeWithSCRAMMechanism": {
 			username:   "a_user_with_scram_mechanism",
@@ -241,7 +241,7 @@ func TestUpdateUserCommand(t *testing.T) {
 				}}},
 				{"ok", float64(1)},
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/939",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5313",
 		},
 		"InvalidRoles": {
 			username: "invalid_roles",

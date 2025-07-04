@@ -41,7 +41,7 @@ import (
 // Flags.
 var (
 	targetURLF     = flag.String("target-url", "", "target system's URL; if empty, in-process FerretDB is used")
-	targetBackendF = flag.String("target-backend", "", "target system's backend: '%s'"+strings.Join(allBackends, "', '"))
+	targetBackendF = flag.String("target-backend", "", "target system's backend: "+strings.Join(allBackends, ", "))
 
 	postgreSQLURLF    = flag.String("postgresql-url", "", "in-process FerretDB: PostgreSQL URL")
 	targetUnixSocketF = flag.Bool("target-unix-socket", false, "in-process FerretDB: use Unix domain socket")

@@ -44,7 +44,7 @@ func (h *Handler) msgSASLContinue(connCtx context.Context, req *middleware.Reque
 		return nil, err
 	}
 
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }
 
 // saslContinue continues and finishes SCRAM conversation.
