@@ -312,17 +312,17 @@ func TestToken(t *testing.T) {
 	ctx := testutil.Ctx(t)
 
 	findURI := "http://" + addr + "/action/find"
-	findReq := bytes.NewBuffer([]byte(
-		`{
-			"database": "` + db + `",
-			"collection": "` + coll + `",
-			"filter": {}
-		}`,
-	))
 
 	var token string
 
 	t.Run("BasicAuth", func(t *testing.T) {
+		findReq := bytes.NewBuffer([]byte(
+			`{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {}
+		}`,
+		))
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, findURI, findReq)
 		require.NoError(t, err)
 		req.SetBasicAuth("username", "password")
@@ -346,9 +346,17 @@ func TestToken(t *testing.T) {
 		})
 		require.GreaterOrEqual(t, i, 0)
 		token = res.Cookies()[i].Value
+		require.NotEmpty(t, token)
 	})
 
 	t.Run("Token", func(t *testing.T) {
+		findReq := bytes.NewBuffer([]byte(
+			`{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {}
+		}`,
+		))
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, findURI, findReq)
 		require.NoError(t, err)
 
@@ -368,6 +376,13 @@ func TestToken(t *testing.T) {
 	})
 
 	t.Run("InvalidToken", func(t *testing.T) {
+		findReq := bytes.NewBuffer([]byte(
+			`{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {}
+		}`,
+		))
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, findURI, findReq)
 		require.NoError(t, err)
 
