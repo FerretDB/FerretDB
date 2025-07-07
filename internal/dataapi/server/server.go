@@ -60,20 +60,17 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		cookie, err := r.Cookie("ferretdb_token")
-		switch err {
-		case nil:
-			if _, ok := s.m.Load(cookie.Value); !ok {
+		auth := r.Header.Get("Authorization")
+		if bearer := strings.HasPrefix(auth, "Bearer "); bearer {
+			bearerToken := strings.TrimPrefix(auth, "Bearer ")
+
+			if _, ok := s.m.Load(bearerToken); !ok {
 				http.Error(w, "token is not valid", http.StatusUnauthorized)
 				return
 			}
 
 			next.ServeHTTP(w, r)
 
-			return
-		case http.ErrNoCookie:
-		default:
-			http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -166,14 +163,10 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 		}
 
 		token := fmt.Sprintf("%x", b)
-		token = "d"
 		s.m.Store(token, true)
-		http.SetCookie(w, &http.Cookie{
-			Name:  "ferretdb_token",
-			Value: token,
-		})
+		w.Header().Set("Authorization", "Bearer "+token)
 
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 

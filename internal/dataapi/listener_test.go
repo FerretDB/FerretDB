@@ -20,7 +20,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -310,7 +309,6 @@ func TestTokenPersists(t *testing.T) {
 	addr, db := setupDataAPI(t, true)
 	coll := testutil.CollectionName(t)
 	ctx := testutil.Ctx(t)
-
 	findURI := "http://" + addr + "/action/find"
 
 	var token string
@@ -341,12 +339,11 @@ func TestTokenPersists(t *testing.T) {
 		require.NoError(t, err)
 		assert.JSONEq(t, `{"documents":[]}`, string(body))
 
-		i := slices.IndexFunc(res.Cookies(), func(e *http.Cookie) bool {
-			return e.Name == "ferretdb_token"
-		})
-		require.GreaterOrEqual(t, i, 0)
-		token = res.Cookies()[i].Value
-		require.NotEmpty(t, token)
+		authorization := res.Header.Get("Authorization")
+		assert.True(t, strings.HasPrefix(authorization, "Bearer "))
+
+		token = strings.TrimPrefix(authorization, "Bearer ")
+		assert.NotEmpty(t, token)
 	})
 
 	t.Run("Token", func(t *testing.T) {
@@ -357,11 +354,12 @@ func TestTokenPersists(t *testing.T) {
 			"filter": {}
 		}`,
 		))
+
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, findURI, findReq)
 		require.NoError(t, err)
 
 		req.Header.Set("Content-Type", "application/json")
-		req.AddCookie(&http.Cookie{Name: "ferretdb_token", Value: token})
+		req.Header.Set("Authorization", "Bearer "+token)
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
@@ -372,7 +370,8 @@ func TestTokenPersists(t *testing.T) {
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 
 		body, err := io.ReadAll(res.Body)
-		assert.JSONEq(t, `{"documents":[]}`, string(body), string(body))
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"documents":[]}`, string(body))
 	})
 
 	t.Run("InvalidToken", func(t *testing.T) {
@@ -383,11 +382,12 @@ func TestTokenPersists(t *testing.T) {
 			"filter": {}
 		}`,
 		))
+
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, findURI, findReq)
 		require.NoError(t, err)
 
 		req.Header.Set("Content-Type", "application/json")
-		req.AddCookie(&http.Cookie{Name: "ferretdb_token", Value: "INVALID_TOKEN"})
+		req.Header.Set("Authorization", "Bearer INVALID_TOKEN")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
