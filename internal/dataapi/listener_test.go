@@ -304,7 +304,7 @@ func TestBasicAuthDoesNotPersist(t *testing.T) {
 	})
 }
 
-func TestToken(t *testing.T) {
+func TestTokenPersists(t *testing.T) {
 	t.Parallel()
 
 	addr, db := setupDataAPI(t, true)
