@@ -46,10 +46,10 @@ func (h *Handler) msgDropUser(connCtx context.Context, req *middleware.Request) 
 		return nil, err
 	}
 
-	dropUserSpec := must.NotFail(must.NotFail(wirebson.NewDocument(
+	dropUserSpec := must.NotFail(wirebson.MustDocument(
 		"dropUser", user,
 		"$db", dbName,
-	)).Encode())
+	).Encode())
 
 	var res wirebson.RawDocument
 
@@ -62,5 +62,5 @@ func (h *Handler) msgDropUser(connCtx context.Context, req *middleware.Request) 
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }

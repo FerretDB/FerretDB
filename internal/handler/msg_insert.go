@@ -55,5 +55,5 @@ func (h *Handler) msgInsert(connCtx context.Context, req *middleware.Request) (*
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.ResponseMsg(mongoerrors.MapWriteErrors(connCtx, res))
+	return middleware.ResponseDoc(req, mongoerrors.MapWriteErrors(connCtx, res))
 }

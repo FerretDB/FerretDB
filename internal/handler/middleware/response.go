@@ -15,10 +15,13 @@
 package middleware
 
 import (
+	"fmt"
+
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // Response represents outgoing result to the client.
@@ -26,62 +29,98 @@ import (
 // It may be constructed from [wirebson.AnyDocument] (for the DocumentDB handler),
 // or from [*wire.MsgHeader] and [wire.MsgBody] (for the proxy handler).
 type Response struct {
-	// The order of fields is weird to make the struct smaller due to alignment.
+	header *wire.MsgHeader
+	body   wire.MsgBody
 
-	OpMsg   *wire.OpMsg
-	OpReply *wire.OpReply
-	header  *wire.MsgHeader
+	// Remove, replace with body.
+	// TODO https://github.com/FerretDB/FerretDB/issues/4965
+	OpMsg *wire.OpMsg
 }
 
-// ResponseMsg creates a new [*wire.OpMsg] response from the given document.
-func ResponseMsg(doc wirebson.AnyDocument) (*Response, error) {
-	msg, err := wire.NewOpMsg(doc)
+// ResponseDoc creates a new response from the given document.
+func ResponseDoc(req *Request, doc wirebson.AnyDocument) (*Response, error) {
+	reqHeader := req.WireHeader()
+	res := &Response{
+		header: &wire.MsgHeader{
+			RequestID:  lastRequestID.Add(1),
+			ResponseTo: reqHeader.ResponseTo,
+		},
+	}
+
+	var err error
+
+	switch reqHeader.OpCode {
+	case wire.OpCodeMsg:
+		res.header.OpCode = wire.OpCodeMsg
+		res.OpMsg, err = wire.NewOpMsg(doc)
+		res.body = res.OpMsg
+	case wire.OpCodeQuery:
+		res.header.OpCode = wire.OpCodeReply
+		res.body, err = wire.NewOpReply(doc)
+	case wire.OpCodeReply:
+		fallthrough
+	case wire.OpCodeUpdate:
+		fallthrough
+	case wire.OpCodeInsert:
+		fallthrough
+	case wire.OpCodeGetByOID:
+		fallthrough
+	case wire.OpCodeGetMore:
+		fallthrough
+	case wire.OpCodeDelete:
+		fallthrough
+	case wire.OpCodeKillCursors:
+		fallthrough
+	case wire.OpCodeCompressed:
+		fallthrough
+	default:
+		return nil, lazyerrors.Errorf("unexpected request header %s", reqHeader)
+	}
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &Response{OpMsg: msg}, nil
-}
-
-// ResponseReply creates a new [*wire.OpReply] response from the given document.
-func ResponseReply(doc wirebson.AnyDocument) (*Response, error) {
-	reply, err := wire.NewOpReply(doc)
+	// TODO https://github.com/FerretDB/wire/issues/139
+	b, err := res.body.MarshalBinary()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &Response{OpReply: reply}, nil
+	res.header.MessageLength = int32(wire.MsgHeaderLen + len(b))
+
+	return res, nil
 }
 
 // ResponseWire creates a new response from the given wire protocol header and body.
-func ResponseWire(header *wire.MsgHeader, body wire.MsgBody) (*Response, error) {
+func ResponseWire(header *wire.MsgHeader, body wire.MsgBody) *Response {
+	must.NotBeZero(header)
+	must.NotBeZero(body)
+
 	resp := &Response{
 		header: header,
 	}
 
 	switch body := body.(type) {
 	case *wire.OpMsg:
-		if header.OpCode != wire.OpCodeMsg {
-			return nil, lazyerrors.Errorf("unexpected header %s for body %T", header, body)
-		}
-
+		must.BeTrue(header.OpCode == wire.OpCodeMsg)
 		resp.OpMsg = body
-
+		resp.body = body
 	case *wire.OpReply:
-		if header.OpCode != wire.OpCodeReply {
-			return nil, lazyerrors.Errorf("unexpected header %s for body %T", header, body)
-		}
-
-		resp.OpReply = body
-
+		must.BeTrue(header.OpCode == wire.OpCodeReply)
+		resp.body = body
 	default:
-		return nil, lazyerrors.Errorf("unexpected response body type %T for header %s", body, header)
+		panic(fmt.Sprintf("unsupported body type %T", body))
 	}
 
-	return resp, nil
+	return resp
 }
 
 // WireHeader returns the request header for the wire protocol.
 func (resp *Response) WireHeader() *wire.MsgHeader {
 	return resp.header
+}
+
+// WireBody returns the request body for the wire protocol.
+func (resp *Response) WireBody() wire.MsgBody {
+	return resp.body
 }
