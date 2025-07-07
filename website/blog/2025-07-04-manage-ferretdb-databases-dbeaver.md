@@ -66,7 +66,8 @@ Here's a step-by-step guide:
    If the connection is successful, you'll see a confirmation message.
    Then click Finish.
    The new connection will appear in your "Database Navigator."
-6. **Explore Your Data:** Expand your new FerretDB connection in the "Database Navigator". You can now browse databases, collections, view documents, and execute queries in the script editor or the dedicated MongoDB shell.
+6. **Explore Your Data:** Expand your new FerretDB connection in the "Database Navigator".
+   You can now browse databases, collections, view documents, and execute queries in the script editor or the dedicated MongoDB shell.
 
 ## Exploring FerretDB data with DBeaver
 
