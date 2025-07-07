@@ -20,6 +20,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -303,7 +304,7 @@ func TestBasicAuthDoesNotPersist(t *testing.T) {
 	})
 }
 
-func TestBearerToken(t *testing.T) {
+func TestToken(t *testing.T) {
 	t.Parallel()
 
 	addr, db := setupDataAPI(t, true)
@@ -340,19 +341,38 @@ func TestBearerToken(t *testing.T) {
 		require.NoError(t, err)
 		assert.JSONEq(t, `{"documents":[]}`, string(body))
 
-		authorization := res.Header.Get("Authorization")
-		assert.True(t, strings.HasPrefix(authorization, "Bearer "))
-
-		token = strings.TrimPrefix(authorization, "Bearer ")
-		assert.NotEmpty(t, token)
+		i := slices.IndexFunc(res.Cookies(), func(e *http.Cookie) bool {
+			return e.Name == "ferretdb_token"
+		})
+		require.GreaterOrEqual(t, i, 0)
+		token = res.Cookies()[i].Value
 	})
 
-	t.Run("InvalidBearerToken", func(t *testing.T) {
+	t.Run("Token", func(t *testing.T) {
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, findURI, findReq)
 		require.NoError(t, err)
 
 		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Authorization", "Bearer INVALID_BEARER_TOKEN")
+		req.AddCookie(&http.Cookie{Name: "ferretdb_token", Value: token})
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, res.Body.Close())
+		})
+
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		assert.JSONEq(t, `{"documents":[]}`, string(body), string(body))
+	})
+
+	t.Run("InvalidToken", func(t *testing.T) {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, findURI, findReq)
+		require.NoError(t, err)
+
+		req.Header.Set("Content-Type", "application/json")
+		req.AddCookie(&http.Cookie{Name: "ferretdb_token", Value: "INVALID_TOKEN"})
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
@@ -365,25 +385,6 @@ func TestBearerToken(t *testing.T) {
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
 		assert.Equal(t, "token is not valid\n", string(body))
-	})
-
-	t.Run("BearerToken", func(t *testing.T) {
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, findURI, findReq)
-		require.NoError(t, err)
-
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Authorization", "Bearer "+token)
-
-		res, err := http.DefaultClient.Do(req)
-		require.NoError(t, err)
-		t.Cleanup(func() {
-			require.NoError(t, res.Body.Close())
-		})
-
-		assert.Equal(t, http.StatusOK, res.StatusCode)
-
-		body, err := io.ReadAll(res.Body)
-		assert.JSONEq(t, `{"documents":[]}`, string(body))
 	})
 }
 
