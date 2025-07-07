@@ -254,17 +254,14 @@ func TestBasicAuthDoesNotPersist(t *testing.T) {
 	coll := testutil.CollectionName(t)
 	ctx := testutil.Ctx(t)
 
-	findURI := "http://" + addr + "/action/find"
-	findReq := bytes.NewBuffer([]byte(
-		`{
+	t.Run("BasicAuth", func(t *testing.T) {
+		insertReq := bytes.NewBuffer([]byte(`{
 			"database": "` + db + `",
 			"collection": "` + coll + `",
-			"filter": {}
-		}`,
-	))
+			"document": {"_id":1,"v":"foo"}
+		}`))
 
-	t.Run("BasicAuth", func(t *testing.T) {
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, findURI, findReq)
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://"+addr+"/action/insertOne", insertReq)
 		require.NoError(t, err)
 
 		req.Header.Set("Content-Type", "application/json")
@@ -280,11 +277,16 @@ func TestBasicAuthDoesNotPersist(t *testing.T) {
 
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
-		assert.JSONEq(t, `{"documents":[]}`, string(body))
+		assert.JSONEq(t, `{"n":1}`, string(body))
 	})
 
 	t.Run("BasicAuthDoesNotPersist", func(t *testing.T) {
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, findURI, findReq)
+		findReq := bytes.NewBuffer([]byte(`{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {}
+		}`))
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://"+addr+"/action/find", findReq)
 		require.NoError(t, err)
 
 		req.Header.Set("Content-Type", "application/json")
@@ -309,23 +311,21 @@ func TestTokenPersists(t *testing.T) {
 	addr, db := setupDataAPI(t, true)
 	coll := testutil.CollectionName(t)
 	ctx := testutil.Ctx(t)
-	findURI := "http://" + addr + "/action/find"
 
 	var token string
 
 	t.Run("BasicAuth", func(t *testing.T) {
-		findReq := bytes.NewBuffer([]byte(
-			`{
+		insertReq := bytes.NewBuffer([]byte(`{
 			"database": "` + db + `",
 			"collection": "` + coll + `",
-			"filter": {}
-		}`,
-		))
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, findURI, findReq)
+			"document": {"_id":1,"v":"foo"}
+		}`))
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://"+addr+"/action/insertOne", insertReq)
 		require.NoError(t, err)
-		req.SetBasicAuth("username", "password")
 
 		req.Header.Set("Content-Type", "application/json")
+		req.SetBasicAuth("username", "password")
 
 		res, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
@@ -337,7 +337,7 @@ func TestTokenPersists(t *testing.T) {
 
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
-		assert.JSONEq(t, `{"documents":[]}`, string(body))
+		assert.JSONEq(t, `{"n":1}`, string(body))
 
 		authorization := res.Header.Get("Authorization")
 		assert.True(t, strings.HasPrefix(authorization, "Bearer "))
@@ -347,15 +347,13 @@ func TestTokenPersists(t *testing.T) {
 	})
 
 	t.Run("Token", func(t *testing.T) {
-		findReq := bytes.NewBuffer([]byte(
-			`{
+		findReq := bytes.NewBuffer([]byte(`{
 			"database": "` + db + `",
 			"collection": "` + coll + `",
 			"filter": {}
-		}`,
-		))
+		}`))
 
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, findURI, findReq)
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://"+addr+"/action/find", findReq)
 		require.NoError(t, err)
 
 		req.Header.Set("Content-Type", "application/json")
@@ -371,19 +369,17 @@ func TestTokenPersists(t *testing.T) {
 
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
-		assert.JSONEq(t, `{"documents":[]}`, string(body))
+		assert.JSONEq(t, `{"documents":[{"_id":1,"v":"foo"}]}`, string(body))
 	})
 
 	t.Run("InvalidToken", func(t *testing.T) {
-		findReq := bytes.NewBuffer([]byte(
-			`{
+		findReq := bytes.NewBuffer([]byte(`{
 			"database": "` + db + `",
 			"collection": "` + coll + `",
 			"filter": {}
-		}`,
-		))
+		}`))
 
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, findURI, findReq)
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://"+addr+"/action/find", findReq)
 		require.NoError(t, err)
 
 		req.Header.Set("Content-Type", "application/json")
