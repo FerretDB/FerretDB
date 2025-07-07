@@ -272,7 +272,7 @@ func prepareDocument(pairs ...any) (*wirebson.Document, error) {
 func prepareRequest(pairs ...any) (*middleware.Request, error) {
 	doc, err := prepareDocument(pairs...)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	return middleware.RequestDoc(doc), nil
