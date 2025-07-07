@@ -57,7 +57,7 @@ type Server struct {
 // AuthMiddleware authenticates the request using bearer token or basic authentication.
 // If bearer token is provided, it authenticates using bearer token.
 // Otherwise, basic auth is used and upon successful authentication
-// it sets a bearer token in the response header.
+// it sets a bearer token in the response header to be used for subsequent requests.
 // After a successful authentication, it calls the next handler.
 func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
