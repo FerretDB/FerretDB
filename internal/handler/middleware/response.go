@@ -25,7 +25,7 @@ import (
 )
 
 // Response represents outgoing result to the client.
-// It maybe a normal response or an error.
+// It may be a normal response or an error.
 // TODO https://github.com/FerretDB/FerretDB/issues/4965
 //
 // It may be constructed from [wirebson.AnyDocument] (for the DocumentDB handler),
