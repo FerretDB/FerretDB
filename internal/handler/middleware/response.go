@@ -80,13 +80,7 @@ func ResponseDoc(req *Request, doc wirebson.AnyDocument) (*Response, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/wire/issues/139
-	b, err := res.body.MarshalBinary()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	res.header.MessageLength = int32(wire.MsgHeaderLen + len(b))
+	res.header.MessageLength = int32(wire.MsgHeaderLen + res.body.Size())
 
 	return res, nil
 }
