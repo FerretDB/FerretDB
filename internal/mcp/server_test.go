@@ -16,6 +16,9 @@ package mcp
 
 import (
 	"context"
+	"encoding/base64"
+	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
@@ -45,6 +48,7 @@ func TestServer(t *testing.T) {
 		Pool:          p,
 		L:             l,
 		StateProvider: sp,
+		Auth:          true,
 	})
 	require.NoError(t, err)
 
@@ -81,7 +85,16 @@ func TestServer(t *testing.T) {
 		<-serverDone
 	})
 
-	res := askMCPHost(t, ctx, "list databases")
+	jsonConfig := fmt.Sprintf(`{
+	"mcpServers": {
+		"FerretDB": {
+			"url": "http://127.0.0.1:8081/sse",
+			"headers": ["Authorization: Basic %s"]
+			}
+		}
+	}`, base64.StdEncoding.EncodeToString([]byte("username:password")))
+
+	res := askMCPHost(t, ctx, jsonConfig, "list databases")
 	t.Log(res)
 	//        ┃ 🔧 Calling ferretdb__listDatabases
 	//        ┃  Tool Call (25 Jun 2025 11:21 AM)
@@ -94,15 +107,18 @@ func TestServer(t *testing.T) {
 	require.Contains(t, res, `\"ok\":{\"$numberDouble\":\"1.0\"}`)
 }
 
-// askMCPHost runs MCP host in non-interactive mode with the given prompt and returns the output.
+// askMCPHost runs MCP host in non-interactive mode with the given config and prompt and returns the output.
 // Non-interactive mode is used for the ease of testing.
-func askMCPHost(tb testing.TB, ctx context.Context, prompt string) string {
+func askMCPHost(tb testing.TB, ctx context.Context, jsonConfig, prompt string) string {
 	tb.Helper()
 
 	bin := filepath.Join(testutil.BinDir, "mcphost")
-	config := filepath.Join(testutil.RootDir, "build", "mcp", "mcphost.json")
 
-	cmd := exec.CommandContext(ctx, bin, "--config", config, "--model", "ollama:qwen3:0.6b", "--prompt", prompt)
+	configF := filepath.Join(tb.TempDir(), "mcphost.json")
+	err := os.WriteFile(configF, []byte(jsonConfig), 0o666)
+	require.NoError(tb, err)
+
+	cmd := exec.CommandContext(ctx, bin, "--config", configF, "--model", "ollama:qwen3:0.6b", "--prompt", prompt)
 	res, err := cmd.CombinedOutput()
 	assert.NoError(tb, err)
 

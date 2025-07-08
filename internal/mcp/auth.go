@@ -18,6 +18,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
@@ -31,17 +32,20 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// NewAuthHandler creates a new authHandler instance.
-func NewAuthHandler(handler *handler.Handler) *authHandler {
-	return &authHandler{
-		handler: handler,
-	}
-}
-
 // authHandler handles authentication.
 type authHandler struct {
 	handler *handler.Handler
 	m       sync.Map
+
+	l *slog.Logger
+}
+
+// NewAuthHandler creates a new authHandler instance.
+func NewAuthHandler(handler *handler.Handler, l *slog.Logger) *authHandler {
+	return &authHandler{
+		handler: handler,
+		l:       l,
+	}
 }
 
 // AuthMiddleware authenticates the request using bearer token or basic authentication.
@@ -56,6 +60,8 @@ func (h *authHandler) AuthMiddleware(next http.Handler) http.Handler {
 				return
 			}
 
+			h.l.DebugContext(r.Context(), "Authenticated with bearer token")
+
 			next.ServeHTTP(w, r)
 
 			return
@@ -64,6 +70,8 @@ func (h *authHandler) AuthMiddleware(next http.Handler) http.Handler {
 		if ok := h.basicAuth(w, r); !ok {
 			return
 		}
+
+		h.l.DebugContext(r.Context(), "Authenticated with SCRAM")
 
 		if err := h.setBearerTokenHeader(w); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -112,20 +120,20 @@ func (h *authHandler) basicAuth(w http.ResponseWriter, r *http.Request) bool {
 	username, password, ok := r.BasicAuth()
 
 	if !ok {
-		http.Error(w, "no authentication methods were specified", http.StatusBadRequest)
+		http.Error(w, "no authentication methods were specified", http.StatusUnauthorized)
 		return false
 	}
 
 	if password == "" || username == "" {
 		msg := "must specify some form of authentication (either email+password, api-key, or jwt) in the request header or body"
-		http.Error(w, msg, http.StatusBadRequest)
+		http.Error(w, msg, http.StatusUnauthorized)
 
 		return false
 	}
 
 	client, err := scram.SHA256.NewClient(username, password, "")
 	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusBadRequest)
+		http.Error(w, lazyerrors.Error(err).Error(), http.StatusUnauthorized)
 		return false
 	}
 
@@ -133,7 +141,7 @@ func (h *authHandler) basicAuth(w http.ResponseWriter, r *http.Request) bool {
 
 	payload, err := conv.Step("")
 	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusBadRequest)
+		http.Error(w, lazyerrors.Error(err).Error(), http.StatusUnauthorized)
 		return false
 	}
 

@@ -55,14 +55,10 @@ func New(ctx context.Context, opts *ServerOpts) (*Server, error) {
 		s.AddTool(t.tool, withLog(t.handleFunc, opts.L))
 	}
 
-	sseServer := server.NewSSEServer(s,
-		server.WithBaseURL(opts.TCPAddr),
-	)
-
-	srv := NewAuthHandler(opts.Handler)
+	srv := NewAuthHandler(opts.Handler, opts.L)
 	mux := http.NewServeMux()
 
-	// Is WithDynamicBasePath necessary?
+	sseServer := server.NewSSEServer(s)
 	sseHandler := sseServer.SSEHandler()
 	messageHandler := sseServer.MessageHandler()
 
