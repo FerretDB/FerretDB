@@ -95,11 +95,8 @@ func (req *Request) setHeaderBody() {
 
 	req.body = must.NotFail(wire.NewOpMsg(req.raw))
 
-	// TODO https://github.com/FerretDB/wire/issues/139
-	b := must.NotFail(req.body.MarshalBinary())
-
 	req.header = &wire.MsgHeader{
-		MessageLength: int32(wire.MsgHeaderLen + len(b)),
+		MessageLength: int32(wire.MsgHeaderLen + req.body.Size()),
 		RequestID:     lastRequestID.Add(1),
 		OpCode:        wire.OpCodeMsg,
 	}
