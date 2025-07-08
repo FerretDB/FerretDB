@@ -61,11 +61,13 @@ func TestServer(t *testing.T) {
 		<-handlerDone
 	})
 
-	s := New(&ServerOpts{
+	s, err := New(ctx, &ServerOpts{
 		L:           l,
+		Handler:     h,
 		ToolHandler: NewToolHandler(h),
 		TCPAddr:     "127.0.0.1:8081",
 	})
+	require.NoError(t, err)
 
 	serverDone := make(chan struct{})
 
@@ -102,7 +104,7 @@ func askMCPHost(tb testing.TB, ctx context.Context, prompt string) string {
 
 	cmd := exec.CommandContext(ctx, bin, "--config", config, "--model", "ollama:qwen3:0.6b", "--prompt", prompt)
 	res, err := cmd.CombinedOutput()
-	require.NoError(tb, err)
+	assert.NoError(tb, err)
 
 	return string(res)
 }
