@@ -110,7 +110,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			"$db", "admin",
 		))
 
-		res, err := s.handler.Handle(r.Context(), msg)
+		res, err := s.handler.Handle(ctx, msg)
 		if err != nil {
 			http.Error(w, lazyerrors.Error(err).Error(), http.StatusUnauthorized)
 			return
