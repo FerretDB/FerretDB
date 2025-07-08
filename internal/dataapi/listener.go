@@ -77,7 +77,20 @@ func (lis *Listener) Run(ctx context.Context) {
 			return ctx
 		},
 		ConnContext: func(ctx context.Context, c net.Conn) context.Context {
-			return conninfo.Ctx(ctx, conninfo.New())
+			connCtx, cancel := context.WithCancel(ctx)
+			lis.opts.L.DebugContext(ctx, fmt.Sprintf("DataAPI connection %s started", c.RemoteAddr()))
+
+			ci := conninfo.New()
+
+			// finalize conninfo upon connection closure
+			go func() {
+				<-connCtx.Done()
+				ci.Close()
+				cancel()
+				lis.opts.L.DebugContext(ctx, fmt.Sprintf("DataAPI connection %s stopped", c.RemoteAddr()))
+			}()
+
+			return conninfo.Ctx(connCtx, ci)
 		},
 	}
 
