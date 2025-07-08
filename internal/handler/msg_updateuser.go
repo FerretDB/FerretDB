@@ -41,9 +41,9 @@ func (h *Handler) msgUpdateUser(connCtx context.Context, req *middleware.Request
 		return nil, err
 	}
 
-	updateSpec := must.NotFail(wirebson.NewDocument(
+	updateSpec := wirebson.MustDocument(
 		"updateUser", user,
-	))
+	)
 
 	if customData := doc.Get("customData"); customData != nil {
 		must.NoError(updateSpec.Add("customData", customData))
@@ -87,5 +87,5 @@ func (h *Handler) msgUpdateUser(connCtx context.Context, req *middleware.Request
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }

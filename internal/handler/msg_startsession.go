@@ -35,7 +35,7 @@ func (h *Handler) msgStartSession(connCtx context.Context, req *middleware.Reque
 
 	sessionID := h.s.NewSession(connCtx)
 
-	return middleware.ResponseMsg(wirebson.MustDocument(
+	return middleware.ResponseDoc(req, wirebson.MustDocument(
 		"id", wirebson.MustDocument(
 			"id", wirebson.Binary{Subtype: wirebson.BinaryUUID, B: sessionID[:]},
 		),

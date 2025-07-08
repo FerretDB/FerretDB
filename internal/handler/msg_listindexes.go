@@ -44,5 +44,5 @@ func (h *Handler) msgListIndexes(connCtx context.Context, req *middleware.Reques
 
 	h.s.AddCursor(connCtx, userID, sessionID, cursorID)
 
-	return middleware.ResponseMsg(page)
+	return middleware.ResponseDoc(req, page)
 }

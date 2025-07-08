@@ -136,7 +136,7 @@ func (h *Handler) msgRenameCollection(connCtx context.Context, req *middleware.R
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.ResponseMsg(wirebson.MustDocument(
+	return middleware.ResponseDoc(req, wirebson.MustDocument(
 		"ok", float64(1),
 	))
 }

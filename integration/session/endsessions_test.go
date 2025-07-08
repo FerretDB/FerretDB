@@ -130,12 +130,12 @@ func TestEndSessionsImmediateCleanup(t *testing.T) {
 
 	time.Sleep(10 * cleanupInterval)
 
-	expectedErr := must.NotFail(wirebson.NewDocument(
+	expectedErr := wirebson.MustDocument(
 		"ok", float64(0),
 		"errmsg", fmt.Sprintf("cursor id %d not found", cursorID),
 		"code", int32(43),
 		"codeName", "CursorNotFound",
-	))
+	)
 
 	getMore(t, ctx, conn, dbName, cName, sessionID, cursorID, expectedErr)
 }
@@ -152,12 +152,12 @@ func TestEndSessionsErrors(t *testing.T) {
 
 	t.Run("NotArray", func(t *testing.T) {
 		sessions := "invalid"
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "BSON field 'endSessions.endSessions' is the wrong type 'string', expected type 'array'",
 			"code", int32(14),
 			"codeName", "TypeMismatch",
-		))
+		)
 
 		endSessions(t, ctx, conn, dbName, sessions, expectedErr)
 	})
@@ -184,12 +184,12 @@ func TestEndSessionsUnauthenticated(t *testing.T) {
 
 	integration.FixCluster(t, res)
 
-	expected := must.NotFail(wirebson.NewDocument(
+	expected := wirebson.MustDocument(
 		"ok", float64(0),
 		"errmsg", "Command endSessions requires authentication",
 		"code", int32(13),
 		"codeName", "Unauthorized",
-	))
+	)
 
 	testutil.AssertEqual(t, expected, res)
 }
@@ -216,9 +216,8 @@ func endSessions(t testing.TB, ctx context.Context, conn *wireclient.Conn, dbNam
 		return
 	}
 
-	expected := must.NotFail(wirebson.NewDocument(
+	expected := wirebson.MustDocument(
 		"ok", float64(1),
-	))
-
+	)
 	testutil.AssertEqual(t, expected, res)
 }

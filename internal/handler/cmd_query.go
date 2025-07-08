@@ -42,7 +42,7 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *middleware.Request) (
 	suffix := ".$cmd"
 	if !strings.HasSuffix(collection, suffix) {
 		// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/527
-		return middleware.ResponseReply(wirebson.MustDocument(
+		return middleware.ResponseDoc(query, wirebson.MustDocument(
 			"$err", "OP_QUERY is no longer supported. The client driver may require an update.",
 			"code", int32(mongoerrors.ErrLocation5739101),
 			"ok", float64(0),
@@ -64,7 +64,7 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *middleware.Request) (
 			return nil, lazyerrors.Error(err)
 		}
 
-		return middleware.ResponseReply(reply)
+		return middleware.ResponseDoc(query, reply)
 
 	case "saslStart":
 		if slices.Contains(q.FieldNames(), "$db") {
@@ -82,7 +82,7 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *middleware.Request) (
 
 		must.NoError(reply.Add("ok", float64(1)))
 
-		return middleware.ResponseReply(reply)
+		return middleware.ResponseDoc(query, reply)
 
 	case "saslContinue":
 		if q.Get("$db") != nil {
@@ -98,7 +98,7 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *middleware.Request) (
 			return nil, err
 		}
 
-		return middleware.ResponseReply(reply)
+		return middleware.ResponseDoc(query, reply)
 	}
 
 	return nil, mongoerrors.NewWithArgument(
