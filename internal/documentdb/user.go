@@ -24,21 +24,28 @@ import (
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // CreateUser creates a new user.
 // Users with the `clusterAdmin` role are given PostgreSQL's SUPERUSER privileges.
-func CreateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, doc *wirebson.Document) (wirebson.RawDocument, error) {
+func CreateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, docV wirebson.AnyDocument) (wirebson.RawDocument, error) {
+	doc, err := docV.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	user, _ := doc.Get("createUser").(string)
 	sanitizedUser := pgx.Identifier{user}.Sanitize()
 
+	spec, err := docV.Encode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	var res wirebson.RawDocument
 
-	err := pgx.BeginTxFunc(ctx, conn, pgx.TxOptions{}, func(tx pgx.Tx) error {
-		var err error
-
-		res, err = documentdb_api.CreateUser(ctx, tx.Conn(), l, must.NotFail(doc.Encode()))
+	err = pgx.BeginTxFunc(ctx, conn, pgx.TxOptions{}, func(tx pgx.Tx) error {
+		res, err = documentdb_api.CreateUser(ctx, tx.Conn(), l, spec)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
