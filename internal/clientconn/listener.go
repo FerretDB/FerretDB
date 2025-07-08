@@ -30,6 +30,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
@@ -64,7 +65,7 @@ type ListenerOpts struct {
 	TLSKeyFile  string
 	TLSCAFile   string
 
-	Mode             Mode
+	Mode             middleware.Mode
 	ProxyAddr        string
 	ProxyTLSCertFile string
 	ProxyTLSKeyFile  string
