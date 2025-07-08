@@ -29,15 +29,12 @@ import (
 // CreateUser creates a new user.
 // Users with the `clusterAdmin` role are given PostgreSQL's SUPERUSER privileges.
 func CreateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, docV wirebson.AnyDocument) (wirebson.RawDocument, error) {
-	doc, err := docV.Decode()
+	spec, err := docV.Encode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	user, _ := doc.Get("createUser").(string)
-	sanitizedUser := pgx.Identifier{user}.Sanitize()
-
-	spec, err := docV.Encode()
+	doc, err := docV.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -52,22 +49,22 @@ func CreateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, docV wirebs
 
 		var clusterAdmin bool
 
-		if roles := doc.Get("roles"); roles != nil {
+		if rolesV := doc.Get("roles"); rolesV != nil {
 			// valid value of "roles" is checked already by [documentdb_api.CreateUser]
-			var rolesArr *wirebson.Array
+			var roles *wirebson.Array
 
-			if rolesArr, err = roles.(wirebson.AnyArray).Decode(); err != nil {
+			if roles, err = rolesV.(wirebson.AnyArray).Decode(); err != nil {
 				return lazyerrors.Error(err)
 			}
 
-			for role := range rolesArr.Values() {
-				var roleDoc *wirebson.Document
+			for roleV := range roles.Values() {
+				var role *wirebson.Document
 
-				if roleDoc, err = role.(wirebson.AnyDocument).Decode(); err != nil {
+				if role, err = roleV.(wirebson.AnyDocument).Decode(); err != nil {
 					return lazyerrors.Error(err)
 				}
 
-				if roleName := roleDoc.Get("role").(string); roleName == "clusterAdmin" {
+				if roleName := role.Get("role").(string); roleName == "clusterAdmin" {
 					clusterAdmin = true
 
 					break
@@ -79,9 +76,10 @@ func CreateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, docV wirebs
 			return nil
 		}
 
+		user, _ := doc.Get(doc.Command()).(string)
 		l.DebugContext(ctx, "Updating user to SUPERUSER", slog.String("user", user))
 
-		q := fmt.Sprintf("ALTER ROLE %s SUPERUSER", sanitizedUser)
+		q := fmt.Sprintf("ALTER ROLE %s SUPERUSER", pgx.Identifier{user}.Sanitize())
 		if _, err = tx.Exec(ctx, q); err != nil {
 			return lazyerrors.Error(err)
 		}
