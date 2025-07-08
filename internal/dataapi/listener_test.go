@@ -247,7 +247,7 @@ func TestNoAuth(t *testing.T) {
 	assert.JSONEq(t, `{"documents":[]}`, string(body))
 }
 
-func TestBasicAuthDoesNotPersist(t *testing.T) {
+func TestBasicAuth(t *testing.T) {
 	t.Parallel()
 
 	addr, db := setupDataAPI(t, true)
@@ -303,9 +303,30 @@ func TestBasicAuthDoesNotPersist(t *testing.T) {
 		require.NoError(t, err)
 		assert.JSONEq(t, `{"error":"no authentication methods were specified", "error_code":"InvalidParameter"}`, string(body))
 	})
+
+	t.Run("InvalidCredentials", func(t *testing.T) {
+		findReq := bytes.NewBuffer([]byte(`{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {}
+		}`))
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://"+addr+"/action/find", findReq)
+		require.NoError(t, err)
+
+		req.Header.Set("Content-Type", "application/json")
+		req.SetBasicAuth("wrong-user", "wrong-pass")
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, res.Body.Close())
+		})
+
+		assert.Equal(t, http.StatusUnauthorized, res.StatusCode)
+	})
 }
 
-func TestTokenPersists(t *testing.T) {
+func TestBearerToken(t *testing.T) {
 	t.Parallel()
 
 	addr, db := setupDataAPI(t, true)
@@ -346,7 +367,7 @@ func TestTokenPersists(t *testing.T) {
 		assert.NotEmpty(t, token)
 	})
 
-	t.Run("Token", func(t *testing.T) {
+	t.Run("TokenPersists", func(t *testing.T) {
 		findReq := bytes.NewBuffer([]byte(`{
 			"database": "` + db + `",
 			"collection": "` + coll + `",

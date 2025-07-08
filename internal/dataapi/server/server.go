@@ -38,6 +38,9 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
+// bearerPrefix is the prefix for bearer token in the Authorization header.
+const bearerPrefix = "Bearer "
+
 // New creates a new Server.
 func New(l *slog.Logger, handler *handler.Handler) *Server {
 	return &Server{
@@ -61,7 +64,7 @@ type Server struct {
 // After a successful authentication, it calls the next handler.
 func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if bearer := strings.HasPrefix(r.Header.Get("Authorization"), "Bearer "); bearer {
+		if bearer := strings.HasPrefix(r.Header.Get("Authorization"), bearerPrefix); bearer {
 			if ok := s.bearerAuth(w, r); !ok {
 				return
 			}
@@ -93,7 +96,7 @@ func (s *Server) setBearerTokenHeader(w http.ResponseWriter) error {
 
 	token := fmt.Sprintf("%x", b)
 	s.m.Store(token, true)
-	w.Header().Set("Authorization", "Bearer "+token)
+	w.Header().Set("Authorization", bearerPrefix+token)
 
 	return nil
 }
@@ -103,7 +106,7 @@ func (s *Server) setBearerTokenHeader(w http.ResponseWriter) error {
 // and returns false.
 func (s *Server) bearerAuth(w http.ResponseWriter, r *http.Request) bool {
 	auth := r.Header.Get("Authorization")
-	token := strings.TrimPrefix(auth, "Bearer ")
+	token := strings.TrimPrefix(auth, bearerPrefix)
 
 	if _, ok := s.m.Load(token); !ok {
 		http.Error(w, "token is not valid", http.StatusUnauthorized)
