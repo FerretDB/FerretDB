@@ -33,7 +33,7 @@ import (
 )
 
 // authHandler handles authentication.
-type authHandler struct {
+type authHandler struct { //nolint:vet // ok for struct instantiated once
 	handler *handler.Handler
 	m       sync.Map
 

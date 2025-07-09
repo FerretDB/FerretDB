@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -32,67 +33,52 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
 
-func TestServer(t *testing.T) {
+func TestServerNoAuth(t *testing.T) {
 	t.Parallel()
 
 	ctx := t.Context()
-	uri := testutil.PostgreSQLURL(t)
-	l := testutil.Logger(t)
-	sp, err := state.NewProvider("")
-	require.NoError(t, err)
-
-	p, err := documentdb.NewPool(uri, l, sp)
-	require.NoError(t, err)
-
-	h, err := handler.New(&handler.NewOpts{
-		Pool:          p,
-		L:             l,
-		StateProvider: sp,
-		Auth:          true,
-	})
-	require.NoError(t, err)
-
-	handlerCtx, cancel := context.WithCancel(ctx)
-	handlerDone := make(chan struct{})
-
-	go func() {
-		h.Run(handlerCtx)
-		close(handlerDone)
-	}()
-
-	t.Cleanup(func() {
-		cancel()
-		<-handlerDone
-	})
-
-	s, err := New(ctx, &ServerOpts{
-		L:           l,
-		Handler:     h,
-		ToolHandler: NewToolHandler(h),
-		TCPAddr:     "127.0.0.1:8081",
-	})
-	require.NoError(t, err)
-
-	serverDone := make(chan struct{})
-
-	go func() {
-		err = s.Serve(ctx)
-		assert.NoError(t, err)
-		close(serverDone)
-	}()
-
-	t.Cleanup(func() {
-		<-serverDone
-	})
+	addr := setupServer(t, ctx, false)
 
 	jsonConfig := fmt.Sprintf(`{
 	"mcpServers": {
 		"FerretDB": {
-			"url": "http://127.0.0.1:8081/sse",
+			"url": "http://%s/sse"
+			}
+		}
+	}`,
+		addr.String(),
+	)
+
+	res := askMCPHost(t, ctx, jsonConfig, "list databases")
+	t.Log(res)
+	//        ┃ 🔧 Calling ferretdb__listDatabases
+	//        ┃  Tool Call (25 Jun 2025 11:21 AM)
+	//
+	//        ┃ ferretdb__listDatabases: {}
+	//        ┃ {"content":[{"type":"text","text":"{\"databases\":[],\"totalSize\":{\"$numberI
+	//        ┃ nt\":\"18377875\"},\"ok\":{\"$numberDouble\":\"1.0\"}}"}]}
+	require.Contains(t, res, "Calling ferretdb__listDatabases")
+	require.Contains(t, res, "ferretdb__listDatabases: {}")
+	require.Contains(t, res, `\"ok\":{\"$numberDouble\":\"1.0\"}`)
+}
+
+func TestServerBasicAuth(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	addr := setupServer(t, ctx, false)
+
+	jsonConfig := fmt.Sprintf(`{
+	"mcpServers": {
+		"FerretDB": {
+			"url": "http://%s/sse",
 			"headers": ["Authorization: Basic %s"]
 			}
 		}
-	}`, base64.StdEncoding.EncodeToString([]byte("username:password")))
+	}`,
+		addr.String(),
+		base64.StdEncoding.EncodeToString([]byte("username:password")),
+	)
 
 	res := askMCPHost(t, ctx, jsonConfig, "list databases")
 	t.Log(res)
@@ -123,4 +109,58 @@ func askMCPHost(tb testing.TB, ctx context.Context, jsonConfig, prompt string) s
 	assert.NoError(tb, err)
 
 	return string(res)
+}
+
+// setupServer sets up a new MCP server with the given authentication flag.
+func setupServer(tb testing.TB, ctx context.Context, auth bool) net.Addr {
+	uri := testutil.PostgreSQLURL(tb)
+	l := testutil.Logger(tb)
+	sp, err := state.NewProvider("")
+	require.NoError(tb, err)
+
+	p, err := documentdb.NewPool(uri, l, sp)
+	require.NoError(tb, err)
+
+	h, err := handler.New(&handler.NewOpts{
+		Pool:          p,
+		L:             l,
+		StateProvider: sp,
+		Auth:          auth,
+	})
+	require.NoError(tb, err)
+
+	handlerCtx, cancel := context.WithCancel(ctx)
+	handlerDone := make(chan struct{})
+
+	go func() {
+		h.Run(handlerCtx)
+		close(handlerDone)
+	}()
+
+	tb.Cleanup(func() {
+		cancel()
+		<-handlerDone
+	})
+
+	s, err := New(ctx, &ServerOpts{
+		L:           l,
+		Handler:     h,
+		ToolHandler: NewToolHandler(h),
+		TCPAddr:     "127.0.0.1:0",
+	})
+	require.NoError(tb, err)
+
+	serverDone := make(chan struct{})
+
+	go func() {
+		err = s.Serve(ctx)
+		assert.NoError(tb, err)
+		close(serverDone)
+	}()
+
+	tb.Cleanup(func() {
+		<-serverDone
+	})
+
+	return s.lis.Addr()
 }
