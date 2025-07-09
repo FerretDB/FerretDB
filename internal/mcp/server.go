@@ -28,6 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/build/version"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/util/httpauth"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
@@ -55,7 +56,7 @@ func New(ctx context.Context, opts *ServerOpts) (*Server, error) {
 		s.AddTool(t.tool, withLog(t.handleFunc, opts.L))
 	}
 
-	srv := NewAuthHandler(opts.Handler, opts.L)
+	srv := httpauth.NewAuthHandler(opts.Handler, opts.L)
 	mux := http.NewServeMux()
 
 	var streamableHandler http.Handler = server.NewStreamableHTTPServer(s)
