@@ -61,7 +61,8 @@ func TestServerNoAuth(t *testing.T) {
 
 	res = strings.ReplaceAll(res, "\n", "")
 	res = strings.ReplaceAll(res, " ", "")
-	require.Contains(t, res, `{"databases":[`)
+	require.Contains(t, res, `{"databases":`)
+	require.Contains(t, res, `"totalSize":`)
 	require.Contains(t, res, `"ok":{"$numberDouble":"1.0"}`)
 }
 
@@ -94,7 +95,8 @@ func TestServerBasicAuth(t *testing.T) {
 
 	res = strings.ReplaceAll(res, "\n", "")
 	res = strings.ReplaceAll(res, " ", "")
-	require.Contains(t, res, `{"databases":[`)
+	require.Contains(t, res, `{"databases":`)
+	require.Contains(t, res, `"totalSize":`)
 	require.Contains(t, res, `"ok":{"$numberDouble":"1.0"}`)
 }
 
