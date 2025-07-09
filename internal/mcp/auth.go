@@ -15,6 +15,7 @@
 package mcp
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
@@ -26,6 +27,7 @@ import (
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/xdg-go/scram"
 
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
@@ -52,17 +54,20 @@ func NewAuthHandler(handler *handler.Handler, l *slog.Logger) *authHandler {
 // If bearer token is provided, it authenticates using bearer token.
 // Otherwise, basic auth is used and upon successful authentication
 // it sets a bearer token in the response header.
-// After a successful authentication, it calls the next handler.
+// After a successful authentication, it calls the next handler if not nil.
 func (h *authHandler) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if bearer := strings.HasPrefix(r.Header.Get("Authorization"), "Bearer "); bearer {
-			if ok := h.bearerAuth(w, r); !ok {
+			ci := h.bearerAuth(w, r)
+			if ci == nil {
 				return
 			}
 
 			h.l.DebugContext(r.Context(), "Authenticated with bearer token")
 
-			next.ServeHTTP(w, r)
+			if next != nil {
+				next.ServeHTTP(w, r.WithContext(conninfo.Ctx(r.Context(), ci)))
+			}
 
 			return
 		}
@@ -73,44 +78,46 @@ func (h *authHandler) AuthMiddleware(next http.Handler) http.Handler {
 
 		h.l.DebugContext(r.Context(), "Authenticated with SCRAM")
 
-		if err := h.setBearerTokenHeader(w); err != nil {
+		if err := h.setBearerTokenHeader(r.Context(), w); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 
 			return
 		}
 
-		next.ServeHTTP(w, r)
+		if next != nil {
+			next.ServeHTTP(w, r)
+		}
 	})
 }
 
 // setBearerTokenHeader generates a new bearer token, stores it,
 // and sets it in the response header.
-func (h *authHandler) setBearerTokenHeader(w http.ResponseWriter) error {
+func (h *authHandler) setBearerTokenHeader(ctx context.Context, w http.ResponseWriter) error {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
 		return err
 	}
 
 	token := fmt.Sprintf("%x", b)
-	h.m.Store(token, true)
+	h.m.Store(token, conninfo.Get(ctx))
 	w.Header().Set("Authorization", "Bearer "+token)
 
 	return nil
 }
 
 // bearerAuth checks if the request has a valid bearer token.
-// If the token is valid, it returns true. Otherwise, it writes an error response
-// and returns false.
-func (h *authHandler) bearerAuth(w http.ResponseWriter, r *http.Request) bool {
+// If the token is valid, it returns [*conninfo.ConnInfo] associated with token.
+// Otherwise, it writes an error response and returns nil.
+func (h *authHandler) bearerAuth(w http.ResponseWriter, r *http.Request) *conninfo.ConnInfo {
 	auth := r.Header.Get("Authorization")
 	token := strings.TrimPrefix(auth, "Bearer ")
 
-	if _, ok := h.m.Load(token); !ok {
+	ci, ok := h.m.Load(token)
+	if !ok {
 		http.Error(w, "token is not valid", http.StatusUnauthorized)
-		return false
 	}
 
-	return true
+	return ci.(*conninfo.ConnInfo)
 }
 
 // basicAuth handles basic authentication using SCRAM-SHA-256 mechanism.

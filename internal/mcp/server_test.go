@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -83,6 +84,58 @@ func TestServerBasicAuth(t *testing.T) {
 	}`,
 		addr.String(),
 		base64.StdEncoding.EncodeToString([]byte("username:password")),
+	)
+
+	res := askMCPHost(t, ctx, jsonConfig, "list databases")
+	t.Log(res)
+	//          [  ferretdb__listDatabases
+	//          ]  List
+	//          {"databases":[],"totalSize":{"$numberInt":"19967123"},"ok":{"$numberDouble":"1
+	//          .0"}}
+	require.Contains(t, res, "ferretdb__listDatabases")
+
+	res = strings.ReplaceAll(res, "\n", "")
+	res = strings.ReplaceAll(res, " ", "")
+	require.Contains(t, res, `{"databases":`)
+	require.Contains(t, res, `"totalSize":`)
+	require.Contains(t, res, `"ok":{"$numberDouble":"1.0"}`)
+}
+
+func TestServerBearerToken(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	addr := setupServer(t, ctx, true)
+
+	tokenReq, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+addr.String()+"/auth/token", nil)
+	require.NoError(t, err)
+
+	tokenReq.SetBasicAuth("username", "password")
+
+	tokenRes, err := http.DefaultClient.Do(tokenReq)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, tokenRes.Body.Close())
+	})
+
+	assert.Equal(t, http.StatusOK, tokenRes.StatusCode)
+	authorization := tokenRes.Header.Get("Authorization")
+	assert.True(t, strings.HasPrefix(authorization, "Bearer "))
+
+	token := strings.TrimPrefix(authorization, "Bearer ")
+	assert.NotEmpty(t, token)
+
+	jsonConfig := fmt.Sprintf(`{
+	"mcpServers": {
+	  "FerretDB": {
+	    "type": "remote",
+	    "url": "http://%s/mcp",
+	    "headers": ["Authorization: Bearer %s"]
+	    }
+	  }
+	}`,
+		addr.String(),
+		token,
 	)
 
 	res := askMCPHost(t, ctx, jsonConfig, "list databases")

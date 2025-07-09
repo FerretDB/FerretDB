@@ -64,6 +64,7 @@ func New(ctx context.Context, opts *ServerOpts) (*Server, error) {
 	}
 
 	mux.Handle("/mcp", streamableHandler)
+	mux.Handle("/auth/token", srv.AuthMiddleware(nil))
 
 	httpSrv := &http.Server{
 		Handler:  mux,
