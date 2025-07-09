@@ -54,7 +54,7 @@ tasks:
         -count={{.BENCH_COUNT}} -bench={{.BENCH_NAME}} -benchtime={{.BENCH_TIME}} -bench-docs={{.BENCH_DOCS}} -benchmem
         {{if .BENCH_FLAGS}}{{.BENCH_FLAGS}}{{end}}
         -target-backend=ferretdb
-        -postgresql-url=postgres://pg-user:pg-pass@127.0.0.1:5432/postgres
+        -postgresql-url=postgres://username:password@127.0.0.1:5432/postgres
         -otel-traces-url=''
         | tee new-postgresql.txt
       - ../bin/benchstat{{exeExt}} old-postgresql.txt new-postgresql.txt

@@ -142,7 +142,8 @@ jobs:
       - name: Regenerate and reformat
         run: bin/task gen
         env:
-          DOCUMENTDB_GEN_URL: postgres://pg-user:pg-pass@127.0.0.1:5432/postgres
+          # must be a SUPERUSER to ensure parameter_default is set
+          DOCUMENTDB_GEN_URL: postgres://username:password@127.0.0.1:5432/postgres
 
       - name: Build bin/ferretdb
         run: bin/task build-host

@@ -36,7 +36,7 @@ func (s *Server) DeleteMany(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req api.DeleteRequestBody
-	if err := decodeJsonRequest(r, &req); err != nil {
+	if err := decodeJSONRequest(r, &req); err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
@@ -50,7 +50,7 @@ func (s *Server) DeleteMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	msg, err := prepareOpMsg(
+	msg, err := prepareRequest(
 		"delete", req.Collection,
 		"$db", req.Database,
 		"deletes", wirebson.MustArray(deleteDoc),
@@ -66,11 +66,11 @@ func (s *Server) DeleteMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resDoc := must.NotFail(must.NotFail(resMsg.OpMsg.RawDocument()).Decode())
+	resDoc := must.NotFail(must.NotFail(resMsg.OpMsg.DocumentRaw()).Decode())
 
-	res := must.NotFail(wirebson.NewDocument(
+	res := wirebson.MustDocument(
 		"deletedCount", resDoc.Get("n"),
-	))
+	)
 
-	s.writeJsonResponse(ctx, w, res)
+	s.writeJSONResponse(ctx, w, res)
 }

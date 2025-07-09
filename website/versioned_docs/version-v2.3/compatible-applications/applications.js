@@ -89,6 +89,11 @@ export const categorizedApps = {
       name: 'Librechat',
       logo: '/img/compatible-applications/librechat-logo.png',
       link: 'https://blog.ferretdb.io/replacing-mongodb-with-ferretdb-librechat/'
+    },
+    {
+      name: 'GrowthBook',
+      logo: '/img/compatible-applications/growthbook-logo.png',
+      link: 'https://blog.ferretdb.io/enabling-feature-flags-ab-testing-growthbook-ferretdb/'
     }
   ]
 }
