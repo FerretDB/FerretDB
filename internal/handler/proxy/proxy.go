@@ -144,5 +144,5 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middlew
 
 // check interfaces
 var (
-	_ middleware.HandleFunc = (*Handler)(nil).Handle
+	_ middleware.Handler = (*Handler)(nil)
 )
