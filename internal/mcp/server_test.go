@@ -31,6 +31,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/util/httpauth"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
@@ -209,11 +210,13 @@ func setupServer(tb testing.TB, ctx context.Context, auth bool) net.Addr {
 		<-handlerDone
 	})
 
+	authHandler := httpauth.NewAuthHandler(h, l)
 	s, err := New(ctx, &ServerOpts{
 		L:           l,
 		Handler:     h,
 		ToolHandler: NewToolHandler(h),
 		TCPAddr:     "127.0.0.1:0",
+		AuthHandler: authHandler,
 	})
 	require.NoError(tb, err)
 

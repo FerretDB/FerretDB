@@ -17,7 +17,6 @@ package httpauth
 import (
 	"context"
 	"crypto/rand"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -152,7 +151,7 @@ func (h *AuthHandler) basicAuth(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 
-	msg := must.NotFail(prepareRequest(
+	req := middleware.RequestDoc(wirebson.MustDocument(
 		"saslStart", int32(1),
 		"mechanism", "SCRAM-SHA-256",
 		"payload", wirebson.Binary{B: []byte(payload)},
@@ -161,7 +160,7 @@ func (h *AuthHandler) basicAuth(w http.ResponseWriter, r *http.Request) bool {
 		"$db", "admin",
 	))
 
-	res, err := h.handler.Handle(r.Context(), msg)
+	res, err := h.handler.Handle(r.Context(), req)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusUnauthorized)
 		return false
@@ -178,14 +177,14 @@ func (h *AuthHandler) basicAuth(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 
-	msg = must.NotFail(prepareRequest(
+	req = middleware.RequestDoc(wirebson.MustDocument(
 		"saslContinue", int32(1),
 		"conversationId", convID,
 		"payload", wirebson.Binary{B: []byte(payload)},
 		"$db", "admin",
 	))
 
-	res, err = h.handler.Handle(r.Context(), msg)
+	res, err = h.handler.Handle(r.Context(), req)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusUnauthorized)
 		return false
@@ -210,78 +209,4 @@ func (h *AuthHandler) basicAuth(w http.ResponseWriter, r *http.Request) bool {
 	}
 
 	return true
-}
-
-// prepareRequest creates a new middleware request from the given pairs of field names and values,
-// which can be used as handler command msg.
-//
-// If any of pair values is nil it's ignored.
-func prepareRequest(pairs ...any) (*middleware.Request, error) {
-	doc, err := prepareDocument(pairs...)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return middleware.RequestDoc(doc), nil
-}
-
-// prepareDocument creates a new bson document from the given pairs of
-// field names and values, which can be used as handler command msg.
-//
-// If any of pair values is nil it's ignored.
-func prepareDocument(pairs ...any) (*wirebson.Document, error) {
-	l := len(pairs)
-
-	if l%2 != 0 {
-		return nil, lazyerrors.Errorf("invalid number of arguments: %d", l)
-	}
-
-	docPairs := make([]any, 0, l)
-
-	for i := 0; i < l; i += 2 {
-		var err error
-
-		key := pairs[i]
-		v := pairs[i+1]
-
-		switch val := v.(type) {
-		// json.RawMessage is the non-pointer exception.
-		// Other non-pointer types don't need special handling.
-		case json.RawMessage:
-			v, err = unmarshalSingleJSON(&val)
-			if err != nil {
-				return nil, err
-			}
-
-		case *json.RawMessage:
-			if val == nil {
-				continue
-			}
-
-			v, err = unmarshalSingleJSON(val)
-			if err != nil {
-				return nil, err
-			}
-		case *float32:
-			if val == nil {
-				continue
-			}
-
-			v = float64(*val)
-		case *bool:
-			if val == nil {
-				continue
-			}
-
-			v = *val
-		}
-
-		if v == nil {
-			continue
-		}
-
-		docPairs = append(docPairs, key, v)
-	}
-
-	return wirebson.NewDocument(docPairs...)
 }
