@@ -28,12 +28,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
-	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/debug"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 )
 
@@ -74,10 +72,9 @@ func setupMongoDB(ctx context.Context, logger *slog.Logger, uri, name string) er
 	return ctx.Err()
 }
 
-// setupPostgreSQL configures PostgreSQL by creating a new user, because
-// the user created upon Docker container initialization is slightly different.
-// It waits for DocumentDB extension to be created before creating the user.
-func setupPostgreSQL(ctx context.Context, uri string, l *slog.Logger) error {
+// setupUser waits for the given PostgreSQL URI to become available, and creates
+// an admin user with fixed credentials `username:password` using DocumentDB API.
+func setupUser(ctx context.Context, uri string, l *slog.Logger) error {
 	sp, err := state.NewProvider("")
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -92,9 +89,26 @@ func setupPostgreSQL(ctx context.Context, uri string, l *slog.Logger) error {
 
 	var retry int64
 
+	createUser := wirebson.MustDocument(
+		"createUser", "username",
+		"pwd", "password",
+		"roles", wirebson.MustArray(
+			wirebson.MustDocument(
+				"role", "clusterAdmin",
+				"db", "admin",
+			),
+			wirebson.MustDocument(
+				"role", "readWriteAnyDatabase",
+				"db", "admin",
+			),
+		),
+	)
+
+	var res wirebson.RawDocument
+
 	for ctx.Err() == nil {
 		err = pool.WithConn(func(conn *pgx.Conn) error {
-			_, err = documentdb_api.BinaryExtendedVersion(ctx, conn, l)
+			res, err = documentdb.CreateUser(ctx, conn, l, createUser)
 			return err
 		})
 
@@ -112,45 +126,23 @@ func setupPostgreSQL(ctx context.Context, uri string, l *slog.Logger) error {
 		return lazyerrors.Error(err)
 	}
 
-	if err = createUser(ctx, pool, l); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	return nil
-}
-
-// createUser creates username:password credentials using `createUser` command.
-func createUser(ctx context.Context, pool *documentdb.Pool, l *slog.Logger) error {
-	spec := must.NotFail(wirebson.MustDocument(
-		"createUser", "username",
-		"pwd", "password",
-		"roles", wirebson.MustArray(
-			wirebson.MustDocument(
-				"role", "clusterAdmin",
-				"db", "admin",
-			),
-			wirebson.MustDocument(
-				"role", "readWriteAnyDatabase",
-				"db", "admin",
-			),
-		),
-	).Encode())
-
-	var res wirebson.RawDocument
-
-	err := pool.WithConn(func(conn *pgx.Conn) error {
-		var err error
-		res, err = documentdb_api.CreateUser(ctx, conn, l, spec)
-
-		return err
-	})
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
 	d, err := res.Decode()
 	if err != nil {
 		return lazyerrors.Error(err)
+	}
+
+	switch ok := d.Get("ok").(type) {
+	case float64:
+		if ok != float64(1) {
+			return lazyerrors.Errorf("Failed to create user: %s", d.LogMessage())
+		}
+	case int32:
+		// TODO https://github.com/FerretDB/FerretDB/issues/5313
+		if ok != int32(1) {
+			return lazyerrors.Errorf("Failed to create user: %s", d.LogMessage())
+		}
+	default:
+		panic("unexpected type")
 	}
 
 	l.InfoContext(ctx, "User created", slog.String("response", d.LogMessage()))
@@ -175,13 +167,13 @@ func setup(ctx context.Context, logger *slog.Logger) error {
 		return lazyerrors.Error(err)
 	}
 
-	documentDBURI := "postgres://pg-user:pg-pass@127.0.0.1:5432/postgres"
-	if err = setupPostgreSQL(ctx, documentDBURI, logging.WithName(logger, "documentdb")); err != nil {
+	uri := "postgres://pg-user:pg-pass@127.0.0.1:5432/postgres"
+	if err = setupUser(ctx, uri, logging.WithName(logger, "postgres")); err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	yugabyteDBURI := "postgres://pg-user:pg-pass@127.0.0.1:5433/yugabyte"
-	if err = setupPostgreSQL(ctx, yugabyteDBURI, logging.WithName(logger, "yugabytedb")); err != nil {
+	uri = "postgres://pg-user:pg-pass@127.0.0.1:5433/yugabyte"
+	if err = setupUser(ctx, uri, logging.WithName(logger, "yugabytedb")); err != nil {
 		return lazyerrors.Error(err)
 	}
 
