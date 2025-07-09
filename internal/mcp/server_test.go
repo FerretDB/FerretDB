@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -52,18 +53,16 @@ func TestServerNoAuth(t *testing.T) {
 
 	res := askMCPHost(t, ctx, jsonConfig, "list databases")
 	t.Log(res)
-	//          ┃                                              ┃
-	//          ┃   Executing ferretdb__listDatabases (13:00)  ┃
-	//          ┃                                              ┃
-	//
-	//          ┃                                                                            ┃
-	//          ┃  {"databases":[],"totalSize":{"$numberInt":"19598483"},"ok":{"$numberDoub  ┃
-	//          ┃  le":"1.0"}}                                                               ┃
-	//          ┃                                                                            ┃
+	//          [  ferretdb__listDatabases
+	//          ]  List
+	//          {"databases":[],"totalSize":{"$numberInt":"19967123"},"ok":{"$numberDouble":"1
+	//          .0"}}
 	require.Contains(t, res, "ferretdb__listDatabases")
+
+	res = strings.ReplaceAll(res, "\n", "")
+	res = strings.ReplaceAll(res, " ", "")
 	require.Contains(t, res, `{"databases":[]`)
-	require.Contains(t, res, `"ok":{"$numberDoub`)
-	require.Contains(t, res, `le":"1.0"}`)
+	require.Contains(t, res, `"ok":{"$numberDouble":"1.0"}`)
 }
 
 func TestServerBasicAuth(t *testing.T) {
@@ -87,22 +86,20 @@ func TestServerBasicAuth(t *testing.T) {
 
 	res := askMCPHost(t, ctx, jsonConfig, "list databases")
 	t.Log(res)
-	//          ┃                                              ┃
-	//          ┃   Executing ferretdb__listDatabases (13:00)  ┃
-	//          ┃                                              ┃
-	//
-	//          ┃                                                                            ┃
-	//          ┃  {"databases":[],"totalSize":{"$numberInt":"19598483"},"ok":{"$numberDoub  ┃
-	//          ┃  le":"1.0"}}                                                               ┃
-	//          ┃                                                                            ┃
+	//          [  ferretdb__listDatabases
+	//          ]  List
+	//          {"databases":[],"totalSize":{"$numberInt":"19967123"},"ok":{"$numberDouble":"1
+	//          .0"}}
 	require.Contains(t, res, "ferretdb__listDatabases")
+
+	res = strings.ReplaceAll(res, "\n", "")
+	res = strings.ReplaceAll(res, " ", "")
 	require.Contains(t, res, `{"databases":[]`)
-	require.Contains(t, res, `"ok":{"$numberDoub`)
-	require.Contains(t, res, `le":"1.0"}`)
+	require.Contains(t, res, `"ok":{"$numberDouble":"1.0"}`)
 }
 
 // askMCPHost runs MCP host in non-interactive mode with the given config and prompt and returns the output.
-// Non-interactive mode is used for the ease of testing.
+// Non-interactive mode without streaming is used for the ease of testing.
 func askMCPHost(tb testing.TB, ctx context.Context, jsonConfig, prompt string) string {
 	tb.Helper()
 
@@ -112,7 +109,7 @@ func askMCPHost(tb testing.TB, ctx context.Context, jsonConfig, prompt string) s
 	err := os.WriteFile(configF, []byte(jsonConfig), 0o666)
 	require.NoError(tb, err)
 
-	cmd := exec.CommandContext(ctx, bin, "--config", configF, "--model", "ollama:qwen3:0.6b", "--prompt", prompt)
+	cmd := exec.CommandContext(ctx, bin, "--config", configF, "--model", "ollama:qwen3:0.6b", "--prompt", prompt, "--stream=false", "--compact")
 	res, err := cmd.CombinedOutput()
 	assert.NoError(tb, err)
 
