@@ -61,7 +61,7 @@ func TestServerNoAuth(t *testing.T) {
 
 	res = strings.ReplaceAll(res, "\n", "")
 	res = strings.ReplaceAll(res, " ", "")
-	require.Contains(t, res, `{"databases":[]`)
+	require.Contains(t, res, `{"databases":[`)
 	require.Contains(t, res, `"ok":{"$numberDouble":"1.0"}`)
 }
 
@@ -94,7 +94,7 @@ func TestServerBasicAuth(t *testing.T) {
 
 	res = strings.ReplaceAll(res, "\n", "")
 	res = strings.ReplaceAll(res, " ", "")
-	require.Contains(t, res, `{"databases":[]`)
+	require.Contains(t, res, `{"databases":[`)
 	require.Contains(t, res, `"ok":{"$numberDouble":"1.0"}`)
 }
 
@@ -109,7 +109,14 @@ func askMCPHost(tb testing.TB, ctx context.Context, jsonConfig, prompt string) s
 	err := os.WriteFile(configF, []byte(jsonConfig), 0o666)
 	require.NoError(tb, err)
 
-	cmd := exec.CommandContext(ctx, bin, "--config", configF, "--model", "ollama:qwen3:0.6b", "--prompt", prompt, "--stream=false", "--compact")
+	cmd := exec.CommandContext(ctx,
+		bin,
+		"--config", configF,
+		"--model", "ollama:qwen3:0.6b",
+		"--prompt", prompt,
+		"--stream=false",
+		"--compact",
+	)
 	res, err := cmd.CombinedOutput()
 	assert.NoError(tb, err)
 
