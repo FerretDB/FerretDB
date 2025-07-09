@@ -259,7 +259,7 @@ tasks:
         -no-xfail={{.NO_XFAIL}}
 
   test-integration-yugabytedb:
-    desc: "Run integration tests for YugabyteDB sequentially"
+    desc: "Run integration tests for FerretDB with YugabyteDB sequentially"
     deps: [gen-version, test-integration-build]
     dir: integration
     cmds:
