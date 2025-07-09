@@ -43,6 +43,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi"
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/mcp"
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/debug"
 	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
@@ -78,6 +79,7 @@ var cli struct {
 		TLSKeyFile  string `default:""                help:"TLS key file path."`
 		TLSCaFile   string `default:""                help:"TLS CA file path."`
 		DataAPIAddr string `default:""                help:"Listen TCP address for HTTP Data API."`
+		MCPAddr     string `default:""                help:"Listen TCP address for MCP server."                   hidden:""`
 	} `embed:"" prefix:"listen-" group:"Interfaces"`
 
 	Proxy struct {
@@ -548,6 +550,32 @@ func run() {
 			}
 
 			lis.Run(ctx)
+		}()
+	}
+
+	if cmp.Or(cli.Listen.MCPAddr, "-") != "-" {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			l := logging.WithName(logger, "mcp")
+
+			s, e := mcp.New(ctx, &mcp.ServerOpts{
+				TCPAddr:     cli.Listen.MCPAddr,
+				L:           l,
+				ToolHandler: mcp.NewToolHandler(h),
+				Handler:     h,
+			})
+			if e != nil {
+				p.Close()
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to construct MCP Server listener", logging.Error(e))
+			}
+
+			if e = s.Serve(ctx); e != nil {
+				p.Close()
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to construct MCP Server", logging.Error(e))
+			}
 		}()
 	}
 
