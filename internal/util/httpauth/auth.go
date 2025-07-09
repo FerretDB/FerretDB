@@ -34,17 +34,17 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// authHandler handles authentication.
-type authHandler struct { //nolint:vet // ok for struct instantiated once
+// AuthHandler handles authentication.
+type AuthHandler struct { //nolint:vet // ok for struct instantiated once
 	handler *handler.Handler
 	m       sync.Map
 
 	l *slog.Logger
 }
 
-// NewAuthHandler creates a new authHandler instance.
-func NewAuthHandler(handler *handler.Handler, l *slog.Logger) *authHandler {
-	return &authHandler{
+// NewAuthHandler creates a new AuthHandler instance.
+func NewAuthHandler(handler *handler.Handler, l *slog.Logger) *AuthHandler {
+	return &AuthHandler{
 		handler: handler,
 		l:       l,
 	}
@@ -55,7 +55,7 @@ func NewAuthHandler(handler *handler.Handler, l *slog.Logger) *authHandler {
 // Otherwise, basic auth is used and upon successful authentication
 // it sets a bearer token in the response header.
 // After a successful authentication, it calls the next handler if not nil.
-func (h *authHandler) AuthMiddleware(next http.Handler) http.Handler {
+func (h *AuthHandler) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if bearer := strings.HasPrefix(r.Header.Get("Authorization"), "Bearer "); bearer {
 			ci := h.bearerAuth(w, r)
@@ -92,7 +92,7 @@ func (h *authHandler) AuthMiddleware(next http.Handler) http.Handler {
 
 // setBearerTokenHeader generates a new bearer token, stores it,
 // and sets it in the response header.
-func (h *authHandler) setBearerTokenHeader(ctx context.Context, w http.ResponseWriter) error {
+func (h *AuthHandler) setBearerTokenHeader(ctx context.Context, w http.ResponseWriter) error {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
 		return err
@@ -108,7 +108,7 @@ func (h *authHandler) setBearerTokenHeader(ctx context.Context, w http.ResponseW
 // bearerAuth checks if the request has a valid bearer token.
 // If the token is valid, it returns [*conninfo.ConnInfo] associated with token.
 // Otherwise, it writes an error response and returns nil.
-func (h *authHandler) bearerAuth(w http.ResponseWriter, r *http.Request) *conninfo.ConnInfo {
+func (h *AuthHandler) bearerAuth(w http.ResponseWriter, r *http.Request) *conninfo.ConnInfo {
 	auth := r.Header.Get("Authorization")
 	token := strings.TrimPrefix(auth, "Bearer ")
 
@@ -123,7 +123,7 @@ func (h *authHandler) bearerAuth(w http.ResponseWriter, r *http.Request) *connin
 // basicAuth handles basic authentication using SCRAM-SHA-256 mechanism.
 // It returns true if authentication is successful, otherwise it writes an error response
 // and returns false.
-func (h *authHandler) basicAuth(w http.ResponseWriter, r *http.Request) bool {
+func (h *AuthHandler) basicAuth(w http.ResponseWriter, r *http.Request) bool {
 	username, password, ok := r.BasicAuth()
 
 	if !ok {

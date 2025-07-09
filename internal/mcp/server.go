@@ -45,6 +45,7 @@ type ServerOpts struct {
 	L           *slog.Logger
 	Handler     *handler.Handler
 	ToolHandler *ToolHandler
+	AuthHandler *httpauth.AuthHandler
 	TCPAddr     string
 }
 
@@ -56,16 +57,15 @@ func New(ctx context.Context, opts *ServerOpts) (*Server, error) {
 		s.AddTool(t.tool, withLog(t.handleFunc, opts.L))
 	}
 
-	srv := httpauth.NewAuthHandler(opts.Handler, opts.L)
 	mux := http.NewServeMux()
 
 	var streamableHandler http.Handler = server.NewStreamableHTTPServer(s)
 	if opts.Handler.Auth {
-		streamableHandler = srv.AuthMiddleware(streamableHandler)
+		streamableHandler = opts.AuthHandler.AuthMiddleware(streamableHandler)
 	}
 
 	mux.Handle("/mcp", streamableHandler)
-	mux.Handle("/auth/token", srv.AuthMiddleware(nil))
+	mux.Handle("/auth/token", opts.AuthHandler.AuthMiddleware(nil))
 
 	httpSrv := &http.Server{
 		Handler:  mux,

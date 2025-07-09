@@ -47,6 +47,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/debug"
 	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
+	"github.com/FerretDB/FerretDB/v2/internal/util/httpauth"
 	"github.com/FerretDB/FerretDB/v2/internal/util/iface"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
@@ -531,6 +532,8 @@ func run() {
 		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct listener", logging.Error(err))
 	}
 
+	authHandler := httpauth.NewAuthHandler(h, logging.WithName(logger, "httpauth"))
+
 	if cmp.Or(cli.Listen.DataAPIAddr, "-") != "-" {
 		wg.Add(1)
 
@@ -566,6 +569,7 @@ func run() {
 				L:           l,
 				ToolHandler: mcp.NewToolHandler(h),
 				Handler:     h,
+				AuthHandler: authHandler,
 			})
 			if e != nil {
 				p.Close()
