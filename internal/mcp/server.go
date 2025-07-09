@@ -58,17 +58,12 @@ func New(ctx context.Context, opts *ServerOpts) (*Server, error) {
 	srv := NewAuthHandler(opts.Handler, opts.L)
 	mux := http.NewServeMux()
 
-	sseServer := server.NewSSEServer(s)
-	sseHandler := sseServer.SSEHandler()
-	messageHandler := sseServer.MessageHandler()
-
+	var streamableHandler http.Handler = server.NewStreamableHTTPServer(s)
 	if opts.Handler.Auth {
-		sseHandler = srv.AuthMiddleware(sseHandler)
-		messageHandler = srv.AuthMiddleware(messageHandler)
+		streamableHandler = srv.AuthMiddleware(streamableHandler)
 	}
 
-	mux.Handle("/sse", sseHandler)
-	mux.Handle("/message", messageHandler)
+	mux.Handle("/mcp", streamableHandler)
 
 	httpSrv := &http.Server{
 		Handler:  mux,

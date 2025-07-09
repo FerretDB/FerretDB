@@ -41,40 +41,45 @@ func TestServerNoAuth(t *testing.T) {
 
 	jsonConfig := fmt.Sprintf(`{
 	"mcpServers": {
-		"FerretDB": {
-			"url": "http://%s/sse"
-			}
-		}
+	  "FerretDB": {
+	    "type": "remote",
+	    "url": "http://%s/mcp"
+	    }
+	  }
 	}`,
 		addr.String(),
 	)
 
 	res := askMCPHost(t, ctx, jsonConfig, "list databases")
 	t.Log(res)
-	//        ┃ 🔧 Calling ferretdb__listDatabases
-	//        ┃  Tool Call (25 Jun 2025 11:21 AM)
+	//          ┃                                              ┃
+	//          ┃   Executing ferretdb__listDatabases (13:00)  ┃
+	//          ┃                                              ┃
 	//
-	//        ┃ ferretdb__listDatabases: {}
-	//        ┃ {"content":[{"type":"text","text":"{\"databases\":[],\"totalSize\":{\"$numberI
-	//        ┃ nt\":\"18377875\"},\"ok\":{\"$numberDouble\":\"1.0\"}}"}]}
-	require.Contains(t, res, "Calling ferretdb__listDatabases")
-	require.Contains(t, res, "ferretdb__listDatabases: {}")
-	require.Contains(t, res, `\"ok\":{\"$numberDouble\":\"1.0\"}`)
+	//          ┃                                                                            ┃
+	//          ┃  {"databases":[],"totalSize":{"$numberInt":"19598483"},"ok":{"$numberDoub  ┃
+	//          ┃  le":"1.0"}}                                                               ┃
+	//          ┃                                                                            ┃
+	require.Contains(t, res, "ferretdb__listDatabases")
+	require.Contains(t, res, `{"databases":[]`)
+	require.Contains(t, res, `"ok":{"$numberDoub`)
+	require.Contains(t, res, `le":"1.0"}`)
 }
 
 func TestServerBasicAuth(t *testing.T) {
 	t.Parallel()
 
 	ctx := t.Context()
-	addr := setupServer(t, ctx, false)
+	addr := setupServer(t, ctx, true)
 
 	jsonConfig := fmt.Sprintf(`{
 	"mcpServers": {
-		"FerretDB": {
-			"url": "http://%s/sse",
-			"headers": ["Authorization: Basic %s"]
-			}
-		}
+	  "FerretDB": {
+	    "type": "remote",
+	    "url": "http://%s/mcp",
+	    "headers": ["Authorization: Basic %s"]
+	    }
+	  }
 	}`,
 		addr.String(),
 		base64.StdEncoding.EncodeToString([]byte("username:password")),
@@ -82,15 +87,18 @@ func TestServerBasicAuth(t *testing.T) {
 
 	res := askMCPHost(t, ctx, jsonConfig, "list databases")
 	t.Log(res)
-	//        ┃ 🔧 Calling ferretdb__listDatabases
-	//        ┃  Tool Call (25 Jun 2025 11:21 AM)
+	//          ┃                                              ┃
+	//          ┃   Executing ferretdb__listDatabases (13:00)  ┃
+	//          ┃                                              ┃
 	//
-	//        ┃ ferretdb__listDatabases: {}
-	//        ┃ {"content":[{"type":"text","text":"{\"databases\":[],\"totalSize\":{\"$numberI
-	//        ┃ nt\":\"18377875\"},\"ok\":{\"$numberDouble\":\"1.0\"}}"}]}
-	require.Contains(t, res, "Calling ferretdb__listDatabases")
-	require.Contains(t, res, "ferretdb__listDatabases: {}")
-	require.Contains(t, res, `\"ok\":{\"$numberDouble\":\"1.0\"}`)
+	//          ┃                                                                            ┃
+	//          ┃  {"databases":[],"totalSize":{"$numberInt":"19598483"},"ok":{"$numberDoub  ┃
+	//          ┃  le":"1.0"}}                                                               ┃
+	//          ┃                                                                            ┃
+	require.Contains(t, res, "ferretdb__listDatabases")
+	require.Contains(t, res, `{"databases":[]`)
+	require.Contains(t, res, `"ok":{"$numberDoub`)
+	require.Contains(t, res, `le":"1.0"}`)
 }
 
 // askMCPHost runs MCP host in non-interactive mode with the given config and prompt and returns the output.
