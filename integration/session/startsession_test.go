@@ -535,7 +535,9 @@ func TestStartSessionWithLSID(t *testing.T) {
 
 	var sessionIDs []wirebson.Binary
 
-	t.Run("ListLocalSessions", func(t *testing.T) {
+	t.Run("ListLocalSessions", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/5332")
+
 		_, resBody, err := conn.Request(ctx, wire.MustOpMsg(
 			"aggregate", int32(1),
 			"pipeline", wirebson.MustArray(wirebson.MustDocument("$listLocalSessions", wirebson.MustDocument())),
@@ -561,22 +563,22 @@ func TestStartSessionWithLSID(t *testing.T) {
 			require.NotNil(t, idDoc, wirebson.LogMessage(res))
 			sessionIDs = append(sessionIDs, idV.(wirebson.Binary))
 		}
+
+		var lsidCreated, sessionIDCreated bool
+
+		for _, id := range sessionIDs {
+			if wirebson.Equal(lsid, id) {
+				lsidCreated = true
+			}
+
+			if wirebson.Equal(sessionID, id) {
+				sessionIDCreated = true
+			}
+		}
+
+		require.True(t, lsidCreated, "lsid not created")
+		require.True(t, sessionIDCreated, "sessionID not created")
 	})
-
-	var lsidCreated, sessionIDCreated bool
-
-	for _, id := range sessionIDs {
-		if wirebson.Equal(lsid, id) {
-			lsidCreated = true
-		}
-
-		if wirebson.Equal(sessionID, id) {
-			sessionIDCreated = true
-		}
-	}
-
-	require.True(t, lsidCreated, "lsid not created")
-	require.True(t, sessionIDCreated, "sessionID not created")
 }
 
 // startSession sends a request and returns a sessionID.
