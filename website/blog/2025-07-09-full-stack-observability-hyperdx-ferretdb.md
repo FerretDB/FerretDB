@@ -48,7 +48,20 @@ Connecting a self-hosted HyperDX instance to your FerretDB instance is straightf
 Here's a step-by-step guide to get you started:
 
 1. **Ensure FerretDB is running:** Make sure your FerretDB instance is active and accessible.
-   If you haven't set it up yet, refer to our [FerretDB Installation Guide](https://docs.ferretdb.io/installation/ferretdb/).
+   You can set up it up with the [FerretDB evaluation image](https://docs.ferretdb.io/installation/evaluation/), by running the following command:
+
+   ```sh
+    docker run -d --name ferretdb -p 27017:27017 \
+    -e POSTGRES_USER=<username> \
+    -e POSTGRES_PASSWORD=<password> \
+    -v ./data:/var/lib/postgresql/data \
+    ghcr.io/ferretdb/ferretdb-eval:2
+   ```
+
+   Replace `<username>` and `<password>` with your desired authentication credentials.
+
+   If you want to explore more installation options, refer to our [FerretDB Installation Guide](https://docs.ferretdb.io/installation/).
+
 2. **Set up HyperDX:** You can run HyperDX as a standalone Docker container or as part of a Docker Compose setup.
    In this guide, we'll use the recommended Docker Compose setup, which contains HyperDX, an OpenTelemetry Collector, ClickHouse, and other components to facilitate data ingestion and visualization.
    To deploy HyperDX using Docker Compose, you can clone the HyperDX repository and switch to the `v2` branch, which contains the necessary configurations for self-hosting.
