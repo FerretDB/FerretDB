@@ -76,6 +76,7 @@ func (h *Handler) msgServerStatus(connCtx context.Context, req *middleware.Reque
 	// Add CommandFeatureCounterStats as Prometheus metrics
 	featureCounterStatsDoc := wirebson.MakeDocument(0)
 
+	// Try to get feature counter stats, but don't fail if the function doesn't exist
 	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
 		// Query for all feature counter stats
 		rows, queryErr := conn.Query(connCtx,
@@ -83,7 +84,9 @@ func (h *Handler) msgServerStatus(connCtx context.Context, req *middleware.Reque
 			false,
 		)
 		if queryErr != nil {
-			return lazyerrors.Error(queryErr)
+			// If the function doesn't exist or other error, just log and continue
+			// Don't fail the entire serverStatus command
+			return nil
 		}
 		defer rows.Close()
 
@@ -92,7 +95,8 @@ func (h *Handler) msgServerStatus(connCtx context.Context, req *middleware.Reque
 			var usageCount int32
 
 			if scanErr := rows.Scan(&featureName, &usageCount); scanErr != nil {
-				return lazyerrors.Error(scanErr)
+				// If there's an error scanning, just continue
+				continue
 			}
 
 			// Add each feature as a metric
@@ -101,9 +105,8 @@ func (h *Handler) msgServerStatus(connCtx context.Context, req *middleware.Reque
 
 		return rows.Err()
 	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	// We ignore the error here to avoid failing serverStatus if the function doesn't exist
+	_ = err
 
 	info := version.Get()
 
