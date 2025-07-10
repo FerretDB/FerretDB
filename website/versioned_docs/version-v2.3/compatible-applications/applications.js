@@ -55,6 +55,11 @@ export const categorizedApps = {
       name: 'OpenTelemetry',
       logo: '/img/compatible-applications/opentelemetry-logo.png',
       link: 'https://blog.ferretdb.io/otel-context-propagation-in-ferretdb/'
+    },
+    {
+      name: 'HyperDX',
+      logo: '/img/compatible-applications/hyperdx-logo.png',
+      link: 'https://blog.ferretdb.io/full-stack-observability-hyperdx-ferretdb/'
     }
   ],
 
