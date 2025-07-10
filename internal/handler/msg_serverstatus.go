@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/wire/wirebson"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
@@ -72,6 +73,38 @@ func (h *Handler) msgServerStatus(connCtx context.Context, req *middleware.Reque
 		}
 	}
 
+	// Add CommandFeatureCounterStats as Prometheus metrics
+	featureCounterStatsDoc := wirebson.MakeDocument(0)
+
+	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
+		// Query for all feature counter stats
+		rows, queryErr := conn.Query(connCtx,
+			`SELECT feature_name, usage_count FROM documentdb_api_internal.command_feature_counter_stats($1)`,
+			false,
+		)
+		if queryErr != nil {
+			return lazyerrors.Error(queryErr)
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var featureName string
+			var usageCount int32
+
+			if scanErr := rows.Scan(&featureName, &usageCount); scanErr != nil {
+				return lazyerrors.Error(scanErr)
+			}
+
+			// Add each feature as a metric
+			must.NoError(featureCounterStatsDoc.Add(featureName, int64(usageCount)))
+		}
+
+		return rows.Err()
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	info := version.Get()
 
 	buildEnvironment := wirebson.MakeDocument(len(info.BuildEnvironment))
@@ -96,6 +129,7 @@ func (h *Handler) msgServerStatus(connCtx context.Context, req *middleware.Reque
 		)),
 		"metrics", must.NotFail(wirebson.NewDocument(
 			"commands", metricsDoc,
+			"commandFeatureCounterStats", featureCounterStatsDoc,
 		)),
 		"catalogStats", must.NotFail(wirebson.NewDocument(
 			"collections", int32(0),
