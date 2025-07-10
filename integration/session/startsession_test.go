@@ -499,7 +499,7 @@ func TestSessionConnectionDifferentUser(t *testing.T) {
 	})
 }
 
-func TestStartSessionWithLSID(t *testing.T) {
+func TestStartSessionWithLSIDCreatesTwoSessions(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{WireConn: setup.WireConnAuth})
@@ -508,9 +508,8 @@ func TestStartSessionWithLSID(t *testing.T) {
 	var sessionID, lsid wirebson.Binary
 
 	t.Run("StartSession", func(t *testing.T) {
-		randomUUID := must.NotFail(uuid.NewRandom())
 		lsid = wirebson.Binary{
-			B:       randomUUID[:],
+			B:       must.NotFail(must.NotFail(uuid.NewRandom()).MarshalBinary()),
 			Subtype: wirebson.BinaryUUID,
 		}
 
