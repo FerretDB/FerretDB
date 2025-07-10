@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/wire/wirebson"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
@@ -69,6 +70,41 @@ func (h *Handler) msgServerStatus(connCtx context.Context, req *middleware.Reque
 		}
 	}
 
+	// Add CommandFeatureCounterStats as Prometheus metrics
+	featureCounterStatsDoc := wirebson.MakeDocument(0)
+
+	// Try to get feature counter stats, but don't fail if the function doesn't exist
+	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
+		// Query for all feature counter stats
+		rows, queryErr := conn.Query(connCtx,
+			`SELECT feature_name, usage_count FROM documentdb_api_internal.command_feature_counter_stats($1)`,
+			false,
+		)
+		if queryErr != nil {
+			// If the function doesn't exist or other error, just log and continue
+			// Don't fail the entire serverStatus command
+			return nil
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var featureName string
+			var usageCount int32
+
+			if scanErr := rows.Scan(&featureName, &usageCount); scanErr != nil {
+				// If there's an error scanning, just continue
+				continue
+			}
+
+			// Add each feature as a metric
+			must.NoError(featureCounterStatsDoc.Add(featureName, int64(usageCount)))
+		}
+
+		return rows.Err()
+	})
+	// We ignore the error here to avoid failing serverStatus if the function doesn't exist
+	_ = err
+
 	info := version.Get()
 
 	buildEnvironment := wirebson.MakeDocument(len(info.BuildEnvironment))
@@ -93,6 +129,7 @@ func (h *Handler) msgServerStatus(connCtx context.Context, req *middleware.Reque
 		),
 		"metrics", wirebson.MustDocument(
 			"commands", metricsDoc,
+			"commandFeatureCounterStats", featureCounterStatsDoc,
 		),
 		"catalogStats", wirebson.MustDocument(
 			"collections", int32(0),
