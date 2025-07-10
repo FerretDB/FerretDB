@@ -1,1 +1,1 @@
-FROM ghcr.io/ferretdb/ferretdb-prettier:3.5.3-2
+FROM ghcr.io/ferretdb/ferretdb-prettier:3.6.2-1
