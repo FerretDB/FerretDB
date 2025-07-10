@@ -25,7 +25,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/xdg-go/scram"
 
@@ -83,7 +82,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		msg := must.NotFail(prepareOpMsg(
+		msg := must.NotFail(prepareRequest(
 			"saslStart", int32(1),
 			"mechanism", "SCRAM-SHA-256",
 			"payload", wirebson.Binary{B: []byte(payload)},
@@ -98,8 +97,8 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		resDoc := must.NotFail(must.NotFail(res.OpMsg.RawDocument()).Decode())
-		convId := resDoc.Get("conversationId").(int32)
+		resDoc := must.NotFail(must.NotFail(res.OpMsg.DocumentRaw()).Decode())
+		convID := resDoc.Get("conversationId").(int32)
 
 		payloadBytes := resDoc.Get("payload").(wirebson.Binary).B
 
@@ -109,9 +108,9 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		msg = must.NotFail(prepareOpMsg(
+		msg = must.NotFail(prepareRequest(
 			"saslContinue", int32(1),
-			"conversationId", convId,
+			"conversationId", convID,
 			"payload", wirebson.Binary{B: []byte(payload)},
 			"$db", "admin",
 		))
@@ -122,7 +121,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		resDoc = must.NotFail(must.NotFail(res.OpMsg.RawDocument()).Decode())
+		resDoc = must.NotFail(must.NotFail(res.OpMsg.DocumentRaw()).Decode())
 		if !resDoc.Get("done").(bool) {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
@@ -156,9 +155,9 @@ func (s *Server) ConnInfoMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// writeJsonResponse marshals provided res document into extended json and
+// writeJSONResponse marshals provided res document into extended JSON and
 // writes it to provided [http.ResponseWriter].
-func (s *Server) writeJsonResponse(ctx context.Context, w http.ResponseWriter, res wirebson.AnyDocument) {
+func (s *Server) writeJSONResponse(ctx context.Context, w http.ResponseWriter, res wirebson.AnyDocument) {
 	l := s.l
 
 	resRaw, err := res.Encode()
@@ -248,27 +247,22 @@ func prepareDocument(pairs ...any) (*wirebson.Document, error) {
 	return wirebson.NewDocument(docPairs...)
 }
 
-// prepareOpMsg creates a new OpMsg from the given pairs of field names and values,
+// prepareRequest creates a new middleware request from the given pairs of field names and values,
 // which can be used as handler command msg.
 //
 // If any of pair values is nil it's ignored.
-func prepareOpMsg(pairs ...any) (*middleware.Request, error) {
+func prepareRequest(pairs ...any) (*middleware.Request, error) {
 	doc, err := prepareDocument(pairs...)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := wire.NewOpMsg(doc)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &middleware.Request{OpMsg: req}, nil
+	return middleware.RequestDoc(doc), nil
 }
 
-// decodeJsonRequest takes request with json body and decodes it into
+// decodeJSONRequest takes request with JSON body and decodes it into
 // provided oapi generated request struct.
-func decodeJsonRequest(r *http.Request, out any) error {
+func decodeJSONRequest(r *http.Request, out any) error {
 	if !strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
 		return lazyerrors.New("Content-Type must be set to application/json")
 	}

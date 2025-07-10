@@ -35,12 +35,9 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgServerStatus(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	doc := req.Document()
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
@@ -54,7 +51,7 @@ func (h *Handler) msgServerStatus(connCtx context.Context, req *middleware.Reque
 		return nil, lazyerrors.Error(err)
 	}
 
-	metricsDoc := wirebson.MakeDocument(0)
+	metricsDoc := wirebson.MustDocument()
 
 	metrics := h.ConnMetrics.GetResponses()
 	for _, commands := range metrics {
@@ -68,7 +65,7 @@ func (h *Handler) msgServerStatus(connCtx context.Context, req *middleware.Reque
 				}
 			}
 
-			d := must.NotFail(wirebson.NewDocument("total", int64(total), "failed", int64(failed)))
+			d := wirebson.MustDocument("total", int64(total), "failed", int64(failed))
 			must.NoError(metricsDoc.Add(command, d))
 		}
 	}
@@ -115,7 +112,7 @@ func (h *Handler) msgServerStatus(connCtx context.Context, req *middleware.Reque
 	state := h.StateProvider.Get()
 	uptime := time.Since(state.Start)
 
-	res := must.NotFail(wirebson.NewDocument(
+	res := wirebson.MustDocument(
 		"host", host,
 		"version", info.MongoDBVersion,
 		"process", filepath.Base(exec),
@@ -124,24 +121,24 @@ func (h *Handler) msgServerStatus(connCtx context.Context, req *middleware.Reque
 		"uptimeMillis", uptime.Milliseconds(),
 		"uptimeEstimate", int64(uptime.Seconds()),
 		"localTime", time.Now(),
-		"freeMonitoring", must.NotFail(wirebson.NewDocument(
+		"freeMonitoring", wirebson.MustDocument(
 			"state", state.TelemetryString(),
-		)),
-		"metrics", must.NotFail(wirebson.NewDocument(
+		),
+		"metrics", wirebson.MustDocument(
 			"commands", metricsDoc,
 			"commandFeatureCounterStats", featureCounterStatsDoc,
-		)),
-		"catalogStats", must.NotFail(wirebson.NewDocument(
+		),
+		"catalogStats", wirebson.MustDocument(
 			"collections", int32(0),
 			"clustered", int32(0),
 			"timeseries", int32(0),
 			"views", int32(0),
 			"internalCollections", int32(0),
 			"internalViews", int32(0),
-		)),
+		),
 
 		// our extensions for easier bug reporting
-		"ferretdb", must.NotFail(wirebson.NewDocument(
+		"ferretdb", wirebson.MustDocument(
 			"version", info.Version,
 			"gitVersion", info.Commit,
 			"buildEnvironment", buildEnvironment,
@@ -149,10 +146,10 @@ func (h *Handler) msgServerStatus(connCtx context.Context, req *middleware.Reque
 			"package", info.Package,
 			"postgresql", state.PostgreSQLVersion,
 			"documentdb", state.DocumentDBVersion,
-		)),
+		),
 
 		"ok", float64(1),
-	))
+	)
 
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }

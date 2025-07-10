@@ -39,6 +39,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/telemetry"
@@ -154,7 +155,7 @@ func New(config *Config) (*FerretDB, error) {
 
 		TCP: config.ListenAddr,
 
-		Mode: clientconn.NormalMode,
+		Mode: middleware.NormalMode,
 	})
 	if err != nil {
 		p.Close()

@@ -64,8 +64,6 @@ func DropIndexes(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseNa
 	}
 
 	for name, tc := range testCases {
-		tc := tc
-
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
