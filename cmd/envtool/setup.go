@@ -172,6 +172,11 @@ func setup(ctx context.Context, logger *slog.Logger) error {
 		return lazyerrors.Error(err)
 	}
 
+	uri = "postgres://pg-user:pg-pass@127.0.0.1:5433/yugabyte"
+	if err = setupUser(ctx, uri, logging.WithName(logger, "yugabytedb")); err != nil {
+		return lazyerrors.Error(err)
+	}
+
 	logger.InfoContext(ctx, "Done")
 	return nil
 }
