@@ -499,6 +499,86 @@ func TestSessionConnectionDifferentUser(t *testing.T) {
 	})
 }
 
+func TestStartSessionWithLSID(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{WireConn: setup.WireConnAuth})
+	ctx, db, conn := s.Ctx, s.Collection.Database(), s.WireConn
+
+	var sessionID, lsid wirebson.Binary
+
+	t.Run("StartSession", func(t *testing.T) {
+		randomUUID := must.NotFail(uuid.NewRandom())
+		lsid = wirebson.Binary{
+			B:       randomUUID[:],
+			Subtype: wirebson.BinaryUUID,
+		}
+
+		_, resBody, err := conn.Request(ctx, wire.MustOpMsg(
+			"startSession", int32(1),
+			"$db", db.Name(),
+			"lsid", wirebson.MustDocument("id", lsid),
+		))
+		require.NoError(t, err)
+
+		res, err := resBody.(*wire.OpMsg).DocumentDeep()
+		require.NoError(t, err)
+
+		idDoc := res.Get("id")
+		require.NotNil(t, idDoc, wirebson.LogMessage(res))
+
+		idV := idDoc.(*wirebson.Document).Get("id")
+		require.NotNil(t, idDoc, wirebson.LogMessage(res))
+
+		sessionID = idV.(wirebson.Binary)
+	})
+
+	var sessionIDs []wirebson.Binary
+
+	t.Run("ListLocalSessions", func(t *testing.T) {
+		_, resBody, err := conn.Request(ctx, wire.MustOpMsg(
+			"aggregate", int32(1),
+			"pipeline", wirebson.MustArray(wirebson.MustDocument("$listLocalSessions", wirebson.MustDocument())),
+			"cursor", wirebson.MustDocument("batchSize", int32(10000)), // large batchSize to get all in the first batch
+			"$db", db.Name(),
+		))
+		require.NoError(t, err)
+
+		res, err := resBody.(*wire.OpMsg).DocumentDeep()
+		require.NoError(t, err)
+
+		cursor := res.Get("cursor")
+		require.NotNil(t, cursor, wirebson.LogMessage(res))
+
+		firstBatch := cursor.(*wirebson.Document).Get("firstBatch")
+		require.NotNil(t, firstBatch, wirebson.LogMessage(res))
+
+		for v := range firstBatch.(*wirebson.Array).Values() {
+			idDoc := v.(*wirebson.Document).Get("_id")
+			require.NotNil(t, idDoc, wirebson.LogMessage(res))
+
+			idV := idDoc.(*wirebson.Document).Get("id")
+			require.NotNil(t, idDoc, wirebson.LogMessage(res))
+			sessionIDs = append(sessionIDs, idV.(wirebson.Binary))
+		}
+	})
+
+	var lsidCreated, sessionIDCreated bool
+
+	for _, id := range sessionIDs {
+		if wirebson.Equal(lsid, id) {
+			lsidCreated = true
+		}
+
+		if wirebson.Equal(sessionID, id) {
+			sessionIDCreated = true
+		}
+	}
+
+	require.True(t, lsidCreated, "lsid not created")
+	require.True(t, sessionIDCreated, "sessionID not created")
+}
+
 // startSession sends a request and returns a sessionID.
 func startSession(t testing.TB, ctx context.Context, conn *wireclient.Conn) wirebson.Binary {
 	msg := wire.MustOpMsg(
