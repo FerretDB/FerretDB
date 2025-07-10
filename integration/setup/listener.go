@@ -19,7 +19,6 @@ import (
 	"log/slog"
 	"net/url"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -29,8 +28,10 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn"
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
+	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
 
 // ListenerOpts represents setup options for in-process FerretDB listener.
@@ -134,13 +135,13 @@ func setupListener(tb testing.TB, ctx context.Context, opts *ListenerOpts, logge
 		Handler:        h,
 		Metrics:        listenerMetrics,
 		Logger:         logger,
-		Mode:           clientconn.NormalMode,
+		Mode:           middleware.NormalMode,
 		ProxyAddr:      *targetProxyAddrF,
-		TestRecordsDir: filepath.Join(Dir(tb), "..", "..", "tmp", "records"),
+		TestRecordsDir: testutil.TmpRecordsDir,
 	}
 
 	if *targetProxyAddrF != "" {
-		listenerOpts.Mode = clientconn.DiffNormalMode
+		listenerOpts.Mode = middleware.DiffNormalMode
 	}
 
 	switch {

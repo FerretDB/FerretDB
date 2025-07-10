@@ -29,26 +29,24 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgListDatabases(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	doc := req.Document()
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
 	var res wirebson.RawDocument
 
+	var err error
 	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
 		// TODO https://github.com/FerretDB/FerretDB/issues/4862
 		// TODO https://github.com/microsoft/documentdb/issues/121
-		res, err = documentdb_api.ListDatabases(connCtx, conn, h.L, spec)
+		res, err = documentdb_api.ListDatabases(connCtx, conn, h.L, req.DocumentRaw())
 		return err
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }

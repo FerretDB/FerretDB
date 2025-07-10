@@ -142,6 +142,7 @@ jobs:
       - name: Regenerate and reformat
         run: bin/task gen
         env:
+          # must be a SUPERUSER to ensure parameter_default is set
           DOCUMENTDB_GEN_URL: postgres://username:password@127.0.0.1:5432/postgres
 
       - name: Build bin/ferretdb
@@ -152,6 +153,24 @@ jobs:
         env:
           GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # for tools
+
+      - name: Upload coverage information to codecov
+        if: always()
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./cover.txt
+          flags: unit
+          disable_file_fixes: true
+          fail_ci_if_error: true
+          verbose: true
+
+      - name: Upload coverage information to coveralls
+        if: always()
+        uses: coverallsapp/github-action@v2
+        with:
+          file: ./cover.txt
+          flag-name: unit
+          parallel: true
 
       # we don't want them on CI
       - name: Clean test and fuzz caches
@@ -191,7 +210,6 @@ jobs:
       task: ${{ matrix.task }}
       shard_index: ${{ matrix.shard_index }}
       shard_total: ${{ matrix.shard_total }}
-      coveralls: true
 
   integration-no-xfail:
     name: postgresql no-xfail
@@ -223,8 +241,11 @@ jobs:
     if: always() && (github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready'))
 
     steps:
-      - name: Do nothing
-        run: echo 'nothing'
+      - name: Submit coveralls
+        if: always()
+        uses: coverallsapp/github-action@v2
+        with:
+          parallel-finished: true
 
   env-data:
     name: env-data

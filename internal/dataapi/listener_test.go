@@ -33,6 +33,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
@@ -258,7 +259,7 @@ func setupDataAPI(tb testing.TB, auth bool) (addr string, dbName string) {
 		Metrics: connmetrics.NewListenerMetrics(),
 		Logger:  logging.WithName(l, "listener"),
 		TCP:     "127.0.0.1:0",
-		Mode:    clientconn.NormalMode,
+		Mode:    middleware.NormalMode,
 	}
 
 	lis, err := clientconn.Listen(&listenerOpts)

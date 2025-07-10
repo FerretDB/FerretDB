@@ -36,16 +36,16 @@ func (s *Server) Aggregate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req api.AggregateRequestBody
-	if err := decodeJsonRequest(r, &req); err != nil {
+	if err := decodeJSONRequest(r, &req); err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
-	msg, err := prepareOpMsg(
+	msg, err := prepareRequest(
 		"aggregate", req.Collection,
 		"$db", req.Database,
 		"pipeline", req.Pipeline,
-		"cursor", wirebson.MakeDocument(0),
+		"cursor", wirebson.MustDocument(),
 	)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
@@ -58,13 +58,13 @@ func (s *Server) Aggregate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resRaw := must.NotFail(resMsg.OpMsg.RawDocument())
+	resRaw := must.NotFail(resMsg.OpMsg.DocumentRaw())
 	cursor := must.NotFail(resRaw.Decode()).Get("cursor").(wirebson.AnyDocument)
 	firstBatch := must.NotFail(cursor.Decode()).Get("firstBatch").(wirebson.AnyArray)
 
-	res := must.NotFail(wirebson.NewDocument(
+	res := wirebson.MustDocument(
 		"documents", firstBatch,
-	))
+	)
 
-	s.writeJsonResponse(ctx, w, res)
+	s.writeJSONResponse(ctx, w, res)
 }

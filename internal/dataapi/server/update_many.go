@@ -36,7 +36,7 @@ func (s *Server) UpdateMany(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req api.UpdateRequestBody
-	if err := decodeJsonRequest(r, &req); err != nil {
+	if err := decodeJSONRequest(r, &req); err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
@@ -52,7 +52,7 @@ func (s *Server) UpdateMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	msg, err := prepareOpMsg(
+	msg, err := prepareRequest(
 		"update", req.Collection,
 		"$db", req.Database,
 		"updates", wirebson.MustArray(updateDoc),
@@ -68,12 +68,12 @@ func (s *Server) UpdateMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resDoc := must.NotFail(must.NotFail(resMsg.OpMsg.RawDocument()).Decode())
+	resDoc := must.NotFail(must.NotFail(resMsg.OpMsg.DocumentRaw()).Decode())
 
-	res := must.NotFail(wirebson.NewDocument(
+	res := wirebson.MustDocument(
 		"matchedCount", resDoc.Get("n"),
 		"modifiedCount", resDoc.Get("nModified"),
-	))
+	)
 
 	if upsertedRaw := resDoc.Get("upserted"); upsertedRaw != nil {
 		upserted := must.NotFail(upsertedRaw.(wirebson.AnyArray).Decode())
@@ -85,5 +85,5 @@ func (s *Server) UpdateMany(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	s.writeJsonResponse(ctx, w, res)
+	s.writeJSONResponse(ctx, w, res)
 }
