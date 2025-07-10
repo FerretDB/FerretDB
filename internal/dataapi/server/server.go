@@ -28,6 +28,7 @@ import (
 	"sync"
 
 	"github.com/FerretDB/wire/wirebson"
+	"github.com/google/uuid"
 	"github.com/xdg-go/scram"
 
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
@@ -291,9 +292,16 @@ func prepareDocument(pairs ...any) (*wirebson.Document, error) {
 
 // prepareRequest creates a new middleware request from the given pairs of field names and values,
 // which can be used as handler command msg.
+// It adds `lsid` field to associate a new session ID.
 //
 // If any of pair values is nil it's ignored.
 func prepareRequest(pairs ...any) (*middleware.Request, error) {
+	sessionID := wirebson.Binary{
+		B:       must.NotFail(must.NotFail(uuid.NewRandom()).MarshalBinary()),
+		Subtype: wirebson.BinaryUUID,
+	}
+	pairs = append(pairs, "lsid", wirebson.MustDocument("id", sessionID))
+
 	doc, err := prepareDocument(pairs...)
 	if err != nil {
 		return nil, err
