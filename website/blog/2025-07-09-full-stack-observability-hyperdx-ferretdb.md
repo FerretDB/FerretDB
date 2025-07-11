@@ -63,8 +63,9 @@ Here's a step-by-step guide to get you started:
    If you want to explore more installation options, refer to our [FerretDB Installation Guide](https://docs.ferretdb.io/installation/).
 
 2. **Set up HyperDX:** You can run HyperDX as a standalone Docker container or as part of a Docker Compose setup.
-   In this guide, we'll use the recommended Docker Compose setup, which contains HyperDX, an OpenTelemetry Collector, ClickHouse, and other components to facilitate data ingestion and visualization.
-   To deploy HyperDX using Docker Compose, you can clone the HyperDX repository and switch to the `v2` branch, which contains the necessary configurations for self-hosting.
+   For this guide, we'll use the Docker Compose setup provided by HyperDX, as it conveniently bundles all necessary components like the OpenTelemetry Collector and ClickHouse, allowing for a quick and comprehensive demonstration of data ingestion and visualization.
+
+   Start by cloning the HyperDX repository and switch to the `v2` branch, which contains the necessary configurations for self-hosting.
 
    ```sh
    git clone https://github.com/hyperdxio/hyperdx.git
@@ -82,7 +83,9 @@ Here's a step-by-step guide to get you started:
    ```
 
    Ensure to replace `<username>` and `<password>` with your FerretDB authentication details if enabled and that the container can access your FerretDB instance.
-   Comment out the `mongo` service (set as `db`) in the `docker-compose.yml` file, since you will be using FerretDB instead.
+   Comment out the MongoDB service (set as `db`) in the `docker-compose.yml` file, since you will be using FerretDB instead.
+   Since you are commenting out the MongoDB service (`db`), ensure to remove any references to it in the `docker-compose.yml` file, such as the `depends_on` section for the `app` service.
+
    Learn more about [setting up HyperDX via Docker Compose from the Self-Hosting Documentation](https://clickhouse.com/docs/use-cases/observability/clickstack/deployment/docker-compose)
 
 4. **Launch HyperDX and test:** Once configured, start your Docker Compose services by running:
@@ -106,7 +109,7 @@ curl -O https://storage.googleapis.com/hyperdx/sample.tar.gz
 This file includes sample logs, traces, and metrics from the HyperDX public OpenTelemetry demo, which features a simple e-commerce store with microservices.
 
 To load this data, you will send it to the HTTP endpoint of the deployed OpenTelemetry (OTel) collector.
-If you have set up HyperDX using the recommended Docker Compose setup above, the OTel collector should be running on port 4318.
+If you have set up HyperDX using the Docker Compose setup above, the OTel collector should be running on port 4318.
 
 From within the HyperDX UI, you can find the Ingestion API key under Settings > Ingestion API Key.
 This key is required to authenticate your data ingestion requests.
