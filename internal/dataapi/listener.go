@@ -24,7 +24,6 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/server"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
@@ -71,25 +70,10 @@ func (lis *Listener) Run(ctx context.Context) {
 	}
 
 	srv := &http.Server{
-		Handler:  srvHandler,
+		Handler:  lis.srv.ConnInfoMiddleware(srvHandler),
 		ErrorLog: slog.NewLogLogger(lis.opts.L.Handler(), slog.LevelError),
 		BaseContext: func(net.Listener) context.Context {
 			return ctx
-		},
-		ConnContext: func(ctx context.Context, c net.Conn) context.Context {
-			connCtx, cancel := context.WithCancel(ctx)
-			lis.opts.L.DebugContext(ctx, fmt.Sprintf("DataAPI connection %s started", c.RemoteAddr()))
-
-			ci := conninfo.New()
-
-			go func() {
-				<-connCtx.Done()
-				ci.Close()
-				cancel()
-				lis.opts.L.DebugContext(ctx, fmt.Sprintf("DataAPI %s finalized", c.RemoteAddr()))
-			}()
-
-			return conninfo.Ctx(connCtx, ci)
 		},
 	}
 
