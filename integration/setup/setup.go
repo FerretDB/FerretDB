@@ -263,7 +263,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 	// drop remnants of the previous failed run
 	if *targetBackendF == "ferretdb-yugabytedb" {
 		// dropping collection or database fails for ferretdb-yugabytedb
-		// https://github.com/yugabyte/yugabyte-db/issues/27698
+		// TODO https://github.com/yugabyte/yugabyte-db/issues/27698
 		_, _ = collection.DeleteMany(ctx, bson.D{})
 	} else {
 		_ = collection.Drop(ctx)
@@ -283,7 +283,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 
 		if *targetBackendF == "ferretdb-yugabytedb" {
 			// dropping collection or database fails for ferretdb-yugabytedb
-			// https://github.com/yugabyte/yugabyte-db/issues/27698
+			// TODO https://github.com/yugabyte/yugabyte-db/issues/27698
 			_, err := collection.DeleteMany(ctx, bson.D{})
 			require.NoError(tb, err)
 
