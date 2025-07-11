@@ -527,7 +527,7 @@ func TestStartSessionWithLSIDCreatesTwoSessions(t *testing.T) {
 		require.NotNil(t, idDoc, wirebson.LogMessage(res))
 
 		idV := idDoc.(*wirebson.Document).Get("id")
-		require.NotNil(t, idDoc, wirebson.LogMessage(res))
+		require.NotNil(t, idV, wirebson.LogMessage(res))
 
 		sessionID = idV.(wirebson.Binary)
 	})
@@ -559,7 +559,7 @@ func TestStartSessionWithLSIDCreatesTwoSessions(t *testing.T) {
 			require.NotNil(t, idDoc, wirebson.LogMessage(res))
 
 			idV := idDoc.(*wirebson.Document).Get("id")
-			require.NotNil(t, idDoc, wirebson.LogMessage(res))
+			require.NotNil(t, idV, wirebson.LogMessage(res))
 			sessionIDs = append(sessionIDs, idV.(wirebson.Binary))
 		}
 
