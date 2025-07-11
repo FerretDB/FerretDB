@@ -48,7 +48,7 @@ Connecting a self-hosted HyperDX instance to your FerretDB instance is straightf
 Here's a step-by-step guide to get you started:
 
 1. **Ensure FerretDB is running:** Make sure your FerretDB instance is active and accessible.
-   You can set up it up with the [FerretDB evaluation image](https://docs.ferretdb.io/installation/evaluation/), by running the following command:
+   You can set it up with the [FerretDB evaluation image](https://docs.ferretdb.io/installation/evaluation/), by running the following command:
 
    ```sh
     docker run -d --name ferretdb -p 27017:27017 \
