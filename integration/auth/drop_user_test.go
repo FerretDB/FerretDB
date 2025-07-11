@@ -33,10 +33,10 @@ func TestDropUserCommand(t *testing.T) {
 	ctx, db := s.Ctx, s.Collection.Database()
 
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/864
-	_ = db.RunCommand(ctx, bson.D{{"dropUser", "a_user"}})
+	_ = db.RunCommand(ctx, bson.D{{"dropUser", "drop_a_user"}})
 
 	errcmd := db.RunCommand(ctx, bson.D{ // avoid data race with and shadowing of err in parallel subtests below
-		{"createUser", "a_user"},
+		{"createUser", "drop_a_user"},
 		{"roles", bson.A{}},
 		{"pwd", "password"},
 	}).Err()
@@ -60,7 +60,7 @@ func TestDropUserCommand(t *testing.T) {
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5323",
 		},
 		"Success": {
-			username: "a_user",
+			username: "drop_a_user",
 			expected: bson.D{
 				{"ok", float64(1)},
 			},

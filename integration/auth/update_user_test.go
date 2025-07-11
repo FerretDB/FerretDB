@@ -149,16 +149,16 @@ func TestUpdateUserCommand(t *testing.T) {
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5313",
 		},
 		"PasswordChange": {
-			username: "a_user",
+			username: "update_a_user",
 			password: "password",
 			updatePayload: bson.D{
-				{"updateUser", "a_user"},
+				{"updateUser", "update_a_user"},
 				{"pwd", "anewpassword"},
 			},
 			expected: bson.D{
 				{"users", bson.A{bson.D{
-					{"_id", fmt.Sprintf("%s.a_user", db.Name())},
-					{"user", "a_user"},
+					{"_id", fmt.Sprintf("%s.update_a_user", db.Name())},
+					{"user", "update_a_user"},
 					{"db", db.Name()},
 					{"roles", bson.A{}},
 					{"mechanisms", bson.A{"SCRAM-SHA-256"}},
