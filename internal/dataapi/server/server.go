@@ -52,11 +52,8 @@ type Server struct {
 	handler *handler.Handler
 }
 
-// AuthMiddleware authenticates the request using bearer token or basic authentication.
-// If bearer token is provided, it authenticates using bearer token.
-// Otherwise, SCRAM authentication based on the username and password is done,
-// and bearer token is set upon successful authentication in the response header.
-// After a successful authentication, it calls the next handler.
+// AuthMiddleware handles SCRAM authentication based on the username and password specified in request.
+// After a successful handshake it calls the next handler.
 func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -143,7 +140,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
