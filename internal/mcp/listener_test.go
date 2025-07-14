@@ -33,7 +33,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
 
-func TestListenerNoAuth(t *testing.T) {
+func TestListener(t *testing.T) {
 	t.Parallel()
 
 	ctx := t.Context()
