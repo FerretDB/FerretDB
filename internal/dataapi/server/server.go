@@ -167,18 +167,19 @@ func (s *Server) SessionMiddleware(next http.Handler) http.Handler {
 
 		ctx := CtxWithLSID(r.Context(), lsid)
 
+		defer func() {
+			msg := middleware.RequestDoc(wirebson.MustDocument(
+				"endSessions", wirebson.MustArray(lsid),
+				"lsid", lsid,
+				"$db", "admin",
+			))
+
+			if _, err := s.handler.Handle(ctx, msg); err != nil {
+				s.l.ErrorContext(ctx, "Failed to end session", logging.Error(err))
+			}
+		}()
+
 		next.ServeHTTP(w, r.WithContext(ctx))
-
-		msg := middleware.RequestDoc(wirebson.MustDocument(
-			"endSessions", wirebson.MustArray(lsid),
-			"lsid", lsid,
-			"$db", "admin",
-		))
-
-		_, err := s.handler.Handle(ctx, msg)
-		if err != nil {
-			s.l.ErrorContext(ctx, "Failed to end session", logging.Error(err))
-		}
 	})
 }
 
