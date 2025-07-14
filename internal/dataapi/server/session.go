@@ -23,15 +23,15 @@ import (
 // contextKey is a named unexported type for the safe use of [context.WithValue].
 type contextKey struct{}
 
-// Context key for setting and getting lsid.
+// lsidKey is context key for setting and getting `lsid`.
 var lsidKey = contextKey{}
 
-// CtxWithLSID returns a derived context with the given lsid.
+// CtxWithLSID returns a derived context which sets `lsid`.
 func CtxWithLSID(ctx context.Context, lsid *wirebson.Document) context.Context {
 	return context.WithValue(ctx, lsidKey, lsid)
 }
 
-// GetLSID returns the lsid value stored in ctx.
+// GetLSID returns the `lsid` value stored in ctx.
 func GetLSID(ctx context.Context) *wirebson.Document {
 	value := ctx.Value(lsidKey)
 	if value == nil {

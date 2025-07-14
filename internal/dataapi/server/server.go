@@ -156,8 +156,8 @@ func (s *Server) ConnInfoMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// SessionMiddleware returns a handler function that calls the next handler
-// then calls endSession.
+// SessionMiddleware returns a handler function that sets `lsid` in context,
+// calls the next handler then calls `endSession`.
 func (s *Server) SessionMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		lsid := wirebson.MustDocument("id", wirebson.Binary{

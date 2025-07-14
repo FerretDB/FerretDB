@@ -152,7 +152,7 @@ func (r *Registry) EndSessions(ctx context.Context, sessionIDs []uuid.UUID) {
 	for _, sessionID := range sessionIDs {
 		if _, ok := r.sessions[userID][sessionID]; !ok {
 			r.l.DebugContext(ctx,
-				"Ending session skipped due to session not found",
+				"Skipped ending session due to session not found",
 				slog.String("user_id", userID.String()), slog.String("session_id", sessionID.String()),
 			)
 
