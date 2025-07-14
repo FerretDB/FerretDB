@@ -17,16 +17,19 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
 	"github.com/FerretDB/wire"
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/session"
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 )
@@ -140,14 +143,47 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middlew
 	case *wire.OpMsg:
 		msgCmd := req.Document().Command()
 
-		cmd, ok := h.commands[msgCmd]
-		if ok && cmd.handler != nil {
-			return cmd.handler(ctx, req)
+		cmd := h.commands[msgCmd]
+		if cmd == nil {
+			return nil, mongoerrors.New(
+				mongoerrors.ErrCommandNotFound,
+				fmt.Sprintf("no such command: '%s'", msgCmd),
+			)
 		}
 
-		return notFound(msgCmd)(ctx, req)
+		if cmd.handler == nil {
+			return nil, mongoerrors.New(
+				mongoerrors.ErrNotImplemented,
+				fmt.Sprintf("Command %s is not implemented", msgCmd),
+			)
+		}
+
+		if h.Auth && !cmd.anonymous {
+			conv := conninfo.Get(ctx).Conv()
+			succeed := conv.Succeed()
+			username := conv.Username()
+
+			if !succeed {
+				if conv == nil {
+					h.L.WarnContext(ctx, "No existing conversation")
+				} else {
+					h.L.WarnContext(ctx, "Conversation did not succeed", slog.String("username", username))
+				}
+
+				return nil, mongoerrors.New(
+					mongoerrors.ErrUnauthorized,
+					fmt.Sprintf("Command %s requires authentication", msgCmd),
+				)
+			}
+
+			h.L.DebugContext(ctx, "Authentication passed", slog.String("username", username))
+		}
+
+		return cmd.handler(ctx, req)
+
 	case *wire.OpQuery:
 		return h.CmdQuery(ctx, req)
+
 	default:
 		panic("unsupported request")
 	}
@@ -167,5 +203,5 @@ func (h *Handler) Collect(ch chan<- prometheus.Metric) {
 
 // check interfaces
 var (
-	_ middleware.HandleFunc = (*Handler)(nil).Handle
+	_ middleware.Handler = (*Handler)(nil)
 )

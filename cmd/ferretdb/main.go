@@ -43,6 +43,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi"
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mcp"
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/debug"
@@ -140,14 +141,14 @@ var (
 	kongOptions = []kong.Option{
 		kong.Vars{
 			"default_log_level": defaultLogLevel().String(),
-			"default_mode":      clientconn.AllModes[0],
+			"default_mode":      middleware.AllModes[0],
 
 			"enum_log_format": strings.Join(logFormats, ","),
-			"enum_mode":       strings.Join(clientconn.AllModes, ","),
+			"enum_mode":       strings.Join(middleware.AllModes, ","),
 
 			"help_log_format": fmt.Sprintf("Log format: '%s'.", strings.Join(logFormats, "', '")),
 			"help_log_level":  fmt.Sprintf("Log level: '%s'.", strings.Join(logLevels, "', '")),
-			"help_mode":       fmt.Sprintf("Operation mode: '%s'.", strings.Join(clientconn.AllModes, "', '")),
+			"help_mode":       fmt.Sprintf("Operation mode: '%s'.", strings.Join(middleware.AllModes, "', '")),
 			"help_telemetry":  "Enable or disable basic telemetry reporting. See https://beacon.ferretdb.com.",
 		},
 		kong.DefaultEnvars("FERRETDB"),
@@ -519,7 +520,7 @@ func run() {
 		TLSKeyFile:  cli.Listen.TLSKeyFile,
 		TLSCAFile:   cli.Listen.TLSCaFile,
 
-		Mode:             clientconn.Mode(cli.Mode),
+		Mode:             middleware.Mode(cli.Mode),
 		ProxyAddr:        cli.Proxy.Addr,
 		ProxyTLSCertFile: cli.Proxy.TLSCertFile,
 		ProxyTLSKeyFile:  cli.Proxy.TLSKeyFile,
