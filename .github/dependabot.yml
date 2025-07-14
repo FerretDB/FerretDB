@@ -188,6 +188,20 @@ updates:
       day: "wednesday"
       time: "01:42"
 
+  # no mcphost in main-v1
+  - package-ecosystem: "gomod"
+    directory: "/tools/mcphost"
+    labels: ["deps", "not ready"]
+    assignees: [AlekSi]
+    open-pull-requests-limit: 20
+    groups:
+      mcphost:
+        patterns: ["*"]
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "01:42"
+
   # no submodules in main-v1
   - package-ecosystem: "gitsubmodule"
     directory: "/"

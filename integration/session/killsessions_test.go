@@ -121,12 +121,12 @@ func TestKillSessions(t *testing.T) {
 
 		killSessions(t, ctx, conn, dbName, sessions, nil)
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", fmt.Sprintf("cursor id %d not found", cursorID),
 			"code", int32(43),
 			"codeName", "CursorNotFound",
-		))
+		)
 
 		getMore(t, ctx, conn, dbName, cName, sessionID, cursorID, expectedErr)
 	})
@@ -142,12 +142,12 @@ func TestKillSessions(t *testing.T) {
 
 		refreshSessions(t, ctx, conn, dbName, nil, sessions, nil)
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", fmt.Sprintf("cursor id %d not found", cursorID),
 			"code", int32(43),
 			"codeName", "CursorNotFound",
-		))
+		)
 
 		getMore(t, ctx, conn, dbName, cName, sessionID, cursorID, expectedErr)
 	})
@@ -163,12 +163,12 @@ func TestKillSessions(t *testing.T) {
 
 		endSessions(t, ctx, conn, dbName, sessions, nil)
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", fmt.Sprintf("cursor id %d not found", cursorID),
 			"code", int32(43),
 			"codeName", "CursorNotFound",
-		))
+		)
 
 		getMore(t, ctx, conn, dbName, cName, sessionID, cursorID, expectedErr)
 	})
@@ -176,12 +176,12 @@ func TestKillSessions(t *testing.T) {
 	t.Run("EmptyUUIDSessionID", func(t *testing.T) {
 		sessions := wirebson.MustArray(wirebson.MustDocument("id", wirebson.Binary{Subtype: wirebson.BinaryUUID}))
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "uuid must be a 16-byte binary field with UUID (4) subtype",
 			"code", int32(207),
 			"codeName", "InvalidUUID",
-		))
+		)
 
 		killSessions(t, ctx, conn, dbName, sessions, expectedErr)
 	})
@@ -245,12 +245,12 @@ func TestKillSessionsDifferentUser(t *testing.T) {
 
 		getMore(t, ctx, user1Conn, dbName, cName, user1SessionID, user1CursorID, nil)
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", fmt.Sprintf("cursor id %d not found", user2CursorID),
 			"code", int32(43),
 			"codeName", "CursorNotFound",
-		))
+		)
 		getMore(t, ctx, user2Conn, dbName, cName, user2SessionID, user2CursorID, expectedErr)
 	})
 }
@@ -266,7 +266,7 @@ func killSessions(t testing.TB, ctx context.Context, conn *wireclient.Conn, dbNa
 	_, resBody, err := conn.Request(ctx, msg)
 	require.NoError(t, err)
 
-	res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+	res, err := must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).DecodeDeep()
 	require.NoError(t, err)
 
 	integration.FixCluster(t, res)
@@ -277,9 +277,9 @@ func killSessions(t testing.TB, ctx context.Context, conn *wireclient.Conn, dbNa
 		return
 	}
 
-	expected := must.NotFail(wirebson.NewDocument(
+	expected := wirebson.MustDocument(
 		"ok", float64(1),
-	))
+	)
 
 	testutil.AssertEqual(t, expected, res)
 }

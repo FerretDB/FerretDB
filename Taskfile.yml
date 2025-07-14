@@ -16,7 +16,7 @@ vars:
   RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
   BUILD_TAGS: ferretdb_dev
   MODE: diff-normal
-  SERVICES: postgres mongodb mongodb-secure jaeger
+  SERVICES: jaeger mongodb mongodb-secure postgres yugabytedb
 
 tasks:
   # invoked when `task` is run without arguments
@@ -47,6 +47,13 @@ tasks:
       - go mod verify
       - go generate -x
 
+  init-tools-mcphost:
+    dir: tools/mcphost
+    cmds:
+      - go mod tidy
+      - go mod verify
+      - go generate -x
+
   init-integration:
     dir: integration
     cmds:
@@ -55,7 +62,7 @@ tasks:
 
   init:
     desc: "Install development tools"
-    deps: [init-tools, init-tools-golangci, init-integration]
+    deps: [init-tools, init-tools-golangci, init-tools-mcphost, init-integration]
     cmds:
       - go mod tidy
       - go mod verify
@@ -288,6 +295,36 @@ tasks:
         --dev-repl-set-name=rs0
         --dev-records-dir=tmp/records
 
+  run-yugabytedb:
+    desc: "Run FerretDB with YugabyteDB without auth"
+    deps: [build-host]
+    cmds:
+      - >
+        bin/ferretdb{{exeExt}}
+        --mode={{.MODE}}
+        --no-auth
+        --listen-addr=:27017
+        --listen-data-api-addr=127.0.0.1:8899
+        --proxy-addr=127.0.0.1:37017
+        --postgresql-url='postgres://username:password@127.0.0.1:5433/yugabyte'
+        --otel-traces-url=http://127.0.0.1:4318/v1/traces
+        --dev-records-dir=tmp/records
+
+  run-yugabytedb-secure:
+    desc: "Run FerretDB with YugabyteDB with auth"
+    deps: [build-host]
+    cmds:
+      - >
+        bin/ferretdb{{exeExt}}
+        --mode={{.MODE}}
+        --listen-addr=:27017
+        --listen-data-api-addr=127.0.0.1:8899
+        --proxy-addr=127.0.0.1:47017
+        --postgresql-url='postgres://username:password@127.0.0.1:5433/yugabyte'
+        --otel-traces-url=http://127.0.0.1:4318/v1/traces
+        --dev-repl-set-name=rs0
+        --dev-records-dir=tmp/records
+
   # invoked by FerretDB/github-actions/linters action
   lint:
     desc: "Run linters"
@@ -317,7 +354,7 @@ tasks:
 
   security-trivy:
     cmds:
-      - docker compose run --rm trivy --config=./build/trivy.yml filesystem .
+      - docker compose run --rm trivy --config=./build/trivy.yml filesystem --ignorefile=./build/.trivyignore .
 
   godocs:
     desc: "Serve Go code documentation"

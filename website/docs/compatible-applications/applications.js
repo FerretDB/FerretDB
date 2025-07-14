@@ -1,10 +1,10 @@
 export const categorizedApps = {
   guis: [
-    // Add compass blog post [https://github.com/FerretDB/FerretDB/issues/1982]
-    //   name: 'Compass',
-    //   logo: '/img/compatible-applications/compass-logo.png',
-    //   link: 'https://docs.ferretdb.io/usage/compatible-applications/overview/#gui-applications'
-    // },
+    {
+      name: 'Compass',
+      logo: '/img/compatible-applications/compass-logo.png',
+      link: 'https://blog.ferretdb.io/visually-explore-ferretdb-data-mongo-compass/'
+    },
     {
       name: 'NoSQLBooster',
       logo: '/img/compatible-applications/nosqlbooster-logo.png',
@@ -24,6 +24,11 @@ export const categorizedApps = {
       name: 'Mingo',
       logo: '/img/compatible-applications/mingo-logo.png',
       link: 'https://blog.ferretdb.io/using-mingo-analyze-visualize-ferretdb-data/'
+    },
+    {
+      name: 'DBeaver',
+      logo: '/img/compatible-applications/dbeaver-logo.png',
+      link: 'https://blog.ferretdb.io/manage-ferretdb-databases-dbeaver/'
     }
   ],
 
@@ -66,11 +71,39 @@ export const categorizedApps = {
     }
   ],
 
+  cms: [
+    {
+      name: 'Payload CMS',
+      logo: '/img/compatible-applications/payloadcms-logo.png',
+      link: 'https://blog.ferretdb.io/building-robust-content-management-with-payload-cms-and-ferretdb/'
+    },
+    {
+      name: 'NodeBB',
+      logo: '/img/compatible-applications/nodebb-logo.png',
+      link: 'https://blog.ferretdb.io/building-scalable-community-forums-nodebb-and-ferretdb/'
+    }
+  ],
+
   others: [
     {
       name: 'Novu',
       logo: '/img/compatible-applications/novu-logo.png',
       link: 'https://blog.ferretdb.io/powering-notification-infrastructure-novu-ferretdb/'
+    },
+    {
+      name: 'Librechat',
+      logo: '/img/compatible-applications/librechat-logo.png',
+      link: 'https://blog.ferretdb.io/replacing-mongodb-with-ferretdb-librechat/'
+    },
+    {
+      name: 'GrowthBook',
+      logo: '/img/compatible-applications/growthbook-logo.png',
+      link: 'https://blog.ferretdb.io/enabling-feature-flags-ab-testing-growthbook-ferretdb/'
+    },
+    {
+      name: 'HeyForm',
+      logo: '/img/compatible-applications/heyform-logo.png',
+      link: 'https://blog.ferretdb.io/streamlining-form-management-heyform-ferretdb/'
     }
   ]
 }
