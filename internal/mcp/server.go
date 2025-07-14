@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -26,64 +27,68 @@ import (
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
 // Server implements an MCP server.
 type Server struct {
-	opts *ServerOpts
-	sse  *server.SSEServer
+	opts       *ServerOpts
+	httpServer *http.Server
+	lis        net.Listener
 }
 
 // ServerOpts represents options configurable for [Server].
 type ServerOpts struct {
 	L           *slog.Logger
+	Handler     *handler.Handler
 	ToolHandler *ToolHandler
 	TCPAddr     string
 }
 
 // New creates an MCP server.
-func New(opts *ServerOpts) *Server {
+func New(ctx context.Context, opts *ServerOpts) (*Server, error) {
 	s := server.NewMCPServer("FerretDB", version.Get().Version)
 
 	for _, t := range opts.ToolHandler.initTools() {
-		s.AddTool(t.tool, withLog(withConnInfo(t.handleFunc), opts.L))
+		s.AddTool(t.tool, withConnInfo(withLog(t.handleFunc, opts.L)))
 	}
 
-	// can authentication be added?
-	// TODO https://github.com/FerretDB/FerretDB/issues/5209
-	sse := server.NewSSEServer(s, server.WithBaseURL(opts.TCPAddr))
+	mux := http.NewServeMux()
+	mux.Handle("/mcp", server.NewStreamableHTTPServer(s))
+
+	httpSrv := &http.Server{
+		Handler:  mux,
+		ErrorLog: slog.NewLogLogger(opts.L.Handler(), slog.LevelError),
+		BaseContext: func(net.Listener) context.Context {
+			return ctx
+		},
+	}
+
+	lis, err := net.Listen("tcp", opts.TCPAddr)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	return &Server{
-		opts: opts,
-		sse:  sse,
-	}
+		opts:       opts,
+		httpServer: httpSrv,
+		lis:        lis,
+	}, nil
 }
 
 // Serve runs the MCP server until the context is done.
 func (s *Server) Serve(ctx context.Context) error {
 	s.opts.L.InfoContext(ctx, fmt.Sprintf("Starting MCP server on http://%s/", s.opts.TCPAddr))
-	done := make(chan struct{})
-
-	defer func() {
-		<-done
-	}()
 
 	go func() {
-		defer close(done)
-
-		err := s.sse.Start(s.opts.TCPAddr)
-		if !errors.Is(err, http.ErrServerClosed) {
-			s.opts.L.LogAttrs(ctx, logging.LevelDPanic, "Start exited with unexpected error", logging.Error(err))
+		if err := s.httpServer.Serve(s.lis); !errors.Is(err, http.ErrServerClosed) {
+			s.opts.L.LogAttrs(ctx, logging.LevelDPanic, "Serve exited with unexpected error", logging.Error(err))
 		}
 	}()
 
 	<-ctx.Done()
-
-	if err := s.sse.Shutdown(context.Background()); err != nil {
-		return lazyerrors.Error(err)
-	}
 
 	s.opts.L.InfoContext(ctx, "MCP server stopped")
 
