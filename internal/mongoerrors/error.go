@@ -72,6 +72,9 @@ func NewWithArgument(code Code, msg, argument string) *Error {
 // Error implements error interface.
 //
 // We overload [mongo.CommandError]'s method to ensure that Error is always passed by pointer.
+//
+// We probably should remove that method and un-embed mongo.CommandError to avoid typed nil error confusion.
+// TODO https://github.com/FerretDB/FerretDB/issues/4965
 func (e *Error) Error() string {
 	return fmt.Sprintf("%[1]s (%[1]d): %[2]v", Code(e.Code), e.Message)
 }

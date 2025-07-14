@@ -30,7 +30,7 @@ type Handler interface {
 	//
 	// Response is a normal response or an error.
 	// TODO https://github.com/FerretDB/FerretDB/issues/4965
-	Handle(ctx context.Context, req *Request) (resp *Response, err error)
+	Handle(ctx context.Context, req *Request) (resp *Response)
 }
 
 // lastRequestID stores last generated request ID.
@@ -53,7 +53,7 @@ func New(opts *NewOpts) *Middleware {
 	}
 }
 
-func (m *Middleware) Handle(ctx context.Context, req *Request) (resp *Response, err error) {
+func (m *Middleware) Handle(ctx context.Context, req *Request) (resp *Response) {
 	panic("TODO")
 }
 

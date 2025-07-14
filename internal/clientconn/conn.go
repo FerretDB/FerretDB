@@ -95,7 +95,14 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	if opts.mode != middleware.NormalMode {
 		var err error
 
-		p, err = proxy.New(opts.proxyAddr, opts.proxyTLSCertFile, opts.proxyTLSKeyFile, opts.proxyTLSCAFile)
+		proxyOpts := &proxy.NewOpts{
+			Addr:     opts.proxyAddr,
+			CertFile: opts.proxyTLSCertFile,
+			KeyFile:  opts.proxyTLSKeyFile,
+			CAFile:   opts.proxyTLSCAFile,
+			L:        logging.WithName(opts.l, "proxy"),
+		}
+		p, err = proxy.New(proxyOpts)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -243,10 +250,8 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 		}
 
 		// TODO https://github.com/FerretDB/FerretDB/issues/1997
-		var resp *middleware.Response
-		resp, err = c.proxy.Handle(ctx, middleware.RequestWire(reqHeader, reqBody))
-		must.NoError(err)
-
+		req := middleware.RequestWire(reqHeader, reqBody)
+		resp := c.proxy.Handle(ctx, req)
 		proxyHeader = resp.WireHeader()
 		proxyBody = resp.WireBody()
 	}
@@ -376,10 +381,9 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
 		if err == nil {
-			var res *middleware.Response
-			if res, err = c.h.Handle(connCtx, middleware.RequestWire(reqHeader, msg)); res != nil {
-				resBody = res.OpMsg
-			}
+			req := middleware.RequestWire(reqHeader, msg)
+			resp := c.h.Handle(connCtx, req)
+			resBody = resp.WireBody()
 		}
 
 	case wire.OpCodeQuery:
@@ -395,10 +399,9 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
 		if err == nil {
-			var res *middleware.Response
-			if res, err = c.h.Handle(connCtx, middleware.RequestWire(reqHeader, query)); res != nil {
-				resBody = res.WireBody()
-			}
+			req := middleware.RequestWire(reqHeader, query)
+			resp := c.h.Handle(connCtx, req)
+			resBody = resp.WireBody()
 		}
 
 	case wire.OpCodeReply:

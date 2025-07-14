@@ -20,16 +20,17 @@ import (
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // Response represents outgoing result to the client.
 // It may be a normal response or an error.
-// TODO https://github.com/FerretDB/FerretDB/issues/4965
 //
 // It may be constructed from [wirebson.AnyDocument] (for the DocumentDB handler),
-// or from [*wire.MsgHeader] and [wire.MsgBody] (for the proxy handler).
+// from [*wire.MsgHeader] and [wire.MsgBody] (for the proxy handler),
+// or from [*mongoerrors.Error] (for both).
 type Response struct {
 	header *wire.MsgHeader
 	body   wire.MsgBody
@@ -85,6 +86,14 @@ func ResponseDoc(req *Request, doc wirebson.AnyDocument) (*Response, error) {
 	res.header.MessageLength = int32(wire.MsgHeaderLen + res.body.Size())
 
 	return res, nil
+}
+
+// ResponseErr creates a new response from the given error.
+//
+// This function should accept [error], not [*mongoerrors.Error].
+// TODO https://github.com/FerretDB/FerretDB/issues/4965
+func ResponseErr(req *Request, err *mongoerrors.Error) *Response {
+	return must.NotFail(ResponseDoc(req, err.Doc()))
 }
 
 // ResponseWire creates a new response from the given wire protocol header and body.
