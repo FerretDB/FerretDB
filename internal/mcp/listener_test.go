@@ -33,11 +33,11 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
 
-func TestServerNoAuth(t *testing.T) {
+func TestListenerNoAuth(t *testing.T) {
 	t.Parallel()
 
 	ctx := t.Context()
-	addr := setupServer(t, ctx)
+	addr := setupListener(t, ctx)
 
 	jsonConfig := fmt.Sprintf(`{
 	"mcpServers": {
@@ -90,8 +90,8 @@ func askMCPHost(tb testing.TB, ctx context.Context, jsonConfig, prompt string) s
 	return string(res)
 }
 
-// setupServer sets up a new MCP listener.
-func setupServer(tb testing.TB, ctx context.Context) net.Addr {
+// setupListener sets up a new MCP listener.
+func setupListener(tb testing.TB, ctx context.Context) net.Addr {
 	uri := testutil.PostgreSQLURL(tb)
 	l := testutil.Logger(tb)
 	sp, err := state.NewProvider("")
