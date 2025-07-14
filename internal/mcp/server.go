@@ -32,65 +32,64 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
-// Server implements an MCP server.
-type Server struct {
-	opts       *ServerOpts
-	httpServer *http.Server
-	lis        net.Listener
+// Listener is an MCP listener.
+type Listener struct {
+	opts *ListenerOpts
+	lis  net.Listener
 }
 
-// ServerOpts represents options configurable for [Server].
-type ServerOpts struct {
+// ListenerOpts represents options configurable for [Listener].
+type ListenerOpts struct {
 	L           *slog.Logger
 	Handler     *handler.Handler
 	ToolHandler *ToolHandler
 	TCPAddr     string
 }
 
-// New creates an MCP server.
-func New(ctx context.Context, opts *ServerOpts) (*Server, error) {
-	s := server.NewMCPServer("FerretDB", version.Get().Version)
-
-	for _, t := range opts.ToolHandler.initTools() {
-		s.AddTool(t.tool, withConnInfo(withLog(t.handleFunc, opts.L)))
-	}
-
-	mux := http.NewServeMux()
-	mux.Handle("/mcp", server.NewStreamableHTTPServer(s))
-
-	httpSrv := &http.Server{
-		Handler:  mux,
-		ErrorLog: slog.NewLogLogger(opts.L.Handler(), slog.LevelError),
-		BaseContext: func(net.Listener) context.Context {
-			return ctx
-		},
-	}
+// Listen creates an MCP server and starts listener on the given TCP address.
+func Listen(ctx context.Context, opts *ListenerOpts) (*Listener, error) {
 
 	lis, err := net.Listen("tcp", opts.TCPAddr)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &Server{
-		opts:       opts,
-		httpServer: httpSrv,
-		lis:        lis,
+	return &Listener{
+		opts: opts,
+		lis:  lis,
 	}, nil
 }
 
-// Serve runs the MCP server until the context is done.
-func (s *Server) Serve(ctx context.Context) error {
-	s.opts.L.InfoContext(ctx, fmt.Sprintf("Starting MCP server on http://%s/", s.opts.TCPAddr))
+// Run runs the MCP server until the context is done.
+func (lis *Listener) Run(ctx context.Context) error {
+	mcpSrv := server.NewMCPServer("FerretDB", version.Get().Version)
+
+	for _, t := range lis.opts.ToolHandler.initTools() {
+		mcpSrv.AddTool(t.tool, withConnInfo(withLog(t.handleFunc, lis.opts.L)))
+	}
+
+	mux := http.NewServeMux()
+	mux.Handle("/mcp", server.NewStreamableHTTPServer(mcpSrv))
+
+	s := &http.Server{
+		Handler:  mux,
+		ErrorLog: slog.NewLogLogger(lis.opts.L.Handler(), slog.LevelError),
+		BaseContext: func(net.Listener) context.Context {
+			return ctx
+		},
+	}
+
+	lis.opts.L.InfoContext(ctx, fmt.Sprintf("Starting MCP server on http://%s/", lis.opts.TCPAddr))
 
 	go func() {
-		if err := s.httpServer.Serve(s.lis); !errors.Is(err, http.ErrServerClosed) {
-			s.opts.L.LogAttrs(ctx, logging.LevelDPanic, "Serve exited with unexpected error", logging.Error(err))
+		if err := s.Serve(lis.lis); !errors.Is(err, http.ErrServerClosed) {
+			lis.opts.L.LogAttrs(ctx, logging.LevelDPanic, "Serve exited with unexpected error", logging.Error(err))
 		}
 	}()
 
 	<-ctx.Done()
 
-	s.opts.L.InfoContext(ctx, "MCP server stopped")
+	lis.opts.L.InfoContext(ctx, "MCP server stopped")
 
 	return nil
 }

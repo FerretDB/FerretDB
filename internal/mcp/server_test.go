@@ -90,7 +90,7 @@ func askMCPHost(tb testing.TB, ctx context.Context, jsonConfig, prompt string) s
 	return string(res)
 }
 
-// setupServer sets up a new MCP server.
+// setupServer sets up a new MCP listener.
 func setupServer(tb testing.TB, ctx context.Context) net.Addr {
 	uri := testutil.PostgreSQLURL(tb)
 	l := testutil.Logger(tb)
@@ -120,7 +120,7 @@ func setupServer(tb testing.TB, ctx context.Context) net.Addr {
 		<-handlerDone
 	})
 
-	s, err := New(ctx, &ServerOpts{
+	lis, err := Listen(ctx, &ListenerOpts{
 		L:           l,
 		Handler:     h,
 		ToolHandler: NewToolHandler(h),
@@ -128,17 +128,17 @@ func setupServer(tb testing.TB, ctx context.Context) net.Addr {
 	})
 	require.NoError(tb, err)
 
-	serverDone := make(chan struct{})
+	listenDone := make(chan struct{})
 
 	go func() {
-		err = s.Serve(ctx)
+		err = lis.Run(ctx)
 		assert.NoError(tb, err)
-		close(serverDone)
+		close(listenDone)
 	}()
 
 	tb.Cleanup(func() {
-		<-serverDone
+		<-listenDone
 	})
 
-	return s.lis.Addr()
+	return lis.lis.Addr()
 }

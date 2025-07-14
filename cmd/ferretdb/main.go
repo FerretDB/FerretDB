@@ -562,7 +562,7 @@ func run() {
 
 			l := logging.WithName(logger, "mcp")
 
-			s, e := mcp.New(ctx, &mcp.ServerOpts{
+			lis, e := mcp.Listen(ctx, &mcp.ListenerOpts{
 				TCPAddr:     cli.Listen.MCPAddr,
 				L:           l,
 				ToolHandler: mcp.NewToolHandler(h),
@@ -570,12 +570,12 @@ func run() {
 			})
 			if e != nil {
 				p.Close()
-				l.LogAttrs(ctx, logging.LevelFatal, "Failed to construct MCP Server listener", logging.Error(e))
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to start MCP listener", logging.Error(e))
 			}
 
-			if e = s.Serve(ctx); e != nil {
+			if e = lis.Run(ctx); e != nil {
 				p.Close()
-				l.LogAttrs(ctx, logging.LevelFatal, "Failed to construct MCP Server", logging.Error(e))
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to run MCP listener", logging.Error(e))
 			}
 		}()
 	}
