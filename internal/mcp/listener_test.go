@@ -120,7 +120,7 @@ func setupListener(tb testing.TB, ctx context.Context) net.Addr {
 		<-handlerDone
 	})
 
-	lis, err := Listen(ctx, &ListenerOpts{
+	lis, err := Listen(&ListenerOpts{
 		L:           l,
 		Handler:     h,
 		ToolHandler: NewToolHandler(h),

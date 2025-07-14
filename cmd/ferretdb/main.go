@@ -562,7 +562,7 @@ func run() {
 
 			l := logging.WithName(logger, "mcp")
 
-			lis, e := mcp.Listen(ctx, &mcp.ListenerOpts{
+			lis, e := mcp.Listen(&mcp.ListenerOpts{
 				TCPAddr:     cli.Listen.MCPAddr,
 				L:           l,
 				ToolHandler: mcp.NewToolHandler(h),

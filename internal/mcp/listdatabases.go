@@ -18,33 +18,26 @@ import (
 	"context"
 
 	"github.com/FerretDB/wire/wirebson"
-	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// newListDatabases creates a new MCP tool for listDatabases command.
-func newListDatabases() mcp.Tool {
-	return mcp.NewTool(
-		"listDatabases",
-		mcp.WithDescription("Returns a summary of all databases."),
-		mcp.WithReadOnlyHintAnnotation(true),
-	)
-}
-
 // listDatabases returns a list of databases in a string containing Extended JSON v2 format.
-func (h *ToolHandler) listDatabases(ctx context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (h *ToolHandler) listDatabases(ctx context.Context, _ *mcp.ServerSession, _ *mcp.CallToolParamsFor[any]) (*mcp.CallToolResultFor[any], error) { //nolint:lll // for readability
 	req := wirebson.MustDocument(
 		"listDatabases", int32(1),
 	)
 
 	res, err := h.request(ctx, req)
 	if err != nil {
-		return mcp.NewToolResultErrorFromErr("request failed", err), nil
+		return nil, err
 	}
 
 	resJson, err := res.MarshalJSON()
 	if err != nil {
-		return mcp.NewToolResultErrorFromErr("marshal failed", err), nil
+		return nil, err
 	}
 
-	return mcp.NewToolResultText(string(resJson)), nil
+	return &mcp.CallToolResultFor[any]{
+		Content: []mcp.Content{&mcp.TextContent{Text: string(resJson)}},
+	}, nil
 }

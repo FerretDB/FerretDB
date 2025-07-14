@@ -22,8 +22,7 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
@@ -47,8 +46,7 @@ type ListenerOpts struct {
 }
 
 // Listen creates an MCP server and starts listener on the given TCP address.
-func Listen(ctx context.Context, opts *ListenerOpts) (*Listener, error) {
-
+func Listen(opts *ListenerOpts) (*Listener, error) {
 	lis, err := net.Listen("tcp", opts.TCPAddr)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -62,14 +60,13 @@ func Listen(ctx context.Context, opts *ListenerOpts) (*Listener, error) {
 
 // Run runs the MCP server until the context is done.
 func (lis *Listener) Run(ctx context.Context) error {
-	mcpSrv := server.NewMCPServer("FerretDB", version.Get().Version)
-
-	for _, t := range lis.opts.ToolHandler.initTools() {
-		mcpSrv.AddTool(t.tool, withConnInfo(withLog(t.handleFunc, lis.opts.L)))
-	}
+	mcpSrv := mcp.NewServer(&mcp.Implementation{Name: "FerretDB", Version: version.Get().Version}, nil)
+	lis.opts.ToolHandler.initTools(mcpSrv)
 
 	mux := http.NewServeMux()
-	mux.Handle("/mcp", server.NewStreamableHTTPServer(mcpSrv))
+
+	h := mcp.NewStreamableHTTPHandler(func(req *http.Request) *mcp.Server { return mcpSrv }, nil)
+	mux.Handle("/mcp", connInfoMiddleware(h))
 
 	s := &http.Server{
 		Handler:  mux,
@@ -94,35 +91,12 @@ func (lis *Listener) Run(ctx context.Context) error {
 	return nil
 }
 
-// withConnInfo wraps the next handler with [*conninfo.ConnInfo] context and closes it once the handler is executed.
-func withConnInfo(next server.ToolHandlerFunc) server.ToolHandlerFunc {
-	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+// connInfoMiddleware returns a handler function that creates a new [*conninfo.ConnInfo],
+// calls the next handler, and closes the connection info after the request is done.
+func connInfoMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		connInfo := conninfo.New()
-
 		defer connInfo.Close()
-
-		return next(conninfo.Ctx(ctx, connInfo), request)
-	}
-}
-
-// withLog wraps the next handler with logging of request, response and error.
-func withLog(next server.ToolHandlerFunc, l *slog.Logger) server.ToolHandlerFunc {
-	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		if l.Enabled(ctx, slog.LevelDebug) {
-			l.DebugContext(ctx, "MCP request", slog.String("request", fmt.Sprintf("%+v", request)))
-		}
-
-		res, err := next(ctx, request)
-		if err != nil {
-			l.ErrorContext(ctx, "MCP error", logging.Error(err))
-
-			return nil, err
-		}
-
-		if l.Enabled(ctx, slog.LevelDebug) {
-			l.DebugContext(ctx, "MCP response", slog.String("response", fmt.Sprintf("%+v", res)))
-		}
-
-		return res, nil
-	}
+		next.ServeHTTP(w, r.WithContext(conninfo.Ctx(r.Context(), connInfo)))
+	})
 }

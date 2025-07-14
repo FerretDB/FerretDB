@@ -18,18 +18,11 @@ import (
 	"context"
 
 	"github.com/FerretDB/wire/wirebson"
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 )
-
-// tool represents MCP tool which clients can call to retrieve data or perform actions.
-type tool struct {
-	tool       mcp.Tool
-	handleFunc server.ToolHandlerFunc
-}
 
 // ToolHandler handles MCP request.
 type ToolHandler struct {
@@ -43,12 +36,12 @@ func NewToolHandler(h *handler.Handler) *ToolHandler {
 	}
 }
 
-// initTools returns available MCP tools.
-func (h *ToolHandler) initTools() []tool {
-	return []tool{{
-		handleFunc: h.listDatabases,
-		tool:       newListDatabases(),
-	}}
+// initTools initializes available MCP tools.
+func (h *ToolHandler) initTools(s *mcp.Server) {
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "listDatabases",
+		Description: "Returns a summary of all databases.",
+	}, h.listDatabases)
 }
 
 // request sends a request document to the handler and returns decoded response document.
