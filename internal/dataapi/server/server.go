@@ -171,6 +171,8 @@ func (s *Server) SessionMiddleware(next http.Handler) http.Handler {
 
 		msg := middleware.RequestDoc(wirebson.MustDocument(
 			"endSessions", wirebson.MustArray(lsid),
+			"lsid", lsid,
+			"$db", "admin",
 		))
 
 		_, err := s.handler.Handle(ctx, msg)
