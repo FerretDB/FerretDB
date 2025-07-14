@@ -38,10 +38,11 @@ func NewToolHandler(h *handler.Handler) *ToolHandler {
 
 // initTools initializes available MCP tools.
 func (h *ToolHandler) initTools(s *mcp.Server) {
-	mcp.AddTool(s, &mcp.Tool{
+	listDatabasesTool := &mcp.Tool{
 		Name:        "listDatabases",
 		Description: "Returns a summary of all databases.",
-	}, h.listDatabases)
+	}
+	mcp.AddTool(s, listDatabasesTool, h.listDatabases)
 }
 
 // request sends a request document to the handler and returns decoded response document.
