@@ -53,34 +53,10 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/observability"
 )
 
-// Mode represents FerretDB mode of operation.
-type Mode string
-
-const (
-	// NormalMode only handles requests.
-	NormalMode Mode = "normal"
-	// ProxyMode only proxies requests to another wire protocol compatible service.
-	ProxyMode Mode = "proxy"
-	// DiffNormalMode both handles requests and proxies them, then logs the diff.
-	// Only the FerretDB response is sent to the client.
-	DiffNormalMode Mode = "diff-normal"
-	// DiffProxyMode both handles requests and proxies them, then logs the diff.
-	// Only the proxy response is sent to the client.
-	DiffProxyMode Mode = "diff-proxy"
-)
-
-// AllModes includes all operation modes, with the first one being the default.
-var AllModes = []string{
-	string(NormalMode),
-	string(ProxyMode),
-	string(DiffNormalMode),
-	string(DiffProxyMode),
-}
-
 // conn represents client connection.
 type conn struct {
 	netConn        net.Conn
-	mode           Mode
+	mode           middleware.Mode
 	l              *slog.Logger
 	h              *handler.Handler
 	m              *connmetrics.ConnMetrics
@@ -92,7 +68,7 @@ type conn struct {
 // newConnOpts represents newConn options.
 type newConnOpts struct {
 	netConn     net.Conn
-	mode        Mode
+	mode        middleware.Mode
 	l           *slog.Logger
 	handler     *handler.Handler
 	connMetrics *connmetrics.ConnMetrics
@@ -115,9 +91,12 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	}
 
 	var p *proxy.Handler
-	if opts.mode != NormalMode {
+
+	if opts.mode != middleware.NormalMode {
 		var err error
-		if p, err = proxy.New(opts.proxyAddr, opts.proxyTLSCertFile, opts.proxyTLSKeyFile, opts.proxyTLSCAFile); err != nil {
+
+		p, err = proxy.New(opts.proxyAddr, opts.proxyTLSCertFile, opts.proxyTLSKeyFile, opts.proxyTLSCAFile)
+		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 	}
@@ -258,7 +237,7 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 	var proxyHeader *wire.MsgHeader
 	var proxyBody wire.MsgBody
 
-	if c.mode != NormalMode {
+	if c.mode != middleware.NormalMode {
 		if c.proxy == nil {
 			panic("proxy addr was nil")
 		}
@@ -277,7 +256,7 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 	var resHeader *wire.MsgHeader
 	var resBody wire.MsgBody
 
-	if c.mode != ProxyMode {
+	if c.mode != middleware.ProxyMode {
 		resHeader, resBody, resCloseConn = c.route(ctx, reqHeader, reqBody)
 		if level := c.logResponse(ctx, "Response", resHeader, resBody, resCloseConn); level > diffLogLevel {
 			diffLogLevel = level
@@ -285,21 +264,21 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 	}
 
 	// log proxy response after the normal response to make it less confusing
-	if c.mode != NormalMode {
+	if c.mode != middleware.NormalMode {
 		if level := c.logResponse(ctx, "Proxy response", proxyHeader, proxyBody, false); level > diffLogLevel {
 			diffLogLevel = level
 		}
 	}
 
 	// diff in diff mode
-	if c.l.Enabled(ctx, diffLogLevel) && (c.mode == DiffNormalMode || c.mode == DiffProxyMode) {
+	if c.l.Enabled(ctx, diffLogLevel) && (c.mode == middleware.DiffNormalMode || c.mode == middleware.DiffProxyMode) {
 		if err = c.logDiff(ctx, resHeader, proxyHeader, resBody, proxyBody, diffLogLevel); err != nil {
 			return err
 		}
 	}
 
 	// replace response with one from proxy in proxy and diff-proxy modes
-	if c.mode == ProxyMode || c.mode == DiffProxyMode {
+	if c.mode == middleware.ProxyMode || c.mode == middleware.DiffProxyMode {
 		resHeader = proxyHeader
 		resBody = proxyBody
 	}
