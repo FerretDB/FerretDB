@@ -433,17 +433,11 @@ func TestSaslLSID(t *testing.T) {
 			sessionIDs = append(sessionIDs, idV.(wirebson.Binary))
 		}
 
-		require.False(
-			t,
-			slices.ContainsFunc(sessionIDs, func(id wirebson.Binary) bool { return wirebson.Equal(id, saslStartLsid) }),
-			"lsid created but should not be",
-		)
+		containsLsidF := slices.ContainsFunc(sessionIDs, func(id wirebson.Binary) bool { return wirebson.Equal(id, saslStartLsid) })
+		require.False(t, containsLsidF, "saslStart created session but should not")
 
-		require.False(
-			t,
-			slices.ContainsFunc(sessionIDs, func(id wirebson.Binary) bool { return wirebson.Equal(id, saslContinueLsid) }),
-			"lsid created but should not be",
-		)
+		containsSaslContinueLsidF := slices.ContainsFunc(sessionIDs, func(id wirebson.Binary) bool { return wirebson.Equal(id, saslContinueLsid) })
+		require.False(t, containsSaslContinueLsidF, "saslContinue created session but should not")
 	})
 }
 
