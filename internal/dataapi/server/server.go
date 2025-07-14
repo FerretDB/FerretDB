@@ -156,6 +156,30 @@ func (s *Server) ConnInfoMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// SessionMiddleware returns a handler function that calls the next handler
+// then calls endSession.
+func (s *Server) SessionMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		lsid := wirebson.MustDocument("id", wirebson.Binary{
+			B:       must.NotFail(must.NotFail(uuid.NewRandom()).MarshalBinary()),
+			Subtype: wirebson.BinaryUUID,
+		})
+
+		ctx := CtxWithLSID(r.Context(), lsid)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+
+		msg := middleware.RequestDoc(wirebson.MustDocument(
+			"endSessions", wirebson.MustArray(lsid),
+		))
+
+		_, err := s.handler.Handle(ctx, msg)
+		if err != nil {
+			s.l.ErrorContext(ctx, "Failed to end session", logging.Error(err))
+		}
+	})
+}
+
 // writeJSONResponse marshals provided res document into extended JSON and
 // writes it to provided [http.ResponseWriter].
 func (s *Server) writeJSONResponse(ctx context.Context, w http.ResponseWriter, res wirebson.AnyDocument) {
@@ -250,16 +274,9 @@ func prepareDocument(pairs ...any) (*wirebson.Document, error) {
 
 // prepareRequest creates a new middleware request from the given pairs of field names and values,
 // which can be used as handler command msg.
-// It adds `lsid` field to associate a new session ID.
 //
 // If any of pair values is nil it's ignored.
 func prepareRequest(pairs ...any) (*middleware.Request, error) {
-	sessionID := wirebson.Binary{
-		B:       must.NotFail(must.NotFail(uuid.NewRandom()).MarshalBinary()),
-		Subtype: wirebson.BinaryUUID,
-	}
-	pairs = append(pairs, "lsid", wirebson.MustDocument("id", sessionID))
-
 	doc, err := prepareDocument(pairs...)
 	if err != nil {
 		return nil, err
