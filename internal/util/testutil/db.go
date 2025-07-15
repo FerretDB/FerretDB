@@ -29,6 +29,9 @@ var (
 
 	collectionNamesM sync.Mutex
 	collectionNames  = map[string]string{}
+
+	usernameM sync.Mutex
+	usernames = map[string]string{}
 )
 
 // DatabaseName returns a stable FerretDB database name for that test.
@@ -79,6 +82,25 @@ func CollectionName(tb testing.TB) string {
 	}
 
 	collectionNames[name] = tb.Name()
+
+	return name
+}
+
+// UserName returns a stable FerretDB username for the given test.
+func UserName(tb testing.TB, name string) string {
+	tb.Helper()
+
+	name = tb.Name() + name
+
+	usernameM.Lock()
+	defer usernameM.Unlock()
+
+	// it may be the same test if `go test -count=X` is used
+	if t, ok := usernames[name]; ok && t != tb.Name() {
+		panic(fmt.Sprintf("Username %q already used by another test %q.", name, tb.Name()))
+	}
+
+	usernames[name] = tb.Name()
 
 	return name
 }
