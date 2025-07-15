@@ -5,19 +5,11 @@
 ## [v2.4.0](https://github.com/FerretDB/FerretDB/releases/tag/v2.4.0) (2025-07-16)
 
 This version works best with
-[DocumentDB TODO](https://github.com/FerretDB/documentdb/releases/tag/TODO).
-
-TODO
-
-### Breaking changes
-
-TODO
-
-### What's Changed
+[DocumentDB v0.105.0-ferretdb-2.4.0](https://github.com/FerretDB/documentdb/releases/tag/v0.105.0-ferretdb-2.4.0).
 
 ### New Features 🎉
 
-- Allow users to perform user management commands by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5314
+- Allow `clusterAdmin` users to perform user management commands by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5314
 
 ### Enhancements 🛠
 
@@ -27,7 +19,6 @@ TODO
 
 - Add blog post on setting up LibreChat with FerretDB by @Fashander in https://github.com/FerretDB/FerretDB/pull/4999
 - Add blog post for Payload CMS by @Fashander in https://github.com/FerretDB/FerretDB/pull/5257
-- Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5261
 - Add blog post on using Compass GUI by @Fashander in https://github.com/FerretDB/FerretDB/pull/5263
 - Fix social links by @Fashander in https://github.com/FerretDB/FerretDB/pull/5264
 - Add PayloadCMS to compatible apps by @Fashander in https://github.com/FerretDB/FerretDB/pull/5270
@@ -42,10 +33,12 @@ TODO
 - Add GrowthBook to compatible apps by @Fashander in https://github.com/FerretDB/FerretDB/pull/5319
 - Add DBeaver compatibility blogpost by @Fashander in https://github.com/FerretDB/FerretDB/pull/5321
 - Add compatible applications by @Fashander in https://github.com/FerretDB/FerretDB/pull/5335
+- Prepare v2.4.0 release by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5344
 
 ### Other Changes 🤖
 
 - Add YugabyteDB to local setup by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5258
+- Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5261
 - Remove skipping of `bypassEmptyTsReplacement` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5267
 - Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5268
 - Bring back Codecov and Coveralls integration by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5276
@@ -64,14 +57,9 @@ TODO
 - Update TODO URL for `dropUsers` test by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5324
 - Avoid extra marshaling by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5327
 - Split command handling and handlers by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5328
-- Expose DocumentDB feature counters by @jyz0309 in https://github.com/FerretDB/FerretDB/pull/5336
-- Fix flaky integration test by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5337
-- Do not create a session upon `saslStart` and `saskContinue` command by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5338
 - Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5342
 
 ### New Contributors
-
-TODO
 
 [All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/77?closed=1).
 [All commits](https://github.com/FerretDB/FerretDB/compare/v2.3.1...v2.4.0).
