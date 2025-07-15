@@ -90,5 +90,10 @@ func CollectionName(tb testing.TB) string {
 func UserName(tb testing.TB) string {
 	tb.Helper()
 
-	return fmt.Sprintf("%s%d", tb.Name(), usernameCounter.Add(1))
+	name := fmt.Sprintf("%s%d", tb.Name(), usernameCounter.Add(1))
+	name = strings.ReplaceAll(name, "/", "-")
+	name = strings.ReplaceAll(name, " ", "_")
+	name = strings.ReplaceAll(name, "$", "_")
+
+	return name
 }
