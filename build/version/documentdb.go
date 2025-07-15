@@ -18,7 +18,7 @@ import "runtime"
 
 const (
 	// DocumentDB is a version of DocumentDB this version of FerretDB is compatible with.
-	DocumentDB = "0.105.0 gitref: ferretdb sha:53525fca buildId:0"
+	DocumentDB = "0.105.0 gitref: ferretdb sha:973fd0a1 buildId:0"
 
 	// DocumentDBURL points to the release page of the DocumentDB version above.
 	DocumentDBURL = "https://github.com/FerretDB/documentdb/releases/tag/v0.105.0-ferretdb-2.4.0"
