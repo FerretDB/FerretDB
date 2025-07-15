@@ -6,7 +6,8 @@
 2. Update DocumentDB image tags to point to release in:
    - [eval image](../build/ferretdb/eval.Dockerfile);
    - [eval-dev image](../build/ferretdb/eval-dev.Dockerfile);
-   - [local image](../build/deps/postgres-documentdb.Dockerfile).
+   - [local image](../build/deps/postgres-documentdb.Dockerfile);
+   - [bw image](../build/ferretdb-bw/Dockerfile).
 3. Update constants in [`documentdb.go`](../build/version/documentdb.go).
 4. Check DocumentDB images tags in documentation (where we specify full tags).
 5. Re-run tests, linters.
