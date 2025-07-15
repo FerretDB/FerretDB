@@ -35,12 +35,12 @@ func TestDropUserCommand(t *testing.T) {
 	ctx, db := s.Ctx, s.Collection.Database()
 
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/864
-	userA := testutil.UserName(t)
-	userB := testutil.UserName(t)
-	_ = db.RunCommand(ctx, bson.D{{"dropUser", userB}})
+	notFoundUser := testutil.UserName(t)
+	user := testutil.UserName(t)
+	_ = db.RunCommand(ctx, bson.D{{"dropUser", user}})
 
 	errcmd := db.RunCommand(ctx, bson.D{ // avoid data race with and shadowing of err in parallel subtests below
-		{"createUser", userB},
+		{"createUser", user},
 		{"roles", bson.A{}},
 		{"pwd", "password"},
 	}).Err()
@@ -55,16 +55,16 @@ func TestDropUserCommand(t *testing.T) {
 		failsForFerretDB string
 	}{
 		"NotFound": {
-			username: userA,
+			username: notFoundUser,
 			err: &mongo.CommandError{
 				Code:    11,
 				Name:    "UserNotFound",
-				Message: fmt.Sprintf("User '%s@%s' not found", userA, db.Name()),
+				Message: fmt.Sprintf("User '%s@%s' not found", notFoundUser, db.Name()),
 			},
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5323",
 		},
 		"Success": {
-			username: userB,
+			username: user,
 			expected: bson.D{
 				{"ok", float64(1)},
 			},

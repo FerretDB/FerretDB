@@ -36,19 +36,19 @@ func TestCreateUserCommand(t *testing.T) {
 	s := setup.SetupWithOpts(t, nil)
 	ctx, db := s.Ctx, s.Collection.Database()
 
-	userA := testutil.UserName(t)
-	userB := testutil.UserName(t)
-	userC := testutil.UserName(t)
-	userD := testutil.UserName(t)
-	userE := testutil.UserName(t)
-	userF := testutil.UserName(t)
-	userG := testutil.UserName(t)
-	userH := testutil.UserName(t)
-	userI := testutil.UserName(t)
-	userJ := testutil.UserName(t)
-	userK := testutil.UserName(t)
-	userL := testutil.UserName(t)
-	userM := testutil.UserName(t)
+	emptyPasswordUser := testutil.UserName(t)
+	badPasswordUser := testutil.UserName(t)
+	badPasswordTypeUser := testutil.UserName(t)
+	existingUser := testutil.UserName(t)
+	emptyMechanismUser := testutil.UserName(t)
+	badMechanismUser := testutil.UserName(t)
+	missingPasswordUser := testutil.UserName(t)
+	successUser := testutil.UserName(t)
+	successSCRAMSHA256User := testutil.UserName(t)
+	withCommentUser := testutil.UserName(t)
+	missingRolesUser := testutil.UserName(t)
+	nullRolesUser := testutil.UserName(t)
+	invalidRolesUser := testutil.UserName(t)
 
 	testCases := map[string]struct { //nolint:vet // for readability
 		payload bson.D
@@ -77,11 +77,11 @@ func TestCreateUserCommand(t *testing.T) {
 		},
 		"EmptyPassword": {
 			payload: bson.D{
-				{"createUser", userA},
+				{"createUser", emptyPasswordUser},
 				{"roles", bson.A{}},
 				{"pwd", ""},
 			},
-			user: userA,
+			user: emptyPasswordUser,
 			err: &mongo.CommandError{
 				Code:    50687,
 				Name:    "Location50687",
@@ -92,11 +92,11 @@ func TestCreateUserCommand(t *testing.T) {
 		},
 		"BadPasswordValue": {
 			payload: bson.D{
-				{"createUser", userB},
+				{"createUser", badPasswordUser},
 				{"roles", bson.A{}},
 				{"pwd", "pass\x00word"},
 			},
-			user: userB,
+			user: badPasswordUser,
 			err: &mongo.CommandError{
 				Code:    50692,
 				Name:    "Location50692",
@@ -106,11 +106,11 @@ func TestCreateUserCommand(t *testing.T) {
 		},
 		"BadPasswordType": {
 			payload: bson.D{
-				{"createUser", userC},
+				{"createUser", badPasswordTypeUser},
 				{"roles", bson.A{}},
 				{"pwd", true},
 			},
-			user: userC,
+			user: badPasswordTypeUser,
 			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
@@ -120,7 +120,7 @@ func TestCreateUserCommand(t *testing.T) {
 		},
 		"AlreadyExists": {
 			payload: bson.D{
-				{"createUser", userD},
+				{"createUser", existingUser},
 				{"roles", bson.A{}},
 				{"pwd", "password"},
 			},
@@ -128,18 +128,18 @@ func TestCreateUserCommand(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    51003,
 				Name:    "Location51003",
-				Message: fmt.Sprintf("User \"%s@%s\" already exists", userD, db.Name()),
+				Message: fmt.Sprintf("User \"%s@%s\" already exists", existingUser, db.Name()),
 			},
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/934",
 		},
 		"EmptyMechanism": {
 			payload: bson.D{
-				{"createUser", userE},
+				{"createUser", emptyMechanismUser},
 				{"roles", bson.A{}},
 				{"pwd", "password"},
 				{"mechanisms", bson.A{}},
 			},
-			user: userE,
+			user: emptyMechanismUser,
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -149,12 +149,12 @@ func TestCreateUserCommand(t *testing.T) {
 		},
 		"BadAuthMechanism": {
 			payload: bson.D{
-				{"createUser", userF},
+				{"createUser", badMechanismUser},
 				{"roles", bson.A{}},
 				{"pwd", "password"},
 				{"mechanisms", bson.A{"BAD"}},
 			},
-			user: userF,
+			user: badMechanismUser,
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -164,10 +164,10 @@ func TestCreateUserCommand(t *testing.T) {
 		},
 		"MissingPwdOrExternal": {
 			payload: bson.D{
-				{"createUser", userG},
+				{"createUser", missingPasswordUser},
 				{"roles", bson.A{}},
 			},
-			user: userG,
+			user: missingPasswordUser,
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -177,11 +177,11 @@ func TestCreateUserCommand(t *testing.T) {
 		},
 		"Success": {
 			payload: bson.D{
-				{"createUser", userH},
+				{"createUser", successUser},
 				{"roles", bson.A{}},
 				{"pwd", "password"},
 			},
-			user:               userH,
+			user:               successUser,
 			expectedMechanisms: bson.A{"SCRAM-SHA-256"},
 			expected: bson.D{
 				{"ok", float64(1)},
@@ -198,12 +198,12 @@ func TestCreateUserCommand(t *testing.T) {
 		},
 		"SuccessWithSCRAMSHA256": {
 			payload: bson.D{
-				{"createUser", userI},
+				{"createUser", successSCRAMSHA256User},
 				{"roles", bson.A{}},
 				{"pwd", "password"},
 				{"mechanisms", bson.A{"SCRAM-SHA-256"}},
 			},
-			user:               userI,
+			user:               successSCRAMSHA256User,
 			expectedMechanisms: bson.A{"SCRAM-SHA-256"},
 			expected: bson.D{
 				{"ok", float64(1)},
@@ -220,12 +220,12 @@ func TestCreateUserCommand(t *testing.T) {
 		},
 		"WithComment": {
 			payload: bson.D{
-				{"createUser", userJ},
+				{"createUser", withCommentUser},
 				{"roles", bson.A{}},
 				{"pwd", "password"},
 				{"comment", "test string comment"},
 			},
-			user:               userJ,
+			user:               withCommentUser,
 			expectedMechanisms: bson.A{"SCRAM-SHA-256"},
 			expected: bson.D{
 				{"ok", float64(1)},
@@ -242,10 +242,10 @@ func TestCreateUserCommand(t *testing.T) {
 		},
 		"MissingRoles": {
 			payload: bson.D{
-				{"createUser", userK},
+				{"createUser", missingRolesUser},
 				{"pwd", "password"},
 			},
-			user: userK,
+			user: missingRolesUser,
 			err: &mongo.CommandError{
 				Code:    40414,
 				Name:    "Location40414",
@@ -255,11 +255,11 @@ func TestCreateUserCommand(t *testing.T) {
 		},
 		"NilRoles": {
 			payload: bson.D{
-				{"createUser", userL},
+				{"createUser", nullRolesUser},
 				{"roles", nil},
 				{"pwd", "password"},
 			},
-			user: userL,
+			user: nullRolesUser,
 			err: &mongo.CommandError{
 				Code:    10065,
 				Name:    "Location10065",
@@ -269,11 +269,11 @@ func TestCreateUserCommand(t *testing.T) {
 		},
 		"InvalidRoles": {
 			payload: bson.D{
-				{"createUser", userM},
+				{"createUser", invalidRolesUser},
 				{"roles", "not-array"},
 				{"pwd", "password"},
 			},
-			user: userM,
+			user: invalidRolesUser,
 			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
@@ -284,12 +284,12 @@ func TestCreateUserCommand(t *testing.T) {
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/864
-	_ = db.RunCommand(ctx, bson.D{{"dropUser", userD}})
+	_ = db.RunCommand(ctx, bson.D{{"dropUser", existingUser}})
 
 	// The subtest "AlreadyExists" tries to create the following user, which should fail with an error that the user already exists.
 	// Here, we create the user for the very first time to populate the database.
 	err := db.RunCommand(ctx, bson.D{
-		{"createUser", userD},
+		{"createUser", existingUser},
 		{"roles", bson.A{}},
 		{"pwd", "password"},
 	}).Err()
@@ -388,16 +388,16 @@ func TestCreateUserCommand(t *testing.T) {
 			expectedUsersInfo := bson.D{
 				{
 					"users", bson.A{
-						bson.D{
-							{"_id", fmt.Sprintf("%s.%s", db.Name(), tc.user)},
-							{Key: "userId"},
-							{"user", tc.user},
-							{"db", db.Name()},
-							{"credentials", tc.expectedCredentialsComparable},
-							{"roles", bson.A{}},
-							{"mechanisms", tc.expectedMechanisms},
-						},
+					bson.D{
+						{"_id", fmt.Sprintf("%s.%s", db.Name(), tc.user)},
+						{Key: "userId"},
+						{"user", tc.user},
+						{"db", db.Name()},
+						{"credentials", tc.expectedCredentialsComparable},
+						{"roles", bson.A{}},
+						{"mechanisms", tc.expectedMechanisms},
 					},
+				},
 				},
 				{"ok", float64(1)},
 			}
