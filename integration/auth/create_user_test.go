@@ -388,16 +388,16 @@ func TestCreateUserCommand(t *testing.T) {
 			expectedUsersInfo := bson.D{
 				{
 					"users", bson.A{
-					bson.D{
-						{"_id", fmt.Sprintf("%s.%s", db.Name(), tc.user)},
-						{Key: "userId"},
-						{"user", tc.user},
-						{"db", db.Name()},
-						{"credentials", tc.expectedCredentialsComparable},
-						{"roles", bson.A{}},
-						{"mechanisms", tc.expectedMechanisms},
+						bson.D{
+							{"_id", fmt.Sprintf("%s.%s", db.Name(), tc.user)},
+							{Key: "userId"},
+							{"user", tc.user},
+							{"db", db.Name()},
+							{"credentials", tc.expectedCredentialsComparable},
+							{"roles", bson.A{}},
+							{"mechanisms", tc.expectedMechanisms},
+						},
 					},
-				},
 				},
 				{"ok", float64(1)},
 			}
