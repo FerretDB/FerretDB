@@ -24,6 +24,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
+	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
+
 	"github.com/FerretDB/FerretDB/v2/integration"
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
 )
@@ -33,6 +35,19 @@ func TestUpdateUserCommand(t *testing.T) {
 
 	s := setup.SetupWithOpts(t, nil)
 	ctx, db := s.Ctx, s.Collection.Database()
+
+	userA := testutil.UserName(t)
+	userB := testutil.UserName(t)
+	userC := testutil.UserName(t)
+	userD := testutil.UserName(t)
+	userE := testutil.UserName(t)
+	userF := testutil.UserName(t)
+	userG := testutil.UserName(t)
+	userH := testutil.UserName(t)
+	userI := testutil.UserName(t)
+	userJ := testutil.UserName(t)
+	userK := testutil.UserName(t)
+	userL := testutil.UserName(t)
 
 	testCases := map[string]struct { //nolint:vet // for readability
 		username      string
@@ -46,10 +61,10 @@ func TestUpdateUserCommand(t *testing.T) {
 		failsForFerretDB string
 	}{
 		"MissingFields": {
-			username: "missing_fields",
+			username: userA,
 			password: "pass123654",
 			updatePayload: bson.D{
-				{"updateUser", "missing_fields"},
+				{"updateUser", userA},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -62,13 +77,13 @@ func TestUpdateUserCommand(t *testing.T) {
 			username: "do_not_use",
 			password: "pass123654",
 			updatePayload: bson.D{
-				{"updateUser", "not_found"},
+				{"updateUser", userB},
 				{"pwd", "password"},
 			},
 			err: &mongo.CommandError{
 				Code:    11,
 				Name:    "UserNotFound",
-				Message: fmt.Sprintf("User not_found@%s not found", db.Name()),
+				Message: fmt.Sprintf("User %s@%s not found", userB, db.Name()),
 			},
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/945",
 		},
@@ -87,10 +102,10 @@ func TestUpdateUserCommand(t *testing.T) {
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/945",
 		},
 		"EmptyPassword": {
-			username: "a_user_bad_password",
+			username: userC,
 			password: "password",
 			updatePayload: bson.D{
-				{"updateUser", "a_user_bad_password"},
+				{"updateUser", userC},
 				{"pwd", ""},
 			},
 			err: &mongo.CommandError{
@@ -102,10 +117,10 @@ func TestUpdateUserCommand(t *testing.T) {
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/945",
 		},
 		"BadPasswordValue": {
-			username: "b_user_bad_password_value",
+			username: userD,
 			password: "password",
 			updatePayload: bson.D{
-				{"updateUser", "b_user_bad_password_value"},
+				{"updateUser", userD},
 				{"pwd", true},
 			},
 			err: &mongo.CommandError{
@@ -116,10 +131,10 @@ func TestUpdateUserCommand(t *testing.T) {
 			altMessage: "BSON field 'pwd' is the wrong type 'bool', expected type 'string'",
 		},
 		"BadPasswordType": {
-			username: "a_user_bad_password_type",
+			username: userE,
 			password: "password",
 			updatePayload: bson.D{
-				{"updateUser", "a_user_bad_password_type"},
+				{"updateUser", userE},
 				{"pwd", true},
 			},
 			err: &mongo.CommandError{
@@ -130,16 +145,16 @@ func TestUpdateUserCommand(t *testing.T) {
 			altMessage: "BSON field 'pwd' is the wrong type 'bool', expected type 'string'",
 		},
 		"SamePassword": {
-			username: "same_password_user",
+			username: userF,
 			password: "donotchange",
 			updatePayload: bson.D{
-				{"updateUser", "same_password_user"},
+				{"updateUser", userF},
 				{"pwd", "donotchange"},
 			},
 			expected: bson.D{
 				{"users", bson.A{bson.D{
-					{"_id", fmt.Sprintf("%s.same_password_user", db.Name())},
-					{"user", "same_password_user"},
+					{"_id", fmt.Sprintf("%s.%s", db.Name(), userF)},
+					{"user", userF},
 					{"db", db.Name()},
 					{"roles", bson.A{}},
 					{"mechanisms", bson.A{"SCRAM-SHA-256"}},
@@ -149,16 +164,16 @@ func TestUpdateUserCommand(t *testing.T) {
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5313",
 		},
 		"PasswordChange": {
-			username: "update_a_user",
+			username: userG,
 			password: "password",
 			updatePayload: bson.D{
-				{"updateUser", "update_a_user"},
+				{"updateUser", userG},
 				{"pwd", "anewpassword"},
 			},
 			expected: bson.D{
 				{"users", bson.A{bson.D{
-					{"_id", fmt.Sprintf("%s.update_a_user", db.Name())},
-					{"user", "update_a_user"},
+					{"_id", fmt.Sprintf("%s.%s", db.Name(), userG)},
+					{"user", userG},
 					{"db", db.Name()},
 					{"roles", bson.A{}},
 					{"mechanisms", bson.A{"SCRAM-SHA-256"}},
@@ -168,18 +183,18 @@ func TestUpdateUserCommand(t *testing.T) {
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5313",
 		},
 		"PasswordChangeWithSCRAMMechanism": {
-			username:   "a_user_with_scram_mechanism",
+			username:   userH,
 			password:   "password",
 			mechanisms: bson.A{"SCRAM-SHA-256"},
 			updatePayload: bson.D{
-				{"updateUser", "a_user_with_scram_mechanism"},
+				{"updateUser", userH},
 				{"pwd", "anewpassword"},
 				{"mechanisms", bson.A{"SCRAM-SHA-256"}},
 			},
 			expected: bson.D{
 				{"users", bson.A{bson.D{
-					{"_id", fmt.Sprintf("%s.a_user_with_scram_mechanism", db.Name())},
-					{"user", "a_user_with_scram_mechanism"},
+					{"_id", fmt.Sprintf("%s.%s", db.Name(), userH)},
+					{"user", userH},
 					{"db", db.Name()},
 					{"roles", bson.A{}},
 					{"mechanisms", bson.A{"SCRAM-SHA-256"}},
@@ -189,10 +204,10 @@ func TestUpdateUserCommand(t *testing.T) {
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/946",
 		},
 		"PasswordChangeWithBadAuthMechanism": {
-			username: "a_user_with_mechanism_bad",
+			username: userI,
 			password: "password",
 			updatePayload: bson.D{
-				{"updateUser", "a_user_with_mechanism_bad"},
+				{"updateUser", userI},
 				{"pwd", "anewpassword"},
 				{"mechanisms", bson.A{"BAD"}},
 			},
@@ -204,17 +219,17 @@ func TestUpdateUserCommand(t *testing.T) {
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/946",
 		},
 		"PasswordChangeWithRoles": {
-			username: "a_user_with_no_roles",
+			username: userJ,
 			password: "password",
 			updatePayload: bson.D{
-				{"updateUser", "a_user_with_no_roles"},
+				{"updateUser", userJ},
 				{"roles", bson.A{}},
 				{"pwd", "anewpassword"},
 			},
 			expected: bson.D{
 				{"users", bson.A{bson.D{
-					{"_id", fmt.Sprintf("%s.a_user_with_no_roles", db.Name())},
-					{"user", "a_user_with_no_roles"},
+					{"_id", fmt.Sprintf("%s.%s", db.Name(), userJ)},
+					{"user", userJ},
 					{"db", db.Name()},
 					{"roles", bson.A{}},
 					{"mechanisms", bson.A{"SCRAM-SHA-256"}},
@@ -224,17 +239,17 @@ func TestUpdateUserCommand(t *testing.T) {
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/944",
 		},
 		"WithComment": {
-			username: "another_user",
+			username: userK,
 			password: "password",
 			updatePayload: bson.D{
-				{"updateUser", "another_user"},
+				{"updateUser", userK},
 				{"pwd", "anewpassword"},
 				{"comment", "test string comment"},
 			},
 			expected: bson.D{
 				{"users", bson.A{bson.D{
-					{"_id", fmt.Sprintf("%s.another_user", db.Name())},
-					{"user", "another_user"},
+					{"_id", fmt.Sprintf("%s.%s", db.Name(), userK)},
+					{"user", userK},
 					{"db", db.Name()},
 					{"roles", bson.A{}},
 					{"mechanisms", bson.A{"SCRAM-SHA-256"}},
@@ -244,10 +259,10 @@ func TestUpdateUserCommand(t *testing.T) {
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5313",
 		},
 		"InvalidRoles": {
-			username: "invalid_roles",
+			username: userL,
 			password: "password",
 			updatePayload: bson.D{
-				{"updateUser", "invalid_roles"},
+				{"updateUser", userL},
 				{"roles", "not-array"},
 				{"pwd", "password"},
 			},
