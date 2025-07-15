@@ -2,6 +2,80 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v2.4.0](https://github.com/FerretDB/FerretDB/releases/tag/v2.4.0) (2025-07-16)
+
+This version works best with
+[DocumentDB TODO](https://github.com/FerretDB/documentdb/releases/tag/TODO).
+
+TODO
+
+### Breaking changes
+
+TODO
+
+### What's Changed
+
+### New Features 🎉
+
+- Allow users to perform user management commands by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5314
+
+### Enhancements 🛠
+
+- Use debug-level log messages for continuations by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5266
+
+### Documentation 📄
+
+- Add blog post on setting up LibreChat with FerretDB by @Fashander in https://github.com/FerretDB/FerretDB/pull/4999
+- Add blog post for Payload CMS by @Fashander in https://github.com/FerretDB/FerretDB/pull/5257
+- Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5261
+- Add blog post on using Compass GUI by @Fashander in https://github.com/FerretDB/FerretDB/pull/5263
+- Fix social links by @Fashander in https://github.com/FerretDB/FerretDB/pull/5264
+- Add PayloadCMS to compatible apps by @Fashander in https://github.com/FerretDB/FerretDB/pull/5270
+- Add Compass to compatible apps by @Fashander in https://github.com/FerretDB/FerretDB/pull/5275
+- Wrap long lines in a blog post by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5280
+- Add NodeBB compatibility blog post by @Fashander in https://github.com/FerretDB/FerretDB/pull/5285
+- Add Librechat to compatibility section by @Fashander in https://github.com/FerretDB/FerretDB/pull/5286
+- Add NodeBB to compatible apps by @Fashander in https://github.com/FerretDB/FerretDB/pull/5293
+- Cleanup NodeBB blog post by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5294
+- Add Growthbook blogpost by @Fashander in https://github.com/FerretDB/FerretDB/pull/5304
+- Add Heyform compatibility blog post by @Fashander in https://github.com/FerretDB/FerretDB/pull/5316
+- Add GrowthBook to compatible apps by @Fashander in https://github.com/FerretDB/FerretDB/pull/5319
+- Add DBeaver compatibility blogpost by @Fashander in https://github.com/FerretDB/FerretDB/pull/5321
+- Add compatible applications by @Fashander in https://github.com/FerretDB/FerretDB/pull/5335
+
+### Other Changes 🤖
+
+- Add YugabyteDB to local setup by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5258
+- Remove skipping of `bypassEmptyTsReplacement` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5267
+- Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5268
+- Bring back Codecov and Coveralls integration by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5276
+- Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5282
+- Add `mcphost` as tool by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5287
+- Refactor requests handling by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5292
+- Add Dependabot configuration for mcphost by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5296
+- Extend middleware requests and responses by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5301
+- Minor refactoring of Data API by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5302
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5307
+- Refactor responses handling by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5310
+- Add authentication test for client reconnecting by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5311
+- Do not use deprecated method by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5312
+- Update TODO URLs by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5317
+- Remove `must.NotFail(wire[bson].NewXXX(` pattern by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5318
+- Update TODO URL for `dropUsers` test by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5324
+- Avoid extra marshaling by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5327
+- Split command handling and handlers by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5328
+- Expose DocumentDB feature counters by @jyz0309 in https://github.com/FerretDB/FerretDB/pull/5336
+- Fix flaky integration test by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5337
+- Do not create a session upon `saslStart` and `saskContinue` command by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5338
+- Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5342
+
+### New Contributors
+
+TODO
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/77?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v2.3.1...v2.4.0).
+
 ## [v2.3.1](https://github.com/FerretDB/FerretDB/releases/tag/v2.3.1) (2025-06-12)
 
 Hotfix release to restore compatibility with various tools such as `mongoimport` and `mongorestore`.
