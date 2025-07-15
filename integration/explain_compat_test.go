@@ -41,8 +41,8 @@ type explainCompatTestCase struct {
 // due to compat requiring cursor option.
 // If you see one of following errors, use `testAggregateStagesCompat` test instead.
 //
-// `(FailedToParse) The 'cursor' option is required, except for aggregate with the explain argument`
-// `(FailedToParse) The 'cursor' option is required, except for aggregate with explain`
+// `(FailedToParse) The 'cursor' option is required, except for aggregate with the explain argument`.
+// `(FailedToParse) The 'cursor' option is required, except for aggregate with explain`.
 func testExplainCompatError(tt *testing.T, testCases map[string]explainCompatTestCase) {
 	tt.Helper()
 
