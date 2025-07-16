@@ -1,0 +1,620 @@
+{
+  "1-drop-books-collection": {
+    "request": {
+      "drop": "books",
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "nIndexesWas": {
+        "$numberInt": "1"
+      },
+      "ns": "{{.Database}}.books",
+      "ok": {
+        "$numberDouble": "1.0"
+      }
+    }
+  },
+  "2-insert-data": {
+    "request": {
+      "insert": "books",
+      "documents": [
+        {
+          "_id": "pride_prejudice_1813",
+          "title": "Pride and Prejudice",
+          "authors": [
+            {
+              "name": "Jane Austen",
+              "nationality": "British"
+            }
+          ],
+          "summary": "This novel portrays the life and challenges of Elizabeth Bennet as she navigates societal expectations, class prejudice, and romance. The book explores the evolving relationship between Elizabeth and Mr. Darcy, shedding light on the virtues of understanding and self-awareness.",
+          "vector": [
+            {
+              "$numberDouble": "0.014391838572919369"
+            },
+            {
+              "$numberDouble": "-0.07001544535160065"
+            },
+            {
+              "$numberDouble": "0.03249300271272659"
+            },
+            {
+              "$numberDouble": "0.017455201596021652"
+            },
+            {
+              "$numberDouble": "-0.012363946065306664"
+            },
+            {
+              "$numberDouble": "0.04970458894968033"
+            },
+            {
+              "$numberDouble": "0.05334962531924248"
+            },
+            {
+              "$numberDouble": "-0.04171367362141609"
+            },
+            {
+              "$numberDouble": "-0.042840130627155304"
+            },
+            {
+              "$numberDouble": "0.038735587149858475"
+            },
+            {
+              "$numberDouble": "-0.036975011229515076"
+            },
+            {
+              "$numberDouble": "0.02225673384964466"
+            }
+          ]
+        },
+        {
+          "_id": "moby_dick_1851",
+          "title": "Moby Dick",
+          "authors": [
+            {
+              "name": "Herman Melville",
+              "nationality": "American"
+            }
+          ],
+          "summary": "Ishmael recounts his journey aboard the whaling ship Pequod under the leadership of the obsessed Captain Ahab, who is obsessed with hunting the legendary white whale, Moby Dick. The novel delves into themes of human struggle against nature and the destructive power of obsession.",
+          "vector": [
+            {
+              "$numberDouble": "-0.0016038859030231833"
+            },
+            {
+              "$numberDouble": "0.08863562345504761"
+            },
+            {
+              "$numberDouble": "0.006037247832864523"
+            },
+            {
+              "$numberDouble": "0.044850509613752365"
+            },
+            {
+              "$numberDouble": "-0.019985735416412354"
+            },
+            {
+              "$numberDouble": "-0.017665650695562363"
+            },
+            {
+              "$numberDouble": "0.07435955852270126"
+            },
+            {
+              "$numberDouble": "0.0025448515079915524"
+            },
+            {
+              "$numberDouble": "-0.08427142351865768"
+            },
+            {
+              "$numberDouble": "0.07445722818374634"
+            },
+            {
+              "$numberDouble": "-0.02302693948149681"
+            },
+            {
+              "$numberDouble": "-0.0778273269534111"
+            }
+          ]
+        },
+        {
+          "_id": "frankenstein_1818",
+          "title": "Frankenstein",
+          "authors": [
+            {
+              "name": "Mary Shelley",
+              "nationality": "British"
+            }
+          ],
+          "summary": "Victor Frankenstein creates life through unorthodox scientific methods but is horrified by his creation. As his creature seeks acceptance, the novel explores themes of responsibility, alienation, and the ethical limits of scientific experimentation.",
+          "vector": [
+            {
+              "$numberDouble": "-0.010190412402153015"
+            },
+            {
+              "$numberDouble": "0.049356549978256226"
+            },
+            {
+              "$numberDouble": "-0.012309172190725803"
+            },
+            {
+              "$numberDouble": "0.10420369356870651"
+            },
+            {
+              "$numberDouble": "0.010599562898278236"
+            },
+            {
+              "$numberDouble": "0.057357728481292725"
+            },
+            {
+              "$numberDouble": "0.02385704033076763"
+            },
+            {
+              "$numberDouble": "0.04186723381280899"
+            },
+            {
+              "$numberDouble": "0.003379989881068468"
+            },
+            {
+              "$numberDouble": "0.02957085147500038"
+            },
+            {
+              "$numberDouble": "-0.08477196842432022"
+            },
+            {
+              "$numberDouble": "-0.0017921233084052801"
+            }
+          ]
+        }
+      ],
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "n": {
+        "$numberInt": "3"
+      },
+      "ok": {
+        "$numberDouble": "1.0"
+      }
+    }
+  },
+  "3-hnsw-index": {
+    "request": {
+      "createIndexes": "books",
+      "indexes": [
+        {
+          "name": "vector_hnsw_index",
+          "key": {
+            "vector": "cosmosSearch"
+          },
+          "cosmosSearchOptions": {
+            "kind": "vector-hnsw",
+            "similarity": "COS",
+            "dimensions": {
+              "$numberInt": "12"
+            },
+            "m": {
+              "$numberInt": "16"
+            },
+            "efConstruction": {
+              "$numberInt": "64"
+            }
+          }
+        }
+      ],
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "numIndexesBefore": {
+        "$numberInt": "1"
+      },
+      "numIndexesAfter": {
+        "$numberInt": "2"
+      },
+      "createdCollectionAutomatically": false,
+      "ok": {
+        "$numberDouble": "1.0"
+      }
+    }
+  },
+  "4-hnsw-search": {
+    "request": {
+      "aggregate": "books",
+      "pipeline": [
+        {
+          "$search": {
+            "cosmosSearch": {
+              "vector": [
+                {
+                  "$numberDouble": "0.02232860028743744"
+                },
+                {
+                  "$numberDouble": "0.06849973648786545"
+                },
+                {
+                  "$numberDouble": "0.030828291550278664"
+                },
+                {
+                  "$numberDouble": "0.0903232991695404"
+                },
+                {
+                  "$numberDouble": "-0.028270352631807327"
+                },
+                {
+                  "$numberDouble": "-0.036311957985162735"
+                },
+                {
+                  "$numberDouble": "0.02430308423936367"
+                },
+                {
+                  "$numberDouble": "-0.051550041884183884"
+                },
+                {
+                  "$numberDouble": "-0.06737732142210007"
+                },
+                {
+                  "$numberDouble": "0.011019553989171982"
+                },
+                {
+                  "$numberDouble": "-0.013402754440903664"
+                },
+                {
+                  "$numberDouble": "-0.004793450236320496"
+                }
+              ],
+              "path": "vector",
+              "k": {
+                "$numberInt": "2"
+              },
+              "efSearch": {
+                "$numberInt": "40"
+              }
+            }
+          }
+        },
+        {
+          "$project": {
+            "title": {
+              "$numberInt": "1"
+            },
+            "author": {
+              "$first": "$authors.name"
+            },
+            "summary": {
+              "$numberInt": "1"
+            },
+            "vector": {
+              "$numberInt": "1"
+            }
+          }
+        }
+      ],
+      "cursor": {},
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "cursor": {
+        "id": {
+          "$numberLong": "0"
+        },
+        "ns": "{{.Database}}.books",
+        "firstBatch": [
+          {
+            "_id": "moby_dick_1851",
+            "title": "Moby Dick",
+            "summary": "Ishmael recounts his journey aboard the whaling ship Pequod under the leadership of the obsessed Captain Ahab, who is obsessed with hunting the legendary white whale, Moby Dick. The novel delves into themes of human struggle against nature and the destructive power of obsession.",
+            "vector": [
+              {
+                "$numberDouble": "-0.0016038859030231833"
+              },
+              {
+                "$numberDouble": "0.08863562345504761"
+              },
+              {
+                "$numberDouble": "0.006037247832864523"
+              },
+              {
+                "$numberDouble": "0.044850509613752365"
+              },
+              {
+                "$numberDouble": "-0.019985735416412354"
+              },
+              {
+                "$numberDouble": "-0.017665650695562363"
+              },
+              {
+                "$numberDouble": "0.07435955852270126"
+              },
+              {
+                "$numberDouble": "0.0025448515079915524"
+              },
+              {
+                "$numberDouble": "-0.08427142351865768"
+              },
+              {
+                "$numberDouble": "0.07445722818374634"
+              },
+              {
+                "$numberDouble": "-0.02302693948149681"
+              },
+              {
+                "$numberDouble": "-0.0778273269534111"
+              }
+            ],
+            "author": "Herman Melville"
+          },
+          {
+            "_id": "frankenstein_1818",
+            "title": "Frankenstein",
+            "summary": "Victor Frankenstein creates life through unorthodox scientific methods but is horrified by his creation. As his creature seeks acceptance, the novel explores themes of responsibility, alienation, and the ethical limits of scientific experimentation.",
+            "vector": [
+              {
+                "$numberDouble": "-0.010190412402153015"
+              },
+              {
+                "$numberDouble": "0.049356549978256226"
+              },
+              {
+                "$numberDouble": "-0.012309172190725803"
+              },
+              {
+                "$numberDouble": "0.10420369356870651"
+              },
+              {
+                "$numberDouble": "0.010599562898278236"
+              },
+              {
+                "$numberDouble": "0.057357728481292725"
+              },
+              {
+                "$numberDouble": "0.02385704033076763"
+              },
+              {
+                "$numberDouble": "0.04186723381280899"
+              },
+              {
+                "$numberDouble": "0.003379989881068468"
+              },
+              {
+                "$numberDouble": "0.02957085147500038"
+              },
+              {
+                "$numberDouble": "-0.08477196842432022"
+              },
+              {
+                "$numberDouble": "-0.0017921233084052801"
+              }
+            ],
+            "author": "Mary Shelley"
+          }
+        ]
+      },
+      "ok": {
+        "$numberDouble": "1.0"
+      }
+    }
+  },
+  "5-drop-hnsw-index": {
+    "request": {
+      "dropIndexes": "books",
+      "index": "vector_hnsw_index",
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "ok": true,
+      "nIndexesWas": {
+        "$numberLong": "2"
+      }
+    }
+  },
+  "6-ivf-index": {
+    "request": {
+      "createIndexes": "books",
+      "indexes": [
+        {
+          "name": "vector_ivf_index",
+          "key": {
+            "vector": "cosmosSearch"
+          },
+          "cosmosSearchOptions": {
+            "kind": "vector-ivf",
+            "similarity": "COS",
+            "dimensions": {
+              "$numberInt": "12"
+            },
+            "numLists": {
+              "$numberInt": "3"
+            }
+          }
+        }
+      ],
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "numIndexesBefore": {
+        "$numberInt": "1"
+      },
+      "numIndexesAfter": {
+        "$numberInt": "2"
+      },
+      "createdCollectionAutomatically": false,
+      "ok": {
+        "$numberDouble": "1.0"
+      }
+    }
+  },
+  "7-ivf-search": {
+    "request": {
+      "aggregate": "books",
+      "pipeline": [
+        {
+          "$search": {
+            "cosmosSearch": {
+              "vector": [
+                {
+                  "$numberDouble": "0.030855651944875717"
+                },
+                {
+                  "$numberDouble": "0.038530610501766205"
+                },
+                {
+                  "$numberDouble": "0.000790110498201102"
+                },
+                {
+                  "$numberDouble": "0.06512122601270676"
+                },
+                {
+                  "$numberDouble": "0.009281659498810768"
+                },
+                {
+                  "$numberDouble": "-0.05678277835249901"
+                },
+                {
+                  "$numberDouble": "0.029056841507554054"
+                },
+                {
+                  "$numberDouble": "0.0216375719755888"
+                },
+                {
+                  "$numberDouble": "0.012258200906217098"
+                },
+                {
+                  "$numberDouble": "0.055315714329481125"
+                },
+                {
+                  "$numberDouble": "-0.009759286418557167"
+                },
+                {
+                  "$numberDouble": "0.06137007102370262"
+                }
+              ],
+              "path": "vector",
+              "k": {
+                "$numberInt": "2"
+              }
+            },
+            "returnStoredSource": true
+          }
+        },
+        {
+          "$project": {
+            "title": {
+              "$numberInt": "1"
+            },
+            "author": {
+              "$first": "$authors.name"
+            },
+            "summary": {
+              "$numberInt": "1"
+            },
+            "vector": {
+              "$numberInt": "1"
+            }
+          }
+        }
+      ],
+      "cursor": {},
+      "$db": "{{.Database}}"
+    },
+    "response": {
+      "cursor": {
+        "id": {
+          "$numberLong": "0"
+        },
+        "ns": "{{.Database}}.books",
+        "firstBatch": [
+          {
+            "_id": "frankenstein_1818",
+            "title": "Frankenstein",
+            "summary": "Victor Frankenstein creates life through unorthodox scientific methods but is horrified by his creation. As his creature seeks acceptance, the novel explores themes of responsibility, alienation, and the ethical limits of scientific experimentation.",
+            "vector": [
+              {
+                "$numberDouble": "-0.010190412402153015"
+              },
+              {
+                "$numberDouble": "0.049356549978256226"
+              },
+              {
+                "$numberDouble": "-0.012309172190725803"
+              },
+              {
+                "$numberDouble": "0.10420369356870651"
+              },
+              {
+                "$numberDouble": "0.010599562898278236"
+              },
+              {
+                "$numberDouble": "0.057357728481292725"
+              },
+              {
+                "$numberDouble": "0.02385704033076763"
+              },
+              {
+                "$numberDouble": "0.04186723381280899"
+              },
+              {
+                "$numberDouble": "0.003379989881068468"
+              },
+              {
+                "$numberDouble": "0.02957085147500038"
+              },
+              {
+                "$numberDouble": "-0.08477196842432022"
+              },
+              {
+                "$numberDouble": "-0.0017921233084052801"
+              }
+            ],
+            "author": "Mary Shelley"
+          },
+          {
+            "_id": "moby_dick_1851",
+            "title": "Moby Dick",
+            "summary": "Ishmael recounts his journey aboard the whaling ship Pequod under the leadership of the obsessed Captain Ahab, who is obsessed with hunting the legendary white whale, Moby Dick. The novel delves into themes of human struggle against nature and the destructive power of obsession.",
+            "vector": [
+              {
+                "$numberDouble": "-0.0016038859030231833"
+              },
+              {
+                "$numberDouble": "0.08863562345504761"
+              },
+              {
+                "$numberDouble": "0.006037247832864523"
+              },
+              {
+                "$numberDouble": "0.044850509613752365"
+              },
+              {
+                "$numberDouble": "-0.019985735416412354"
+              },
+              {
+                "$numberDouble": "-0.017665650695562363"
+              },
+              {
+                "$numberDouble": "0.07435955852270126"
+              },
+              {
+                "$numberDouble": "0.0025448515079915524"
+              },
+              {
+                "$numberDouble": "-0.08427142351865768"
+              },
+              {
+                "$numberDouble": "0.07445722818374634"
+              },
+              {
+                "$numberDouble": "-0.02302693948149681"
+              },
+              {
+                "$numberDouble": "-0.0778273269534111"
+              }
+            ],
+            "author": "Herman Melville"
+          }
+        ]
+      },
+      "ok": {
+        "$numberDouble": "1.0"
+      }
+    }
+  }
+}
