@@ -3,7 +3,7 @@ slug: ferretdb-v240-is-available
 title: 'FerretDB v2.4.0 is available!'
 authors: [alex]
 description: >
-  FerretDB v2.4.0 introduces user management capabilities, logging improvements, and enhanced compatibility with DocumentDB v0.105.0-ferretdb-2.4.0.
+  FerretDB v2.4.0 introduces user management capabilities, logging improvements, and enhanced compatibility.
 image: /img/blog/ferretdb-v2.4.0.jpg
 tags: [release]
 ---
@@ -17,8 +17,8 @@ This version continues our focus on improving compatibility, enhancing performan
 
 This release works best with [DocumentDB v0.105.0-ferretdb-2.4.0](https://github.com/FerretDB/documentdb/releases/tag/v0.105.0-ferretdb-2.4.0).
 
-Be sure to update to DocumentDB v0.105.0-ferretdb-2.4.0 to ensure full compatibility with this FerretDB version.
-Refer to [this guide for instructions on updating to the latest version](https://docs.ferretdb.io/installation/ferretdb/docker/#updating-to-a-new-version).
+Be sure to update to DocumentDB v0.105.0-ferretdb-2.4.0 before updating FerretDB to v2.4.0.
+Refer to [our guide for instructions on updating to the latest version](https://docs.ferretdb.io/installation/ferretdb/docker/#updating-to-a-new-version).
 
 ## New features
 
