@@ -341,7 +341,7 @@ func cleanupCollection(tb testing.TB, ctx context.Context, database *mongo.Datab
 		return
 	}
 
-	if *targetBackendF == "ferretdb-yugabytedb" {
+	if IsYugabyteDB(tb) {
 		// dropping collection or database fails for ferretdb-yugabytedb
 		// TODO https://github.com/yugabyte/yugabyte-db/issues/27698
 		_, err := collection.DeleteMany(ctx, bson.D{})
@@ -365,7 +365,7 @@ func cleanupDatabase(tb testing.TB, ctx context.Context, database *mongo.Databas
 	err := database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
 	require.NoError(tb, err)
 
-	if *targetBackendF == "ferretdb-yugabytedb" {
+	if IsYugabyteDB(tb) {
 		// dropping collection or database fails for ferretdb-yugabytedb
 		// TODO https://github.com/yugabyte/yugabyte-db/issues/27698
 		var cursor *mongo.Cursor
