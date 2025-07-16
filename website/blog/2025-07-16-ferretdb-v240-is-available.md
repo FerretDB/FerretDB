@@ -3,7 +3,7 @@ slug: ferretdb-v240-is-available
 title: 'FerretDB v2.4.0 is available!'
 authors: [alex]
 description: >
-  FerretDB v2.4.0 introduces user management capabilities, logging improvements, and improved compatibility.
+  FerretDB v2.4.0 introduces user management capabilities, logging improvements, and improved compatibility via the latest DocumentDB release.
 image: /img/blog/ferretdb-v2.4.0.jpg
 tags: [release]
 ---
