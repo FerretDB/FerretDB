@@ -371,22 +371,19 @@ func cleanupDatabase(tb testing.TB, ctx context.Context, database *mongo.Databas
 		cursor, err = database.ListCollections(ctx, bson.D{})
 		require.NoError(tb, err)
 
-		var res []bson.D
+		type collectionInfo struct {
+			Name string `bson:"name"`
+		}
+
+		var res []collectionInfo
 
 		err = cursor.All(ctx, &res)
 		require.NoError(tb, cursor.Close(ctx))
 		require.NoError(tb, err)
 
-		for _, d := range res {
-			for _, field := range d {
-				if field.Key == "name" {
-					collectionName, ok := field.Value.(string)
-					require.True(tb, ok)
-
-					_, err = database.Collection(collectionName).DeleteMany(ctx, bson.D{})
-					require.NoError(tb, err)
-				}
-			}
+		for _, collection := range res {
+			_, err = database.Collection(collection.Name).DeleteMany(ctx, bson.D{})
+			require.NoError(tb, err)
 		}
 
 		return
