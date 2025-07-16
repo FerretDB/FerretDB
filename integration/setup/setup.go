@@ -261,24 +261,27 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 	collection := database.Collection(collectionName)
 
 	// drop remnants of the previous failed run
-	if *targetBackendF == "ferretdb-yugabytedb" {
+	if ownDatabase {
+		cleanDatabase(tb, ctx, database)
+	} else if *targetBackendF == "ferretdb-yugabytedb" {
 		// dropping collection or database fails for ferretdb-yugabytedb
 		// TODO https://github.com/yugabyte/yugabyte-db/issues/27698
 		_, err := collection.DeleteMany(ctx, bson.D{})
 		require.NoError(tb, err)
 	} else {
 		_ = collection.Drop(ctx)
-
-		if ownDatabase {
-			_ = database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}})
-			_ = database.Drop(ctx)
-		}
 	}
 
 	// drop collection and (possibly) database unless test failed
 	tb.Cleanup(func() {
 		if tb.Failed() {
 			tb.Logf("Keeping %s.%s for debugging", databaseName, collectionName)
+			return
+		}
+
+		if ownDatabase {
+			cleanDatabase(tb, ctx, database)
+
 			return
 		}
 
@@ -293,14 +296,6 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 
 		err := collection.Drop(ctx)
 		require.NoError(tb, err)
-
-		if ownDatabase {
-			err = database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
-			require.NoError(tb, err)
-
-			err = database.Drop(ctx)
-			require.NoError(tb, err)
-		}
 	})
 
 	var inserted bool
