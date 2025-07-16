@@ -24,6 +24,11 @@ export const categorizedApps = {
       name: 'Mingo',
       logo: '/img/compatible-applications/mingo-logo.png',
       link: 'https://blog.ferretdb.io/using-mingo-analyze-visualize-ferretdb-data/'
+    },
+    {
+      name: 'DBeaver',
+      logo: '/img/compatible-applications/dbeaver-logo.png',
+      link: 'https://blog.ferretdb.io/manage-ferretdb-databases-dbeaver/'
     }
   ],
 
@@ -55,6 +60,11 @@ export const categorizedApps = {
       name: 'OpenTelemetry',
       logo: '/img/compatible-applications/opentelemetry-logo.png',
       link: 'https://blog.ferretdb.io/otel-context-propagation-in-ferretdb/'
+    },
+    {
+      name: 'HyperDX',
+      logo: '/img/compatible-applications/hyperdx-logo.png',
+      link: 'https://blog.ferretdb.io/full-stack-observability-hyperdx-ferretdb/'
     }
   ],
 
@@ -94,6 +104,11 @@ export const categorizedApps = {
       name: 'GrowthBook',
       logo: '/img/compatible-applications/growthbook-logo.png',
       link: 'https://blog.ferretdb.io/enabling-feature-flags-ab-testing-growthbook-ferretdb/'
+    },
+    {
+      name: 'HeyForm',
+      logo: '/img/compatible-applications/heyform-logo.png',
+      link: 'https://blog.ferretdb.io/streamlining-form-management-heyform-ferretdb/'
     }
   ]
 }
