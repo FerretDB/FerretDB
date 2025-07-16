@@ -261,14 +261,15 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 	collection := database.Collection(collectionName)
 
 	// drop remnants of the previous failed run
-	if ownDatabase {
-		cleanDatabase(tb, ctx, database)
-	} else if *targetBackendF == "ferretdb-yugabytedb" {
+	switch {
+	case ownDatabase:
+		cleanupDatabase(tb, ctx, database)
+	case *targetBackendF == "ferretdb-yugabytedb":
 		// dropping collection or database fails for ferretdb-yugabytedb
 		// TODO https://github.com/yugabyte/yugabyte-db/issues/27698
 		_, err := collection.DeleteMany(ctx, bson.D{})
 		require.NoError(tb, err)
-	} else {
+	default:
 		_ = collection.Drop(ctx)
 	}
 
@@ -279,23 +280,17 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 			return
 		}
 
-		if ownDatabase {
-			cleanDatabase(tb, ctx, database)
-
-			return
-		}
-
-		if *targetBackendF == "ferretdb-yugabytedb" {
+		switch {
+		case ownDatabase:
+			cleanupDatabase(tb, ctx, database)
+		case *targetBackendF == "ferretdb-yugabytedb":
 			// dropping collection or database fails for ferretdb-yugabytedb
 			// TODO https://github.com/yugabyte/yugabyte-db/issues/27698
 			_, err := collection.DeleteMany(ctx, bson.D{})
 			require.NoError(tb, err)
-
-			return
+		default:
+			require.NoError(tb, collection.Drop(ctx))
 		}
-
-		err := collection.Drop(ctx)
-		require.NoError(tb, err)
 	})
 
 	var inserted bool
@@ -353,4 +348,39 @@ func insertBenchmarkProvider(tb testing.TB, ctx context.Context, collection *mon
 	}
 
 	return
+}
+
+// cleanupDatabase drops all users, then deletes all collections for `ferretdb-yugabytedb` backend
+// or drops the database for other backends.
+func cleanupDatabase(tb testing.TB, ctx context.Context, database *mongo.Database) {
+	err := database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
+	require.NoError(tb, err)
+
+	if *targetBackendF == "ferretdb-yugabytedb" {
+		// dropping collection or database fails for ferretdb-yugabytedb
+		// TODO https://github.com/yugabyte/yugabyte-db/issues/27698
+		var cursor *mongo.Cursor
+		cursor, err = database.ListCollections(ctx, bson.D{})
+		require.NoError(tb, err)
+
+		var res []bson.D
+
+		err = cursor.All(ctx, &res)
+		require.NoError(tb, cursor.Close(ctx))
+		require.NoError(tb, err)
+
+		for _, d := range res {
+			for _, field := range d {
+				if field.Key == "name" {
+					_, err = database.Collection(field.Value.(string)).DeleteMany(ctx, bson.D{})
+					require.NoError(tb, err)
+				}
+			}
+		}
+
+		return
+	}
+
+	err = database.Drop(ctx)
+	require.NoError(tb, err)
 }

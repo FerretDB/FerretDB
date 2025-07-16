@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.opentelemetry.io/otel"
 
@@ -136,7 +135,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 	database := client.Database(opts.databaseName)
 
 	// drop remnants of the previous failed run
-	cleanDatabase(tb, ctx, database)
+	cleanupDatabase(tb, ctx, database)
 
 	// drop database unless test failed
 	tb.Cleanup(func() {
@@ -144,7 +143,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 			return
 		}
 
-		cleanDatabase(tb, ctx, database)
+		cleanupDatabase(tb, ctx, database)
 	})
 
 	providers := slices.Clone(opts.Providers)
@@ -184,40 +183,4 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 	// rand.Shuffle(len(collections), func(i, j int) { collections[i], collections[j] = collections[j], collections[i] })
 
 	return collections
-}
-
-// cleanDatabase drops all users, then deletes all collections for `ferretdb-yugabytedb` backend
-// or drops the database for other backends.
-func cleanDatabase(tb testing.TB, ctx context.Context, database *mongo.Database) {
-	err := database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
-	require.NoError(tb, err)
-
-	if *targetBackendF == "ferretdb-yugabytedb" {
-		// dropping collection or database fails for ferretdb-yugabytedb
-		// TODO https://github.com/yugabyte/yugabyte-db/issues/27698
-		var cursor *mongo.Cursor
-		cursor, err = database.ListCollections(ctx, bson.D{})
-		require.NoError(tb, err)
-
-		var res []bson.D
-
-		err = cursor.All(ctx, &res)
-		require.NoError(tb, cursor.Close(ctx))
-		require.NoError(tb, err)
-
-		for _, d := range res {
-			for _, field := range d {
-				switch field.Key {
-				case "name":
-					_, err = database.Collection(field.Value.(string)).DeleteMany(ctx, bson.D{})
-					require.NoError(tb, err)
-				}
-			}
-		}
-
-		return
-	}
-
-	err = database.Drop(ctx)
-	require.NoError(tb, err)
 }
