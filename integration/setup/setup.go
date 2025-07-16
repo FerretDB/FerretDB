@@ -380,7 +380,10 @@ func cleanupDatabase(tb testing.TB, ctx context.Context, database *mongo.Databas
 		for _, d := range res {
 			for _, field := range d {
 				if field.Key == "name" {
-					_, err = database.Collection(field.Value.(string)).DeleteMany(ctx, bson.D{})
+					collectionName, ok := field.Value.(string)
+					require.True(tb, ok)
+
+					_, err = database.Collection(collectionName).DeleteMany(ctx, bson.D{})
 					require.NoError(tb, err)
 				}
 			}
