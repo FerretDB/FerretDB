@@ -32,6 +32,7 @@ This version works best with
 - Add Heyform compatibility blog post by @Fashander in https://github.com/FerretDB/FerretDB/pull/5316
 - Add GrowthBook to compatible apps by @Fashander in https://github.com/FerretDB/FerretDB/pull/5319
 - Add DBeaver compatibility blogpost by @Fashander in https://github.com/FerretDB/FerretDB/pull/5321
+- Add HyperDX blog post by @Fashander in https://github.com/FerretDB/FerretDB/pull/5334
 - Add compatible applications by @Fashander in https://github.com/FerretDB/FerretDB/pull/5335
 - Prepare v2.4.0 release by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5344
 
