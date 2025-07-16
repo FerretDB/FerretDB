@@ -328,10 +328,9 @@ func insertBenchmarkProvider(tb testing.TB, ctx context.Context, collection *mon
 	return
 }
 
-// cleanupCollection drops the database if `opts.DatabaseName` is empty,
-// otherwise it deletes all documents for `ferretdb-yugabytedb` backend
-// or drops the collection for other backends.
-// The error from dropping the collection is optionally ignored.
+// cleanupCollection cleans up the database if `opts.DatabaseName` is empty,
+// otherwise it deletes all documents in the collection for `ferretdb-yugabytedb` backend
+// or drops the collection for other backends. The drop collection error is optionally ignored.
 func cleanupCollection(tb testing.TB, ctx context.Context, database *mongo.Database, collection *mongo.Collection, opts *SetupOpts, ignoreErr bool) {
 	tb.Helper()
 
