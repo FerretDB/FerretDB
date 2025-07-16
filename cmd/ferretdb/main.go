@@ -533,8 +533,6 @@ func run() {
 		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct listener", logging.Error(err))
 	}
 
-	authHandler := httpauth.NewAuthHandler(h, logging.WithName(logger, "httpauth"))
-
 	if cmp.Or(cli.Listen.DataAPIAddr, "-") != "-" {
 		wg.Add(1)
 
@@ -557,6 +555,8 @@ func run() {
 		}()
 	}
 
+	authHandler := httpauth.NewAuthHandler(h)
+
 	if cmp.Or(cli.Listen.MCPAddr, "-") != "-" {
 		wg.Add(1)
 
@@ -565,7 +565,7 @@ func run() {
 
 			l := logging.WithName(logger, "mcp")
 
-			s, e := mcp.New(ctx, &mcp.ServerOpts{
+			lis, e := mcp.Listen(&mcp.ListenerOpts{
 				TCPAddr:     cli.Listen.MCPAddr,
 				L:           l,
 				ToolHandler: mcp.NewToolHandler(h),
@@ -574,16 +574,15 @@ func run() {
 			})
 			if e != nil {
 				p.Close()
-				l.LogAttrs(ctx, logging.LevelFatal, "Failed to construct MCP Server listener", logging.Error(e))
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to start MCP listener", logging.Error(e))
 			}
 
-			if e = s.Serve(ctx); e != nil {
+			if e = lis.Run(ctx); e != nil {
 				p.Close()
-				l.LogAttrs(ctx, logging.LevelFatal, "Failed to construct MCP Server", logging.Error(e))
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to run MCP listener", logging.Error(e))
 			}
 		}()
 	}
-
 	listener.Store(lis)
 
 	metricsRegisterer.MustRegister(lis)

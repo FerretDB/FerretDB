@@ -19,7 +19,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -36,11 +35,11 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
 
-func TestServerNoAuth(t *testing.T) {
+func TestListenerNoAuth(t *testing.T) {
 	t.Parallel()
 
 	ctx := t.Context()
-	addr := setupServer(t, ctx, false)
+	addr := setupListener(t, ctx, false)
 
 	jsonConfig := fmt.Sprintf(`{
 	"mcpServers": {
@@ -68,11 +67,11 @@ func TestServerNoAuth(t *testing.T) {
 	require.Contains(t, res, `"ok":{"$numberDouble":"1.0"}`)
 }
 
-func TestServerBasicAuth(t *testing.T) {
+func TestListenerBasicAuth(t *testing.T) {
 	t.Parallel()
 
 	ctx := t.Context()
-	addr := setupServer(t, ctx, true)
+	addr := setupListener(t, ctx, true)
 
 	jsonConfig := fmt.Sprintf(`{
 	"mcpServers": {
@@ -85,58 +84,6 @@ func TestServerBasicAuth(t *testing.T) {
 	}`,
 		addr.String(),
 		base64.StdEncoding.EncodeToString([]byte("username:password")),
-	)
-
-	res := askMCPHost(t, ctx, jsonConfig, "list databases")
-	t.Log(res)
-	//          [  ferretdb__listDatabases
-	//          ]  List
-	//          {"databases":[],"totalSize":{"$numberInt":"19967123"},"ok":{"$numberDouble":"1
-	//          .0"}}
-	require.Contains(t, res, "ferretdb__listDatabases")
-
-	res = strings.ReplaceAll(res, "\n", "")
-	res = strings.ReplaceAll(res, " ", "")
-	require.Contains(t, res, `{"databases":`)
-	require.Contains(t, res, `"totalSize":`)
-	require.Contains(t, res, `"ok":{"$numberDouble":"1.0"}`)
-}
-
-func TestServerBearerToken(t *testing.T) {
-	t.Parallel()
-
-	ctx := t.Context()
-	addr := setupServer(t, ctx, true)
-
-	tokenReq, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+addr.String()+"/auth/token", nil)
-	require.NoError(t, err)
-
-	tokenReq.SetBasicAuth("username", "password")
-
-	tokenRes, err := http.DefaultClient.Do(tokenReq)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		require.NoError(t, tokenRes.Body.Close())
-	})
-
-	assert.Equal(t, http.StatusOK, tokenRes.StatusCode)
-	authorization := tokenRes.Header.Get("Authorization")
-	assert.True(t, strings.HasPrefix(authorization, "Bearer "))
-
-	token := strings.TrimPrefix(authorization, "Bearer ")
-	assert.NotEmpty(t, token)
-
-	jsonConfig := fmt.Sprintf(`{
-	"mcpServers": {
-	  "FerretDB": {
-	    "type": "remote",
-	    "url": "http://%s/mcp",
-	    "headers": ["Authorization: Bearer %s"]
-	    }
-	  }
-	}`,
-		addr.String(),
-		token,
 	)
 
 	res := askMCPHost(t, ctx, jsonConfig, "list databases")
@@ -179,8 +126,8 @@ func askMCPHost(tb testing.TB, ctx context.Context, jsonConfig, prompt string) s
 	return string(res)
 }
 
-// setupServer sets up a new MCP server with the given authentication flag.
-func setupServer(tb testing.TB, ctx context.Context, auth bool) net.Addr {
+// setupListener sets up a new MCP listener.
+func setupListener(tb testing.TB, ctx context.Context, auth bool) net.Addr {
 	uri := testutil.PostgreSQLURL(tb)
 	l := testutil.Logger(tb)
 	sp, err := state.NewProvider("")
@@ -210,8 +157,8 @@ func setupServer(tb testing.TB, ctx context.Context, auth bool) net.Addr {
 		<-handlerDone
 	})
 
-	authHandler := httpauth.NewAuthHandler(h, l)
-	s, err := New(ctx, &ServerOpts{
+	authHandler := httpauth.NewAuthHandler(h)
+	lis, err := Listen(&ListenerOpts{
 		L:           l,
 		Handler:     h,
 		ToolHandler: NewToolHandler(h),
@@ -220,17 +167,17 @@ func setupServer(tb testing.TB, ctx context.Context, auth bool) net.Addr {
 	})
 	require.NoError(tb, err)
 
-	serverDone := make(chan struct{})
+	listenDone := make(chan struct{})
 
 	go func() {
-		err = s.Serve(ctx)
+		err = lis.Run(ctx)
 		assert.NoError(tb, err)
-		close(serverDone)
+		close(listenDone)
 	}()
 
 	tb.Cleanup(func() {
-		<-serverDone
+		<-listenDone
 	})
 
-	return s.lis.Addr()
+	return lis.lis.Addr()
 }
