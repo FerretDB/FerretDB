@@ -145,7 +145,7 @@ func setupListener(tb testing.TB, ctx context.Context, auth bool) net.Addr {
 	})
 	require.NoError(tb, err)
 
-	handlerCtx, cancel := context.WithCancel(ctx)
+	cancelCtx, cancel := context.WithCancel(ctx)
 	var wg sync.WaitGroup
 
 	tb.Cleanup(func() {
@@ -156,7 +156,7 @@ func setupListener(tb testing.TB, ctx context.Context, auth bool) net.Addr {
 	wg.Add(1)
 
 	go func() {
-		h.Run(handlerCtx)
+		h.Run(cancelCtx)
 		wg.Done()
 	}()
 
@@ -172,7 +172,7 @@ func setupListener(tb testing.TB, ctx context.Context, auth bool) net.Addr {
 	wg.Add(1)
 
 	go func() {
-		mcpHandler.Serve(handlerCtx)
+		mcpHandler.Serve(cancelCtx)
 		wg.Done()
 	}()
 
