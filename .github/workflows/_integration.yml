@@ -126,7 +126,8 @@ jobs:
           parallel: true
 
       - name: Upload test results to Codecov
-        if: ${{ !cancelled() }}
+        #if: ${{ !cancelled() }}
+        if: always()
         uses: codecov/test-results-action@v1
         with:
           file: ./integration/integration-${{ inputs.task }}.xml
