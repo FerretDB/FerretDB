@@ -41,7 +41,6 @@ Here's what you need to do:
 2. **Install/run Mongo Express**: Follow the [official documentation for Mongo Express](https://github.com/mongo-express/mongo-express) to install and run it.
    This often involves a simple `npm install` or running a Docker container.
 3. **Configure the connection**: When prompted for connection details in Mongo Express, specify the `ME_CONFIG_MONGODB_URL` environment variable or fill in the connection form with the following details:
-
    - Host/IP Address: This should point to your FerretDB instance.
      If you're running FerretDB locally, you can use `localhost` or `127.0.0.1`.
    - Port: Typically, FerretDB runs on port `27017`, but you can adjust this if you've configured it differently.
