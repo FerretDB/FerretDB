@@ -1327,6 +1327,7 @@ func TestAggregateCommandCursor(t *testing.T) {
 				Name:    "FailedToParse",
 				Message: "The 'cursor' option is required, except for aggregate with the explain argument",
 			},
+			altMessage: "The 'cursor' option is required, except for aggregate with explain",
 		},
 		"Empty": {
 			cursor:     bson.D{},

@@ -1,1 +1,1 @@
-FROM ghcr.io/ferretdb/ferretdb-textlint:14.8.4-1
+FROM ghcr.io/ferretdb/ferretdb-textlint:15.2.0-1
