@@ -22,6 +22,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -108,17 +109,19 @@ func setupListener(tb testing.TB, ctx context.Context) net.Addr {
 	require.NoError(tb, err)
 
 	handlerCtx, cancel := context.WithCancel(ctx)
-	handlerDone := make(chan struct{})
-
-	go func() {
-		h.Run(handlerCtx)
-		close(handlerDone)
-	}()
+	var wg sync.WaitGroup
 
 	tb.Cleanup(func() {
 		cancel()
-		<-handlerDone
+		wg.Wait()
 	})
+
+	wg.Add(1)
+
+	go func() {
+		h.Run(handlerCtx)
+		wg.Done()
+	}()
 
 	mcpHandler, err := Listen(&ListenOpts{
 		L:           l,
@@ -128,16 +131,12 @@ func setupListener(tb testing.TB, ctx context.Context) net.Addr {
 	})
 	require.NoError(tb, err)
 
-	mcpHandlerDone := make(chan struct{})
+	wg.Add(1)
 
 	go func() {
 		mcpHandler.Serve(ctx)
-		close(mcpHandlerDone)
+		wg.Done()
 	}()
-
-	tb.Cleanup(func() {
-		<-mcpHandlerDone
-	})
 
 	return mcpHandler.lis.Addr()
 }
