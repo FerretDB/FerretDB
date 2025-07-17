@@ -18,6 +18,8 @@ package middleware
 import (
 	"context"
 	"sync/atomic"
+
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // Handler is a common interface for command handlers.
@@ -28,8 +30,34 @@ type Handler interface {
 	//
 	// Response is a normal response or an error.
 	// TODO https://github.com/FerretDB/FerretDB/issues/4965
-	Handle(ctx context.Context, req *Request) (resp *Response, err error)
+	Handle(ctx context.Context, req *Request) (resp *Response)
 }
 
 // lastRequestID stores last generated request ID.
 var lastRequestID atomic.Int32
+
+type Middleware struct {
+	opts *NewOpts
+}
+
+type NewOpts struct {
+	Mode     Mode
+	Handlers []Handler
+}
+
+func New(opts *NewOpts) *Middleware {
+	must.NotBeZero(opts)
+
+	return &Middleware{
+		opts: opts,
+	}
+}
+
+func (m *Middleware) Handle(ctx context.Context, req *Request) (resp *Response) {
+	panic("TODO")
+}
+
+// check interfaces
+var (
+	_ Handler = (*Middleware)(nil)
+)

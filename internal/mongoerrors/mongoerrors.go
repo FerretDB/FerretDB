@@ -78,8 +78,9 @@ func goString(err error) string {
 //
 // This function performs double duty: it is used to convert errors in documentdb_api,
 // and to map error codes in conn.go. It probably should be split in two.
+// TODO https://github.com/FerretDB/FerretDB/issues/4965
 func Make(ctx context.Context, err error, arg string, l *slog.Logger) *Error {
-	must.NotBeZero(err)
+	must.NoError(err)
 
 	span := oteltrace.SpanFromContext(ctx)
 	span.SetStatus(otelcodes.Error, "")
@@ -87,6 +88,7 @@ func Make(ctx context.Context, err error, arg string, l *slog.Logger) *Error {
 
 	var e *Error
 	if errors.As(err, &e) {
+		must.NotBeZero(e)
 		return e
 	}
 

@@ -17,11 +17,13 @@ package clientconn
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"log/slog"
 	"math/rand"
 	"net"
+	"os"
 	"sync"
 	"time"
 
@@ -34,7 +36,6 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
-	"github.com/FerretDB/FerretDB/v2/internal/util/tlsutil"
 )
 
 // Listener listens on one or multiple interfaces (TCP, Unix, TLS sockets)
@@ -72,6 +73,48 @@ type ListenerOpts struct {
 	ProxyTLSCAFile   string
 
 	TestRecordsDir string // if empty, no records are created
+}
+
+// tlsConfig provides server TLS configuration for the given certificate and key files.
+// Passing caFile enables client certificate verification.
+func tlsConfig(certFile, keyFile, caFile string) (*tls.Config, error) {
+	if _, err := os.Stat(certFile); err != nil {
+		return nil, fmt.Errorf("TLS certificate file: %w", err)
+	}
+
+	if _, err := os.Stat(keyFile); err != nil {
+		return nil, fmt.Errorf("TLS key file: %w", err)
+	}
+
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		return nil, fmt.Errorf("TLS file pair: %w", err)
+	}
+
+	config := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+	}
+
+	if caFile != "" {
+		if _, err := os.Stat(caFile); err != nil {
+			return nil, fmt.Errorf("TLS CA file: %w", err)
+		}
+
+		b, err := os.ReadFile(caFile)
+		if err != nil {
+			return nil, err
+		}
+
+		ca := x509.NewCertPool()
+		if ok := ca.AppendCertsFromPEM(b); !ok {
+			return nil, fmt.Errorf("TLS CA file: failed to parse")
+		}
+
+		config.ClientAuth = tls.RequireAndVerifyClientCert
+		config.ClientCAs = ca
+	}
+
+	return config, nil
 }
 
 // Listen creates a new listener and starts listening on configured interfaces.
@@ -115,7 +158,7 @@ func Listen(opts *ListenerOpts) (l *Listener, err error) {
 	if l.TLS != "" {
 		var config *tls.Config
 
-		if config, err = tlsutil.Config(l.TLSCertFile, l.TLSKeyFile, l.TLSCAFile); err != nil {
+		if config, err = tlsConfig(l.TLSCertFile, l.TLSKeyFile, l.TLSCAFile); err != nil {
 			err = lazyerrors.Error(err)
 			return
 		}

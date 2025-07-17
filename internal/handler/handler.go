@@ -138,24 +138,24 @@ func (h *Handler) Run(ctx context.Context) {
 }
 
 // Handle processes a request.
-func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
+func (h *Handler) Handle(ctx context.Context, req *middleware.Request) *middleware.Response {
 	switch req.WireBody().(type) {
 	case *wire.OpMsg:
 		msgCmd := req.Document().Command()
 
 		cmd := h.commands[msgCmd]
 		if cmd == nil {
-			return nil, mongoerrors.New(
+			return middleware.ResponseErr(req, mongoerrors.New(
 				mongoerrors.ErrCommandNotFound,
 				fmt.Sprintf("no such command: '%s'", msgCmd),
-			)
+			))
 		}
 
 		if cmd.handler == nil {
-			return nil, mongoerrors.New(
+			return middleware.ResponseErr(req, mongoerrors.New(
 				mongoerrors.ErrNotImplemented,
 				fmt.Sprintf("Command %s is not implemented", msgCmd),
-			)
+			))
 		}
 
 		if h.Auth && !cmd.anonymous {
@@ -170,19 +170,29 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middlew
 					h.L.WarnContext(ctx, "Conversation did not succeed", slog.String("username", username))
 				}
 
-				return nil, mongoerrors.New(
+				return middleware.ResponseErr(req, mongoerrors.New(
 					mongoerrors.ErrUnauthorized,
 					fmt.Sprintf("Command %s requires authentication", msgCmd),
-				)
+				))
 			}
 
 			h.L.DebugContext(ctx, "Authentication passed", slog.String("username", username))
 		}
 
-		return cmd.handler(ctx, req)
+		resp, err := cmd.handler(ctx, req)
+		if err != nil {
+			return middleware.ResponseErr(req, mongoerrors.Make(ctx, err, "", h.L))
+		}
+
+		return resp
 
 	case *wire.OpQuery:
-		return h.CmdQuery(ctx, req)
+		resp, err := h.CmdQuery(ctx, req)
+		if err != nil {
+			return middleware.ResponseErr(req, mongoerrors.Make(ctx, err, "", h.L))
+		}
+
+		return resp
 
 	default:
 		panic("unsupported request")
