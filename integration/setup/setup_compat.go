@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.opentelemetry.io/otel"
 
@@ -136,8 +135,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 	database := client.Database(opts.databaseName)
 
 	// drop remnants of the previous failed run
-	_ = database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}})
-	_ = database.Drop(ctx)
+	cleanupDatabase(tb, ctx, database)
 
 	// drop database unless test failed
 	tb.Cleanup(func() {
@@ -145,11 +143,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 			return
 		}
 
-		err := database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
-		require.NoError(tb, err)
-
-		err = database.Drop(ctx)
-		require.NoError(tb, err)
+		cleanupDatabase(tb, ctx, database)
 	})
 
 	providers := slices.Clone(opts.Providers)
