@@ -27,15 +27,16 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/server"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
 // Listener represents dataapi listener.
 type Listener struct {
-	opts *ListenOpts
-	lis  net.Listener
-	srv  *server.Server
+	opts    *ListenOpts
+	lis     net.Listener
+	handler http.Handler
 }
 
 // ListenOpts represents [Listen] options.
@@ -52,10 +53,22 @@ func Listen(opts *ListenOpts) (*Listener, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
+	s := server.New(opts.L, opts.Handler)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /openapi.json", s.OpenAPISpec)
+
+	h := api.HandlerFromMux(s, mux)
+	if opts.Handler != nil && opts.Handler.Auth {
+		h = s.AuthMiddleware(h)
+	}
+
+	h = s.ConnInfoMiddleware(h)
+
 	return &Listener{
-		opts: opts,
-		lis:  lis,
-		srv:  server.New(opts.L, opts.Handler),
+		opts:    opts,
+		lis:     lis,
+		handler: h,
 	}, nil
 }
 
@@ -63,14 +76,8 @@ func Listen(opts *ListenOpts) (*Listener, error) {
 //
 // It exits when handler is stopped and listener closed.
 func (lis *Listener) Run(ctx context.Context) {
-	srvHandler := api.HandlerFromMux(lis.srv, http.NewServeMux())
-
-	if lis.opts.Handler.Auth {
-		srvHandler = lis.srv.AuthMiddleware(srvHandler)
-	}
-
 	srv := &http.Server{
-		Handler:  lis.srv.ConnInfoMiddleware(srvHandler),
+		Handler:  lis.handler,
 		ErrorLog: slog.NewLogLogger(lis.opts.L.Handler(), slog.LevelError),
 		BaseContext: func(net.Listener) context.Context {
 			return ctx
@@ -85,6 +92,19 @@ func (lis *Listener) Run(ctx context.Context) {
 		}
 	}()
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/4848
 	<-ctx.Done()
+
+	// ctx is already canceled, but we want to inherit its values
+	shutdownCtx, shutdownCancel := ctxutil.WithDelay(ctx)
+	defer shutdownCancel(nil)
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		lis.opts.L.LogAttrs(ctx, logging.LevelDPanic, "Shutdown exited with unexpected error", logging.Error(err))
+	}
+
+	if err := srv.Close(); err != nil {
+		lis.opts.L.LogAttrs(ctx, logging.LevelDPanic, "Close exited with unexpected error", logging.Error(err))
+	}
+
+	lis.opts.L.InfoContext(ctx, "DataAPI server stopped")
 }
