@@ -120,7 +120,7 @@ func setupListener(tb testing.TB, ctx context.Context) net.Addr {
 		<-handlerDone
 	})
 
-	lis, err := Listen(&ListenerOpts{
+	mcpHandler, err := Listen(&ListenOpts{
 		L:           l,
 		Handler:     h,
 		ToolHandler: NewToolHandler(h),
@@ -128,17 +128,16 @@ func setupListener(tb testing.TB, ctx context.Context) net.Addr {
 	})
 	require.NoError(tb, err)
 
-	listenDone := make(chan struct{})
+	mcpHandlerDone := make(chan struct{})
 
 	go func() {
-		err = lis.Run(ctx)
-		assert.NoError(tb, err)
-		close(listenDone)
+		mcpHandler.Serve(ctx)
+		close(mcpHandlerDone)
 	}()
 
 	tb.Cleanup(func() {
-		<-listenDone
+		<-mcpHandlerDone
 	})
 
-	return lis.lis.Addr()
+	return mcpHandler.lis.Addr()
 }

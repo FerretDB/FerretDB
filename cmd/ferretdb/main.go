@@ -562,21 +562,18 @@ func run() {
 
 			l := logging.WithName(logger, "mcp")
 
-			lis, e := mcp.Listen(&mcp.ListenerOpts{
+			mcpHandler, e := mcp.Listen(&mcp.ListenOpts{
+				Handler:     h,
+				ToolHandler: mcp.NewToolHandler(h),
 				TCPAddr:     cli.Listen.MCPAddr,
 				L:           l,
-				ToolHandler: mcp.NewToolHandler(h),
-				Handler:     h,
 			})
 			if e != nil {
 				p.Close()
-				l.LogAttrs(ctx, logging.LevelFatal, "Failed to start MCP listener", logging.Error(e))
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create MCP listener", logging.Error(e))
 			}
 
-			if e = lis.Run(ctx); e != nil {
-				p.Close()
-				l.LogAttrs(ctx, logging.LevelFatal, "Failed to run MCP listener", logging.Error(e))
-			}
+			mcpHandler.Serve(ctx)
 		}()
 	}
 	listener.Store(lis)
