@@ -59,7 +59,7 @@ func Listen(opts *ListenOpts) (*Listener, error) {
 	mux.HandleFunc("GET /openapi.json", s.OpenAPISpec)
 
 	h := api.HandlerFromMux(s, mux)
-	if opts.Handler != nil && opts.Handler.Auth {
+	if opts.Handler.Auth {
 		h = s.AuthMiddleware(h)
 	}
 
