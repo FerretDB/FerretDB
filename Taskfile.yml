@@ -207,6 +207,13 @@ tasks:
     desc: "Run integration tests in parallel"
     deps: [test-integration-postgresql, test-integration-mongodb]
 
+
+  convert-coverage:
+    desc: "Convert coverage files to XML"
+    dir: integration
+    cmds:
+      - ../bin/gocov convert integration-postgresql.txt | ../bin/gocov-xml > integration-postgresql.xml
+
   test-integration-postgresql:
     desc: "Run integration tests for PostgreSQL/DocumentDB"
     deps: [gen-version, test-integration-build]
@@ -232,6 +239,7 @@ tasks:
         -postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
         -compat-url='mongodb://username:password@127.0.0.1:47017/?replicaSet=rs0'
         -no-xfail={{.NO_XFAIL}}
+      - task: convert-coverage
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
