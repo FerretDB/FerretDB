@@ -1498,6 +1498,20 @@ func BsonRank(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (err error) {
 	return
 }
 
+// BsonRumCompositeOrdering is a wrapper for
+//
+//	documentdb_api_internal.bson_rum_composite_ordering(anonymous bytea, anonymous1 documentdb_core.bson, anonymous12 smallint, anonymous123 internal, OUT bson_rum_composite_ordering documentdb_core.bson).
+func BsonRumCompositeOrdering(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument, anonymous12 struct{}, anonymous123 struct{}) (outBsonRumCompositeOrdering wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_rum_composite_ordering", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_rum_composite_ordering::bytea FROM documentdb_api_internal.bson_rum_composite_ordering($1, $2::bytea, $3, $4)", anonymous, anonymous1, anonymous12, anonymous123)
+	if err = row.Scan(&outBsonRumCompositeOrdering); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_rum_composite_ordering", l)
+	}
+	return
+}
+
 // BsonSearchParam is a wrapper for
 //
 //	documentdb_api_internal.bson_search_param(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, OUT bson_search_param boolean).
