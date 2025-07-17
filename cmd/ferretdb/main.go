@@ -566,7 +566,7 @@ func run() {
 
 			l := logging.WithName(logger, "mcp")
 
-			mLis, e := mcp.Listen(&mcp.ListenerOpts{
+			mcpHandler, e := mcp.Listen(&mcp.ListenOpts{
 				Handler:        h,
 				ToolHandler:    mcp.NewToolHandler(h),
 				HttpMiddleware: m,
@@ -575,13 +575,10 @@ func run() {
 			})
 			if e != nil {
 				p.Close()
-				l.LogAttrs(ctx, logging.LevelFatal, "Failed to start MCP listener", logging.Error(e))
+				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create MCP listener", logging.Error(e))
 			}
 
-			if e = mLis.Run(ctx); e != nil {
-				p.Close()
-				l.LogAttrs(ctx, logging.LevelFatal, "Failed to run MCP listener", logging.Error(e))
-			}
+			mcpHandler.Serve(ctx)
 		}()
 	}
 	listener.Store(lis)

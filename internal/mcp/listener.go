@@ -26,19 +26,21 @@ import (
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/httpmiddleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
-// Listener is an MCP listener.
-type Listener struct {
-	opts *ListenerOpts
-	lis  net.Listener
+// Handler represents MCP handler.
+type Handler struct {
+	opts    *ListenOpts
+	lis     net.Listener
+	handler http.Handler
 }
 
-// ListenerOpts represents options configurable for [Listener].
-type ListenerOpts struct { //nolint:vet // prefer readability for struct instantiated once
+// ListenOpts represents [Listen] options.
+type ListenOpts struct { //nolint:vet // for readability
 	Handler        *handler.Handler
 	ToolHandler    *ToolHandler
 	HttpMiddleware *httpmiddleware.HttpMiddleware
@@ -47,49 +49,63 @@ type ListenerOpts struct { //nolint:vet // prefer readability for struct instant
 	L *slog.Logger
 }
 
-// Listen creates an MCP server and starts listener on the given TCP address.
-func Listen(opts *ListenerOpts) (*Listener, error) {
+// Listen creates a new MCP handler and starts listener on the given TCP address.
+func Listen(opts *ListenOpts) (*Handler, error) {
+	s := mcp.NewServer(&mcp.Implementation{Name: "FerretDB", Version: version.Get().Version}, nil)
+	opts.ToolHandler.initTools(s)
+
+	h := mcp.NewStreamableHTTPHandler(func(req *http.Request) *mcp.Server { return s }, nil)
+
+	mux := http.NewServeMux()
+	mux.Handle("/mcp", opts.HttpMiddleware.WithMiddleware(h))
+
 	lis, err := net.Listen("tcp", opts.TCPAddr)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &Listener{
-		opts: opts,
-		lis:  lis,
+	return &Handler{
+		opts:    opts,
+		lis:     lis,
+		handler: mux,
 	}, nil
 }
 
-// Run runs the MCP server until the context is done.
-func (lis *Listener) Run(ctx context.Context) error {
-	mcpSrv := mcp.NewServer(&mcp.Implementation{Name: "FerretDB", Version: version.Get().Version}, nil)
-	lis.opts.ToolHandler.initTools(mcpSrv)
-
-	mux := http.NewServeMux()
-
-	h := mcp.NewStreamableHTTPHandler(func(req *http.Request) *mcp.Server { return mcpSrv }, nil)
-
-	mux.Handle("/mcp", lis.opts.HttpMiddleware.WithMiddleware(h))
+// Serve runs MCP handler until ctx is canceled.
+//
+// It exits when the handler is stopped and the listener is closed.
+func (h *Handler) Serve(ctx context.Context) {
+	l := h.opts.L
 
 	s := &http.Server{
-		Handler:  mux,
-		ErrorLog: slog.NewLogLogger(lis.opts.L.Handler(), slog.LevelError),
+		Handler:  h.handler,
+		ErrorLog: slog.NewLogLogger(l.Handler(), slog.LevelError),
 		BaseContext: func(net.Listener) context.Context {
 			return ctx
 		},
 	}
 
-	lis.opts.L.InfoContext(ctx, fmt.Sprintf("Starting MCP server on http://%s/", lis.opts.TCPAddr))
+	l.InfoContext(ctx, fmt.Sprintf("Starting MCP server on http://%s/", h.opts.TCPAddr))
 
 	go func() {
-		if err := s.Serve(lis.lis); !errors.Is(err, http.ErrServerClosed) {
-			lis.opts.L.LogAttrs(ctx, logging.LevelDPanic, "Serve exited with unexpected error", logging.Error(err))
+		if err := s.Serve(h.lis); !errors.Is(err, http.ErrServerClosed) {
+			l.LogAttrs(ctx, logging.LevelDPanic, "Serve exited with unexpected error", logging.Error(err))
 		}
 	}()
 
 	<-ctx.Done()
 
-	lis.opts.L.InfoContext(ctx, "MCP server stopped")
+	// ctx is already canceled, but we want to inherit its values
+	shutdownCtx, shutdownCancel := ctxutil.WithDelay(ctx)
+	defer shutdownCancel(nil)
 
-	return nil
+	if err := s.Shutdown(shutdownCtx); err != nil {
+		l.LogAttrs(ctx, logging.LevelDPanic, "Shutdown exited with unexpected error", logging.Error(err))
+	}
+
+	if err := s.Close(); err != nil {
+		l.LogAttrs(ctx, logging.LevelDPanic, "Close exited with unexpected error", logging.Error(err))
+	}
+
+	l.InfoContext(ctx, "MCP server stopped")
 }

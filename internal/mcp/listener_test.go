@@ -23,6 +23,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -145,38 +146,35 @@ func setupListener(tb testing.TB, ctx context.Context, auth bool) net.Addr {
 	require.NoError(tb, err)
 
 	handlerCtx, cancel := context.WithCancel(ctx)
-	handlerDone := make(chan struct{})
-
-	go func() {
-		h.Run(handlerCtx)
-		close(handlerDone)
-	}()
+	var wg sync.WaitGroup
 
 	tb.Cleanup(func() {
 		cancel()
-		<-handlerDone
+		wg.Wait()
 	})
 
-	lis, err := Listen(&ListenerOpts{
-		L:              l,
+	wg.Add(1)
+
+	go func() {
+		h.Run(handlerCtx)
+		wg.Done()
+	}()
+
+	mcpHandler, err := Listen(&ListenOpts{
 		Handler:        h,
 		ToolHandler:    NewToolHandler(h),
-		TCPAddr:        "127.0.0.1:0",
 		HttpMiddleware: httpmiddleware.NewHttpMiddleware(h, l),
+		TCPAddr:        "127.0.0.1:0",
+		L:              l,
 	})
 	require.NoError(tb, err)
 
-	listenDone := make(chan struct{})
+	wg.Add(1)
 
 	go func() {
-		err = lis.Run(ctx)
-		assert.NoError(tb, err)
-		close(listenDone)
+		mcpHandler.Serve(handlerCtx)
+		wg.Done()
 	}()
 
-	tb.Cleanup(func() {
-		<-listenDone
-	})
-
-	return lis.lis.Addr()
+	return mcpHandler.lis.Addr()
 }
