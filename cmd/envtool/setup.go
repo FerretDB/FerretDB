@@ -116,7 +116,7 @@ func setupUser(ctx context.Context, uri string, l *slog.Logger) error {
 			break
 		}
 
-		l.InfoContext(ctx, "Waiting for DocumentDB extension to be created", logging.Error(err))
+		l.InfoContext(ctx, "Waiting for DocumentDB extension to be created")
 
 		retry++
 		ctxutil.SleepWithJitter(ctx, time.Second, retry)
