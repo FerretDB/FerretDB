@@ -71,7 +71,7 @@ func (lis *Listener) Run(ctx context.Context) {
 	
 	srvHandler := api.HandlerFromMux(lis.srv, mux)
 
-	if lis.opts.Handler.Auth {
+	if lis.opts.Handler != nil && lis.opts.Handler.Auth {
 		srvHandler = lis.srv.AuthMiddleware(srvHandler)
 	}
 

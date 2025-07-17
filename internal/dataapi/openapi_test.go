@@ -15,23 +15,47 @@
 package dataapi
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
 
-func TestOpenAPISpec(t *testing.T) {
+func TestDataAPIEndpoints(t *testing.T) {
 	t.Parallel()
 
-	addr, _ := setupDataAPI(t, false)
+	// Create a simple listener without database dependency
+	l := testutil.Logger(t)
+	apiLis, err := Listen(&ListenOpts{
+		TCPAddr: "127.0.0.1:0",
+		L:       l,
+		Handler: nil, // nil handler is OK for OpenAPI endpoint
+	})
+	require.NoError(t, err)
 
-	t.Run("GetOpenAPISpec", func(t *testing.T) {
-		t.Parallel()
+	ctx, cancel := context.WithCancel(testutil.Ctx(t))
+	defer cancel()
 
+	// Start the server
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		apiLis.Run(ctx)
+	}()
+
+	// Give server time to start
+	time.Sleep(10 * time.Millisecond)
+
+	addr := apiLis.lis.Addr().String()
+
+	t.Run("OpenAPIEndpoint", func(t *testing.T) {
 		resp, err := http.Get("http://" + addr + "/openapi.json")
 		require.NoError(t, err)
 		defer resp.Body.Close()
@@ -60,8 +84,6 @@ func TestOpenAPISpec(t *testing.T) {
 	})
 
 	t.Run("MethodNotAllowed", func(t *testing.T) {
-		t.Parallel()
-
 		req, err := http.NewRequest(http.MethodPost, "http://"+addr+"/openapi.json", nil)
 		require.NoError(t, err)
 
@@ -70,5 +92,19 @@ func TestOpenAPISpec(t *testing.T) {
 		defer resp.Body.Close()
 
 		assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
+	})
+
+	// Test graceful shutdown
+	t.Run("GracefulShutdown", func(t *testing.T) {
+		// Cancel the context to trigger shutdown
+		cancel()
+
+		// Wait for server to stop gracefully
+		select {
+		case <-done:
+			// Success - server stopped gracefully
+		case <-time.After(5 * time.Second):
+			t.Fatal("Server did not stop gracefully within timeout")
+		}
 	})
 }
