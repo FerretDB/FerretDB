@@ -41,6 +41,21 @@ github_checks:
 component_management:
   enabled: true
   default_rules:
-    target: auto
-    paths:
-    - internal/*
+    - type: project
+      target: auto
+      branches:
+        - !main
+
+  individual_components:
+    - name: clientconn
+      paths:
+        - internal/clientconn/**
+    - name: dataapi
+      paths:
+        - internal/dataapi/**
+    - name: documentdb
+      paths:
+        - internal/documentdb/**
+    - name: handler
+      paths:
+        - internal/handler/**
