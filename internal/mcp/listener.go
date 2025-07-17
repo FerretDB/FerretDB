@@ -25,9 +25,8 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
-	"github.com/FerretDB/FerretDB/v2/internal/util/httpauth"
+	"github.com/FerretDB/FerretDB/v2/internal/util/httpmiddleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
@@ -40,11 +39,11 @@ type Listener struct {
 
 // ListenerOpts represents options configurable for [Listener].
 type ListenerOpts struct {
-	Handler     *handler.Handler
-	ToolHandler *ToolHandler
-	AuthHandler *httpauth.AuthHandler
-	L           *slog.Logger
-	TCPAddr     string
+	Handler        *handler.Handler
+	ToolHandler    *ToolHandler
+	HttpMiddleware *httpmiddleware.HttpMiddleware
+	L              *slog.Logger
+	TCPAddr        string
 }
 
 // Listen creates an MCP server and starts listener on the given TCP address.
@@ -67,12 +66,9 @@ func (lis *Listener) Run(ctx context.Context) error {
 
 	mux := http.NewServeMux()
 
-	var h http.Handler = mcp.NewStreamableHTTPHandler(func(req *http.Request) *mcp.Server { return mcpSrv }, nil)
-	if lis.opts.Handler.Auth {
-		h = lis.opts.AuthHandler.AuthMiddleware(h)
-	}
+	h := mcp.NewStreamableHTTPHandler(func(req *http.Request) *mcp.Server { return mcpSrv }, nil)
 
-	mux.Handle("/mcp", connInfoMiddleware(h))
+	mux.Handle("/mcp", lis.opts.HttpMiddleware.WithMiddleware(h))
 
 	s := &http.Server{
 		Handler:  mux,
@@ -95,14 +91,4 @@ func (lis *Listener) Run(ctx context.Context) error {
 	lis.opts.L.InfoContext(ctx, "MCP server stopped")
 
 	return nil
-}
-
-// connInfoMiddleware returns a handler function that creates a new [*conninfo.ConnInfo],
-// calls the next handler, and closes the connection info after the request is done.
-func connInfoMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		connInfo := conninfo.New()
-		defer connInfo.Close()
-		next.ServeHTTP(w, r.WithContext(conninfo.Ctx(r.Context(), connInfo)))
-	})
 }

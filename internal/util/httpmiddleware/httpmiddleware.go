@@ -12,36 +12,54 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package httpauth provides utilities for handling HTTP authentication.
-package httpauth
+// Package httpmiddleware provides utilities for handling HTTP requests.
+package httpmiddleware
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/FerretDB/wire/wirebson"
+	"github.com/google/uuid"
 	"github.com/xdg-go/scram"
 
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// AuthHandler handles authentication.
-type AuthHandler struct { //nolint:vet // ok for struct instantiated once
+// HttpMiddleware handles http middleware.
+type HttpMiddleware struct { //nolint:vet // ok for struct instantiated once
 	handler *handler.Handler
+	l       *slog.Logger
 }
 
-// NewAuthHandler creates a new AuthHandler instance.
-func NewAuthHandler(handler *handler.Handler) *AuthHandler {
-	return &AuthHandler{
+// NewHttpMiddleware creates a new HttpMiddleware instance.
+func NewHttpMiddleware(handler *handler.Handler, l *slog.Logger) *HttpMiddleware {
+	return &HttpMiddleware{
 		handler: handler,
+		l:       l,
 	}
 }
 
-// AuthMiddleware handles SCRAM authentication based on the username and password specified in request.
+// WithMiddleware wraps the handler with common middleware.
+func (h *HttpMiddleware) WithMiddleware(next http.Handler) http.Handler {
+	next = h.sessionMiddleware(next)
+	if h.handler.Auth {
+		next = h.authMiddleware(next)
+	}
+
+	next = connInfoMiddleware(next)
+
+	return next
+}
+
+// authMiddleware handles SCRAM authentication based on the username and password specified in request.
 // After a successful handshake it calls the next handler.
-func (h *AuthHandler) AuthMiddleware(next http.Handler) http.Handler {
+func (h *HttpMiddleware) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		username, password, ok := r.BasicAuth()
@@ -126,6 +144,43 @@ func (h *AuthHandler) AuthMiddleware(next http.Handler) http.Handler {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// connInfoMiddleware returns a handler function that creates a new [*conninfo.ConnInfo],
+// calls the next handler, and closes the connection info after the request is done.
+func connInfoMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		connInfo := conninfo.New()
+		defer connInfo.Close()
+		next.ServeHTTP(w, r.WithContext(conninfo.Ctx(r.Context(), connInfo)))
+	})
+}
+
+// sessionMiddleware returns a handler function that sets `lsid` in context,
+// calls the next handler then calls `endSession`.
+func (h *HttpMiddleware) sessionMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		lsid := wirebson.MustDocument("id", wirebson.Binary{
+			B:       must.NotFail(must.NotFail(uuid.NewRandom()).MarshalBinary()),
+			Subtype: wirebson.BinaryUUID,
+		})
+
+		ctx := CtxWithLSID(r.Context(), lsid)
+
+		defer func() {
+			msg := middleware.RequestDoc(wirebson.MustDocument(
+				"endSessions", wirebson.MustArray(lsid),
+				"lsid", lsid,
+				"$db", "admin",
+			))
+
+			if _, err := h.handler.Handle(ctx, msg); err != nil {
+				h.l.ErrorContext(ctx, "Failed to end session", logging.Error(err))
+			}
+		}()
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

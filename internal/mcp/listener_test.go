@@ -30,7 +30,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
-	"github.com/FerretDB/FerretDB/v2/internal/util/httpauth"
+	"github.com/FerretDB/FerretDB/v2/internal/util/httpmiddleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
@@ -157,13 +157,12 @@ func setupListener(tb testing.TB, ctx context.Context, auth bool) net.Addr {
 		<-handlerDone
 	})
 
-	authHandler := httpauth.NewAuthHandler(h)
 	lis, err := Listen(&ListenerOpts{
-		L:           l,
-		Handler:     h,
-		ToolHandler: NewToolHandler(h),
-		TCPAddr:     "127.0.0.1:0",
-		AuthHandler: authHandler,
+		L:              l,
+		Handler:        h,
+		ToolHandler:    NewToolHandler(h),
+		TCPAddr:        "127.0.0.1:0",
+		HttpMiddleware: httpmiddleware.NewHttpMiddleware(h, l),
 	})
 	require.NoError(tb, err)
 

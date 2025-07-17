@@ -48,7 +48,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/debug"
 	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
-	"github.com/FerretDB/FerretDB/v2/internal/util/httpauth"
+	"github.com/FerretDB/FerretDB/v2/internal/util/httpmiddleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/iface"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
@@ -555,7 +555,7 @@ func run() {
 		}()
 	}
 
-	authHandler := httpauth.NewAuthHandler(h)
+	m := httpmiddleware.NewHttpMiddleware(h, logging.WithName(logger, "httpmiddleware"))
 
 	if cmp.Or(cli.Listen.MCPAddr, "-") != "-" {
 		wg.Add(1)
@@ -565,19 +565,19 @@ func run() {
 
 			l := logging.WithName(logger, "mcp")
 
-			lis, e := mcp.Listen(&mcp.ListenerOpts{
-				TCPAddr:     cli.Listen.MCPAddr,
-				L:           l,
-				ToolHandler: mcp.NewToolHandler(h),
-				Handler:     h,
-				AuthHandler: authHandler,
+			mLis, e := mcp.Listen(&mcp.ListenerOpts{
+				TCPAddr:        cli.Listen.MCPAddr,
+				L:              l,
+				ToolHandler:    mcp.NewToolHandler(h),
+				Handler:        h,
+				HttpMiddleware: m,
 			})
 			if e != nil {
 				p.Close()
 				l.LogAttrs(ctx, logging.LevelFatal, "Failed to start MCP listener", logging.Error(e))
 			}
 
-			if e = lis.Run(ctx); e != nil {
+			if e = mLis.Run(ctx); e != nil {
 				p.Close()
 				l.LogAttrs(ctx, logging.LevelFatal, "Failed to run MCP listener", logging.Error(e))
 			}
