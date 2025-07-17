@@ -207,7 +207,6 @@ tasks:
     desc: "Run integration tests in parallel"
     deps: [test-integration-postgresql, test-integration-mongodb]
 
-
   convert-coverage:
     desc: "Convert coverage files to XML"
     dir: integration
