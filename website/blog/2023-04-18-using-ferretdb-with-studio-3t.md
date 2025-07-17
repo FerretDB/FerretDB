@@ -116,7 +116,6 @@ Once we've finally installed and set up Studio 3T locally, the next thing to do 
    ![Studio 3T Connection window](/img/blog/ferretdb-studio3t/image4.png)
 
 2. In the "New Connection" dialog box, set up your connection with the following details:
-
    - Connection name: A name for your connection.
    - Server: The hostname or IP address of your FerretDB instance (e.g., "ferretdb").
      The server and port are automatically set based on the connection URI you provided.
