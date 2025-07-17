@@ -31,8 +31,9 @@ import (
 
 // Parts of Prometheus metric names.
 const (
-	namespace = "ferretdb"
-	subsystem = "pool"
+	namespace               = "ferretdb"
+	subsystem               = "pool"
+	featureCounterSubsystem = "command_feature"
 )
 
 // Pool represent a pool of PostgreSQL connections.
@@ -237,6 +238,45 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 		prometheus.CounterValue,
 		float64(stats.MaxIdleDestroyCount()),
 	)
+
+	err := p.WithConn(func(conn *pgx.Conn) error {
+		// Query for all feature counter stats
+		rows, err := conn.Query(todoCtx,
+			`SELECT feature_name, usage_count FROM documentdb_api_internal.command_feature_counter_stats($1)`,
+			false,
+		)
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var featureName string
+			var usageCount int32
+
+			if scanErr := rows.Scan(&featureName, &usageCount); scanErr != nil {
+				return lazyerrors.Error(scanErr)
+			}
+
+			// Create a metric for each feature
+			ch <- prometheus.MustNewConstMetric(
+				prometheus.NewDesc(
+					prometheus.BuildFQName(namespace, featureCounterSubsystem, "usage_count"),
+					"Number of times a command feature has been used.",
+					[]string{"feature_name"},
+					nil,
+				),
+				prometheus.CounterValue,
+				float64(usageCount),
+				featureName,
+			)
+		}
+
+		return rows.Err()
+	})
+	if err != nil {
+		p.l.Error("failed to collect feature counter metrics", logging.Error(err))
+	}
 }
 
 // check interfaces
