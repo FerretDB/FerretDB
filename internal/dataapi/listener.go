@@ -27,6 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/server"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
@@ -63,7 +64,12 @@ func Listen(opts *ListenOpts) (*Listener, error) {
 //
 // It exits when handler is stopped and listener closed.
 func (lis *Listener) Run(ctx context.Context) {
-	srvHandler := api.HandlerFromMux(lis.srv, http.NewServeMux())
+	mux := http.NewServeMux()
+	
+	// Add OpenAPI spec endpoint
+	mux.HandleFunc("GET /openapi.json", lis.srv.OpenAPISpec)
+	
+	srvHandler := api.HandlerFromMux(lis.srv, mux)
 
 	if lis.opts.Handler.Auth {
 		srvHandler = lis.srv.AuthMiddleware(srvHandler)
@@ -85,6 +91,19 @@ func (lis *Listener) Run(ctx context.Context) {
 		}
 	}()
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/4848
 	<-ctx.Done()
+
+	// ctx is already canceled, but we want to inherit its values
+	shutdownCtx, shutdownCancel := ctxutil.WithDelay(ctx)
+	defer shutdownCancel(nil)
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		lis.opts.L.LogAttrs(ctx, logging.LevelDPanic, "Shutdown exited with unexpected error", logging.Error(err))
+	}
+
+	if err := srv.Close(); err != nil {
+		lis.opts.L.LogAttrs(ctx, logging.LevelDPanic, "Close exited with unexpected error", logging.Error(err))
+	}
+
+	lis.opts.L.InfoContext(ctx, "DataAPI server stopped")
 }

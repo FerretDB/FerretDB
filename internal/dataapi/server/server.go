@@ -274,6 +274,29 @@ func decodeJSONRequest(r *http.Request, out any) error {
 	return nil
 }
 
+// OpenAPISpec serves the OpenAPI specification on GET /openapi.json.
+func (s *Server) OpenAPISpec(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Read the OpenAPI spec file
+	openAPISpec, err := api.OpenAPISpecBytes()
+	if err != nil {
+		s.l.ErrorContext(r.Context(), "Failed to read OpenAPI spec", logging.Error(err))
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "public, max-age=3600") // Cache for 1 hour
+	
+	if _, err := w.Write(openAPISpec); err != nil {
+		s.l.ErrorContext(r.Context(), "Failed to write OpenAPI spec", logging.Error(err))
+	}
+}
+
 // check interfaces
 var (
 	_ api.ServerInterface = (*Server)(nil)
