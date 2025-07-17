@@ -44,7 +44,7 @@ component_management:
     - type: project
       target: auto
       branches:
-        - !main
+        - "!main"
 
   individual_components:
     - name: clientconn
