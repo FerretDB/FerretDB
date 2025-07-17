@@ -533,6 +533,8 @@ func run() {
 		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct listener", logging.Error(err))
 	}
 
+	m := httpmiddleware.NewHttpMiddleware(h, logging.WithName(logger, "httpmiddleware"))
+
 	if cmp.Or(cli.Listen.DataAPIAddr, "-") != "-" {
 		wg.Add(1)
 
@@ -542,9 +544,10 @@ func run() {
 			l := logging.WithName(logger, "dataapi")
 
 			lis, e := dataapi.Listen(&dataapi.ListenOpts{
-				TCPAddr: cli.Listen.DataAPIAddr,
-				L:       l,
-				Handler: h,
+				TCPAddr:        cli.Listen.DataAPIAddr,
+				L:              l,
+				Handler:        h,
+				HttpMiddleware: m,
 			})
 			if e != nil {
 				p.Close()
@@ -555,8 +558,6 @@ func run() {
 		}()
 	}
 
-	m := httpmiddleware.NewHttpMiddleware(h, logging.WithName(logger, "httpmiddleware"))
-
 	if cmp.Or(cli.Listen.MCPAddr, "-") != "-" {
 		wg.Add(1)
 
@@ -566,11 +567,11 @@ func run() {
 			l := logging.WithName(logger, "mcp")
 
 			mLis, e := mcp.Listen(&mcp.ListenerOpts{
+				Handler:        h,
+				ToolHandler:    mcp.NewToolHandler(h),
+				HttpMiddleware: m,
 				TCPAddr:        cli.Listen.MCPAddr,
 				L:              l,
-				ToolHandler:    mcp.NewToolHandler(h),
-				Handler:        h,
-				HttpMiddleware: m,
 			})
 			if e != nil {
 				p.Close()

@@ -38,12 +38,13 @@ type Listener struct {
 }
 
 // ListenerOpts represents options configurable for [Listener].
-type ListenerOpts struct {
+type ListenerOpts struct { //nolint:vet // prefer readability for struct instantiated once
 	Handler        *handler.Handler
 	ToolHandler    *ToolHandler
 	HttpMiddleware *httpmiddleware.HttpMiddleware
-	L              *slog.Logger
 	TCPAddr        string
+
+	L *slog.Logger
 }
 
 // Listen creates an MCP server and starts listener on the given TCP address.

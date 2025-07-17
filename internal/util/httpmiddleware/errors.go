@@ -22,7 +22,6 @@ import (
 )
 
 var (
-
 	// No authentication method was provided.
 	errorNoAuthenticationSpecified = api.Error{
 		Error:     "no authentication methods were specified",

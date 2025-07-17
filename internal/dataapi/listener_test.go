@@ -34,6 +34,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
+	"github.com/FerretDB/FerretDB/v2/internal/util/httpmiddleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
@@ -267,9 +268,10 @@ func setupDataAPI(tb testing.TB, auth bool) (addr string, dbName string) {
 
 	var apiLis *Listener
 	apiLis, err = Listen(&ListenOpts{
-		TCPAddr: "127.0.0.1:0",
-		L:       logging.WithName(l, "dataapi"),
-		Handler: h,
+		TCPAddr:        "127.0.0.1:0",
+		L:              logging.WithName(l, "dataapi"),
+		Handler:        h,
+		HttpMiddleware: httpmiddleware.NewHttpMiddleware(h, l),
 	})
 	require.NoError(tb, err)
 
