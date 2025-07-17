@@ -63,7 +63,7 @@ func Listen(opts *ListenOpts) (*Listener, error) {
 //
 // It exits when handler is stopped and listener closed.
 func (lis *Listener) Run(ctx context.Context) {
-	srvHandler := api.HandlerFromMux(lis.srv, http.NewServeMux())
+	srvHandler := lis.srv.SessionMiddleware(api.HandlerFromMux(lis.srv, http.NewServeMux()))
 
 	if lis.opts.Handler.Auth {
 		srvHandler = lis.srv.AuthMiddleware(srvHandler)
