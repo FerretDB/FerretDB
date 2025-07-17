@@ -65,10 +65,9 @@ func Listen(opts *ListenOpts) (*Listener, error) {
 // It exits when handler is stopped and listener closed.
 func (lis *Listener) Run(ctx context.Context) {
 	mux := http.NewServeMux()
-	
-	// Add OpenAPI spec endpoint
+
 	mux.HandleFunc("GET /openapi.json", lis.srv.OpenAPISpec)
-	
+
 	srvHandler := api.HandlerFromMux(lis.srv, mux)
 
 	if lis.opts.Handler != nil && lis.opts.Handler.Auth {

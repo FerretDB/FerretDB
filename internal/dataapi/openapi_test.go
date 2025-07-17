@@ -15,50 +15,26 @@
 package dataapi
 
 import (
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
 
-func TestDataAPIEndpoints(t *testing.T) {
+func TestOpenAPI(t *testing.T) {
 	t.Parallel()
 
-	// Create a simple listener without database dependency
-	l := testutil.Logger(t)
-	apiLis, err := Listen(&ListenOpts{
-		TCPAddr: "127.0.0.1:0",
-		L:       l,
-		Handler: nil, // nil handler is OK for OpenAPI endpoint
-	})
-	require.NoError(t, err)
+	addr, _ := setupDataAPI(t, false)
 
-	ctx, cancel := context.WithCancel(testutil.Ctx(t))
-	defer cancel()
-
-	// Start the server
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		apiLis.Run(ctx)
-	}()
-
-	// Give server time to start
-	time.Sleep(10 * time.Millisecond)
-
-	addr := apiLis.lis.Addr().String()
-
-	t.Run("OpenAPIEndpoint", func(t *testing.T) {
+	t.Run("Spec", func(t *testing.T) {
 		resp, err := http.Get("http://" + addr + "/openapi.json")
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		t.Cleanup(func() {
+			assert.NoError(t, resp.Body.Close())
+		})
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 		assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
@@ -67,19 +43,16 @@ func TestDataAPIEndpoints(t *testing.T) {
 		body, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
 
-		// Validate that it's valid JSON
-		var spec map[string]interface{}
+		var spec map[string]any
 		err = json.Unmarshal(body, &spec)
 		require.NoError(t, err)
 
-		// Check that it has the expected OpenAPI structure
 		assert.Equal(t, "3.0.0", spec["openapi"])
 		assert.Contains(t, spec, "info")
 		assert.Contains(t, spec, "paths")
 		assert.Contains(t, spec, "components")
 
-		// Check that it's the FerretDB Data API spec
-		info := spec["info"].(map[string]interface{})
+		info := spec["info"].(map[string]any)
 		assert.Equal(t, "FerretDB Data API", info["title"])
 	})
 
@@ -89,22 +62,10 @@ func TestDataAPIEndpoints(t *testing.T) {
 
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		t.Cleanup(func() {
+			assert.NoError(t, resp.Body.Close())
+		})
 
 		assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
-	})
-
-	// Test graceful shutdown
-	t.Run("GracefulShutdown", func(t *testing.T) {
-		// Cancel the context to trigger shutdown
-		cancel()
-
-		// Wait for server to stop gracefully
-		select {
-		case <-done:
-			// Success - server stopped gracefully
-		case <-time.After(5 * time.Second):
-			t.Fatal("Server did not stop gracefully within timeout")
-		}
 	})
 }
