@@ -63,7 +63,7 @@ func Listen(opts *ListenOpts) (*Listener, error) {
 		h = s.AuthMiddleware(h)
 	}
 
-	s.ConnInfoMiddleware(h)
+	h = s.ConnInfoMiddleware(h)
 
 	return &Listener{
 		opts:    opts,
