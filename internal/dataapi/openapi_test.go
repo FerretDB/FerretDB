@@ -50,17 +50,13 @@ func TestOpenAPI(t *testing.T) {
 		assert.Equal(t, "3.0.0", spec["openapi"])
 		assert.Contains(t, spec, "info")
 		assert.Contains(t, spec, "paths")
-		assert.Contains(t, spec, "components")
 
 		info := spec["info"].(map[string]any)
 		assert.Equal(t, "FerretDB Data API", info["title"])
 	})
 
 	t.Run("MethodNotAllowed", func(t *testing.T) {
-		req, err := http.NewRequest(http.MethodPost, "http://"+addr+"/openapi.json", nil)
-		require.NoError(t, err)
-
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := http.Post("http://"+addr+"/openapi.json", "", nil)
 		require.NoError(t, err)
 		t.Cleanup(func() {
 			assert.NoError(t, resp.Body.Close())

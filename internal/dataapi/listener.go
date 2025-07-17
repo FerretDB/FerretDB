@@ -34,9 +34,9 @@ import (
 
 // Listener represents dataapi listener.
 type Listener struct {
-	opts *ListenOpts
-	lis  net.Listener
-	srv  *server.Server
+	opts    *ListenOpts
+	lis     net.Listener
+	handler http.Handler
 }
 
 // ListenOpts represents [Listen] options.
@@ -53,10 +53,22 @@ func Listen(opts *ListenOpts) (*Listener, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
+	s := server.New(opts.L, opts.Handler)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /openapi.json", s.OpenAPISpec)
+
+	h := api.HandlerFromMux(s, mux)
+	if opts.Handler != nil && opts.Handler.Auth {
+		h = s.AuthMiddleware(h)
+	}
+
+	s.ConnInfoMiddleware(h)
+
 	return &Listener{
-		opts: opts,
-		lis:  lis,
-		srv:  server.New(opts.L, opts.Handler),
+		opts:    opts,
+		lis:     lis,
+		handler: h,
 	}, nil
 }
 
@@ -64,18 +76,8 @@ func Listen(opts *ListenOpts) (*Listener, error) {
 //
 // It exits when handler is stopped and listener closed.
 func (lis *Listener) Run(ctx context.Context) {
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("GET /openapi.json", lis.srv.OpenAPISpec)
-
-	srvHandler := api.HandlerFromMux(lis.srv, mux)
-
-	if lis.opts.Handler != nil && lis.opts.Handler.Auth {
-		srvHandler = lis.srv.AuthMiddleware(srvHandler)
-	}
-
 	srv := &http.Server{
-		Handler:  lis.srv.ConnInfoMiddleware(srvHandler),
+		Handler:  lis.handler,
 		ErrorLog: slog.NewLogLogger(lis.opts.L.Handler(), slog.LevelError),
 		BaseContext: func(net.Listener) context.Context {
 			return ctx
