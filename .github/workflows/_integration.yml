@@ -125,6 +125,12 @@ jobs:
           flag-name: integration-${{ inputs.task }}-${{ inputs.shard_index }}
           parallel: true
 
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          file: ./integration/integration-${{ inputs.task }}.xml
+
       # we don't want them on CI
       - name: Clean test and fuzz caches
         if: always()
