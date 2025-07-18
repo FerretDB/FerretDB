@@ -208,7 +208,6 @@ tasks:
     desc: "Run integration tests in parallel"
     deps: [test-integration-postgresql, test-integration-mongodb]
 
-
   test-integration-postgresql:
     desc: "Run integration tests for PostgreSQL/DocumentDB"
     deps: [gen-version, test-integration-build]
