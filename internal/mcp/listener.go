@@ -84,7 +84,7 @@ func (h *Handler) Serve(ctx context.Context) {
 		},
 	}
 
-	l.InfoContext(ctx, fmt.Sprintf("Starting MCP server on http://%s/", h.opts.TCPAddr))
+	l.InfoContext(ctx, fmt.Sprintf("Starting MCP server on http://%s/", h.lis.Addr()))
 
 	go func() {
 		if err := s.Serve(h.lis); !errors.Is(err, http.ErrServerClosed) {
