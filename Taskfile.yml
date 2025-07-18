@@ -325,6 +325,11 @@ tasks:
         --dev-repl-set-name=rs0
         --dev-records-dir=tmp/records
 
+  yugabytedb-logs:
+    desc: "Generate a zip file containing all YugabyteDB logs"
+    cmds:
+      - docker exec ferretdb_yugabytedb bin/yugabyted collect_logs --stdout > yugabyted.tar.gz
+
   # invoked by FerretDB/github-actions/linters action
   lint:
     desc: "Run linters"
