@@ -7,14 +7,17 @@ toolchain go1.24.5
 // replace github.com/FerretDB/wire => ../../wire
 
 tool (
+	github.com/AlekSi/gocov-xml
 	github.com/FerretDB/FerretDB/v2/tools/checkcomments
 	github.com/FerretDB/FerretDB/v2/tools/checkdocs
 	github.com/FerretDB/FerretDB/v2/tools/checkswitch
 	github.com/FerretDB/FerretDB/v2/tools/definedockertag
 	github.com/FerretDB/FerretDB/v2/tools/generatechangelog
 	github.com/OpenDocDB/cts/opendocdb-cts
+	github.com/axw/gocov/gocov
 	github.com/go-task/task/v3/cmd/task
 	github.com/goreleaser/nfpm/v2/cmd/nfpm
+	github.com/jstemmer/go-junit-report/v2
 	github.com/kisielk/godepgraph
 	github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
 	github.com/quasilyte/go-consistent
@@ -38,6 +41,7 @@ require (
 
 require (
 	dario.cat/mergo v1.0.2 // indirect
+	github.com/AlekSi/gocov-xml v1.2.0 // indirect
 	github.com/AlekSi/pointer v1.2.0 // indirect
 	github.com/FerretDB/wire v0.1.7-0.20250708055527-67b1f7c98628 // indirect
 	github.com/Ladicle/tabwriter v1.0.0 // indirect
@@ -50,6 +54,7 @@ require (
 	github.com/aclements/go-moremath v0.0.0-20210112150236-f10218a38794 // indirect
 	github.com/alecthomas/chroma/v2 v2.16.0 // indirect
 	github.com/alecthomas/kong v1.11.0 // indirect
+	github.com/axw/gocov v1.2.1 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
@@ -98,6 +103,7 @@ require (
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
+	github.com/jstemmer/go-junit-report/v2 v2.1.0 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/kisielk/godepgraph v0.0.0-20240411160502-0f324ca7e282 // indirect
 	github.com/kisielk/gotool v1.0.0 // indirect

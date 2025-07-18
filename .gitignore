@@ -12,6 +12,7 @@ telemetry.json
 *.out
 *.tmp
 *.txt
+*.xml
 !website/static/*.txt
 
 .task/
