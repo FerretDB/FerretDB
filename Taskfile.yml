@@ -328,7 +328,7 @@ tasks:
   yugabytedb-logs:
     desc: "Generate a zip file containing all YugabyteDB logs"
     cmds:
-      - docker exec ferretdb_yugabytedb bin/yugabyted collect_logs --stdout > yugabyted.tar.gz
+      - docker compose exec yugabytedb bin/yugabyted collect_logs --stdout > yugabytedb.tar.gz
 
   # invoked by FerretDB/github-actions/linters action
   lint:
