@@ -194,7 +194,8 @@ tasks:
     desc: "Run all unit tests"
     cmds:
       - go test -c -o /dev/null ./...
-      - go test -count=1 -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverprofile=cover.txt ./...
+      - go test -json -count=1 -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverprofile=cover.txt ./...
+      #- ./bin/go-junit-report -parser=gojson -out unit2.xml -iocopy -in a.json.tmp
       - go test -count=1 -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -bench=. -benchtime=1x ./...
       - bin/task{{exeExt}} -d tools tools-test
 
@@ -207,11 +208,6 @@ tasks:
     desc: "Run integration tests in parallel"
     deps: [test-integration-postgresql, test-integration-mongodb]
 
-  convert-coverage:
-    desc: "Convert coverage files to XML"
-    dir: integration
-    cmds:
-      - ../bin/gocov convert integration-postgresql.txt | ../bin/gocov-xml > integration-postgresql.xml
 
   test-integration-postgresql:
     desc: "Run integration tests for PostgreSQL/DocumentDB"
@@ -238,7 +234,10 @@ tasks:
         -postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
         -compat-url='mongodb://username:password@127.0.0.1:47017/?replicaSet=rs0'
         -no-xfail={{.NO_XFAIL}}
-      - task: convert-coverage
+      - >
+        ../bin/go-junit-report -parser=gojson -iocopy
+        -in postgresql-{{.SHARD_INDEX}}-{{.SHARD_TOTAL}}.json.tmp
+        -out postgresql-{{.SHARD_INDEX}}-{{.SHARD_TOTAL}}.xml
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
@@ -264,6 +263,10 @@ tasks:
         -target-url='mongodb://username:password@127.0.0.1:47017/?replicaSet=rs0'
         -target-backend=mongodb
         -no-xfail={{.NO_XFAIL}}
+      - >
+        ../bin/go-junit-report -parser=gojson -iocopy
+        -in mongodb-{{.SHARD_INDEX}}-{{.SHARD_TOTAL}}.json.tmp
+        -out mongodb-{{.SHARD_INDEX}}-{{.SHARD_TOTAL}}.xml
 
   bench-unit:
     desc: "Run unit benchmarks"
