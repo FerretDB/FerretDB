@@ -3,7 +3,7 @@ slug: dynamic-database-credentials-with-hashicorp-vault-and-ferretdb
 title: 'Dynamic Database Credentials with HashiCorp Vault and FerretDB'
 authors: [alex]
 description: >
-  Learn how to integrate HashiCorp Vault's Database Secrets Engine with FerretDB to generate dynamic credentials for enhanced security and management.
+  Learn how to integrate HashiCorp Vault's database secrets engine with FerretDB to generate dynamic credentials for enhanced security and management.
 image: /img/blog/ferretdb-vault.jpg
 tags: [compatible applications, open source, community, tutorial]
 ---
@@ -18,9 +18,9 @@ Hardcoding secrets, using long-lived credentials, or manually rotating them intr
 [HashiCorp Vault](https://www.hashicorp.com/products/vault) addresses these challenges by providing a centralized interface for managing secrets, including the ability to generate dynamic database credentials.
 
 At [FerretDB](https://www.ferretdb.com/), we're dedicated to providing a truly open-source alternative to MongoDB, leveraging the reliability and power of PostgreSQL as its backend.
-Through HashiCorp Vault's Database Secrets Engine, you can automate the management of database credentials for FerretDB.
+Through HashiCorp Vault's database secrets engine, you can automate the management of database credentials for FerretDB.
 
-In this blog post, we're excited to explore how HashiCorp Vault's Database Secrets Engine seamlessly integrates with FerretDB, enabling you to generate dynamic credentials for your PostgreSQL-backed document databases.
+In this blog post, we're excited to explore how HashiCorp Vault's database secrets engine seamlessly integrates with FerretDB, enabling you to generate dynamic credentials for your PostgreSQL-backed document databases.
 
 ## What is HashiCorp Vault?
 
@@ -33,11 +33,11 @@ HashiCorp Vault is a comprehensive secrets management tool that provides:
 - **Audit logging:** Track all secret access and changes.
 - **Policy-based access control:** Define granular permissions for who can access what secrets.
 
-Vault's Database Secrets Engine is a powerful feature that integrates directly with various database types, including MongoDB, to automate the lifecycle of database credentials.
+Vault's database secrets engine is a powerful feature that integrates directly with various database types, including MongoDB, to automate the lifecycle of database credentials.
 
 ## Why use HashiCorp Vault with FerretDB?
 
-HashiCorp Vault's Database Secrets Engine provides native support for MongoDB, allowing it to connect and generate dynamic credentials.
+HashiCorp Vault's database secrets engine provides native support for MongoDB, allowing it to connect and generate dynamic credentials.
 Since FerretDB is designed as an open-source alternative to MongoDB, Vault can also connect to FerretDB and serve as a dynamic credential manager for your FerretDB instances.
 This powerful combination offers several compelling advantages:
 
@@ -48,7 +48,7 @@ This powerful combination offers several compelling advantages:
 
 ## Connecting HashiCorp Vault to FerretDB
 
-Connecting HashiCorp Vault's Database Secrets Engine to your FerretDB instance involves configuring Vault to use the MongoDB plugin and providing the FerretDB connection details.
+Connecting HashiCorp Vault's database secrets engine to your FerretDB instance involves configuring Vault to use the MongoDB plugin and providing the FerretDB connection details.
 
 Here's a step-by-step guide to get you started with a local Vault and FerretDB setup:
 
@@ -120,7 +120,7 @@ Here's a step-by-step guide to get you started with a local Vault and FerretDB s
 
    :::note
    At the time of writing, FerretDB's `createUser` supports a specific set of roles for dynamic user creation.
-   To successfully create a user via Vault's Database Secrets Engine, the `creation_statements` must specify one of the allowed role combinations that FerretDB recognizes:
+   To successfully create a user via Vault's database secrets engine, the `creation_statements` must specify one of the allowed role combinations that FerretDB recognizes:
    - `[{role: "readAnyDatabase", db: "admin"}]` or
    - `[{role: "clusterAdmin", db: "admin"}, {role: "readWriteAnyDatabase", db: "admin"}]`
 
@@ -206,7 +206,7 @@ This output demonstrates that HashiCorp Vault successfully creates users within 
 
 ## Conclusion
 
-The integration of HashiCorp Vault's Database Secrets Engine with FerretDB provides a robust, scalable, and fully open-source solution for dynamic database credential management.
+The integration of HashiCorp Vault's database secrets engine with FerretDB provides a robust, scalable, and fully open-source solution for dynamic database credential management.
 By leveraging FerretDB, you can seamlessly integrate it into your existing security and secrets management workflows with Vault, providing your document database operations with enhanced, automated security.
 
 This allows developers to run their MongoDB workloads in the open-source ecosystem, without vendor lock-in or restrictive licenses.
