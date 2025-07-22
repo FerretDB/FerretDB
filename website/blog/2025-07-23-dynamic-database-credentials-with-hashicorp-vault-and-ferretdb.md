@@ -5,7 +5,7 @@ authors: [alex]
 description: >
   Learn how to integrate HashiCorp Vault's database secrets engine with FerretDB to generate dynamic credentials for enhanced security and management.
 image: /img/blog/ferretdb-vault.jpg
-tags: [compatible applications, open source, community, tutorial]
+tags: [compatible applications, community, tutorial]
 ---
 
 ![Dynamic Database Credentials with HashiCorp Vault and FerretDB](/img/blog/ferretdb-vault.jpg)
@@ -44,7 +44,6 @@ This powerful combination offers several compelling advantages:
 - **Enhanced security:** Generate credentials that expire automatically, drastically reducing the risk of compromised long-lived secrets.
 - **Automated rotation:** Vault can automatically rotate the root credentials it uses to create dynamic users, further bolstering security.
 - **Centralized management:** Manage database credentials from a single, secure Vault instance.
-- **No vendor lock-in:** Enjoy the freedom of truly open-source solutions across your secrets management and database layers.
 
 ## Connecting HashiCorp Vault to FerretDB
 
@@ -60,17 +59,21 @@ Here's a step-by-step guide to get you started with a local Vault and FerretDB s
 2. **Set up and initialize HashiCorp Vault:**
    For local testing, you can run Vault in dev mode.
    This will start a single-node Vault server that is unsealed and initialized.
-   We'll set a predictable root token ID for convenience.
+   You can run Vault in a Docker container:
 
    ```sh
    docker run -d --name vault -p 8200:8200 \
    --cap-add=IPC_LOCK \
-   -e 'VAULT_DEV_ROOT_TOKEN_ID=myroottoken' \
+   -e 'VAULT_DEV_ROOT_TOKEN_ID=<root-token>' \
    -e 'VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200' \
    hashicorp/vault:latest
    ```
 
-   `myroottoken` is an example value for your development root token ID — replace it with any string you prefer for easy access during development.
+   `<root-token>` should have the value for your development root token ID – replace it with any string you prefer for easy access during development.
+
+   You need the Vault CLI to interact with the Vault server.
+   Ensure that you have the Vault CLI installed and configured to PATH on your system.
+   If you haven't installed it yet, you can follow the [Vault installation guide](https://developer.hashicorp.com/vault/tutorials/get-started/install-binary) to set it up.
 
    Set the `VAULT_ADDR` environment variable:
 
@@ -78,14 +81,10 @@ Here's a step-by-step guide to get you started with a local Vault and FerretDB s
    export VAULT_ADDR='http://127.0.0.1:8200'
    ```
 
-   You need the Vault CLI to interact with the Vault server.
-   Ensure that you have the Vault CLI installed and configured to PATH on your system.
-   If you haven't installed it yet, you can follow the [Vault installation guide](https://developer.hashicorp.com/vault/tutorials/get-started/install-binary) to set it up.
-
-   Log in to Vault using the root token you set during the Docker run command:
+   Log in to Vault using the root token you set during the `docker run` command:
 
    ```sh
-   vault login myroottoken
+   vault login <root-token>
    ```
 
    You should see a success message confirming your login.
@@ -137,13 +136,11 @@ Here's a step-by-step guide to get you started with a local Vault and FerretDB s
    ```
 
    - `db_name`: References the connection configuration created in the previous step (ferretdb-conn).
-   - `creation_statements`: This MongoDB command is executed by Vault to create the new dynamic user.
-
-   Here, it creates a user with `clusterAdmin` and `readWriteAnyDatabase` roles.
+   - `creation_statements`: This specifies the conditions (roles, databases, etc.) for creating the new dynamic user. Here, it creates a user with `clusterAdmin` and `readWriteAnyDatabase` roles.
    - `default_ttl`: The default lease duration for generated credentials.
    - `max_ttl`: The maximum lease duration.
 
-   If you require users with more granular access (e.g., `readWrite` on a specific database), monitor FerretDB's documentation for updates on broader role/authorization support or consider [contributing to the project](https://github.com/FerretDB/FerretDB).
+   If you require users with more granular access (e.g. `readWrite` on a specific database), monitor FerretDB's documentation for updates on broader role/authorization support or consider [contributing to the project](https://github.com/FerretDB/FerretDB).
 
 6. **Generate dynamic credentials:**
    Now, an application or user can request dynamic credentials from Vault by reading from the role's path:
@@ -202,10 +199,8 @@ This output demonstrates that HashiCorp Vault successfully creates users within 
 
 ## Conclusion
 
-The integration of HashiCorp Vault's database secrets engine with FerretDB provides a robust, scalable, and fully open-source solution for dynamic database credential management.
+The integration of HashiCorp Vault's database secrets engine with FerretDB provides a robust and scalable solution for dynamic database credential management.
 By leveraging FerretDB, you can seamlessly integrate it into your existing security and secrets management workflows with Vault, providing your document database operations with enhanced, automated security.
-
-This allows developers to run their MongoDB workloads in the open-source ecosystem, without vendor lock-in or restrictive licenses.
 
 - [Ready to get started? Try FerretDB today](https://github.com/FerretDB/FerretDB)
 - [Explore HashiCorp Vault Documentation](https://developer.hashicorp.com/vault/docs)
