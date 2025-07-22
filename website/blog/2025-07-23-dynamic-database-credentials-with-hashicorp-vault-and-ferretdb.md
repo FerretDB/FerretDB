@@ -20,7 +20,7 @@ Hardcoding secrets, using long-lived credentials, or manually rotating them intr
 At [FerretDB](https://www.ferretdb.com/), we're dedicated to providing a truly open-source alternative to MongoDB, leveraging the reliability and power of PostgreSQL as its backend.
 Through HashiCorp Vault's database secrets engine, you can automate the management of database credentials for FerretDB.
 
-In this blog post, we're excited to explore how HashiCorp Vault's database secrets engine seamlessly integrates with FerretDB, enabling you to generate dynamic credentials for your PostgreSQL-backed document databases.
+This blog post explores how HashiCorp Vault's database secrets engine seamlessly integrates with FerretDB, enabling you to generate dynamic credentials for your PostgreSQL-backed document databases.
 
 ## What is HashiCorp Vault?
 
@@ -70,11 +70,9 @@ Here's a step-by-step guide to get you started with a local Vault and FerretDB s
    hashicorp/vault:latest
    ```
 
-   `myroottoken` is an example value for your development root token ID.
+   `myroottoken` is an example value for your development root token ID — replace it with any string you prefer for easy access during development.
 
-   You can replace it with any string you prefer for easy access during development.
-
-   Set the VAULT_ADDR environment variable:
+   Set the `VAULT_ADDR` environment variable:
 
    ```sh
    export VAULT_ADDR='http://127.0.0.1:8200'
