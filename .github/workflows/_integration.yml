@@ -127,7 +127,10 @@ jobs:
 
       - name: Convert test results to JUnit XML format
         if: always()
-        run: bin/task convert-test-results
+        run: >
+          bin/task convert-test-results
+          SHARD_INDEX=${{ inputs.shard_index }}
+          SHARD_TOTAL=${{ inputs.shard_total }}
 
       - name: Upload test results to Codecov
         #if: ${{ !cancelled() }}
