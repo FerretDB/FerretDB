@@ -136,7 +136,8 @@ Here's a step-by-step guide to get you started with a local Vault and FerretDB s
    ```
 
    - `db_name`: References the connection configuration created in the previous step (ferretdb-conn).
-   - `creation_statements`: This specifies the conditions (roles, databases, etc.) for creating the new dynamic user. Here, it creates a user with `clusterAdmin` and `readWriteAnyDatabase` roles.
+   - `creation_statements`: This specifies the conditions (roles, databases, etc.) for creating the new dynamic user.
+     Here, it creates a user with `clusterAdmin` and `readWriteAnyDatabase` roles.
    - `default_ttl`: The default lease duration for generated credentials.
    - `max_ttl`: The maximum lease duration.
 
