@@ -235,7 +235,7 @@ tasks:
         -no-xfail={{.NO_XFAIL}}
       - >
         ../bin/go-junit-report -parser=gojson -iocopy
-        -in postgresql-{{.SHARD_INDEX}}-{{.SHARD_TOTAL}}.json.tmp
+        -in postgresql-{{.SHARD_INDEX}}-{{.SHARD_TOTAL}}-stdout.json.tmp
         -out postgresql-{{.SHARD_INDEX}}-{{.SHARD_TOTAL}}.xml
 
   test-integration-mongodb:
@@ -264,7 +264,7 @@ tasks:
         -no-xfail={{.NO_XFAIL}}
       - >
         ../bin/go-junit-report -parser=gojson -iocopy
-        -in mongodb-{{.SHARD_INDEX}}-{{.SHARD_TOTAL}}.json.tmp
+        -in mongodb-{{.SHARD_INDEX}}-{{.SHARD_TOTAL}}-stdout.json.tmp
         -out mongodb-{{.SHARD_INDEX}}-{{.SHARD_TOTAL}}.xml
 
   bench-unit:
