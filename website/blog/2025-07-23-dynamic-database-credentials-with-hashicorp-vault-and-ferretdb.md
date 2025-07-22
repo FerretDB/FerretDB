@@ -116,8 +116,6 @@ Here's a step-by-step guide to get you started with a local Vault and FerretDB s
 5. **Create a database role:**
    Create a role within Vault that defines the dynamic credentials' properties, such as the roles they will have in FerretDB and their time-to-live (TTL).
 
-   Create a role within Vault that defines the dynamic credentials' properties, such as the roles they will have in FerretDB and their time-to-live (TTL).
-
    :::note
    At the time of writing, FerretDB's `createUser` supports a specific set of roles for dynamic user creation.
    To successfully create a user via Vault's database secrets engine, the `creation_statements` must specify one of the allowed role combinations that FerretDB recognizes:
