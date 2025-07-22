@@ -17,11 +17,11 @@ package integration
 import (
 	"math/rand"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFlakyDetection(t *testing.T) {
 	t.Parallel()
-	if rand.Intn(100) > 60 {
-		t.FailNow()
-	}
+	assert.Greater(t, rand.Intn(100), 60, "This test is flaky and should pass more than 60% of the time")
 }
