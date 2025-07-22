@@ -133,7 +133,6 @@ jobs:
           OUT_FILE=${{ inputs.task }}-${{ inputs.shard_index }}-${{ inputs.shard_total }}.xml
 
       - name: Upload test results to Codecov
-        #if: ${{ !cancelled() }}
         if: always()
         uses: codecov/test-results-action@v1
         with:
