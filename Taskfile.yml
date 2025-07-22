@@ -262,6 +262,11 @@ tasks:
         -target-url='mongodb://username:password@127.0.0.1:47017/?replicaSet=rs0'
         -target-backend=mongodb
         -no-xfail={{.NO_XFAIL}}
+
+  convert-test-results:
+    desc: "Convert test results to JUnit XML format"
+    dir: integration
+    cmds:
       - >
         ../bin/go-junit-report -parser=gojson -iocopy
         -in mongodb-{{.SHARD_INDEX}}-{{.SHARD_TOTAL}}-stdout.json.tmp

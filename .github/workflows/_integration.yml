@@ -125,6 +125,10 @@ jobs:
           flag-name: integration-${{ inputs.task }}-${{ inputs.shard_index }}
           parallel: true
 
+      - name: Convert test results to JUnit XML format
+        if: always()
+        run: bin/task convert-test-results
+
       - name: Upload test results to Codecov
         #if: ${{ !cancelled() }}
         if: always()
