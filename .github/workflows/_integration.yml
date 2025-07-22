@@ -137,6 +137,7 @@ jobs:
         if: always()
         uses: codecov/test-results-action@v1
         with:
+          flags: integration,${{ inputs.task }}-${{ inputs.shard_index }}
           file: ./integration/${{ inputs.task }}-${{ inputs.shard_index }}-${{ inputs.shard_total }}.xml
 
       # we don't want them on CI
