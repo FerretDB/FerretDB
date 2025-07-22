@@ -38,7 +38,7 @@ Vault's Database Secrets Engine is a powerful feature that integrates directly w
 ## Why use HashiCorp Vault with FerretDB?
 
 HashiCorp Vault's Database Secrets Engine provides native support for MongoDB, allowing it to connect and generate dynamic credentials.
-Since FerretDB is designed as an open-source alternative to MongoDB, Vault can seamlessly connect to FerretDB.
+Since FerretDB is designed as an open-source alternative to MongoDB, Vault can also connect to FerretDB and serve as a dynamic credential manager for your FerretDB instances.
 This powerful combination offers several compelling advantages:
 
 - **Enhanced security:** Generate credentials that expire automatically, drastically reducing the risk of compromised long-lived secrets.
@@ -52,169 +52,156 @@ Connecting HashiCorp Vault's Database Secrets Engine to your FerretDB instance i
 
 Here's a step-by-step guide to get you started with a local Vault and FerretDB setup:
 
-1.  **Ensure FerretDB is running:** Make sure your FerretDB instance is active and accessible, with authentication.
-    If you haven't set it up yet, refer to our [FerretDB Installation Guide](https://docs.ferretdb.io/installation/ferretdb/).
-    You need a user with sufficient privileges to create, update, and revoke other users.
-    This will be the "root user" Vault uses for its operations.
+1. **Ensure FerretDB is running:** Make sure your FerretDB instance is active and accessible, with authentication.
+   If you haven't set it up yet, refer to our [FerretDB Installation Guide](https://docs.ferretdb.io/installation/ferretdb/).
+   You need a user with sufficient privileges to create, update, and revoke other users.
+   This will be the "root user" Vault uses for its operations.
 
-2.  **Set up and initialize HashiCorp Vault:**
-    For local testing, you can run Vault in dev mode.
-    This will start a single-node Vault server that is unsealed and initialized.
-    We'll set a predictable root token ID for convenience.
+2. **Set up and initialize HashiCorp Vault:**
+   For local testing, you can run Vault in dev mode.
+   This will start a single-node Vault server that is unsealed and initialized.
+   We'll set a predictable root token ID for convenience.
 
-            ```sh
-            docker run -d --name vault -p 8200:8200 \
-            --cap-add=IPC_LOCK \
-            -e 'VAULT_DEV_ROOT_TOKEN_ID=myroottoken' \
-            -e 'VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200' \
-            hashicorp/vault:latest
-            ```
+   ```sh
+   docker run -d --name vault -p 8200:8200 \
+   --cap-add=IPC_LOCK \
+   -e 'VAULT_DEV_ROOT_TOKEN_ID=myroottoken' \
+   -e 'VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200' \
+   hashicorp/vault:latest
+   ```
 
-            `myroottoken` is an example value for your development root token ID.
+   `myroottoken` is an example value for your development root token ID.
 
-        You can replace it with any string you prefer for easy access during development.
+   You can replace it with any string you prefer for easy access during development.
 
-            Set the VAULT_ADDR environment variable:
+   Set the VAULT_ADDR environment variable:
 
-            ```sh
-            export VAULT_ADDR='http://127.0.0.1:8200'
-            ```
+   ```sh
+   export VAULT_ADDR='http://127.0.0.1:8200'
+   ```
 
-            You need the Vault CLI to interact with the Vault server.
-            Ensure that you have the Vault CLI installed and configured to PATH on your system.
-            If you haven't installed it yet, you can follow the [Vault installation guide](https://developer.hashicorp.com/vault/tutorials/get-started/install-binary) to set it up.
+   You need the Vault CLI to interact with the Vault server.
+   Ensure that you have the Vault CLI installed and configured to PATH on your system.
+   If you haven't installed it yet, you can follow the [Vault installation guide](https://developer.hashicorp.com/vault/tutorials/get-started/install-binary) to set it up.
 
-            Log in to Vault using the root token you set during the Docker run command:
+   Log in to Vault using the root token you set during the Docker run command:
 
-            ```sh
-            vault login myroottoken
-            ```
+   ```sh
+   vault login myroottoken
+   ```
 
-            You should see a success message confirming your login.
+   You should see a success message confirming your login.
 
-3.  **Enable the Database Secrets Engine:**
-    Enable the database secrets engine at a desired path, for example, `ferretdb-creds`.
-    This path will serve as the base for all database-related operations in Vault.
+3. **Enable the database secrets engine:**
+   Enable the database secrets engine at a desired path, for example, `ferretdb-creds`.
+   This path will serve as the base for all database-related operations in Vault.
 
-          ```sh
-          vault secrets enable -path=ferretdb-creds database
-          ```
+   ```sh
+   vault secrets enable -path=ferretdb-creds database
+   ```
 
-4.  **Configure the MongoDB Plugin for FerretDB:**
-    Configure the `ferretdb-creds` secrets engine to use the mongodb-database-plugin and provide the connection details for your FerretDB instance.
-    The `connection_url` will use a templated format for enhanced security and to enable root credential rotation.
+4. **Configure the MongoDB plugin for FerretDB:**
+   Configure the `ferretdb-creds` secrets engine to use the mongodb-database-plugin and provide the connection details for your FerretDB instance.
+   The `connection_url` will use a templated format for enhanced security and to enable root credential rotation.
 
-            ```sh
-            vault write ferretdb-creds/config/ferretdb-conn \
-            plugin_name=mongodb-database-plugin \
-            allowed_roles="my-app-role" \
-            connection_url="mongodb://{{username}}:{{password}}@host.docker.internal:27017/" \
-            username="<ferretdb_username>" \
-            password="<ferretdb_password>"
-            ```
+   ```sh
+   vault write ferretdb-creds/config/ferretdb-conn \
+   plugin_name=mongodb-database-plugin \
+   allowed_roles="my-app-role" \
+   connection_url="mongodb://{{username}}:{{password}}@host.docker.internal:27017/" \
+   username="<ferretdb_username>" \
+   password="<ferretdb_password>"
+   ```
 
-5.  **Create a Database Role (with Specific FerretDB Role Compatibility):**
-    Create a role within Vault that defines the dynamic credentials' properties, such as the roles they will have in FerretDB and their time-to-live (TTL).
+5. **Create a database role:**
+   Create a role within Vault that defines the dynamic credentials' properties, such as the roles they will have in FerretDB and their time-to-live (TTL).
 
-            Create a role within Vault that defines the dynamic credentials' properties, such as the roles they will have in FerretDB and their time-to-live (TTL).
+   Create a role within Vault that defines the dynamic credentials' properties, such as the roles they will have in FerretDB and their time-to-live (TTL).
 
-            :::note
-            At the time of writing, FerretDB's `createUser` supports a specific set of roles for dynamic user creation.
-            To successfully create a user via Vault's Database Secrets Engine, the `creation_statements` must specify one of the allowed role combinations that FerretDB recognizes:
+   :::note
+   At the time of writing, FerretDB's `createUser` supports a specific set of roles for dynamic user creation.
+   To successfully create a user via Vault's Database Secrets Engine, the `creation_statements` must specify one of the allowed role combinations that FerretDB recognizes:
+   - `[{role: "readAnyDatabase", db: "admin"}]` or
+   - `[{role: "clusterAdmin", db: "admin"}, {role: "readWriteAnyDatabase", db: "admin"}]`
 
-            - `[{role: "readAnyDatabase", db: "admin"}]` or
-            - `[{role: "clusterAdmin", db: "admin"}, {role: "readWriteAnyDatabase", db: "admin"}]`
+   Although Vault allows specifying `database_name` in the creation statement, FerretDB does not currently scope users to a particular database.
 
-            Although Vault allows specifying `database_name` in the creation statement, FerretDB does not currently scope users to a particular database.
+   All users are created globally.
+   The `db` field in roles and `database_name` are accepted for compatibility but do not enforce database-specific access in FerretDB.
+   :::
 
-        All users are created globally.
-        The `db` field in roles and `database_name` are accepted for compatibility but do not enforce database-specific access in FerretDB.
-        :::
+   For a user with `clusterAdmin` and `readWriteAnyDatabase` roles, you can create a role in Vault like this:
 
-            For a user with `clusterAdmin` and `readWriteAnyDatabase` roles, you can create a role in Vault like this:
+   ```sh
+   vault write ferretdb-creds/roles/my-app-role \
+   db_name=ferretdb-conn \
+   creation_statements='{"roles": [{"role": "clusterAdmin", "db": "admin"}, {"role": "readWriteAnyDatabase", "db": "admin"}]}' \
+   default_ttl="1h" \
+   max_ttl="24h"
+   ```
 
-            ```sh
-            vault write ferretdb-creds/roles/my-app-role \
-            db_name=ferretdb-conn \
-            creation_statements='{"roles": [{"role": "clusterAdmin", "db": "admin"}, {"role": "readWriteAnyDatabase", "db": "admin"}]}' \
-            default_ttl="1h" \
-            max_ttl="24h"
-            ```
+   - `db_name`: References the connection configuration created in the previous step (ferretdb-conn).
+   - `creation_statements`: This MongoDB command is executed by Vault to create the new dynamic user.
 
-            - `db_name`: References the connection configuration created in the previous step (ferretdb-conn).
-            - `creation_statements`: This MongoDB command is executed by Vault to create the new dynamic user.
+   Here, it creates a user with `clusterAdmin` and `readWriteAnyDatabase` roles.
+   - `default_ttl`: The default lease duration for generated credentials.
+   - `max_ttl`: The maximum lease duration.
 
-        Here, it creates a user with `clusterAdmin` and `readWriteAnyDatabase` roles.
+   If you require users with more granular access (e.g., `readWrite` on a specific database), monitor FerretDB's documentation for updates on broader role/authorization support or consider [contributing to the project](https://github.com/FerretDB/FerretDB).
 
-    - `default_ttl`: The default lease duration for generated credentials.
-    - `max_ttl`: The maximum lease duration.
+6. **Generate dynamic credentials:**
+   Now, an application or user can request dynamic credentials from Vault by reading from the role's path:
 
-            If you require users with more granular access (e.g., `readWrite` on a specific database), monitor FerretDB's documentation for updates on broader role/authorization support or consider [contributing to the project](https://github.com/FerretDB/FerretDB).
+   ```sh
+   vault read ferretdb-creds/creds/my-app-role
+   ```
 
-6.  **Generate Dynamic Credentials:**
-    Now, an application or user can request dynamic credentials from Vault by reading from the role's path:
+   Vault will dynamically generate a unique username and password, create that user in FerretDB, and return the credentials along with a lease ID.
 
-            ```sh
-            vault read ferretdb-creds/creds/my-app-role
-            ```
+   ```text
+   Key                Value
+   ---                -----
+   lease_id           ferretdb-creds/creds/my-app-role/3OQtYhih1BAjiGHBgjfK3Nue
+   lease_duration     1h
+   lease_renewable    true
+   password           <generated_password>
+   username           <generated_username>
+   ```
 
-            Vault will dynamically generate a unique username and password, create that user in FerretDB, and return the credentials along with a lease ID.
-            **Example Output:**
+   You can then use these username and password to connect your application to FerretDB.
 
-            ```text
-            Key                Value
-            ---                -----
-            lease_id           ferretdb-creds/creds/my-app-role/3OQtYhih1BAjiGHBgjfK3Nue
-            lease_duration     1h
-            lease_renewable    true
-            password           8b-XOWMJcQjPiXFV1k98
-            username           v-token-my-app-role-NBC5v7ulCFFf0w7RYod1-1753118883
-            ```
-
-            You can then use these username and password to connect your application to FerretDB.
-
-        After the `lease_duration` expires, Vault will automatically revoke these credentials from FerretDB, enhancing your security posture.
+   After the `lease_duration` expires, Vault will automatically revoke these credentials from FerretDB, enhancing your security posture.
 
 ## Exploring dynamic credentials in FerretDB
 
 After running `vault read ferretdb-creds/creds/my-app-role`, Vault creates a temporary user in FerretDB.
-You can verify this by connecting directly to FerretDB (using your Vault admin credentials) and checking the admin database for users.
+You can verify this by connecting directly to FerretDB (using your generated credentials).
 
-Connect to FerretDB via mongosh (using the configured ferretdb_username):
-
-    ```sh
-    mongosh mongodb://<ferretdb_username>:<ferretdb_password>@localhost:27017/admin
-    ```
+```sh
+mongosh mongodb://<generated_username>:<generated_password>@localhost:27017/admin
+```
 
 Then, list the users by running `db.getUsers()`:
 
-    ```js
+```js
+{
+users: [
     {
-    users: [
-        {
-        _id: 'admin.v-token-my-app-role-MmtCUcTXkDifvCwUBOpI-1753129631',
-        userId: 'admin.v-token-my-app-role-MmtCUcTXkDifvCwUBOpI-1753129631',
-        user: 'v-token-my-app-role-MmtCUcTXkDifvCwUBOpI-1753129631',
-        db: 'admin',
-        roles: [
-            { role: 'readWriteAnyDatabase', db: 'admin' },
-            { role: 'clusterAdmin', db: 'admin' }
-        ]
-        }
-    ],
-    ok: 1
+    _id: 'admin.v-token-my-app-role-MmtCUcTXkDifvCwUBOpI-1753129631',
+    userId: 'admin.v-token-my-app-role-MmtCUcTXkDifvCwUBOpI-1753129631',
+    user: 'v-token-my-app-role-MmtCUcTXkDifvCwUBOpI-1753129631',
+    db: 'admin',
+    roles: [
+        { role: 'readWriteAnyDatabase', db: 'admin' },
+        { role: 'clusterAdmin', db: 'admin' }
+    ]
     }
-    ```
+],
+ok: 1
+}
+```
 
 You'll see all current users and the dynamically generated user created by Vault.
-
-You can also verify the credentials by attempting to connect to FerretDB using the generated username and password.
-In this example, you would use:
-
-    ```sh
-    mongosh mongodb://v-token-my-app-role-NBC5v7ulCFFf0w7RYod1-1753118883:8b-XOWMJcQjPiXFV1k98@localhost:27017/
-    ```
-
 This output demonstrates that HashiCorp Vault successfully creates users within FerretDB and assigns them specific roles, allowing for automated, secure management of database access.
 
 ## Conclusion
