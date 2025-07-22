@@ -21,7 +21,7 @@ import (
 
 func TestFlakyDetection(t *testing.T) {
 	t.Parallel()
-	if rand.Intn(100) > 75 {
+	if rand.Intn(100) > 60 {
 		t.FailNow()
 	}
 }
