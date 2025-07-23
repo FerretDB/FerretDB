@@ -203,6 +203,7 @@ var cli struct {
 	Debug bool `help:"Enable debug mode."`
 
 	Setup struct {
+		// TODO https://github.com/FerretDB/FerretDB/issues/5369
 		YugabyteDB bool `default:"true" help:"Setup YugabyteDB (by default)." negatable:""`
 	} `cmd:"" help:"Setup development environment."`
 

@@ -106,6 +106,7 @@ tasks:
   env-setup:
     deps: [gen-version]
     cmds:
+      # TODO https://github.com/FerretDB/FerretDB/issues/5369
       - bin/envtool{{exeExt}} setup {{if (eq ARCH "arm64")}}--no-yugabyte-db{{end}}
 
   env-logs:
