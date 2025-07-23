@@ -340,7 +340,7 @@ func insertBenchmarkProvider(tb testing.TB, ctx context.Context, collection *mon
 	return
 }
 
-// cleanupCollection deletes all documents in the collection for `ferretdb-yugabytedb` backend
+// cleanupCollection deletes all documents in the collection for ferretdb-yugabytedb backend
 // or drops the collection for other backends. The drop collection error is optionally ignored.
 func cleanupCollection(tb testing.TB, ctx context.Context, collection *mongo.Collection, ignoreErr bool) {
 	tb.Helper()
@@ -363,7 +363,7 @@ func cleanupCollection(tb testing.TB, ctx context.Context, collection *mongo.Col
 	require.NoError(tb, err)
 }
 
-// cleanupDatabase drops all users, then deletes all collections for `ferretdb-yugabytedb` backend
+// cleanupDatabase drops all users, then deletes all collections for ferretdb-yugabytedb backend
 // or drops the database for other backends.
 func cleanupDatabase(tb testing.TB, ctx context.Context, database *mongo.Database) {
 	err := database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
