@@ -27,6 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/server"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/util/httpmiddleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
@@ -40,9 +41,11 @@ type Listener struct {
 
 // ListenOpts represents [Listen] options.
 type ListenOpts struct {
-	L       *slog.Logger
-	Handler *handler.Handler
-	TCPAddr string
+	Handler        *handler.Handler
+	HttpMiddleware *httpmiddleware.HttpMiddleware
+	TCPAddr        string
+
+	L *slog.Logger
 }
 
 // Listen creates a new dataapi handler and starts listener on the given TCP address.
@@ -65,12 +68,8 @@ func Listen(opts *ListenOpts) (*Listener, error) {
 func (lis *Listener) Run(ctx context.Context) {
 	srvHandler := api.HandlerFromMux(lis.srv, http.NewServeMux())
 
-	if lis.opts.Handler.Auth {
-		srvHandler = lis.srv.AuthMiddleware(srvHandler)
-	}
-
 	srv := &http.Server{
-		Handler:  lis.srv.ConnInfoMiddleware(srvHandler),
+		Handler:  lis.opts.HttpMiddleware.WithMiddleware(srvHandler),
 		ErrorLog: slog.NewLogLogger(lis.opts.L.Handler(), slog.LevelError),
 		BaseContext: func(net.Listener) context.Context {
 			return ctx
