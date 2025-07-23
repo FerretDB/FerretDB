@@ -112,7 +112,7 @@ Here's a step-by-step guide to get you started with a local Vault and FerretDB s
    password="<ferretdb_password>"
    ```
 
-    Replace `<ferretdb_username>` and `<ferretdb_password>` with your FerretDB authentication credentials.
+   Replace `<ferretdb_username>` and `<ferretdb_password>` with your FerretDB authentication credentials.
 
 5. **Create a database role:**
    Create a role within Vault that defines the dynamic credentials' properties, such as the roles they will have in FerretDB and their time-to-live (TTL).
