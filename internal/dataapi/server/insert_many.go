@@ -45,6 +45,7 @@ func (s *Server) InsertMany(w http.ResponseWriter, r *http.Request) {
 		"insert", req.Collection,
 		"$db", req.Database,
 		"documents", req.Documents,
+		"lsid", GetLSID(ctx),
 	)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)

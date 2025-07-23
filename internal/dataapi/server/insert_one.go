@@ -56,6 +56,7 @@ func (s *Server) InsertOne(w http.ResponseWriter, r *http.Request) {
 		"insert", req.Collection,
 		"$db", req.Database,
 		"documents", documents,
+		"lsid", GetLSID(ctx),
 	)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
