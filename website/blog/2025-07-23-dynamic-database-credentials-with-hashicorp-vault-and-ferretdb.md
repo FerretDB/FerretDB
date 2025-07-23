@@ -64,12 +64,12 @@ Here's a step-by-step guide to get you started with a local Vault and FerretDB s
    ```sh
    docker run -d --name vault -p 8200:8200 \
    --cap-add=IPC_LOCK \
-   -e 'VAULT_DEV_ROOT_TOKEN_ID=<root-token>' \
+   -e 'VAULT_DEV_ROOT_TOKEN_ID=<root_token>' \
    -e 'VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200' \
    hashicorp/vault:latest
    ```
 
-   `<root-token>` should have the value for your development root token ID – replace it with any string you prefer for easy access during development.
+   `<root_token>` should have the value for your development root token ID – replace it with any string you prefer for easy access during development.
 
    You need the Vault CLI to interact with the Vault server.
    Ensure that you have the Vault CLI installed and configured to PATH on your system.
@@ -84,7 +84,7 @@ Here's a step-by-step guide to get you started with a local Vault and FerretDB s
    Log in to Vault using the root token you set during the `docker run` command:
 
    ```sh
-   vault login <root-token>
+   vault login <root_token>
    ```
 
    You should see a success message confirming your login.
@@ -100,6 +100,8 @@ Here's a step-by-step guide to get you started with a local Vault and FerretDB s
 4. **Configure the MongoDB plugin for FerretDB:**
    Configure the `ferretdb-creds` secrets engine to use the mongodb-database-plugin and provide the connection details for your FerretDB instance.
    The `connection_url` will use a templated format for enhanced security and to enable root credential rotation.
+   `allowed_roles` specifies which Vault roles are permitted to use the connection to create or manage database users.
+   In this guide, we will use `my-app-role` as the role name and specify it later when creating/managing dynamic credentials.
 
    ```sh
    vault write ferretdb-creds/config/ferretdb-conn \
@@ -109,6 +111,8 @@ Here's a step-by-step guide to get you started with a local Vault and FerretDB s
    username="<ferretdb_username>" \
    password="<ferretdb_password>"
    ```
+
+    Replace `<ferretdb_username>` and `<ferretdb_password>` with your FerretDB authentication credentials.
 
 5. **Create a database role:**
    Create a role within Vault that defines the dynamic credentials' properties, such as the roles they will have in FerretDB and their time-to-live (TTL).
@@ -175,7 +179,8 @@ You can verify this by connecting directly to FerretDB (using your generated cre
 mongosh mongodb://<generated_username>:<generated_password>@localhost:27017/admin
 ```
 
-Then, list the users by running `db.getUsers()`:
+Then, list the users by running `db.getUsers()`.
+A typical output will look like this:
 
 ```js
 {
