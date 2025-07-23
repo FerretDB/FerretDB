@@ -202,10 +202,7 @@ type TestsRunParams struct {
 var cli struct {
 	Debug bool `help:"Enable debug mode."`
 
-	Setup struct {
-		// TODO https://github.com/FerretDB/FerretDB/issues/5369
-		YugabyteDB bool `default:"true" help:"Setup YugabyteDB (by default)." negatable:""`
-	} `cmd:"" help:"Setup development environment."`
+	Setup struct{} `cmd:"" help:"Setup development environment."`
 
 	PackageVersion struct{} `cmd:"" help:"Print package version."`
 
@@ -267,7 +264,7 @@ func main() {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 		defer cancel()
 
-		err = setup(ctx, cli.Setup.YugabyteDB, logger)
+		err = setup(ctx, logger)
 
 	case "package-version":
 		err = packageVersion(os.Stdout, versionFile)

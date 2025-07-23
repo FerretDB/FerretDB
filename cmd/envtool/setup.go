@@ -21,6 +21,7 @@ import (
 	"log/slog"
 	"net"
 	"net/url"
+	"runtime"
 	"time"
 
 	"github.com/FerretDB/wire/wirebson"
@@ -151,7 +152,7 @@ func setupUser(ctx context.Context, uri string, l *slog.Logger) error {
 }
 
 // setup runs all setup commands.
-func setup(ctx context.Context, yugabyteDB bool, logger *slog.Logger) error {
+func setup(ctx context.Context, logger *slog.Logger) error {
 	h, err := debug.Listen(&debug.ListenOpts{
 		TCPAddr: "127.0.0.1:8089",
 		L:       logging.WithName(logger, "debug"),
@@ -173,14 +174,11 @@ func setup(ctx context.Context, yugabyteDB bool, logger *slog.Logger) error {
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/5369
-	if !yugabyteDB {
-		logger.InfoContext(ctx, "Skipping YugabyteDB setup")
-		return nil
-	}
-
-	uri = "postgres://pg-user:pg-pass@127.0.0.1:5433/yugabyte"
-	if err = setupUser(ctx, uri, logging.WithName(logger, "yugabytedb")); err != nil {
-		return lazyerrors.Error(err)
+	if runtime.GOARCH != "arm64" {
+		uri = "postgres://pg-user:pg-pass@127.0.0.1:5433/yugabyte"
+		if err = setupUser(ctx, uri, logging.WithName(logger, "yugabytedb")); err != nil {
+			return lazyerrors.Error(err)
+		}
 	}
 
 	logger.InfoContext(ctx, "Done")

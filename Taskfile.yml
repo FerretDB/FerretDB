@@ -16,8 +16,7 @@ vars:
   RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
   BUILD_TAGS: ferretdb_dev
   MODE: diff-normal
-  # TODO https://github.com/FerretDB/FerretDB/issues/5369
-  SERVICES: jaeger mongodb mongodb-secure postgres {{if (ne ARCH "arm64")}}yugabytedb{{end}}
+  SERVICES: jaeger mongodb mongodb-secure postgres yugabytedb
 
 tasks:
   # invoked when `task` is run without arguments
@@ -106,8 +105,7 @@ tasks:
   env-setup:
     deps: [gen-version]
     cmds:
-      # TODO https://github.com/FerretDB/FerretDB/issues/5369
-      - bin/envtool{{exeExt}} setup {{if (eq ARCH "arm64")}}--no-yugabyte-db{{end}}
+      - bin/envtool{{exeExt}} setup
 
   env-logs:
     cmds:
