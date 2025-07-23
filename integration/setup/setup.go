@@ -248,9 +248,11 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 	ctx, span := otel.Tracer("").Start(ctx, "setupCollection")
 	defer span.End()
 
+	var ownDatabase bool
 	databaseName := opts.DatabaseName
 	if databaseName == "" {
 		databaseName = testutil.DatabaseName(tb)
+		ownDatabase = true
 	}
 
 	collectionName := testutil.CollectionName(tb)
@@ -259,7 +261,11 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 	collection := database.Collection(collectionName)
 
 	// drop remnants of the previous failed run
-	cleanupCollection(tb, ctx, database, collection, opts, true)
+	if ownDatabase {
+		cleanupDatabase(tb, ctx, database)
+	} else {
+		cleanupCollection(tb, ctx, collection, true)
+	}
 
 	// drop collection and (possibly) database unless test failed
 	tb.Cleanup(func() {
@@ -268,7 +274,13 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 			return
 		}
 
-		cleanupCollection(tb, ctx, database, collection, opts, false)
+		if ownDatabase {
+			cleanupDatabase(tb, ctx, database)
+
+			return
+		}
+
+		cleanupCollection(tb, ctx, collection, false)
 	})
 
 	var inserted bool
@@ -328,17 +340,10 @@ func insertBenchmarkProvider(tb testing.TB, ctx context.Context, collection *mon
 	return
 }
 
-// cleanupCollection cleans up the database if `opts.DatabaseName` is empty,
-// otherwise it deletes all documents in the collection for `ferretdb-yugabytedb` backend
+// cleanupCollection deletes all documents in the collection for `ferretdb-yugabytedb` backend
 // or drops the collection for other backends. The drop collection error is optionally ignored.
-func cleanupCollection(tb testing.TB, ctx context.Context, database *mongo.Database, collection *mongo.Collection, opts *SetupOpts, ignoreErr bool) {
+func cleanupCollection(tb testing.TB, ctx context.Context, collection *mongo.Collection, ignoreErr bool) {
 	tb.Helper()
-
-	if opts.DatabaseName == "" {
-		cleanupDatabase(tb, ctx, database)
-
-		return
-	}
 
 	if IsYugabyteDB(tb) {
 		// dropping collection or database fails for ferretdb-yugabytedb
@@ -367,22 +372,12 @@ func cleanupDatabase(tb testing.TB, ctx context.Context, database *mongo.Databas
 	if IsYugabyteDB(tb) {
 		// dropping collection or database fails for ferretdb-yugabytedb
 		// TODO https://github.com/yugabyte/yugabyte-db/issues/27698
-		var cursor *mongo.Cursor
-		cursor, err = database.ListCollections(ctx, bson.D{})
+		var collections []string
+		collections, err = database.ListCollectionNames(ctx, bson.D{})
 		require.NoError(tb, err)
 
-		type collectionInfo struct {
-			Name string `bson:"name"`
-		}
-
-		var res []collectionInfo
-
-		err = cursor.All(ctx, &res)
-		require.NoError(tb, cursor.Close(ctx))
-		require.NoError(tb, err)
-
-		for _, collection := range res {
-			_, err = database.Collection(collection.Name).DeleteMany(ctx, bson.D{})
+		for _, collection := range collections {
+			_, err = database.Collection(collection).DeleteMany(ctx, bson.D{})
 			require.NoError(tb, err)
 		}
 
