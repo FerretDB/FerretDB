@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !(ferretdb_dev || race)
+//go:build !(ferretdb_dev || race || !ferretdb_yugabytedb)
 
 package devbuild
 
