@@ -151,7 +151,7 @@ func setupUser(ctx context.Context, uri string, l *slog.Logger) error {
 }
 
 // setup runs all setup commands.
-func setup(ctx context.Context, logger *slog.Logger) error {
+func setup(ctx context.Context, yugabyteDB bool, logger *slog.Logger) error {
 	h, err := debug.Listen(&debug.ListenOpts{
 		TCPAddr: "127.0.0.1:8089",
 		L:       logging.WithName(logger, "debug"),
@@ -170,6 +170,12 @@ func setup(ctx context.Context, logger *slog.Logger) error {
 	uri := "postgres://pg-user:pg-pass@127.0.0.1:5432/postgres"
 	if err = setupUser(ctx, uri, logging.WithName(logger, "postgres")); err != nil {
 		return lazyerrors.Error(err)
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/5369
+	if !yugabyteDB {
+		logger.InfoContext(ctx, "Skipping YugabyteDB setup")
+		return nil
 	}
 
 	uri = "postgres://pg-user:pg-pass@127.0.0.1:5433/yugabyte"
