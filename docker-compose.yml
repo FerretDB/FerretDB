@@ -123,12 +123,6 @@ services:
       - 6831:6831/udp # Compact Thrift from BuildKit
       - 16686:16686 # UI on http://127.0.0.1:16686/
 
-  librechat:
-    build:
-      context: ./build/deps
-      dockerfile: librechat.Dockerfile
-    container_name: librechat_jaeger
-
   trivy:
     build:
       context: ./build/deps
