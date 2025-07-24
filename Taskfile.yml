@@ -116,6 +116,8 @@ tasks:
     cmds:
       - docker compose ps --all
       - docker compose logs
+      # do not fail if YugabyteDB is not running
+      - docker compose exec yugabytedb bin/yugabyted collect_logs --stdout | tar -xOzvf - || true
 
   env-up:
     desc: "Start development environment"
@@ -324,11 +326,6 @@ tasks:
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
         --dev-repl-set-name=rs0
         --dev-records-dir=tmp/records
-
-  yugabytedb-logs:
-    desc: "Generate a zip file containing all YugabyteDB logs"
-    cmds:
-      - docker compose exec yugabytedb bin/yugabyted collect_logs --stdout > yugabytedb.tar.gz
 
   # invoked by FerretDB/github-actions/linters action
   lint:
