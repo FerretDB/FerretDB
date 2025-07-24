@@ -232,10 +232,6 @@ tasks:
         -postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
         -compat-url='mongodb://username:password@127.0.0.1:47017/?replicaSet=rs0'
         -no-xfail={{.NO_XFAIL}}
-      - >
-        ../bin/go-junit-report -parser=gojson -iocopy
-        -in postgresql-{{.SHARD_INDEX}}-{{.SHARD_TOTAL}}-stdout.json.tmp
-        -out postgresql-{{.SHARD_INDEX}}-{{.SHARD_TOTAL}}.xml
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
