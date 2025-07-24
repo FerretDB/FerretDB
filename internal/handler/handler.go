@@ -145,17 +145,17 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middlew
 
 		cmd := h.commands[msgCmd]
 		if cmd == nil {
-			return nil, mongoerrors.New(
+			return middleware.ResponseErr(req, mongoerrors.New(
 				mongoerrors.ErrCommandNotFound,
 				fmt.Sprintf("no such command: '%s'", msgCmd),
-			)
+			)), nil
 		}
 
 		if cmd.handler == nil {
-			return nil, mongoerrors.New(
+			return middleware.ResponseErr(req, mongoerrors.New(
 				mongoerrors.ErrNotImplemented,
 				fmt.Sprintf("Command %s is not implemented", msgCmd),
-			)
+			)), nil
 		}
 
 		if h.Auth && !cmd.anonymous {
@@ -170,19 +170,31 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middlew
 					h.L.WarnContext(ctx, "Conversation did not succeed", slog.String("username", username))
 				}
 
-				return nil, mongoerrors.New(
+				return middleware.ResponseErr(req, mongoerrors.New(
 					mongoerrors.ErrUnauthorized,
 					fmt.Sprintf("Command %s requires authentication", msgCmd),
-				)
+				)), nil
 			}
 
 			h.L.DebugContext(ctx, "Authentication passed", slog.String("username", username))
 		}
 
-		return cmd.handler(ctx, req)
+		resp, err := cmd.handler(ctx, req)
+		if err != nil {
+			// TODO https://github.com/FerretDB/FerretDB/issues/4965
+			resp = middleware.ResponseErr(req, mongoerrors.Make(ctx, err, "", h.L))
+		}
+
+		return resp, nil
 
 	case *wire.OpQuery:
-		return h.CmdQuery(ctx, req)
+		resp, err := h.CmdQuery(ctx, req)
+		if err != nil {
+			// TODO https://github.com/FerretDB/FerretDB/issues/4965
+			resp = middleware.ResponseErr(req, mongoerrors.Make(ctx, err, "", h.L))
+		}
+
+		return resp, nil
 
 	default:
 		panic("unsupported request")
