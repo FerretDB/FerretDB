@@ -80,7 +80,7 @@ func goString(err error) string {
 // and to map error codes in conn.go. It probably should be split in two.
 // TODO https://github.com/FerretDB/FerretDB/issues/4965
 func Make(ctx context.Context, err error, arg string, l *slog.Logger) *Error {
-	must.NoError(err)
+	must.NotBeZero(err)
 
 	span := oteltrace.SpanFromContext(ctx)
 	span.SetStatus(otelcodes.Error, "")
