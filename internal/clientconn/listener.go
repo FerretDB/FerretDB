@@ -96,12 +96,13 @@ func tlsConfig(certFile, keyFile, caFile string) (*tls.Config, error) {
 	}
 
 	if caFile != "" {
-		if _, err := os.Stat(caFile); err != nil {
+		if _, err = os.Stat(caFile); err != nil {
 			return nil, fmt.Errorf("TLS CA file: %w", err)
 		}
 
-		b, err := os.ReadFile(caFile)
-		if err != nil {
+		var b []byte
+
+		if b, err = os.ReadFile(caFile); err != nil {
 			return nil, err
 		}
 

@@ -72,6 +72,7 @@ func RequestWire(header *wire.MsgHeader, body wire.MsgBody) (*Request, error) {
 	}
 
 	req.doc.Freeze()
+
 	return req, nil
 }
 
@@ -99,6 +100,7 @@ func RequestDoc(doc wirebson.AnyDocument) (*Request, error) {
 	}
 
 	d.Freeze()
+
 	return &Request{
 		header: header,
 		body:   body,
@@ -133,7 +135,9 @@ func (req *Request) Document() *wirebson.Document {
 	return req.doc
 }
 
-// FIXME https://github.com/FerretDB/FerretDB/issues/4965
+// DocumentDeep returns the deeply decoded request document.
+// Callers should use it instead of `resp.DocumentRaw().DecodeDeep()`.
 func (req *Request) DocumentDeep() (*wirebson.Document, error) {
+	// we might want to cache it in the future if there are many callers
 	return req.DocumentRaw().DecodeDeep()
 }

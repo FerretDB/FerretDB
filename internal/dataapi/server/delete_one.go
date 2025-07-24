@@ -65,6 +65,7 @@ func (s *Server) DeleteOne(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
+
 	if !resp.OK() {
 		s.writeJSONError(ctx, w, resp)
 		return

@@ -15,19 +15,13 @@
 package middleware
 
 import (
-	"log/slog"
-
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
-
-// TODO https://github.com/FerretDB/FerretDB/issues/4965
-var logger = logging.WithName(slog.Default(), "middleware")
 
 // Response is a normal or error response produced by the handler.
 //
@@ -139,6 +133,7 @@ func ResponseDoc(req *Request, doc wirebson.AnyDocument) (*Response, error) {
 	}
 
 	resp.doc.Freeze()
+
 	return resp, nil
 }
 
@@ -177,20 +172,22 @@ func (resp *Response) Document() *wirebson.Document {
 	return resp.doc
 }
 
-// FIXME https://github.com/FerretDB/FerretDB/issues/4965
+// DocumentDeep returns the deeply decoded response document.
+// Callers should use it instead of `resp.DocumentRaw().DecodeDeep()`.
 func (resp *Response) DocumentDeep() (*wirebson.Document, error) {
+	// we might want to cache it in the future if there are many callers
 	return resp.DocumentRaw().DecodeDeep()
 }
 
-// FIXME
+// OK returns true if response documents contains "ok" field with numeric value 1.
 func (resp *Response) OK() bool {
 	switch v := resp.doc.Get("ok").(type) {
 	case float64:
-		return v == 1.0
+		return v == float64(1.0)
 	case int32:
-		return v == 1
+		return v == int32(1)
 	case int64:
-		return v == 1
+		return v == int64(1)
 	default:
 		return false
 	}

@@ -96,6 +96,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 			return
 		}
+
 		if !resp.OK() {
 			s.writeJSONError(ctx, w, resp)
 			return
@@ -122,6 +123,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 			return
 		}
+
 		if !resp.OK() {
 			s.writeJSONError(ctx, w, resp)
 			return

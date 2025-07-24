@@ -38,6 +38,9 @@ type Handler struct {
 	bufw *bufio.Writer
 }
 
+// NewOpts represents handler configuration.
+//
+//nolint:vet // for readability
 type NewOpts struct {
 	Addr     string
 	CertFile string

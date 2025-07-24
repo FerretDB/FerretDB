@@ -251,11 +251,13 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 
 		// TODO https://github.com/FerretDB/FerretDB/issues/1997
 		var req *middleware.Request
+
 		if req, err = middleware.RequestWire(reqHeader, reqBody); err != nil {
 			return lazyerrors.Error(err)
 		}
 
 		var resp *middleware.Response
+
 		if resp, err = c.proxy.Handle(ctx, req); err != nil {
 			return lazyerrors.Error(err)
 		}
