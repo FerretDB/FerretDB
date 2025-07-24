@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package connmetrics
+package middleware
 
 import (
 	"testing"
@@ -21,7 +21,7 @@ import (
 )
 
 func TestGetResponses(t *testing.T) {
-	cm := newConnMetrics()
+	cm := newMetrics()
 	cm.Responses.WithLabelValues("OP_MSG", "update", "$set", "NotImplemented").Inc()
 	cm.Responses.WithLabelValues("OP_MSG", "update", "$set", "panic").Inc()
 	cm.Responses.WithLabelValues("OP_MSG", "update", "$set", "ok").Inc()
@@ -43,5 +43,5 @@ func TestGetResponses(t *testing.T) {
 			},
 		},
 	}
-	assert.Equal(t, expected, cm.GetResponses())
+	assert.Equal(t, expected, cm.getResponses())
 }

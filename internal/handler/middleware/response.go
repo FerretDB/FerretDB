@@ -72,6 +72,8 @@ func ResponseWire(header *wire.MsgHeader, body wire.MsgBody) (*Response, error) 
 		return nil, lazyerrors.Errorf("unsupported body type %T", body)
 	}
 
+	resp.doc.Freeze()
+
 	return resp, nil
 }
 

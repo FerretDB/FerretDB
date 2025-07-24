@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package connmetrics provides listener and connection metrics.
-package connmetrics
+package middleware
 
 import (
 	"fmt"
@@ -24,8 +23,14 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// ConnMetrics represents metrics of an individual conn or a collection of conns.
-type ConnMetrics struct {
+// Parts of Prometheus metric names.
+const (
+	namespace = "ferretdb_unstable"
+	subsystem = "middleware"
+)
+
+// metrics represents middleware metrics.
+type metrics struct {
 	Requests  *prometheus.CounterVec
 	Responses *prometheus.CounterVec
 }
@@ -36,58 +41,60 @@ type commandMetrics struct {
 	Total    int            // both "ok" and failures
 }
 
-// newConnMetrics creates connection metrics.
-func newConnMetrics() *ConnMetrics {
-	cm := &ConnMetrics{
+// newMetrics creates new metrics.
+func newMetrics() *metrics {
+	m := &metrics{
 		Requests: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: namespace,
 				Subsystem: subsystem,
 				Name:      "requests_total",
-				Help:      "Total number of requests.",
+				Help:      "Unstable: total number of requests.",
 			},
-			[]string{"opcode", "command"},
+			[]string{"opcode", "command"}, // FIXME better name for "opcode"?
 		),
+
+		// FIXME duration
 		Responses: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: namespace,
 				Subsystem: subsystem,
 				Name:      "responses_total",
-				Help:      "Total number of responses.",
+				Help:      "Unstable: total number of responses.",
 			},
-			[]string{"opcode", "command", "argument", "result"},
+			[]string{"opcode", "command", "argument", "result"}, // FIXME better name for "opcode"?
 		),
 	}
 
-	cm.Requests.WithLabelValues("OP_MSG", "find")
-	cm.Responses.WithLabelValues("OP_MSG", "find", "unknown", "ok")
+	m.Requests.WithLabelValues("OP_MSG", "find")
+	m.Responses.WithLabelValues("OP_MSG", "find", "unknown", "ok")
 
-	return cm
+	return m
 }
 
 // Describe implements [prometheus.Collector].
-func (cm *ConnMetrics) Describe(ch chan<- *prometheus.Desc) {
-	cm.Requests.Describe(ch)
-	cm.Responses.Describe(ch)
+func (m *metrics) Describe(ch chan<- *prometheus.Desc) {
+	m.Requests.Describe(ch)
+	m.Responses.Describe(ch)
 }
 
 // Collect implements [prometheus.Collector].
-func (cm *ConnMetrics) Collect(ch chan<- prometheus.Metric) {
-	cm.Requests.Collect(ch)
-	cm.Responses.Collect(ch)
+func (m *metrics) Collect(ch chan<- prometheus.Metric) {
+	m.Requests.Collect(ch)
+	m.Responses.Collect(ch)
 }
 
-// GetResponses returns a map with all response metrics:
+// getResponses returns a map with all response metrics:
 //
 // opcode (e.g. "OP_MSG", "OP_QUERY") ->
 // command (e.g. "find", "aggregate") ->
 // argument that caused an error (e.g. "sort", "$count (stage)"; or "unknown") ->
 // result (e.g. "NotImplemented", "panic", or "ok") ->
 // count.
-func (cm *ConnMetrics) GetResponses() map[string]map[string]map[string]commandMetrics {
+func (m *metrics) getResponses() map[string]map[string]map[string]commandMetrics {
 	metrics := make(chan prometheus.Metric)
 	go func() {
-		cm.Responses.Collect(metrics)
+		m.Responses.Collect(metrics)
 		close(metrics)
 	}()
 
@@ -148,5 +155,5 @@ func (cm *ConnMetrics) GetResponses() map[string]map[string]map[string]commandMe
 
 // check interfaces
 var (
-	_ prometheus.Collector = (*ConnMetrics)(nil)
+	_ prometheus.Collector = (*metrics)(nil)
 )

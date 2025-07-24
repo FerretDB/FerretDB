@@ -37,7 +37,7 @@ const (
 // nameKey is a [slog.Attr] key used by [WithName].
 const nameKey = "name"
 
-// WithName returns a logger with a given period-separated name.
+// WithName returns a logger with a given name.
 //
 // How this name is used depends on the handler.
 func WithName(l *slog.Logger, name string) *slog.Logger {
