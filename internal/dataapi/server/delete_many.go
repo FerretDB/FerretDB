@@ -60,7 +60,11 @@ func (s *Server) DeleteMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := s.handler.Handle(ctx, msg)
+	resp, err := s.handler.Handle(ctx, msg)
+	if err != nil {
+		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		return
+	}
 	if !resp.OK() {
 		s.writeJSONError(ctx, w, resp)
 		return

@@ -250,12 +250,16 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 		}
 
 		// TODO https://github.com/FerretDB/FerretDB/issues/1997
-		req, err := middleware.RequestWire(reqHeader, reqBody)
-		if err != nil {
-			return err
+		var req *middleware.Request
+		if req, err = middleware.RequestWire(reqHeader, reqBody); err != nil {
+			return lazyerrors.Error(err)
 		}
 
-		resp := c.proxy.Handle(ctx, req)
+		var resp *middleware.Response
+		if resp, err = c.proxy.Handle(ctx, req); err != nil {
+			return lazyerrors.Error(err)
+		}
+
 		proxyHeader = resp.WireHeader()
 		proxyBody = resp.WireBody()
 	}
@@ -386,8 +390,11 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 		if err == nil {
 			req, _ := middleware.RequestWire(reqHeader, msg)
-			resp := c.h.Handle(connCtx, req)
-			resBody = resp.WireBody()
+
+			var resp *middleware.Response
+			if resp, err = c.h.Handle(connCtx, req); err == nil {
+				resBody = resp.WireBody()
+			}
 		}
 
 	case wire.OpCodeQuery:
@@ -404,8 +411,11 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 
 		if err == nil {
 			req, _ := middleware.RequestWire(reqHeader, query)
-			resp := c.h.Handle(connCtx, req)
-			resBody = resp.WireBody()
+
+			var resp *middleware.Response
+			if resp, err = c.h.Handle(connCtx, req); err == nil {
+				resBody = resp.WireBody()
+			}
 		}
 
 	case wire.OpCodeReply:

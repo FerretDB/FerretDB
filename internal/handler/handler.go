@@ -138,7 +138,7 @@ func (h *Handler) Run(ctx context.Context) {
 }
 
 // Handle processes a request.
-func (h *Handler) Handle(ctx context.Context, req *middleware.Request) *middleware.Response {
+func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	switch req.WireBody().(type) {
 	case *wire.OpMsg:
 		msgCmd := req.Document().Command()
@@ -148,14 +148,14 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) *middlewa
 			return middleware.ResponseErr(req, mongoerrors.New(
 				mongoerrors.ErrCommandNotFound,
 				fmt.Sprintf("no such command: '%s'", msgCmd),
-			))
+			)), nil
 		}
 
 		if cmd.handler == nil {
 			return middleware.ResponseErr(req, mongoerrors.New(
 				mongoerrors.ErrNotImplemented,
 				fmt.Sprintf("Command %s is not implemented", msgCmd),
-			))
+			)), nil
 		}
 
 		if h.Auth && !cmd.anonymous {
@@ -173,7 +173,7 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) *middlewa
 				return middleware.ResponseErr(req, mongoerrors.New(
 					mongoerrors.ErrUnauthorized,
 					fmt.Sprintf("Command %s requires authentication", msgCmd),
-				))
+				)), nil
 			}
 
 			h.L.DebugContext(ctx, "Authentication passed", slog.String("username", username))
@@ -181,18 +181,20 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) *middlewa
 
 		resp, err := cmd.handler(ctx, req)
 		if err != nil {
-			return middleware.ResponseErr(req, mongoerrors.Make(ctx, err, "", h.L))
+			// TODO https://github.com/FerretDB/FerretDB/issues/4965
+			resp = middleware.ResponseErr(req, mongoerrors.Make(ctx, err, "", h.L))
 		}
 
-		return resp
+		return resp, nil
 
 	case *wire.OpQuery:
 		resp, err := h.CmdQuery(ctx, req)
 		if err != nil {
-			return middleware.ResponseErr(req, mongoerrors.Make(ctx, err, "", h.L))
+			// TODO https://github.com/FerretDB/FerretDB/issues/4965
+			resp = middleware.ResponseErr(req, mongoerrors.Make(ctx, err, "", h.L))
 		}
 
-		return resp
+		return resp, nil
 
 	default:
 		panic("unsupported request")

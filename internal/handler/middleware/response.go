@@ -15,7 +15,6 @@
 package middleware
 
 import (
-	"context"
 	"log/slog"
 
 	"github.com/FerretDB/wire"
@@ -30,9 +29,7 @@ import (
 // TODO https://github.com/FerretDB/FerretDB/issues/4965
 var logger = logging.WithName(slog.Default(), "middleware")
 
-// Response represents outgoing result to the client.
-// It may be a normal response or an error.
-// TODO https://github.com/FerretDB/FerretDB/issues/4965
+// Response is a normal or error response produced by the handler.
 //
 // It may be constructed from [*wire.MsgHeader]/[wire.MsgBody] (for the proxy handler),
 // from [wirebson.AnyDocument] (for the DocumentDB handler),
@@ -44,6 +41,7 @@ type Response struct {
 }
 
 // ResponseWire creates a new response from the given wire protocol header and body.
+// Error is returned if the body cannot be decoded.
 func ResponseWire(header *wire.MsgHeader, body wire.MsgBody) (*Response, error) {
 	must.NotBeZero(header)
 	must.NotBeZero(body)
@@ -82,6 +80,7 @@ func ResponseWire(header *wire.MsgHeader, body wire.MsgBody) (*Response, error) 
 }
 
 // ResponseDoc creates a new response from the given document.
+// Error is returned if it cannot be decoded.
 //
 // If it is [*wirebson.Document], it freezes it.
 func ResponseDoc(req *Request, doc wirebson.AnyDocument) (*Response, error) {
@@ -143,24 +142,12 @@ func ResponseDoc(req *Request, doc wirebson.AnyDocument) (*Response, error) {
 	return resp, nil
 }
 
-// ResponseErr creates a new response from the given error.
-//
-// Should this function should accept [error], not [*mongoerrors.Error]?
-// Should this function return [error]?
-// Should this function exist at all?
-// TODO https://github.com/FerretDB/FerretDB/issues/4965
-func ResponseErr(req *Request, errResp *mongoerrors.Error) *Response {
+// ResponseErr creates a new error response from the given [*mongoerrors.Error].
+func ResponseErr(req *Request, err *mongoerrors.Error) *Response {
 	must.NotBeZero(req)
-	must.NotBeZero(errResp)
+	must.NotBeZero(err)
 
-	resp, err := ResponseDoc(req, errResp.Doc())
-	if err == nil {
-		return resp
-	}
-
-	errResp = mongoerrors.Make(context.TODO(), err, "", logger)
-	resp = must.NotFail(ResponseDoc(req, errResp.Doc()))
-	return resp
+	return must.NotFail(ResponseDoc(req, err.Doc()))
 }
 
 // WireHeader returns the response header for the wire protocol.

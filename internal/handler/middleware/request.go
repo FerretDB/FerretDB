@@ -36,6 +36,7 @@ type Request struct {
 }
 
 // RequestWire creates a new request from the given wire protocol header and body.
+// Error is returned if the body cannot be decoded.
 func RequestWire(header *wire.MsgHeader, body wire.MsgBody) (*Request, error) {
 	must.NotBeZero(header)
 	must.NotBeZero(body)
@@ -75,6 +76,7 @@ func RequestWire(header *wire.MsgHeader, body wire.MsgBody) (*Request, error) {
 }
 
 // RequestDoc creates a new request from the given document.
+// Error is returned if it cannot be decoded.
 //
 // If it is [*wirebson.Document], it freezes it.
 func RequestDoc(doc wirebson.AnyDocument) (*Request, error) {
@@ -131,7 +133,7 @@ func (req *Request) Document() *wirebson.Document {
 	return req.doc
 }
 
-// TODO https://github.com/FerretDB/FerretDB/issues/4965
+// FIXME https://github.com/FerretDB/FerretDB/issues/4965
 func (req *Request) DocumentDeep() (*wirebson.Document, error) {
 	return req.DocumentRaw().DecodeDeep()
 }

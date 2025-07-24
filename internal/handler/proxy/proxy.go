@@ -27,14 +27,12 @@ import (
 	"github.com/FerretDB/wire"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
-	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // Handler handles requests by sending them to another wire protocol compatible service.
 type Handler struct {
-	opts *NewOpts
 	conn net.Conn
 	bufr *bufio.Reader
 	bufw *bufio.Writer
@@ -74,7 +72,6 @@ func New(opts *NewOpts) (*Handler, error) {
 	}
 
 	return &Handler{
-		opts: opts,
 		conn: conn,
 		bufr: bufio.NewReader(conn),
 		bufw: bufio.NewWriter(conn),
@@ -138,29 +135,30 @@ func (h *Handler) Run(ctx context.Context) {
 }
 
 // Handle processes a request by sending it to another wire protocol compatible service.
-func (h *Handler) Handle(ctx context.Context, req *middleware.Request) *middleware.Response {
+func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	deadline, _ := ctx.Deadline()
 	_ = h.conn.SetDeadline(deadline)
 
 	err := wire.WriteMessage(h.bufw, req.WireHeader(), req.WireBody())
-	if err == nil {
-		err = h.bufw.Flush()
-	}
 	if err != nil {
-		return middleware.ResponseErr(req, mongoerrors.Make(ctx, err, "", h.opts.L))
+		return nil, lazyerrors.Error(err)
 	}
 
-	respHeader, respBody, err := wire.ReadMessage(h.bufr)
-	if err != nil {
-		return middleware.ResponseErr(req, mongoerrors.Make(ctx, err, "", h.opts.L))
+	if err = h.bufw.Flush(); err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	resp, err := middleware.ResponseWire(respHeader, respBody)
+	header, body, err := wire.ReadMessage(h.bufr)
 	if err != nil {
-		resp = middleware.ResponseErr(req, mongoerrors.Make(ctx, err, "", h.opts.L))
+		return nil, lazyerrors.Error(err)
 	}
 
-	return resp
+	resp, err := middleware.ResponseWire(header, body)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return resp, nil
 }
 
 // check interfaces

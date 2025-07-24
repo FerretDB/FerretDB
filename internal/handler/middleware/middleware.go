@@ -12,52 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package middleware provides wrappers for command handlers.
+// Package middleware provides connection between listeners and handlers.
 package middleware
 
 import (
 	"context"
 	"sync/atomic"
-
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// Handler is a common interface for command handlers.
+// Handler is a common interface for handlers.
 type Handler interface {
 	// Handle processes a single request.
 	//
 	// The passed context is canceled when the client disconnects.
 	//
-	// Response is a normal response or an error.
-	// TODO https://github.com/FerretDB/FerretDB/issues/4965
-	Handle(ctx context.Context, req *Request) (resp *Response)
+	// Response is a normal or error response produced by the handler.
+	//
+	// Error is returned when the handler cannot process the request;
+	// for example, when connection with PostgreSQL or proxy is lost.
+	// Returning an error generally means that the listener should close the client connection.
+	// Error should not be [*mongoerrors.Error].
+	Handle(ctx context.Context, req *Request) (resp *Response, err error)
 }
 
 // lastRequestID stores last generated request ID.
 var lastRequestID atomic.Int32
-
-type Middleware struct {
-	opts *NewOpts
-}
-
-type NewOpts struct {
-	Mode     Mode
-	Handlers []Handler
-}
-
-func New(opts *NewOpts) *Middleware {
-	must.NotBeZero(opts)
-
-	return &Middleware{
-		opts: opts,
-	}
-}
-
-func (m *Middleware) Handle(ctx context.Context, req *Request) (resp *Response) {
-	panic("TODO")
-}
-
-// check interfaces
-var (
-	_ Handler = (*Middleware)(nil)
-)
