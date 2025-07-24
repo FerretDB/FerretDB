@@ -142,12 +142,11 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middlew
 	deadline, _ := ctx.Deadline()
 	_ = h.conn.SetDeadline(deadline)
 
-	err := wire.WriteMessage(h.bufw, req.WireHeader(), req.WireBody())
-	if err != nil {
+	if err := wire.WriteMessage(h.bufw, req.WireHeader(), req.WireBody()); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err = h.bufw.Flush(); err != nil {
+	if err := h.bufw.Flush(); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 

@@ -15,6 +15,8 @@
 package middleware
 
 import (
+	"fmt"
+
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
@@ -163,7 +165,7 @@ func (resp *Response) DocumentRaw() wirebson.RawDocument {
 	case *wire.OpReply:
 		return body.DocumentRaw()
 	default:
-		panic("not reached")
+		panic(fmt.Sprintf("unexpected body type %T", body))
 	}
 }
 
