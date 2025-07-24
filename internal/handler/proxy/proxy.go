@@ -155,7 +155,12 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) *middlewa
 		return middleware.ResponseErr(req, mongoerrors.Make(ctx, err, "", h.opts.L))
 	}
 
-	return middleware.ResponseWire(respHeader, respBody)
+	resp, err := middleware.ResponseWire(respHeader, respBody)
+	if err != nil {
+		resp = middleware.ResponseErr(req, mongoerrors.Make(ctx, err, "", h.opts.L))
+	}
+
+	return resp
 }
 
 // check interfaces

@@ -250,7 +250,11 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 		}
 
 		// TODO https://github.com/FerretDB/FerretDB/issues/1997
-		req := middleware.RequestWire(reqHeader, reqBody)
+		req, err := middleware.RequestWire(reqHeader, reqBody)
+		if err != nil {
+			return err
+		}
+
 		resp := c.proxy.Handle(ctx, req)
 		proxyHeader = resp.WireHeader()
 		proxyBody = resp.WireBody()
@@ -381,7 +385,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
 		if err == nil {
-			req := middleware.RequestWire(reqHeader, msg)
+			req, _ := middleware.RequestWire(reqHeader, msg)
 			resp := c.h.Handle(connCtx, req)
 			resBody = resp.WireBody()
 		}
@@ -399,7 +403,7 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
 		if err == nil {
-			req := middleware.RequestWire(reqHeader, query)
+			req, _ := middleware.RequestWire(reqHeader, query)
 			resp := c.h.Handle(connCtx, req)
 			resBody = resp.WireBody()
 		}

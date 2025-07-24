@@ -190,7 +190,21 @@ func (resp *Response) Document() *wirebson.Document {
 	return resp.doc
 }
 
-// TODO https://github.com/FerretDB/FerretDB/issues/4965
+// FIXME https://github.com/FerretDB/FerretDB/issues/4965
 func (resp *Response) DocumentDeep() (*wirebson.Document, error) {
 	return resp.DocumentRaw().DecodeDeep()
+}
+
+// FIXME
+func (resp *Response) OK() bool {
+	switch v := resp.doc.Get("ok").(type) {
+	case float64:
+		return v == 1.0
+	case int32:
+		return v == 1
+	case int64:
+		return v == 1
+	default:
+		return false
+	}
 }

@@ -91,16 +91,14 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			"$db", "admin",
 		))
 
-		res, err := s.handler.Handle(ctx, msg)
-		if err != nil {
-			http.Error(w, lazyerrors.Error(err).Error(), http.StatusUnauthorized)
+		resp := s.handler.Handle(ctx, msg)
+		if !resp.OK() {
+			s.writeJSONError(ctx, w, resp)
 			return
 		}
 
-		resDoc := must.NotFail(must.NotFail(res.OpMsg.DocumentRaw()).Decode())
-		convID := resDoc.Get("conversationId").(int32)
-
-		payloadBytes := resDoc.Get("payload").(wirebson.Binary).B
+		convID := resp.Document().Get("conversationId").(int32)
+		payloadBytes := resp.Document().Get("payload").(wirebson.Binary).B
 
 		payload, err = conv.Step(string(payloadBytes))
 		if err != nil {
@@ -115,19 +113,18 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			"$db", "admin",
 		))
 
-		res, err = s.handler.Handle(ctx, msg)
-		if err != nil {
-			http.Error(w, lazyerrors.Error(err).Error(), http.StatusUnauthorized)
+		resp = s.handler.Handle(ctx, msg)
+		if !resp.OK() {
+			s.writeJSONError(ctx, w, resp)
 			return
 		}
 
-		resDoc = must.NotFail(must.NotFail(res.OpMsg.DocumentRaw()).Decode())
-		if !resDoc.Get("done").(bool) {
+		if !resp.Document().Get("done").(bool) {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
 
-		payloadBytes = resDoc.Get("payload").(wirebson.Binary).B
+		payloadBytes = resp.Document().Get("payload").(wirebson.Binary).B
 
 		if _, err = conv.Step(string(payloadBytes)); err != nil {
 			http.Error(w, lazyerrors.Error(err).Error(), http.StatusUnauthorized)
@@ -158,8 +155,6 @@ func (s *Server) ConnInfoMiddleware(next http.Handler) http.Handler {
 // writeJSONResponse marshals provided res document into extended JSON and
 // writes it to provided [http.ResponseWriter].
 func (s *Server) writeJSONResponse(ctx context.Context, w http.ResponseWriter, res wirebson.AnyDocument) {
-	l := s.l
-
 	resRaw, err := res.Encode()
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
@@ -170,20 +165,33 @@ func (s *Server) writeJSONResponse(ctx context.Context, w http.ResponseWriter, r
 
 	var resWriter io.Writer = w
 
-	if l.Enabled(ctx, slog.LevelDebug) {
+	if s.l.Enabled(ctx, slog.LevelDebug) {
 		buf := new(bytes.Buffer)
 
 		resWriter = io.MultiWriter(w, buf)
 
 		defer func() {
 			// extended JSON value writer always finish with '\n' character
-			l.DebugContext(ctx, fmt.Sprintf("Results:\n%s", strings.TrimSpace(buf.String())))
+			s.l.DebugContext(ctx, fmt.Sprintf("Results:\n%s", strings.TrimSpace(buf.String())))
 		}()
 	}
 
 	if err = marshalJSON(resRaw, resWriter); err != nil {
-		l.ErrorContext(ctx, "marshalJSON failed", logging.Error(err))
+		s.l.ErrorContext(ctx, "marshalJSON failed", logging.Error(err))
 	}
+}
+
+// TODO https://github.com/FerretDB/FerretDB/issues/4965
+func (s *Server) writeJSONError(ctx context.Context, w http.ResponseWriter, resp *middleware.Response) {
+	doc := resp.Document()
+	errmsg := doc.Get("errmsg").(string)
+	codeName := doc.Get("codeName").(string)
+
+	w.WriteHeader(http.StatusInternalServerError)
+	s.writeJSONResponse(ctx, w, wirebson.MustDocument(
+		"error", errmsg,
+		"error_code", codeName,
+	))
 }
 
 // prepareDocument creates a new bson document from the given pairs of
@@ -257,7 +265,7 @@ func prepareRequest(pairs ...any) (*middleware.Request, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.RequestDoc(doc), nil
+	return middleware.RequestDoc(doc)
 }
 
 // decodeJSONRequest takes request with JSON body and decodes it into

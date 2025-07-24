@@ -38,6 +38,7 @@ var (
 
 // writeError encodes [api.Error] into JSON and writes it to w
 // with provided HTTP status code.
+// FIXME
 func writeError(w http.ResponseWriter, err api.Error, code int) {
 	w.WriteHeader(code)
 	w.Header().Set("Content-Type", "application/json")
