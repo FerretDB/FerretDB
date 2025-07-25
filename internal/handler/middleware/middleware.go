@@ -25,7 +25,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// Handler is a common interface for handlers.
+// Handler is a common interface for handlers and middleware.
 type Handler interface {
 	// Handle processes a single request.
 	//
@@ -36,7 +36,7 @@ type Handler interface {
 	// Error is returned when the handler cannot process the request;
 	// for example, when connection with PostgreSQL or proxy is lost.
 	// Returning an error generally means that the listener should close the client connection.
-	// Error should not be [*mongoerrors.Error].
+	// Error should not be [*mongoerrors.Error] or have that type in its chain.
 	Handle(ctx context.Context, req *Request) (resp *Response, err error)
 }
 
@@ -53,7 +53,7 @@ type Middleware struct {
 //nolint:vet // for readability
 type NewOpts struct {
 	Mode  Mode
-	Main  Handler
+	DocDB Handler
 	Proxy Handler
 	L     *slog.Logger
 }
@@ -67,19 +67,19 @@ func New(opts *NewOpts) (*Middleware, error) {
 }
 
 func (m *Middleware) Handle(ctx context.Context, req *Request) (*Response, error) {
-	main, proxy := m.handle(ctx, req)
+	docdb, proxy, docdbErr, proxyErr := m.handle(ctx, req)
 
 	switch m.Mode {
 	case NormalMode, DiffNormalMode:
-		return main.resp, main.err
+		return docdb, docdbErr
 	case ProxyMode, DiffProxyMode:
-		return proxy.resp, proxy.err
+		return proxy, proxyErr
 	default:
 		panic("not reached")
 	}
 }
 
-func (m *Middleware) handle(ctx context.Context, req *Request) (main, proxy *handleResult) {
+func (m *Middleware) handle(ctx context.Context, req *Request) (docdb, proxy *Response, docdbErr, proxyErr error) {
 	// FIXME opcode
 	opcode := req.WireHeader().OpCode.String()
 	command := req.Document().Command()
@@ -92,10 +92,14 @@ func (m *Middleware) handle(ctx context.Context, req *Request) (main, proxy *han
 
 	var wg sync.WaitGroup
 
-	if m.Main != nil {
+	if m.DocDB != nil {
 		wg.Add(1)
 		go func() {
-			main = handle(ctx, req, m.Main, logging.WithName(m.L, "main"), m.m)
+			docdb, docdbErr = (&dispatcher{
+				h:         m.DocDB,
+				l:         logging.WithName(m.L, "documentdb"),
+				responses: m.m.Responses, // FIXME
+			}).Handle(ctx, req)
 			wg.Done()
 		}()
 	}
@@ -103,7 +107,12 @@ func (m *Middleware) handle(ctx context.Context, req *Request) (main, proxy *han
 	if m.Proxy != nil {
 		wg.Add(1)
 		go func() {
-			proxy = handle(ctx, req, m.Proxy, logging.WithName(m.L, "proxy"), m.m)
+			proxy, proxyErr = (&dispatcher{
+				h:         m.Proxy,
+				l:         logging.WithName(m.L, "proxy"),
+				responses: m.m.Responses, // FIXME
+			}).Handle(ctx, req)
+
 			wg.Done()
 		}()
 	}

@@ -187,7 +187,7 @@ func (resp *Response) DocumentDeep() (*wirebson.Document, error) {
 func (resp *Response) OK() bool {
 	switch v := resp.doc.Get("ok").(type) {
 	case float64:
-		return v == float64(1.0)
+		return v == float64(1)
 	case int32:
 		return v == int32(1)
 	case int64:
