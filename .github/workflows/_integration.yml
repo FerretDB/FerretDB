@@ -73,6 +73,14 @@ jobs:
       - name: Run init
         run: bin/task init
 
+      - name: Setup Ollama and MCPHost
+        run: |
+          mkdir -p /tmp/logs
+          curl -fsSL https://ollama.com/install.sh | sh
+          sudo systemctl stop ollama
+          bin/task ollama  > /tmp/logs/ollama.log  2>&1 &
+          bin/task mcphost > /tmp/logs/mcphost.log 2>&1 &
+
       - name: Wait for and setup environment
         run: bin/task env-setup
 
@@ -91,7 +99,6 @@ jobs:
       - name: Collect logs
         if: failure()
         run: |
-          mkdir -p /tmp/logs
           bin/task env-logs-collect > /tmp/logs/compose-logs.txt
           cp -v integration/*.json.tmp integration/*.txt.tmp /tmp/logs/
 

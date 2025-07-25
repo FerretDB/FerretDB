@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"log/slog"
 	"net"
 	"os"
 
@@ -27,6 +28,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // Handler handles requests by sending them to another wire protocol compatible service.
@@ -36,22 +38,36 @@ type Handler struct {
 	bufw *bufio.Writer
 }
 
+// NewOpts represents handler configuration.
+//
+//nolint:vet // for readability
+type NewOpts struct {
+	Addr     string
+	CertFile string
+	KeyFile  string
+	CAFile   string
+
+	L *slog.Logger
+}
+
 // New creates a new Handler for a service with given address.
-func New(addr, certFile, keyFile, caFile string) (*Handler, error) {
+func New(opts *NewOpts) (*Handler, error) {
+	must.NotBeZero(opts)
+
 	var conn net.Conn
 	var err error
 
-	if certFile != "" || keyFile != "" || caFile != "" {
+	if opts.CertFile != "" || opts.KeyFile != "" || opts.CAFile != "" {
 		var config *tls.Config
 
-		if config, err = tlsConfig(certFile, keyFile, caFile); err != nil {
+		if config, err = tlsConfig(opts.CertFile, opts.KeyFile, opts.CAFile); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
 		// TODO https://github.com/FerretDB/FerretDB/issues/5049
-		conn, err = dialTLS(context.TODO(), addr, config)
+		conn, err = dialTLS(context.TODO(), opts.Addr, config)
 	} else {
-		conn, err = net.Dial("tcp", addr)
+		conn, err = net.Dial("tcp", opts.Addr)
 	}
 
 	if err != nil {
@@ -65,7 +81,7 @@ func New(addr, certFile, keyFile, caFile string) (*Handler, error) {
 	}, nil
 }
 
-// tlsConfig provides TLS configuration for the given certificate and key files.
+// tlsConfig provides client TLS configuration for the given certificate and key files.
 func tlsConfig(certFile, keyFile, caFile string) (*tls.Config, error) {
 	var config tls.Config
 
@@ -134,12 +150,17 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middlew
 		return nil, lazyerrors.Error(err)
 	}
 
-	respHeader, respBody, err := wire.ReadMessage(h.bufr)
+	header, body, err := wire.ReadMessage(h.bufr)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.ResponseWire(respHeader, respBody), nil
+	resp, err := middleware.ResponseWire(header, body)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return resp, nil
 }
 
 // check interfaces
