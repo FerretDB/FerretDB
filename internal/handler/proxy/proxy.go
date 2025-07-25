@@ -25,6 +25,7 @@ import (
 	"os"
 
 	"github.com/FerretDB/wire"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
@@ -161,6 +162,16 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middlew
 	}
 
 	return resp, nil
+}
+
+// Describe implements [prometheus.Collector].
+func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
+	// FIXME
+}
+
+// Collect implements [prometheus.Collector].
+func (h *Handler) Collect(ch chan<- prometheus.Metric) {
+	// FIXME
 }
 
 // check interfaces

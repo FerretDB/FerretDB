@@ -38,6 +38,8 @@ type Handler interface {
 	// Returning an error generally means that the listener should close the client connection.
 	// Error should not be [*mongoerrors.Error] or have that type in its chain.
 	Handle(ctx context.Context, req *Request) (resp *Response, err error)
+
+	prometheus.Collector
 }
 
 // lastRequestID stores last generated request ID.

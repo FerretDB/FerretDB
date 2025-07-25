@@ -31,7 +31,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
@@ -54,7 +53,7 @@ type Listener struct {
 
 // ListenerOpts represents listener configuration.
 type ListenerOpts struct {
-	Handler *handler.Handler
+	Handler middleware.Handler
 	Metrics *connmetrics.ListenerMetrics
 	Logger  *slog.Logger
 

@@ -87,6 +87,7 @@ func (d *dispatcher) Handle(ctx context.Context, req *Request) (resp *Response, 
 }
 
 // check interfaces
-var (
-	_ Handler = (*dispatcher)(nil)
-)
+// FIXME
+// var (
+// 	_ Handler = (*dispatcher)(nil)
+// )
