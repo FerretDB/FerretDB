@@ -15,7 +15,6 @@
 package main
 
 import (
-	"cmp"
 	"context"
 	"encoding/json"
 	"expvar"
@@ -249,7 +248,22 @@ func setupDefaultLogger(format string, uuid string) *slog.Logger {
 }
 
 // checkFlags checks that CLI flags are not self-contradictory and produces warnings if needed.
+// It also replaces "-" with "" for some flags to make it easier to configure FerretDB with environment variables.
 func checkFlags(logger *slog.Logger) {
+	// keep in sync with documentation
+	for _, p := range []*string{
+		&cli.Listen.Addr,
+		&cli.Listen.Unix,
+		&cli.Listen.TLS,
+		&cli.Listen.DataAPIAddr,
+		&cli.DebugAddr,
+		&cli.OTel.Traces.URL,
+	} {
+		if *p == "-" {
+			*p = ""
+		}
+	}
+
 	ctx := context.Background()
 
 	if devbuild.Enabled {
@@ -381,7 +395,7 @@ func run() {
 
 	var wg sync.WaitGroup
 
-	if cmp.Or(cli.DebugAddr, "-") != "-" {
+	if cli.DebugAddr != "" {
 		wg.Add(1)
 
 		go func() {
@@ -414,7 +428,7 @@ func run() {
 		}()
 	}
 
-	if cmp.Or(cli.OTel.Traces.URL, "-") != "-" {
+	if cli.OTel.Traces.URL != "" {
 		wg.Add(1)
 
 		go func() {
@@ -471,26 +485,11 @@ func run() {
 		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct pool", logging.Error(err))
 	}
 
-	tcpAddr := cli.Listen.Addr
-	if cmp.Or(tcpAddr, "-") == "-" {
-		tcpAddr = ""
-	}
-
-	unixAddr := cli.Listen.Unix
-	if cmp.Or(unixAddr, "-") == "-" {
-		unixAddr = ""
-	}
-
-	tlsAddr := cli.Listen.TLS
-	if cmp.Or(tlsAddr, "-") == "-" {
-		tlsAddr = ""
-	}
-
 	handlerOpts := &handler.NewOpts{
 		Pool: p,
 		Auth: cli.Auth,
 
-		TCPHost:     tcpAddr,
+		TCPHost:     cli.Listen.Addr,
 		ReplSetName: cli.Dev.ReplSetName,
 
 		L:             logging.WithName(logger, "handler"),
@@ -504,15 +503,26 @@ func run() {
 		handlerOpts.L.LogAttrs(ctx, logging.LevelFatal, "Failed to construct handler", logging.Error(err))
 	}
 
+	m, err := middleware.New(&middleware.NewOpts{
+		Mode:  middleware.Mode(cli.Mode),
+		DocDB: h,
+		Proxy: nil, // FIXME
+		L:     logging.WithName(logger, "middleware"),
+	})
+	if err != nil {
+		p.Close()
+		handlerOpts.L.LogAttrs(ctx, logging.LevelFatal, "Failed to construct middleware", logging.Error(err))
+	}
+
 	lis, err := clientconn.Listen(&clientconn.ListenerOpts{
-		Handler: h,
+		Handler: m,
 		Metrics: lm,
 		Logger:  logger,
 
-		TCP:  tcpAddr,
-		Unix: unixAddr,
+		TCP:  cli.Listen.Addr,
+		Unix: cli.Listen.Unix,
 
-		TLS:         tlsAddr,
+		TLS:         cli.Listen.TLS,
 		TLSCertFile: cli.Listen.TLSCertFile,
 		TLSKeyFile:  cli.Listen.TLSKeyFile,
 		TLSCAFile:   cli.Listen.TLSCaFile,
@@ -530,7 +540,7 @@ func run() {
 		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct listener", logging.Error(err))
 	}
 
-	if cmp.Or(cli.Listen.DataAPIAddr, "-") != "-" {
+	if cli.Listen.DataAPIAddr != "" {
 		wg.Add(1)
 
 		go func() {
@@ -540,8 +550,9 @@ func run() {
 
 			lis, e := dataapi.Listen(&dataapi.ListenOpts{
 				TCPAddr: cli.Listen.DataAPIAddr,
-				L:       l,
 				Handler: h,
+				Auth:    cli.Auth,
+				L:       l,
 			})
 			if e != nil {
 				p.Close()
