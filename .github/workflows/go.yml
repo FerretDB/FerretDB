@@ -172,6 +172,13 @@ jobs:
           flag-name: unit
           parallel: true
 
+      - name: Upload test results to Codecov
+        if: always()
+        uses: codecov/test-results-action@v1
+        with:
+          flags: unit
+          file: ./unit.xml
+
       # we don't want them on CI
       - name: Clean test and fuzz caches
         if: always()
