@@ -183,7 +183,7 @@ func (resp *Response) DocumentDeep() (*wirebson.Document, error) {
 	return resp.DocumentRaw().DecodeDeep()
 }
 
-// OK returns true if response documents contains "ok" field with numeric value 1.
+// OK returns true if response document contains "ok" field with numeric value 1.
 func (resp *Response) OK() bool {
 	switch v := resp.doc.Get("ok").(type) {
 	case float64:
