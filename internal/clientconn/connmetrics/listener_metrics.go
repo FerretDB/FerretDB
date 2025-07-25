@@ -28,8 +28,9 @@ const (
 
 // ListenerMetrics represents listener metrics.
 type ListenerMetrics struct {
-	Accepts   *prometheus.CounterVec
-	Durations *prometheus.HistogramVec
+	Accepts     *prometheus.CounterVec
+	Durations   *prometheus.HistogramVec
+	ConnMetrics *ConnMetrics
 }
 
 // NewListenerMetrics creates new listener metrics.
@@ -63,6 +64,8 @@ func NewListenerMetrics() *ListenerMetrics {
 			},
 			[]string{"error"},
 		),
+
+		ConnMetrics: newConnMetrics(),
 	}
 
 	lm.Accepts.WithLabelValues("0")
@@ -75,12 +78,14 @@ func NewListenerMetrics() *ListenerMetrics {
 func (lm *ListenerMetrics) Describe(ch chan<- *prometheus.Desc) {
 	lm.Accepts.Describe(ch)
 	lm.Durations.Describe(ch)
+	lm.ConnMetrics.Describe(ch)
 }
 
 // Collect implements [prometheus.Collector].
 func (lm *ListenerMetrics) Collect(ch chan<- prometheus.Metric) {
 	lm.Accepts.Collect(ch)
 	lm.Durations.Collect(ch)
+	lm.ConnMetrics.Collect(ch)
 }
 
 // check interfaces
