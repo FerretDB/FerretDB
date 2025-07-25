@@ -67,7 +67,7 @@ func (h *Handler) msgCollStats(connCtx context.Context, req *middleware.Request)
 				scaleV,
 			)
 
-			return nil, mongoerrors.NewWithArgument(mongoerrors.ErrTypeMismatch, msg, command)
+			return nil, mongoerrors.NewWithArgument(mongoerrors.ErrTypeMismatch, msg, "scale")
 		}
 	}
 

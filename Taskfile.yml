@@ -17,6 +17,8 @@ vars:
   BUILD_TAGS: ferretdb_dev
   MODE: diff-normal
   SERVICES: jaeger mongodb mongodb-secure postgres yugabytedb
+  LLM: qwen3:0.6b
+  LLM_CONTEXT: 40960 # https://ollama.com/library/qwen3:0.6b
 
 tasks:
   # invoked when `task` is run without arguments
@@ -367,8 +369,14 @@ tasks:
     cmds:
       - ollama serve
     env:
-      # for https://ollama.com/library/phi4-mini
-      OLLAMA_CONTEXT_LENGTH: 131072
+      OLLAMA_CONTEXT_LENGTH: "{{.LLM_CONTEXT}}"
+      OLLAMA_DEBUG: 2
+
+  mcphost:
+    desc: "Run MCPHost for local Ollama server"
+    cmds:
+      # TODO https://github.com/FerretDB/FerretDB/issues/5277
+      # - bin/mcphost --config build/mcphost.json --model ollama:{{.LLM}}
 
   psql:
     desc: "Run psql"

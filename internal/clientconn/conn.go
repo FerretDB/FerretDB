@@ -95,7 +95,14 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	if opts.mode != middleware.NormalMode {
 		var err error
 
-		p, err = proxy.New(opts.proxyAddr, opts.proxyTLSCertFile, opts.proxyTLSKeyFile, opts.proxyTLSCAFile)
+		proxyOpts := &proxy.NewOpts{
+			Addr:     opts.proxyAddr,
+			CertFile: opts.proxyTLSCertFile,
+			KeyFile:  opts.proxyTLSKeyFile,
+			CAFile:   opts.proxyTLSCAFile,
+			L:        logging.WithName(opts.l, "proxy"),
+		}
+		p, err = proxy.New(proxyOpts)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -243,9 +250,17 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 		}
 
 		// TODO https://github.com/FerretDB/FerretDB/issues/1997
+		var req *middleware.Request
+
+		if req, err = middleware.RequestWire(reqHeader, reqBody); err != nil {
+			return lazyerrors.Error(err)
+		}
+
 		var resp *middleware.Response
-		resp, err = c.proxy.Handle(ctx, middleware.RequestWire(reqHeader, reqBody))
-		must.NoError(err)
+
+		if resp, err = c.proxy.Handle(ctx, req); err != nil {
+			return lazyerrors.Error(err)
+		}
 
 		proxyHeader = resp.WireHeader()
 		proxyBody = resp.WireBody()
@@ -376,9 +391,11 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
 		if err == nil {
-			var res *middleware.Response
-			if res, err = c.h.Handle(connCtx, middleware.RequestWire(reqHeader, msg)); res != nil {
-				resBody = res.OpMsg
+			req, _ := middleware.RequestWire(reqHeader, msg)
+
+			var resp *middleware.Response
+			if resp, err = c.h.Handle(connCtx, req); err == nil {
+				resBody = resp.WireBody()
 			}
 		}
 
@@ -395,9 +412,11 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
 		if err == nil {
-			var res *middleware.Response
-			if res, err = c.h.Handle(connCtx, middleware.RequestWire(reqHeader, query)); res != nil {
-				resBody = res.WireBody()
+			req, _ := middleware.RequestWire(reqHeader, query)
+
+			var resp *middleware.Response
+			if resp, err = c.h.Handle(connCtx, req); err == nil {
+				resBody = resp.WireBody()
 			}
 		}
 
