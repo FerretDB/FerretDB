@@ -118,6 +118,7 @@ tasks:
     cmds:
       - docker compose ps --all
       - docker compose logs
+      - docker compose exec yugabytedb sh -c "bin/yugabyted collect_logs --stdout | gunzip | tar -xOf -"
 
   env-up:
     desc: "Start development environment"
