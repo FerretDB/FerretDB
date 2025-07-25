@@ -382,6 +382,11 @@ tasks:
     cmds:
       - docker compose exec postgres psql -p 5432 -U username -d postgres
 
+  ysqlsh:
+    desc: "Run YugabyteDB SQL shell"
+    cmds:
+      - docker compose exec yugabytedb ./bin/ysqlsh postgres://username:password@host.docker.internal:5433/yugabyte
+
   mongosh:
     desc: "Run MongoDB shell (`mongosh`)"
     cmds:
