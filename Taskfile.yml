@@ -118,6 +118,7 @@ tasks:
     cmds:
       - docker compose ps --all
       - docker compose logs
+      - docker compose exec yugabytedb sh -c "bin/yugabyted collect_logs --stdout | gunzip | tar -xOf -"
 
   env-up:
     desc: "Start development environment"
@@ -381,6 +382,11 @@ tasks:
     desc: "Run psql"
     cmds:
       - docker compose exec postgres psql -p 5432 -U username -d postgres
+
+  ysqlsh:
+    desc: "Run YugabyteDB SQL shell"
+    cmds:
+      - docker compose exec yugabytedb ./bin/ysqlsh postgres://username:password@host.docker.internal:5433/yugabyte
 
   mongosh:
     desc: "Run MongoDB shell (`mongosh`)"
