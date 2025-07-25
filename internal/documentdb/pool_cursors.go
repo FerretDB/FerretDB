@@ -35,10 +35,9 @@ func (p *Pool) GetMore(ctx context.Context, db string, spec wirebson.RawDocument
 
 	continuation, conn := p.r.GetCursor(cursorID)
 	if continuation == nil {
-		return nil, mongoerrors.NewWithArgument(
+		return nil, mongoerrors.New(
 			mongoerrors.ErrCursorNotFound,
 			fmt.Sprintf("cursor id %d not found", cursorID),
-			"getMore",
 		)
 	}
 
