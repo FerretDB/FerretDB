@@ -135,9 +135,9 @@ jobs:
       - name: Convert test results to JUnit XML format
         if: always()
         run: >
-          bin/task convert-test-results
-          IN_FILE=./integration/*.json.tmp
-          OUT_FILE=./integration/${{ inputs.task }}.xml
+          ./bin/go-junit-report -parser=gojson -iocopy
+          -in ./integration/*.json.tmp
+          -out ./integration/${{ inputs.task }}.xml
 
       - name: Upload test results to Codecov
         if: always()
