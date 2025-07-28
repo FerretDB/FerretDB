@@ -261,23 +261,6 @@ tasks:
         -target-backend=mongodb
         -no-xfail={{.NO_XFAIL}}
 
-  convert-test-results:
-    desc: "Convert test results to JUnit XML format"
-    cmds:
-      - >
-        ./bin/go-junit-report -parser=gojson -iocopy
-        -in {{.IN_FILE}}
-        -out {{.OUT_FILE}}
-    requires:
-      vars: [IN_FILE, OUT_FILE]
-
-  bench-unit:
-    desc: "Run unit benchmarks"
-    cmds:
-      - go test -list='Benchmark.*' ./...
-      - go test -count=10 -bench=BenchmarkDocument -benchtime={{.BENCH_TIME}} ./internal/bson/ | tee -a new.txt
-      - bin/benchstat{{exeExt}} old.txt new.txt
-
   run:
     desc: "Run FerretDB without auth"
     deps: [build-host]
