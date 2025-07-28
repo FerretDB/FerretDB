@@ -27,6 +27,11 @@ import (
 
 // Handler is a common interface for handlers and middleware.
 type Handler interface {
+	// Run runs the handler until ctx is canceled.
+	//
+	// When this method returns, the handler is fully stopped.
+	Run(ctx context.Context)
+
 	// Handle processes a single request.
 	//
 	// The passed context is canceled when the client disconnects.
@@ -47,7 +52,8 @@ var lastRequestID atomic.Int32
 
 type Middleware struct {
 	*NewOpts
-	m *metrics
+	m  *metrics
+	wg *sync.WaitGroup
 }
 
 // NewOpts represents middleware configuration.
@@ -68,7 +74,16 @@ func New(opts *NewOpts) (*Middleware, error) {
 	}, nil
 }
 
+// Run implements [middleware.Handler].
+func (m *Middleware) Run(ctx context.Context) {
+	<-ctx.Done()
+	m.wg.Wait()
+}
+
 func (m *Middleware) Handle(ctx context.Context, req *Request) (*Response, error) {
+	m.wg.Add(1)
+	defer m.wg.Done()
+
 	docdb, proxy, docdbErr, proxyErr := m.handle(ctx, req)
 
 	switch m.Mode {

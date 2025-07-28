@@ -130,9 +130,7 @@ func dialTLS(ctx context.Context, addr string, config *tls.Config) (net.Conn, er
 	return conn, nil
 }
 
-// Run runs the handler until ctx is canceled.
-//
-// When this method returns, handler is stopped.
+// Run implements [middleware.Handler].
 func (h *Handler) Run(ctx context.Context) {
 	<-ctx.Done()
 	_ = h.conn.Close()
