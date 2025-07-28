@@ -64,7 +64,6 @@ Create a `docker-compose.yml` file with the following content to define the serv
        environment:
          - POSTGRES_USER=<username>
          - POSTGRES_PASSWORD=<password>
-         - POSTGRES_DB=postgres
          - FERRETDB_AUTH=false
        volumes:
          - ./ferretdb_data:/var/lib/postgresql/data
