@@ -1,27 +1,27 @@
 ---
 slug: building-project-management-stack-wekan-ferretdb
-title: 'Build Your Project Management Stack with Wekan and FerretDB'
+title: 'Build Your Project Management Stack with WeKan and FerretDB'
 authors: [alex]
 description: >
-  Learn how to use Wekan, the open-source Trello-like Kanban board, with FerretDB, leveraging a reliable PostgreSQL-backed database for your project data.
+  Learn how to use WeKan, the open-source Trello-like Kanban board, with FerretDB, leveraging a reliable PostgreSQL-backed database for your project data.
 image: /img/blog/ferretdb-wekan.jpg
 tags: [compatible applications, open source, community]
 ---
 
-![Build Your Project Management Stack with Wekan and FerretDB](/img/blog/ferretdb-wekan.jpg)
+![Build Your Project Management Stack with WeKan and FerretDB](/img/blog/ferretdb-wekan.jpg)
 
 Effective project management and task organization are crucial for teams of all sizes.
-[Wekan](https://wekan.fi/), an open-source Trello-like Kanban board, provides a flexible and collaborative platform for visualizing workflows and tracking progress.
+[WeKan](https://wekan.fi/), an open-source Trello-like Kanban board, provides a flexible and collaborative platform for visualizing workflows and tracking progress.
 
 <!--truncate-->
 
 At [FerretDB](https://www.ferretdb.com/), we're dedicated to providing a truly open-source alternative to MongoDB, leveraging the reliability and power of PostgreSQL as its backend.
 
-In this blog post, we're excited to explore how Wekan, the open-source Kanban board, seamlessly integrates with FerretDB, offering a robust, open-source, and self-hostable solution for your project management needs.
+In this blog post, we're excited to explore how WeKan, the open-source Kanban board, seamlessly integrates with FerretDB, offering a robust, open-source, and self-hostable solution for your project management needs.
 
-## What is Wekan?
+## What is WeKan?
 
-Wekan is a free and open-source Kanban board application.
+WeKan is a free and open-source Kanban board application.
 It's a popular choice for teams looking for a self-hostable alternative to proprietary project management tools.
 Key features include:
 
@@ -32,27 +32,27 @@ Key features include:
 - **User management:** Manage users, teams, and permissions within the application.
 - **Open source & self-hostable:** Full control over your data and deployment.
 
-Wekan empowers teams to improve their organization, communication, and productivity by providing a clear visual overview of their projects.
+WeKan empowers teams to improve their organization, communication, and productivity by providing a clear visual overview of their projects.
 
-## Why use Wekan with FerretDB?
+## Why use WeKan with FerretDB?
 
-Wekan uses MongoDB as its primary database backend for storing board data, cards, users, and settings.
-Since FerretDB is designed to be an open-source alternative to MongoDB, it can serve as a drop-in replacement for Wekan's database.
+WeKan uses MongoDB as its primary database backend for storing board data, cards, users, and settings.
+Since FerretDB is designed to be an open-source alternative to MongoDB, it can serve as a drop-in replacement for WeKan's database.
 This combination offers several advantages:
 
-- **Full open-source stack:** Create a complete, transparent, and controllable project management stack, from your Kanban board (Wekan) to your database (FerretDB + PostgreSQL), eliminating proprietary lock-in.
-- **Simplified infrastructure:** If your existing data infrastructure is already based on PostgreSQL, integrating Wekan with FerretDB can streamline your database management and reduce operational overhead.
-- **Community-driven:** Both Wekan and FerretDB are vibrant open-source projects with active communities, providing robust support and continuous development.
+- **Full open-source stack:** Create a complete, transparent, and controllable project management stack, from your Kanban board (WeKan) to your database (FerretDB + PostgreSQL), eliminating proprietary lock-in.
+- **Simplified infrastructure:** If your existing data infrastructure is already based on PostgreSQL, integrating WeKan with FerretDB can streamline your database management and reduce operational overhead.
+- **Community-driven:** Both WeKan and FerretDB are vibrant open-source projects with active communities, providing robust support and continuous development.
 
-## Connecting Wekan to FerretDB
+## Connecting WeKan to FerretDB
 
-Connecting a self-hosted Wekan instance to your FerretDB instance is straightforward, as Wekan expects a MongoDB-compatible database.
+Connecting a self-hosted WeKan instance to your FerretDB instance is straightforward, as WeKan expects a MongoDB-compatible database.
 
-Here's a step-by-step guide to get you started with a self-hosted Wekan instance using Docker Compose:
+Here's a step-by-step guide to get you started with a self-hosted WeKan instance using Docker Compose:
 
 ### Set up a Docker Compose file
 
-Create a `docker-compose.yml` file with the following content to define the services for Wekan and FerretDB:
+Create a `docker-compose.yml` file with the following content to define the services for WeKan and FerretDB:
 
 ```yaml
 services:
@@ -86,19 +86,19 @@ networks:
     name: ferretdb-network
 ```
 
-This setup defines two services: `ferretdb` for the FerretDB instance and `wekan` for the Wekan application.
+This setup defines two services: `ferretdb` for the FerretDB instance and `wekan` for the WeKan application.
 The `ferretdb` service uses the [FerretDB evaluation image](https://docs.ferretdb.io/installation/evaluation/), which is designed for quick testing and experiments.
 
 Replace `<username>` and `<password>` with your desired PostgreSQL credentials.
-`WRITABLE_PATH` is set to `/data`, which is where Wekan will store its files and attachments.
+`WRITABLE_PATH` is set to `/data`, which is where WeKan will store its files and attachments.
 
 :::note
-Wekan primarily attempts authentication using the `SCRAM-SHA-1` mechanism.
+WeKan primarily attempts authentication using the `SCRAM-SHA-1` mechanism.
 FerretDB, however, currently only supports `SCRAM-SHA-256`.
-Because of this, you must disable authentication on your FerretDB instance for Wekan to connect successfully.
+Because of this, you must disable authentication on your FerretDB instance for WeKan to connect successfully.
 :::
 
-### Launch services and access FerretDB and Wekan
+### Launch services and access FerretDB and WeKan
 
 Run the following command in the directory where your `docker-compose.yml` file is located:
 
@@ -106,31 +106,31 @@ Run the following command in the directory where your `docker-compose.yml` file 
 docker compose up -d
 ```
 
-Once the services are up and running, you can access Wekan by navigating to `http://localhost:80` in your web browser.
+Once the services are up and running, you can access WeKan by navigating to `http://localhost:80` in your web browser.
 You can now sign up, create boards, and start managing your projects.
 All data will be stored in FerretDB.
 
-## Exploring Wekan project data in FerretDB
+## Exploring WeKan project data in FerretDB
 
-The Wekan interface allows you to create and manage tasks visually, while FerretDB handles the underlying data storage.
-In the image below, you can see a Wekan board with several lists and a card set up.
+The WeKan interface allows you to create and manage tasks visually, while FerretDB handles the underlying data storage.
+In the image below, you can see a WeKan board with several lists and cards set up for managing tasks.
 
-![Wekan Board](/img/blog/wekan-board.png)
+![WeKan Board](/img/blog/wekan-board.png)
 
-Let's inspect how Wekan stores its data within FerretDB.
+Let's inspect how WeKan stores its data within FerretDB.
 Connect to your FerretDB instance using `mongosh` or a GUI tool (like MongoDB Compass or DBeaver).
 
 ```sh
 mongosh mongodb://localhost:27017/wekan
 ```
 
-Wekan creates numerous collections to manage all aspects of a Kanban board.
-Now, let's query the cards collection by running `db.cards.find()` to see how Wekan stores its cards:
+WeKan creates numerous collections to manage all aspects of a Kanban board.
+Now, let's query the cards collection by running `db.cards.find()` to see how WeKan stores its cards:
 
 ```js
 {
   _id: 'EHZTgExJbq4CBE544',
-  title: 'New content on FerretDB and Wekan',
+  title: 'New content on FerretDB and WeKan',
   members: [],
   labelIds: [],
   customFields: [],
@@ -184,11 +184,12 @@ Now, let's query the cards collection by running `db.cards.find()` to see how We
 }
 ```
 
-This output demonstrates that Wekan successfully writes and reads its document-based data into FerretDB, which in turn stores it efficiently in PostgreSQL, providing a reliable backend for your collaborative project boards.
+This output demonstrates that WeKan successfully writes and reads its document-based data into FerretDB, which in turn stores it efficiently in PostgreSQL, providing a reliable backend for your collaborative project boards.
+You can also add other metadata to your cards, such as attachments, comments, checklists, and subtasks.
 
 ## Conclusion
 
-The integration of Wekan and FerretDB provides a robust, scalable, and fully open-source solution for self-hosting your project management and Kanban boards.
+The integration of WeKan and FerretDB provides a robust, scalable, and fully open-source solution for self-hosting your project management and Kanban boards.
 By leveraging FerretDB, you can seamlessly build a complete project management stack that is fully open-source, eliminating vendor lock-in and proprietary licensing concerns.
 
 - [Ready to get started? Try FerretDB today](https://github.com/FerretDB/FerretDB)
