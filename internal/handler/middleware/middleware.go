@@ -18,11 +18,14 @@ package middleware
 import (
 	"context"
 	"log/slog"
+	"strings"
 	"sync"
 	"sync/atomic"
 
-	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/pmezard/go-difflib/difflib"
 	"github.com/prometheus/client_golang/prometheus"
+
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
 // Handler is a common interface for handlers and middleware.
@@ -42,6 +45,8 @@ type Handler interface {
 	// for example, when connection with PostgreSQL or proxy is lost.
 	// Returning an error generally means that the listener should close the client connection.
 	// Error should not be [*mongoerrors.Error] or have that type in its chain.
+	//
+	// Exactly one of Response or error should be non-nil.
 	Handle(ctx context.Context, req *Request) (resp *Response, err error)
 
 	prometheus.Collector
@@ -87,9 +92,15 @@ func (m *Middleware) Handle(ctx context.Context, req *Request) (*Response, error
 	docdb, proxy, docdbErr, proxyErr := m.handle(ctx, req)
 
 	switch m.Mode {
-	case NormalMode, DiffNormalMode:
+	case NormalMode:
 		return docdb, docdbErr
-	case ProxyMode, DiffProxyMode:
+	case DiffNormalMode:
+		m.logDiff(ctx, docdb, proxy, slog.LevelDebug)
+		return docdb, docdbErr
+	case ProxyMode:
+		return proxy, proxyErr
+	case DiffProxyMode:
+		m.logDiff(ctx, docdb, proxy, slog.LevelDebug)
 		return proxy, proxyErr
 	default:
 		panic("not reached")
@@ -100,9 +111,9 @@ func (m *Middleware) handle(ctx context.Context, req *Request) (docdb, proxy *Re
 	// FIXME opcode
 	opcode := req.WireHeader().OpCode.String()
 	command := req.Document().Command()
-	m.m.Requests.WithLabelValues(opcode, command).Inc()
+	m.m.requests.WithLabelValues(opcode, command).Inc()
 
-	m.m.Responses.MustCurryWith(prometheus.Labels{
+	m.m.responses.MustCurryWith(prometheus.Labels{
 		"opcode":  opcode,
 		"command": command,
 	})
@@ -113,9 +124,9 @@ func (m *Middleware) handle(ctx context.Context, req *Request) (docdb, proxy *Re
 		wg.Add(1)
 		go func() {
 			docdb, docdbErr = (&dispatcher{
-				h:         m.DocDB,
-				l:         logging.WithName(m.L, "documentdb"),
-				responses: m.m.Responses, // FIXME
+				h: m.DocDB,
+				l: logging.WithName(m.L, "docdb"),
+				m: m.m,
 			}).Handle(ctx, req)
 			wg.Done()
 		}()
@@ -125,9 +136,9 @@ func (m *Middleware) handle(ctx context.Context, req *Request) (docdb, proxy *Re
 		wg.Add(1)
 		go func() {
 			proxy, proxyErr = (&dispatcher{
-				h:         m.Proxy,
-				l:         logging.WithName(m.L, "proxy"),
-				responses: m.m.Responses, // FIXME
+				h: m.Proxy,
+				l: logging.WithName(m.L, "proxy"),
+				m: m.m,
 			}).Handle(ctx, req)
 
 			wg.Done()
@@ -137,6 +148,45 @@ func (m *Middleware) handle(ctx context.Context, req *Request) (docdb, proxy *Re
 	wg.Wait()
 
 	return
+}
+
+// logDiff logs the diff between the DocumentDB and proxy responses.
+// It does nothing if either response is nil or logging for the given level is disabled.
+func (m *Middleware) logDiff(ctx context.Context, docdb, proxy *Response, logLevel slog.Level) {
+	if docdb == nil || proxy == nil {
+		return
+	}
+
+	if !m.L.Enabled(ctx, logLevel) {
+		return
+	}
+
+	diffHeader, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
+		A:        difflib.SplitLines(docdb.WireHeader().String()),
+		FromFile: "docdb header",
+		B:        difflib.SplitLines(proxy.WireHeader().String()),
+		ToFile:   "proxy header",
+		Context:  1,
+	})
+	if err != nil {
+		m.L.Log(ctx, slog.LevelWarn, "Failed to get header diff", logging.Error(err))
+		return
+	}
+
+	diffBody, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
+		A:        difflib.SplitLines(docdb.WireBody().StringIndent()),
+		FromFile: "docdb body",
+		B:        difflib.SplitLines(proxy.WireBody().StringIndent()),
+		ToFile:   "proxy body",
+		Context:  1,
+	})
+	if err != nil {
+		m.L.Log(ctx, slog.LevelWarn, "Failed to get body diff", logging.Error(err))
+		return
+	}
+
+	msg := "Header diff:\n" + strings.TrimSpace(diffHeader) + "\nBody diff:\n" + strings.TrimSpace(diffBody)
+	m.L.Log(ctx, logLevel, msg)
 }
 
 // Describe implements [prometheus.Collector].

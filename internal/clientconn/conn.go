@@ -29,16 +29,11 @@ import (
 	"net/netip"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync/atomic"
 	"time"
 
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
-	"github.com/pmezard/go-difflib/difflib"
-	"go.opentelemetry.io/otel"
-	otelattribute "go.opentelemetry.io/otel/attribute"
-	otelcodes "go.opentelemetry.io/otel/codes"
 	oteltrace "go.opentelemetry.io/otel/trace"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
@@ -48,7 +43,6 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/observability"
 )
 
@@ -284,13 +278,6 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 		}
 	}
 
-	// diff in diff mode
-	if c.l.Enabled(ctx, diffLogLevel) && (c.mode == middleware.DiffNormalMode || c.mode == middleware.DiffProxyMode) {
-		if err = c.logDiff(ctx, resHeader, proxyHeader, resBody, proxyBody, diffLogLevel); err != nil {
-			return err
-		}
-	}
-
 	// replace response with one from proxy in proxy and diff-proxy modes
 	if c.mode == middleware.ProxyMode || c.mode == middleware.DiffProxyMode {
 		resHeader = proxyHeader
@@ -333,8 +320,6 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 //
 // Returned resBody can be nil.
 func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
-	var span oteltrace.Span
-
 	var command, result, argument string
 	defer func() {
 		if result == "" {
@@ -344,22 +329,6 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		if argument == "" {
 			argument = "unknown"
 		}
-
-		c.m.Responses.WithLabelValues(resHeader.OpCode.String(), command, argument, result).Inc()
-
-		must.NotBeZero(span)
-
-		if result != "ok" {
-			span.SetStatus(otelcodes.Error, result)
-		}
-
-		span.SetName(command)
-		span.SetAttributes(
-			otelattribute.String("db.ferretdb.opcode", resHeader.OpCode.String()),
-			otelattribute.Int("db.ferretdb.request_id", int(resHeader.ResponseTo)),
-			otelattribute.String("db.ferretdb.argument", argument),
-		)
-		span.End()
 	}()
 
 	resHeader = new(wire.MsgHeader)
@@ -387,8 +356,6 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 			}
 		}
 
-		connCtx, span = otel.Tracer("").Start(connCtx, "")
-
 		if err == nil {
 			req, _ := middleware.RequestWire(reqHeader, msg)
 
@@ -407,8 +374,6 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 		if q, err = query.Query(); err == nil {
 			command = q.Command()
 		}
-
-		connCtx, span = otel.Tracer("").Start(connCtx, "")
 
 		if err == nil {
 			req, _ := middleware.RequestWire(reqHeader, query)
@@ -434,11 +399,9 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	case wire.OpCodeKillCursors:
 		fallthrough
 	case wire.OpCodeCompressed:
-		connCtx, span = otel.Tracer("").Start(connCtx, "")
 		err = lazyerrors.Errorf("unhandled OpCode %s", reqHeader.OpCode)
 
 	default:
-		connCtx, span = otel.Tracer("").Start(connCtx, "")
 		err = lazyerrors.Errorf("unexpected OpCode %s", reqHeader.OpCode)
 	}
 
@@ -557,91 +520,4 @@ func (c *conn) renamePartialFile(ctx context.Context, f *os.File, h hash.Hash, e
 	if e := os.Rename(f.Name(), path); e != nil {
 		c.l.WarnContext(ctx, "Failed to rename file", logging.Error(e))
 	}
-}
-
-// logResponse logs response's header and body and returns the log level that was used.
-//
-// The param `who` will be used in logs and should represent the type of the response,
-// for example "Response" or "Proxy Response".
-func (c *conn) logResponse(ctx context.Context, who string, resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) slog.Level { //nolint:lll // for readability
-	level := slog.LevelDebug
-
-	if resHeader.OpCode == wire.OpCodeMsg {
-		msg := resBody.(*wire.OpMsg)
-
-		doc, _ := msg.Section0()
-
-		var ok bool
-
-		if doc != nil {
-			switch v := doc.Get("ok").(type) {
-			case float64:
-				ok = v == 1
-			case int32:
-				ok = v == 1
-			case int64:
-				ok = v == 1
-			}
-		}
-
-		if !ok {
-			level = slog.LevelWarn
-		}
-	}
-
-	if closeConn {
-		level = slog.LevelError
-	}
-
-	if c.l.Enabled(ctx, level) {
-		c.l.Log(ctx, level, who+" header: "+resHeader.String())
-		c.l.Log(ctx, level, who+" message:\n"+resBody.StringIndent())
-	}
-
-	return level
-}
-
-// logDiff logs the diff between the response and the proxy response.
-func (c *conn) logDiff(ctx context.Context, resHeader, proxyHeader *wire.MsgHeader, resBody, proxyBody wire.MsgBody, logLevel slog.Level) error { //nolint:lll // for readability
-	diffHeader, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
-		A:        difflib.SplitLines(resHeader.String()),
-		FromFile: "res header",
-		B:        difflib.SplitLines(proxyHeader.String()),
-		ToFile:   "proxy header",
-		Context:  1,
-	})
-	if err != nil {
-		return err
-	}
-
-	// resBody can be nil if we got a message we could not handle at all, like unsupported OpQuery.
-	var resBodyString, proxyBodyString string
-
-	if resBody != nil {
-		resBodyString = resBody.StringIndent()
-	}
-
-	if proxyBody != nil {
-		proxyBodyString = proxyBody.StringIndent()
-	}
-
-	diffBody, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
-		A:        difflib.SplitLines(resBodyString),
-		FromFile: "res body",
-		B:        difflib.SplitLines(proxyBodyString),
-		ToFile:   "proxy body",
-		Context:  1,
-	})
-	if err != nil {
-		return err
-	}
-
-	if len(diffBody) > 0 {
-		// the diff control lines (those with ---, +++, or @@) are created with a trailing newline
-		diffBody = "\n" + strings.TrimSpace(diffBody)
-	}
-
-	c.l.Log(ctx, logLevel, "Header diff:\n"+diffHeader+"\nBody diff:"+diffBody)
-
-	return nil
 }

@@ -24,19 +24,29 @@ import (
 )
 
 // Parts of Prometheus metric names.
+// TODO https://github.com/FerretDB/FerretDB/issues/4965
 const (
-	namespace = "ferretdb_unstable"
-	subsystem = "middleware"
+	namespace = "ferretdb"
+	subsystem = "client"
+)
+
+type result string
+
+const (
+	resultOK      = result("ok")
+	resultPanic   = result("panic")
+	resultError   = result("error")
+	resultUnknown = result("unknown")
 )
 
 // metrics represents middleware metrics.
 type metrics struct {
-	Requests  *prometheus.CounterVec
-	Responses *prometheus.CounterVec
+	requests  *prometheus.CounterVec
+	responses *prometheus.CounterVec
 }
 
-// commandMetrics represents command results metrics.
-type commandMetrics struct {
+// CommandMetrics represents command results metrics.
+type CommandMetrics struct {
 	Failures map[string]int // count by result, except "ok"
 	Total    int            // both "ok" and failures
 }
@@ -44,44 +54,44 @@ type commandMetrics struct {
 // newMetrics creates new metrics.
 func newMetrics() *metrics {
 	m := &metrics{
-		Requests: prometheus.NewCounterVec(
+		requests: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: namespace,
 				Subsystem: subsystem,
 				Name:      "requests_total",
-				Help:      "Unstable: total number of requests.",
+				Help:      "Unstable: Total number of requests.",
 			},
-			[]string{"opcode", "command"}, // FIXME better name for "opcode"?
+			[]string{"opcode", "command"},
 		),
 
 		// FIXME duration
-		Responses: prometheus.NewCounterVec(
+		responses: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: namespace,
 				Subsystem: subsystem,
 				Name:      "responses_total",
-				Help:      "Unstable: total number of responses.",
+				Help:      "Unstable: Total number of responses.",
 			},
-			[]string{"opcode", "command", "argument", "result"}, // FIXME better name for "opcode"?
+			[]string{"opcode", "command", "argument", "result"},
 		),
 	}
 
-	m.Requests.WithLabelValues("OP_MSG", "find")
-	m.Responses.WithLabelValues("OP_MSG", "find", "unknown", "ok")
+	m.requests.WithLabelValues("OP_MSG", "find")
+	m.responses.WithLabelValues("OP_MSG", "find", "unknown", "ok")
 
 	return m
 }
 
 // Describe implements [prometheus.Collector].
 func (m *metrics) Describe(ch chan<- *prometheus.Desc) {
-	m.Requests.Describe(ch)
-	m.Responses.Describe(ch)
+	m.requests.Describe(ch)
+	m.responses.Describe(ch)
 }
 
 // Collect implements [prometheus.Collector].
 func (m *metrics) Collect(ch chan<- prometheus.Metric) {
-	m.Requests.Collect(ch)
-	m.Responses.Collect(ch)
+	m.requests.Collect(ch)
+	m.responses.Collect(ch)
 }
 
 // getResponses returns a map with all response metrics:
@@ -91,14 +101,14 @@ func (m *metrics) Collect(ch chan<- prometheus.Metric) {
 // argument that caused an error (e.g. "sort", "$count (stage)"; or "unknown") ->
 // result (e.g. "NotImplemented", "panic", or "ok") ->
 // count.
-func (m *metrics) getResponses() map[string]map[string]map[string]commandMetrics {
+func (m *metrics) GetResponses() map[string]map[string]map[string]CommandMetrics {
 	metrics := make(chan prometheus.Metric)
 	go func() {
-		m.Responses.Collect(metrics)
+		m.responses.Collect(metrics)
 		close(metrics)
 	}()
 
-	res := map[string]map[string]map[string]commandMetrics{}
+	res := map[string]map[string]map[string]CommandMetrics{}
 
 	for m := range metrics {
 		var content dto.Metric
@@ -106,33 +116,31 @@ func (m *metrics) getResponses() map[string]map[string]map[string]commandMetrics
 
 		var opcode, command, argument, result string
 		for _, label := range content.GetLabel() {
-			switch label.GetName() {
+			v := label.GetValue()
+			switch name := label.GetName(); name {
 			case "opcode":
-				opcode = label.GetValue()
+				opcode = v
 			case "command":
-				command = label.GetValue()
+				command = v
 			case "argument":
-				argument = label.GetValue()
+				argument = v
 			case "result":
-				result = label.GetValue()
+				result = v
 			default:
-				panic(fmt.Sprintf(
-					"%s is not a valid label. Allowed: [opcode, command, argument, result]",
-					label.GetName(),
-				))
+				panic(fmt.Sprintf("%q is not a valid label. Allowed: [opcode, command, argument, result]", name))
 			}
 		}
 
 		if _, ok := res[opcode]; !ok {
-			res[opcode] = map[string]map[string]commandMetrics{}
+			res[opcode] = map[string]map[string]CommandMetrics{}
 		}
 
 		if _, ok := res[opcode][command]; !ok {
-			res[opcode][command] = map[string]commandMetrics{}
+			res[opcode][command] = map[string]CommandMetrics{}
 		}
 
 		if _, ok := res[opcode][command][argument]; !ok {
-			res[opcode][command][argument] = commandMetrics{}
+			res[opcode][command][argument] = CommandMetrics{}
 		}
 
 		m := res[opcode][command][argument]
@@ -140,7 +148,7 @@ func (m *metrics) getResponses() map[string]map[string]map[string]commandMetrics
 		v := int(content.GetCounter().GetValue())
 		m.Total += v
 
-		if result != "ok" {
+		if result != string(resultOK) {
 			if m.Failures == nil {
 				m.Failures = map[string]int{}
 			}
