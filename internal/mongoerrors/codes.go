@@ -77,6 +77,7 @@ const (
 	ErrLocation13026                               = Code(13026)   // Location13026
 	ErrLocation13027                               = Code(13027)   // Location13027
 	ErrLocation13068                               = Code(13068)   // Location13068
+	ErrLocation13103                               = Code(13103)   // Location13103
 	ErrLocation13111                               = Code(13111)   // Location13111
 	ErrMergeStageNoMatchingDocument                = Code(13113)   // MergeStageNoMatchingDocument
 	ErrDbAlreadyExists                             = Code(13297)   // DbAlreadyExists
@@ -613,6 +614,7 @@ var pgCodes = map[string]Code{
 	"M001E": ErrLocation13026,                               // 13026
 	"M001F": ErrLocation13027,                               // 13027
 	"M001G": ErrLocation13068,                               // 13068
+	"M00EM": ErrLocation13103,                               // 13103
 	"M00CS": ErrLocation13111,                               // 13111
 	"M001H": ErrMergeStageNoMatchingDocument,                // 13113
 	"M001I": ErrDbAlreadyExists,                             // 13297
