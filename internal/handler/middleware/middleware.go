@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package middleware provides wrappers for command handlers.
+// Package middleware provides connection between listeners and handlers.
 package middleware
 
 import (
@@ -20,14 +20,18 @@ import (
 	"sync/atomic"
 )
 
-// Handler is a common interface for command handlers.
+// Handler is a common interface for handlers.
 type Handler interface {
 	// Handle processes a single request.
 	//
 	// The passed context is canceled when the client disconnects.
 	//
-	// Response is a normal response or an error.
-	// TODO https://github.com/FerretDB/FerretDB/issues/4965
+	// Response is a normal or error response produced by the handler.
+	//
+	// Error is returned when the handler cannot process the request;
+	// for example, when connection with PostgreSQL or proxy is lost.
+	// Returning an error generally means that the listener should close the client connection.
+	// Error should not be [*mongoerrors.Error].
 	Handle(ctx context.Context, req *Request) (resp *Response, err error)
 }
 
