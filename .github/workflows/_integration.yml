@@ -135,7 +135,7 @@ jobs:
       - name: Convert test results to JUnit XML format
         if: always()
         run: >
-          ./bin/go-junit-report -parser=gojson -iocopy
+          ./bin/go-junit-report -parser=gojson
           -in ./integration/*.json.tmp
           -out ./integration/${{ inputs.task }}.xml
 

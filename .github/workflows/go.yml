@@ -175,7 +175,7 @@ jobs:
       - name: Convert test results to JUnit XML format
         if: always()
         run: >
-          ./bin/go-junit-report -iocopy
+          ./bin/go-junit-report
           -in ./unit.txt
           -out ./unit.xml
 
