@@ -265,7 +265,7 @@ tasks:
     desc: "Convert test results to JUnit XML format"
     cmds:
       - >
-        ../bin/go-junit-report -parser=gojson -iocopy
+        ./bin/go-junit-report -parser=gojson -iocopy
         -in {{.IN_FILE}}
         -out {{.OUT_FILE}}
     requires:

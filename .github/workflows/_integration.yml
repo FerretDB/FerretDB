@@ -136,15 +136,15 @@ jobs:
         if: always()
         run: >
           bin/task convert-test-results
-          IN_FILE=./integration/${{ inputs.task }}-${{ inputs.shard_index }}-${{ inputs.shard_total }}-stdout.json.tmp
-          OUT_FILE=./integration/${{ inputs.task }}-${{ inputs.shard_index }}-${{ inputs.shard_total }}.xml
+          IN_FILE=./integration/*.json.tmp
+          OUT_FILE=./integration/${{ inputs.task }}.xml
 
       - name: Upload test results to Codecov
         if: always()
         uses: codecov/test-results-action@v1
         with:
           flags: integration,${{ inputs.task }}-${{ inputs.shard_index }}
-          file: ./integration/${{ inputs.task }}-${{ inputs.shard_index }}-${{ inputs.shard_total }}.xml
+          file: ./integration/${{ inputs.task }}.xml
 
       # we don't want them on CI
       - name: Clean test and fuzz caches
