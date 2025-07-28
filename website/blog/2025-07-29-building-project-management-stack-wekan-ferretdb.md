@@ -54,60 +54,61 @@ Here's a step-by-step guide to get you started with a self-hosted Wekan instance
 
 Create a `docker-compose.yml` file with the following content to define the services for Wekan and FerretDB:
 
-   ```yaml
-   services:
-     ferretdb:
-       image: ghcr.io/ferretdb/ferretdb-eval:2
-       restart: on-failure
-       ports:
-         - 27017:27017
-       environment:
-         - POSTGRES_USER=<username>
-         - POSTGRES_PASSWORD=<password>
-         - FERRETDB_AUTH=false
-       volumes:
-         - ./ferretdb_data:/var/lib/postgresql/data
-     wekan:
-       image: ghcr.io/wekan/wekan:latest
-       restart: always
-       ports:
-         - 80:8080
-       environment:
-         - MONGO_URL=mongodb://ferretdb:27017/wekan
-         - ROOT_URL=http://localhost
-         - WRITABLE_PATH=/data
-       volumes:
-         - /etc/localtime:/etc/localtime:ro
-         - ./wekan-files:/data:rw
+```yaml
+services:
+  ferretdb:
+    image: ghcr.io/ferretdb/ferretdb-eval:2
+    restart: on-failure
+    ports:
+      - 27017:27017
+    environment:
+      - POSTGRES_USER=<username>
+      - POSTGRES_PASSWORD=<password>
+      - POSTGRES_DB=postgres
+      - FERRETDB_AUTH=false
+    volumes:
+      - ./ferretdb_data:/var/lib/postgresql/data
+  wekan:
+    image: ghcr.io/wekan/wekan:latest
+    restart: always
+    ports:
+      - 80:8080
+    environment:
+      - MONGO_URL=mongodb://ferretdb:27017/wekan
+      - ROOT_URL=http://localhost
+      - WRITABLE_PATH=/data
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./wekan-files:/data:rw
 
-   networks:
-     default:
-       name: ferretdb-network
-   ```
+networks:
+  default:
+    name: ferretdb-network
+```
 
-   This setup defines two services: `ferretdb` for the FerretDB instance and `wekan` for the Wekan application.
-   The `ferretdb` service uses the [FerretDB evaluation image](https://docs.ferretdb.io/installation/evaluation/), which is designed for quick testing and experiments.
+This setup defines two services: `ferretdb` for the FerretDB instance and `wekan` for the Wekan application.
+The `ferretdb` service uses the [FerretDB evaluation image](https://docs.ferretdb.io/installation/evaluation/), which is designed for quick testing and experiments.
 
-   Replace `<username>` and `<password>` with your desired PostgreSQL credentials.
-   `WRITABLE_PATH` is set to `/data`, which is where Wekan will store its files and attachments.
+Replace `<username>` and `<password>` with your desired PostgreSQL credentials.
+`WRITABLE_PATH` is set to `/data`, which is where Wekan will store its files and attachments.
 
-   :::note
-   Wekan primarily attempts authentication using the `SCRAM-SHA-1` mechanism.
-   FerretDB, however, currently only supports `SCRAM-SHA-256`.
-   Because of this, you must disable authentication on your FerretDB instance for Wekan to connect successfully.
-   :::
+:::note
+Wekan primarily attempts authentication using the `SCRAM-SHA-1` mechanism.
+FerretDB, however, currently only supports `SCRAM-SHA-256`.
+Because of this, you must disable authentication on your FerretDB instance for Wekan to connect successfully.
+:::
 
 ### Launch services and access FerretDB and Wekan
 
 Run the following command in the directory where your `docker-compose.yml` file is located:
 
-   ```sh
-   docker compose up -d
-   ```
+```sh
+docker compose up -d
+```
 
-   Once the services are up and running, you can access Wekan by navigating to `http://localhost:80` in your web browser.
-   You can now sign up, create boards, and start managing your projects.
-   All data will be stored in FerretDB.
+Once the services are up and running, you can access Wekan by navigating to `http://localhost:80` in your web browser.
+You can now sign up, create boards, and start managing your projects.
+All data will be stored in FerretDB.
 
 ## Exploring Wekan project data in FerretDB
 
