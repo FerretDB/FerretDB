@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	"github.com/AlekSi/pointer"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
@@ -84,9 +85,7 @@ func (s *Server) UpdateMany(w http.ResponseWriter, r *http.Request) {
 		if upserted.Len() > 0 {
 			item := must.NotFail(upserted.Get(0).(wirebson.AnyDocument).Decode())
 
-			id := item.Get("_id")
-
-			must.NoError(res.Add("upsertedId", item.Get("_id")))
+			res.UpsertedId = pointer.To(fmt.Sprint(item.Get("_id")))
 		}
 	}
 
