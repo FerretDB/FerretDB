@@ -68,8 +68,6 @@ type SetupOpts struct {
 
 // SetupResult represents [Setup] result.
 type SetupResult struct {
-	Pool            *documentdb.Pool
-	ConnMetrics     *connmetrics.ConnMetrics
 	WireListener    *clientconn.Listener
 	DataAPIListener *dataapi.Listener
 }
@@ -164,10 +162,7 @@ func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 
 	//exhaustruct:enforce
 	return &SetupResult{
-		Pool:         p,
-		ConnMetrics:  opts.ListenerMetrics.ConnMetrics,
-		WireListener: wireLis,
-
+		WireListener:    wireLis,
 		DataAPIListener: dataapiLis,
 	}
 }
