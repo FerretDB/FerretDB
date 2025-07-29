@@ -25,6 +25,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/session"
@@ -75,6 +76,7 @@ type NewOpts struct {
 	ReplSetName string
 
 	L             *slog.Logger
+	ConnMetrics   *connmetrics.ConnMetrics
 	StateProvider *state.Provider
 
 	SessionCleanupInterval time.Duration

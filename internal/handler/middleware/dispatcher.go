@@ -21,6 +21,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/FerretDB/wire"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel"
 	otelattribute "go.opentelemetry.io/otel/attribute"
@@ -31,7 +32,6 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/observability"
-	"github.com/FerretDB/wire"
 )
 
 // Dispatcher is a single-use object that sends a single request to a single handler,

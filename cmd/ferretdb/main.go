@@ -43,6 +43,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/proxy"
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/debug"
 	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
@@ -485,7 +486,7 @@ func run() {
 		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct pool", logging.Error(err))
 	}
 
-	handlerOpts := &handler.NewOpts{
+	docdbHandler, err := handler.New(&handler.NewOpts{
 		Pool: p,
 		Auth: cli.Auth,
 
@@ -495,23 +496,33 @@ func run() {
 		L:             logging.WithName(logger, "handler"),
 		ConnMetrics:   lm.ConnMetrics,
 		StateProvider: stateProvider,
-	}
-
-	h, err := handler.New(handlerOpts)
+	})
 	if err != nil {
 		p.Close()
-		handlerOpts.L.LogAttrs(ctx, logging.LevelFatal, "Failed to construct handler", logging.Error(err))
+		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct DocumentDB handler", logging.Error(err))
+	}
+
+	proxyHandler, err := proxy.New(&proxy.NewOpts{
+		Addr:     cli.Proxy.Addr,
+		CertFile: cli.Proxy.TLSCertFile,
+		KeyFile:  cli.Proxy.TLSKeyFile,
+		CAFile:   cli.Proxy.TLSCaFile,
+		L:        logging.WithName(logger, "proxy"),
+	})
+	if err != nil {
+		p.Close()
+		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct proxy handler", logging.Error(err))
 	}
 
 	m, err := middleware.New(&middleware.NewOpts{
 		Mode:  middleware.Mode(cli.Mode),
-		DocDB: h,
-		Proxy: nil, // FIXME
+		DocDB: docdbHandler,
+		Proxy: proxyHandler,
 		L:     logging.WithName(logger, "middleware"),
 	})
 	if err != nil {
 		p.Close()
-		handlerOpts.L.LogAttrs(ctx, logging.LevelFatal, "Failed to construct middleware", logging.Error(err))
+		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct middleware", logging.Error(err))
 	}
 
 	lis, err := clientconn.Listen(&clientconn.ListenerOpts{
@@ -537,7 +548,7 @@ func run() {
 	})
 	if err != nil {
 		p.Close()
-		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct listener", logging.Error(err))
+		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct wire protocol listener", logging.Error(err))
 	}
 
 	if cli.Listen.DataAPIAddr != "" {
@@ -550,7 +561,7 @@ func run() {
 
 			lis, e := dataapi.Listen(&dataapi.ListenOpts{
 				TCPAddr: cli.Listen.DataAPIAddr,
-				Handler: h,
+				Handler: docdbHandler,
 				Auth:    cli.Auth,
 				L:       l,
 			})
