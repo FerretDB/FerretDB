@@ -264,7 +264,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 	if ownDatabase {
 		cleanupDatabase(tb, ctx, database)
 	} else {
-		cleanupCollection(tb, ctx, collection, true)
+		cleanupCollection(tb, ctx, collection)
 	}
 
 	// drop collection and (possibly) database unless test failed
@@ -280,7 +280,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 			return
 		}
 
-		cleanupCollection(tb, ctx, collection, false)
+		cleanupCollection(tb, ctx, collection)
 	})
 
 	var inserted bool
@@ -341,8 +341,8 @@ func insertBenchmarkProvider(tb testing.TB, ctx context.Context, collection *mon
 }
 
 // cleanupCollection deletes all documents in the collection for ferretdb-yugabytedb backend
-// or drops the collection for other backends. The drop collection error is optionally ignored.
-func cleanupCollection(tb testing.TB, ctx context.Context, collection *mongo.Collection, ignoreErr bool) {
+// or drops the collection for other backends.
+func cleanupCollection(tb testing.TB, ctx context.Context, collection *mongo.Collection) {
 	tb.Helper()
 
 	if IsYugabyteDB(tb) {
@@ -355,16 +355,11 @@ func cleanupCollection(tb testing.TB, ctx context.Context, collection *mongo.Col
 	}
 
 	err := collection.Drop(ctx)
-
-	if ignoreErr {
-		return
-	}
-
 	require.NoError(tb, err)
 }
 
-// cleanupDatabase drops all users, then deletes all collections for ferretdb-yugabytedb backend
-// or drops the database for other backends.
+// cleanupDatabase drops all users, then deletes all collections in the database
+// for ferretdb-yugabytedb backend or drops the database for other backends.
 func cleanupDatabase(tb testing.TB, ctx context.Context, database *mongo.Database) {
 	err := database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
 	require.NoError(tb, err)
@@ -377,8 +372,7 @@ func cleanupDatabase(tb testing.TB, ctx context.Context, database *mongo.Databas
 		require.NoError(tb, err)
 
 		for _, collection := range collections {
-			_, err = database.Collection(collection).DeleteMany(ctx, bson.D{})
-			require.NoError(tb, err)
+			cleanupCollection(tb, ctx, database.Collection(collection))
 		}
 
 		return
