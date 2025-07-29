@@ -98,6 +98,12 @@ const config = {
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       image: "img/logo-dark.jpg",
+      imageZoom: {
+        selector: ".markdown img",
+        options: {
+          margin: 64,
+        },
+      },
       navbar: {
         logo: {
           alt: "FerretDB Logo",
