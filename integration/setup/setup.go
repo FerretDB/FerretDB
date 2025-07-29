@@ -361,6 +361,8 @@ func cleanupCollection(tb testing.TB, ctx context.Context, collection *mongo.Col
 // cleanupDatabase drops all users, then deletes all collections in the database
 // for ferretdb-yugabytedb backend or drops the database for other backends.
 func cleanupDatabase(tb testing.TB, ctx context.Context, database *mongo.Database) {
+	tb.Helper()
+
 	err := database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
 	require.NoError(tb, err)
 
