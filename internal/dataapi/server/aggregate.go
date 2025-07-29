@@ -15,6 +15,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -72,8 +73,16 @@ func (s *Server) Aggregate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var b json.RawMessage
+
+	b, err = json.Marshal(docs)
+	if err != nil {
+		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		return
+	}
+
 	res := api.AggregateResponseBody{
-		Documents: docs,
+		Documents: b,
 	}
 
 	s.writeJSONResponse(ctx, w, &res)

@@ -39,7 +39,7 @@ type AggregateRequestBody struct {
 // AggregateResponseBody defines model for AggregateResponseBody.
 type AggregateResponseBody struct {
 	// Documents An array that contains the result set of the aggregation.
-	Documents []map[string]interface{} `json:"documents"`
+	Documents json.RawMessage `json:"documents"`
 }
 
 // DeleteRequestBody defines model for DeleteRequestBody.
