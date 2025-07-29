@@ -20,8 +20,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 
-	"github.com/FerretDB/wire/wirebson"
-
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
@@ -62,9 +60,8 @@ func (s *Server) InsertMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := wirebson.MustDocument(
-		"n", float64(1),
-	)
+	// TODO insertedIDs
+	res := api.InsertManyResponseBody{}
 
-	s.writeJSONResponse(ctx, w, res)
+	s.writeJSONResponse(ctx, w, &res)
 }

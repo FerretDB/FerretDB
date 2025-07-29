@@ -164,13 +164,7 @@ func (s *Server) ConnInfoMiddleware(next http.Handler) http.Handler {
 
 // writeJSONResponse marshals provided res document into extended JSON and
 // writes it to provided [http.ResponseWriter].
-func (s *Server) writeJSONResponse(ctx context.Context, w http.ResponseWriter, res wirebson.AnyDocument) {
-	resRaw, err := res.Encode()
-	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
-		return
-	}
-
+func (s *Server) writeJSONResponse(ctx context.Context, w http.ResponseWriter, res api.Response) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var resWriter io.Writer = w
@@ -186,7 +180,7 @@ func (s *Server) writeJSONResponse(ctx context.Context, w http.ResponseWriter, r
 		}()
 	}
 
-	if err = marshalJSON(resRaw, resWriter); err != nil {
+	if err := marshalJSON(res, resWriter); err != nil {
 		s.l.ErrorContext(ctx, "marshalJSON failed", logging.Error(err))
 	}
 }

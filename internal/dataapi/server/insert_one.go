@@ -73,9 +73,8 @@ func (s *Server) InsertOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := wirebson.MustDocument(
-		"n", float64(1),
-	)
+	// TODO insertedID
+	res := api.InsertOneResponseBody{}
 
-	s.writeJSONResponse(ctx, w, res)
+	s.writeJSONResponse(ctx, w, &res)
 }

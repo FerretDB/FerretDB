@@ -68,7 +68,10 @@ func (s *Server) Find(w http.ResponseWriter, r *http.Request) {
 
 	cursor := resp.Document().Get("cursor").(wirebson.AnyDocument)
 	firstBatch := must.NotFail(cursor.Decode()).Get("firstBatch").(wirebson.AnyArray)
-	s.writeJSONResponse(ctx, w, wirebson.MustDocument(
-		"documents", firstBatch,
-	))
+
+	res := api.FindManyResponseBody{
+		Documents: firstBatch,
+	}
+
+	s.writeJSONResponse(ctx, w, &res)
 }

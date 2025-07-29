@@ -89,5 +89,5 @@ func (s *Server) UpdateMany(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	s.writeJSONResponse(ctx, w, res)
+	s.writeJSONResponse(ctx, w, &res)
 }

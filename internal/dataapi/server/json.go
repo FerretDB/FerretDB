@@ -26,10 +26,10 @@ import (
 )
 
 // marshalJSON encodes wirebson.RawDocument into extended JSON.
-func marshalJSON(raw wirebson.RawDocument, jsonDst io.Writer) error {
+func marshalJSON(raw any, jsonDst io.Writer) error {
 	encoder := bson.NewEncoder(bson.NewExtJSONValueWriter(jsonDst, false, false))
 
-	if err := encoder.Encode(bson.Raw(raw)); err != nil {
+	if err := encoder.Encode(raw); err != nil {
 		return lazyerrors.Error(err)
 	}
 

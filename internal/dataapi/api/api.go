@@ -15,3 +15,26 @@
 package api
 
 //go:generate ../../../bin/oapi-codegen --config=./oapi-config.yml ./openapi.json
+
+type Response interface {
+	sealed()
+}
+
+func (r *AggregateResponseBody) sealed()  {}
+func (r *DeleteResponseBody) sealed()     {}
+func (r *FindOneResponseBody) sealed()    {}
+func (r *FindManyResponseBody) sealed()   {}
+func (r *InsertOneResponseBody) sealed()  {}
+func (r *InsertManyResponseBody) sealed() {}
+func (r *UpdateResponseBody) sealed()     {}
+
+var (
+	_ Response = (*AggregateResponseBody)(nil)
+	_ Response = (*DeleteResponseBody)(nil)
+	_ Response = (*FindOneResponseBody)(nil)
+	_ Response = (*FindManyResponseBody)(nil)
+	_ Response = (*InsertManyResponseBody)(nil)
+	_ Response = (*InsertOneResponseBody)(nil)
+	_ Response = (*UpdateResponseBody)(nil)
+	_ Response = (*FindOneResponseBody)(nil)
+)
