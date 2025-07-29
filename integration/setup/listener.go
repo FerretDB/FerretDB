@@ -32,6 +32,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/v2/internal/util/wiring"
 )
 
 // ListenerOpts represents setup options for in-process FerretDB listener.
@@ -109,6 +110,12 @@ func setupListener(tb testing.TB, ctx context.Context, opts *ListenerOpts, logge
 	if opts == nil {
 		opts = new(ListenerOpts)
 	}
+
+	//exhaustruct:enforce
+	res := wiring.Wire(ctx, &wiring.WireOpts{
+		Logger: logger,
+	})
+	require.NotNil(tb, res)
 
 	p, err := documentdb.NewPool(*postgreSQLURLF, logging.WithName(logger, "pool"), sp)
 	require.NoError(tb, err)

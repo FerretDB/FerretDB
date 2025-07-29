@@ -40,8 +40,6 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi"
-	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
-	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/debug"
@@ -52,6 +50,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/observability"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/telemetry"
+	"github.com/FerretDB/FerretDB/v2/internal/util/wiring"
 )
 
 // The cli struct represents all command-line commands, fields and flags.
@@ -480,53 +479,33 @@ func run() {
 		}()
 	}
 
-	p, err := documentdb.NewPool(cli.PostgreSQLURL, logging.WithName(logger, "pool"), stateProvider)
-	if err != nil {
-		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct pool", logging.Error(err))
-	}
+	//exhaustruct:enforce
+	res := wiring.Wire(ctx, &wiring.WireOpts{
+		Logger: logger,
 
-	handlerOpts := &handler.NewOpts{
-		Pool: p,
-		Auth: cli.Auth,
-
-		TCPHost:     cli.Listen.Addr,
-		ReplSetName: cli.Dev.ReplSetName,
-
-		L:             logging.WithName(logger, "handler"),
-		ConnMetrics:   lm.ConnMetrics,
 		StateProvider: stateProvider,
-	}
 
-	h, err := handler.New(handlerOpts)
-	if err != nil {
-		p.Close()
-		handlerOpts.L.LogAttrs(ctx, logging.LevelFatal, "Failed to construct handler", logging.Error(err))
-	}
+		PostgreSQLURL: cli.PostgreSQLURL,
 
-	lis, err := clientconn.Listen(&clientconn.ListenerOpts{
-		Handler: h,
-		Metrics: lm,
-		Logger:  logger,
+		Auth:                   cli.Auth,
+		ReplSetName:            cli.Dev.ReplSetName,
+		SessionCleanupInterval: time.Minute,
 
-		TCP:  cli.Listen.Addr,
-		Unix: cli.Listen.Unix,
-
-		TLS:         cli.Listen.TLS,
-		TLSCertFile: cli.Listen.TLSCertFile,
-		TLSKeyFile:  cli.Listen.TLSKeyFile,
-		TLSCAFile:   cli.Listen.TLSCaFile,
-
+		TCPAddr:          cli.Listen.Addr,
+		UnixAddr:         cli.Listen.Unix,
+		TLSAddr:          cli.Listen.TLS,
+		TLSCertFile:      cli.Listen.TLSCertFile,
+		TLSKeyFile:       cli.Listen.TLSKeyFile,
+		TLSCAFile:        cli.Listen.TLSCaFile,
 		Mode:             middleware.Mode(cli.Mode),
 		ProxyAddr:        cli.Proxy.Addr,
 		ProxyTLSCertFile: cli.Proxy.TLSCertFile,
 		ProxyTLSKeyFile:  cli.Proxy.TLSKeyFile,
 		ProxyTLSCAFile:   cli.Proxy.TLSCaFile,
-
-		TestRecordsDir: cli.Dev.RecordsDir,
+		RecordsDir:       cli.Dev.RecordsDir,
 	})
-	if err != nil {
-		p.Close()
-		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct listener", logging.Error(err))
+	if res == nil {
+		os.Exit(1)
 	}
 
 	if cli.Listen.DataAPIAddr != "" {
@@ -540,10 +519,10 @@ func run() {
 			lis, e := dataapi.Listen(&dataapi.ListenOpts{
 				TCPAddr: cli.Listen.DataAPIAddr,
 				L:       l,
-				Handler: h,
+				Handler: res.Listener.Handler,
 			})
 			if e != nil {
-				p.Close()
+				res.Pool.Close()
 				l.LogAttrs(ctx, logging.LevelFatal, "Failed to construct DataAPI listener", logging.Error(e))
 			}
 
@@ -551,11 +530,11 @@ func run() {
 		}()
 	}
 
-	listener.Store(lis)
+	listener.Store(res.Listener)
 
-	metricsRegisterer.MustRegister(lis)
+	metricsRegisterer.MustRegister(res.Listener)
 
-	lis.Run(ctx)
+	res.Run(ctx)
 
 	wg.Wait()
 

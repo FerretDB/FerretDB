@@ -95,10 +95,10 @@ func (p *Provider) Var() expvar.Var {
 	})
 }
 
-// NewMetricsCollector creates new Prometheus metrics collector for that provider.
+// MetricsCollector returns Prometheus metrics collector for that provider.
 //
 // If addUUID is true, then the "uuid" label is added.
-func (p *Provider) NewMetricsCollector(addUUID bool) prometheus.Collector {
+func (p *Provider) MetricsCollector(addUUID bool) prometheus.Collector {
 	return newMetricsCollector(p, addUUID)
 }
 
