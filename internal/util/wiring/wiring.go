@@ -70,8 +70,9 @@ type WireResult struct {
 //   - DocumentDB handler ([*handler.Handler]);
 //   - wire protocol listener ([*clientconn.Listener]).
 //
-// It does not:
-//   - change global logger.
+// It does not change the global state or creates components that are different in tests.
+// For example, it does not:
+//   - change global logger (it is different in tests).
 //
 // It returns nil if any of the components could not be created.
 // The error is already logged, so the caller may just exit.
