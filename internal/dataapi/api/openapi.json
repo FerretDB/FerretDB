@@ -1263,6 +1263,7 @@
         "description": "The result of a findOne operation.",
         "properties": {
           "document": {
+            "x-go-type": "json.RawMessage",
             "type": "object",
             "nullable": true,
             "description": "A document that matches the specified filter. If no documents match, this is `null`."
@@ -1404,6 +1405,7 @@
         "properties": {
           "documents": {
             "type": "array",
+            "x-go-type": "json.RawMessage",
             "items": {
               "type": "object"
             },

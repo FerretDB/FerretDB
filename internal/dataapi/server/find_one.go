@@ -15,6 +15,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -74,9 +75,16 @@ func (s *Server) FindOne(w http.ResponseWriter, r *http.Request) {
 		doc = must.NotFail(docs.Get(0).(wirebson.AnyDocument).Encode())
 	}
 
-	res := api.FindOneResponseBody{
-		Document: doc,
+	var b json.RawMessage
+	b, err = json.Marshal(doc)
+	if err != nil {
+		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		return
 	}
 
-	s.writeJSONResponse(ctx, w, res)
+	res := api.FindOneResponseBody{
+		Document: &b,
+	}
+
+	s.writeJSONResponse(ctx, w, &res)
 }
