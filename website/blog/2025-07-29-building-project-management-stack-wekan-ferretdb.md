@@ -117,6 +117,8 @@ Connect to your FerretDB instance using `mongosh` or a GUI tool (like MongoDB Co
 mongosh mongodb://<username>:<password>@localhost:27017/wekan
 ```
 
+Ensure to replace `<username>` and `<password>` with the credentials you set in the `docker-compose.yml` file.
+
 WeKan creates numerous collections to manage all aspects of a Kanban board.
 Now, let's query the cards collection by running `db.cards.find()` to see how WeKan stores its cards:
 
