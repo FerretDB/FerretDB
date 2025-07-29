@@ -148,6 +148,8 @@ func New(config *Config) (*FerretDB, error) {
 		ProxyTLSKeyFile:  "",
 		ProxyTLSCAFile:   "",
 		RecordsDir:       "",
+
+		DataAPIAddr: "",
 	})
 	if res == nil {
 		return nil, fmt.Errorf("failed to create FerretDB")
@@ -189,7 +191,7 @@ func (f *FerretDB) Run(ctx context.Context) {
 func (f *FerretDB) MongoDBURI() string {
 	u := &url.URL{
 		Scheme: "mongodb",
-		Host:   f.res.Listener.TCPAddr().String(),
+		Host:   f.res.WireListener.TCPAddr().String(),
 		Path:   "/",
 	}
 

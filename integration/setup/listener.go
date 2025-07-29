@@ -132,6 +132,8 @@ func setupListener(tb testing.TB, ctx context.Context, opts *ListenerOpts, logge
 		ProxyTLSKeyFile:  "",
 		ProxyTLSCAFile:   "",
 		RecordsDir:       testutil.TmpRecordsDir,
+
+		DataAPIAddr: "",
 	}
 
 	switch {
@@ -169,9 +171,9 @@ func setupListener(tb testing.TB, ctx context.Context, opts *ListenerOpts, logge
 
 	switch {
 	case *targetUnixSocketF:
-		unixSocketPath = res.Listener.UnixAddr().String()
+		unixSocketPath = res.WireListener.UnixAddr().String()
 	default:
-		hostPort = res.Listener.TCPAddr().String()
+		hostPort = res.WireListener.TCPAddr().String()
 	}
 
 	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath)

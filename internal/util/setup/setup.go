@@ -18,10 +18,12 @@ package setup
 import (
 	"context"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/v2/internal/dataapi"
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
@@ -59,19 +61,24 @@ type SetupOpts struct {
 	ProxyTLSKeyFile  string
 	ProxyTLSCAFile   string
 	RecordsDir       string
+
+	// DataAPI listener
+	DataAPIAddr string // empty value disables Data API listener
 }
 
 // SetupResult represents [Setup] result.
 type SetupResult struct {
-	Pool        *documentdb.Pool
-	Listener    *clientconn.Listener
-	ConnMetrics *connmetrics.ConnMetrics
+	Pool            *documentdb.Pool
+	ConnMetrics     *connmetrics.ConnMetrics
+	WireListener    *clientconn.Listener
+	DataAPIListener *dataapi.Listener
 }
 
 // Setup creates and sets up:
 //   - PostgreSQL/DocumentDB connection pool ([*documentdb.Pool]);
 //   - DocumentDB handler ([*handler.Handler]);
-//   - wire protocol listener ([*clientconn.Listener]).
+//   - wire protocol listener ([*clientconn.Listener]);
+//   - Data API listener ([*dataapi.Listener]).
 //
 // It does not change the global state or creates components that are different in tests.
 // For example, it does not:
@@ -110,7 +117,7 @@ func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 	}
 
 	//exhaustruct:enforce
-	lis, err := clientconn.Listen(&clientconn.ListenerOpts{
+	wireLis, err := clientconn.Listen(&clientconn.ListenerOpts{
 		Handler: h, // listener takes over the handler
 		Metrics: opts.ListenerMetrics,
 		Logger:  opts.Logger,
@@ -133,16 +140,34 @@ func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 	})
 	if err != nil {
 		p.Close()
-		opts.Logger.LogAttrs(ctx, logging.LevelDPanic, "Failed to construct listener", logging.Error(err))
+		opts.Logger.LogAttrs(ctx, logging.LevelDPanic, "Failed to construct wire protocol listener", logging.Error(err))
 
 		return nil
 	}
 
+	var dataapiLis *dataapi.Listener
+	if opts.DataAPIAddr != "" {
+		dataapiLis, err = dataapi.Listen(&dataapi.ListenOpts{
+			L:       logging.WithName(opts.Logger, "dataapi"),
+			Handler: h, // does not takes over
+			TCPAddr: opts.DataAPIAddr,
+			Auth:    opts.Auth,
+		})
+		if err != nil {
+			p.Close()
+			opts.Logger.LogAttrs(ctx, logging.LevelDPanic, "Failed to construct DataAPI listener", logging.Error(err))
+
+			return nil
+		}
+	}
+
 	//exhaustruct:enforce
 	return &SetupResult{
-		Pool:        p,
-		Listener:    lis,
-		ConnMetrics: opts.ListenerMetrics.ConnMetrics,
+		Pool:         p,
+		ConnMetrics:  opts.ListenerMetrics.ConnMetrics,
+		WireListener: wireLis,
+
+		DataAPIListener: dataapiLis,
 	}
 }
 
@@ -150,5 +175,24 @@ func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 //
 // When this method returns, all components are stopped.
 func (sr *SetupResult) Run(ctx context.Context) {
-	sr.Listener.Run(ctx)
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+		sr.WireListener.Run(ctx)
+	}()
+
+	if sr.DataAPIListener != nil {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+			sr.DataAPIListener.Run(ctx)
+		}()
+	}
+
+	<-ctx.Done()
+	wg.Wait()
 }

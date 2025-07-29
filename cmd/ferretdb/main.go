@@ -39,7 +39,6 @@ import (
 	"github.com/FerretDB/FerretDB/v2/build/version"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/v2/internal/dataapi"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/debug"
@@ -504,36 +503,16 @@ func run() {
 		ProxyTLSKeyFile:  cli.Proxy.TLSKeyFile,
 		ProxyTLSCAFile:   cli.Proxy.TLSCaFile,
 		RecordsDir:       cli.Dev.RecordsDir,
+
+		DataAPIAddr: cli.Listen.DataAPIAddr,
 	})
 	if res == nil {
 		os.Exit(1)
 	}
 
-	if cli.Listen.DataAPIAddr != "" {
-		wg.Add(1)
+	listener.Store(res.WireListener)
 
-		go func() {
-			defer wg.Done()
-
-			l := logging.WithName(logger, "dataapi")
-
-			lis, e := dataapi.Listen(&dataapi.ListenOpts{
-				TCPAddr: cli.Listen.DataAPIAddr,
-				L:       l,
-				Handler: res.Listener.Handler,
-			})
-			if e != nil {
-				res.Pool.Close()
-				l.LogAttrs(ctx, logging.LevelFatal, "Failed to construct DataAPI listener", logging.Error(e))
-			}
-
-			lis.Run(ctx)
-		}()
-	}
-
-	listener.Store(res.Listener)
-
-	metricsRegisterer.MustRegister(res.Listener)
+	metricsRegisterer.MustRegister(res.WireListener)
 
 	res.Run(ctx)
 

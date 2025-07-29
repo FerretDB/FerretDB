@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dataapi
+package dataapi_test
 
 import (
 	"bytes"
@@ -21,7 +21,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,7 +30,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
-	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/setup"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
@@ -263,43 +261,29 @@ func setupDataAPI(tb testing.TB, auth bool) (addr string, dbName string) {
 		ProxyTLSKeyFile:  "",
 		ProxyTLSCAFile:   "",
 		RecordsDir:       "",
+
+		DataAPIAddr: "127.0.0.1:0",
 	})
 	require.NotNil(tb, res)
 
-	var apiLis *Listener
-	apiLis, err = Listen(&ListenOpts{
-		TCPAddr: "127.0.0.1:0",
-		L:       logging.WithName(l, "dataapi"),
-		Handler: res.Listener.Handler,
-	})
-	require.NoError(tb, err)
-
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
-	var wg sync.WaitGroup
+
+	runDone := make(chan struct{})
+
+	go func() {
+		defer close(runDone)
+		res.Run(ctx)
+	}()
 
 	// ensure that all listener's and handler's logs are written before test ends
 	tb.Cleanup(func() {
 		cancel()
-		wg.Wait()
+		<-runDone
 	})
-
-	wg.Add(1)
-
-	go func() {
-		defer wg.Done()
-		res.Run(ctx)
-	}()
-
-	wg.Add(1)
-
-	go func() {
-		defer wg.Done()
-		apiLis.Run(ctx)
-	}()
 
 	u := &url.URL{
 		Scheme: "mongodb",
-		Host:   res.Listener.TCPAddr().String(),
+		Host:   res.WireListener.TCPAddr().String(),
 		Path:   "/",
 	}
 
@@ -310,7 +294,7 @@ func setupDataAPI(tb testing.TB, auth bool) (addr string, dbName string) {
 	client, err := mongo.Connect(options.Client().ApplyURI(u.String()))
 	require.NoError(tb, err)
 
-	addr = apiLis.lis.Addr().String()
+	addr = res.DataAPIListener.Addr().String()
 	dbName = testutil.DatabaseName(tb)
 
 	err = client.Database(dbName).Drop(ctx)
