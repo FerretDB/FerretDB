@@ -261,6 +261,13 @@ tasks:
         -target-backend=mongodb
         -no-xfail={{.NO_XFAIL}}
 
+  bench-unit:
+    desc: "Run unit benchmarks"
+    cmds:
+      - go test -list='Benchmark.*' ./...
+      - go test -count=10 -bench=BenchmarkDocument -benchtime={{.BENCH_TIME}} ./internal/bson/ | tee -a new.txt
+      - bin/benchstat{{exeExt}} old.txt new.txt
+
   run:
     desc: "Run FerretDB without auth"
     deps: [build-host]
