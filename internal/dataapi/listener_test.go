@@ -32,9 +32,9 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/setup"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
-	"github.com/FerretDB/FerretDB/v2/internal/util/wiring"
 )
 
 func TestSmokeDataAPI(t *testing.T) {
@@ -239,7 +239,7 @@ func setupDataAPI(tb testing.TB, auth bool) (addr string, dbName string) {
 	l := testutil.Logger(tb)
 
 	//exhaustruct:enforce
-	res := wiring.Wire(tb.Context(), &wiring.WireOpts{
+	res := setup.Setup(tb.Context(), &setup.SetupOpts{
 		Logger: l,
 
 		StateProvider:   sp,

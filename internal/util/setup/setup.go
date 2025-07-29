@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package wiring provides proper setup of FerretDB components.
-package wiring
+// Package setup provides proper setup of FerretDB components.
+package setup
 
 import (
 	"context"
@@ -30,10 +30,10 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 )
 
-// WireOpts represents options for creating and wiring together FerretDB components.
+// SetupOpts represents options for creating and setting up FerretDB components.
 //
 //nolint:vet // for readability
-type WireOpts struct {
+type SetupOpts struct {
 	Logger *slog.Logger
 
 	StateProvider   *state.Provider
@@ -61,14 +61,14 @@ type WireOpts struct {
 	RecordsDir       string
 }
 
-// WireResult represents [Wire] result.
-type WireResult struct {
+// SetupResult represents [Setup] result.
+type SetupResult struct {
 	Pool        *documentdb.Pool
 	Listener    *clientconn.Listener
 	ConnMetrics *connmetrics.ConnMetrics
 }
 
-// Wire creates and wires together:
+// Setup creates and sets up:
 //   - PostgreSQL/DocumentDB connection pool ([*dociumentdb.Pool]);
 //   - DocumentDB handler ([*handler.Handler]);
 //   - wire protocol listener ([*clientconn.Listener]).
@@ -79,7 +79,7 @@ type WireResult struct {
 //
 // It returns nil if any of the components could not be created.
 // The error is already logged, so the caller may just exit.
-func Wire(ctx context.Context, opts *WireOpts) *WireResult {
+func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 	must.NotBeZero(opts)
 
 	p, err := documentdb.NewPool(opts.PostgreSQLURL, logging.WithName(opts.Logger, "pool"), opts.StateProvider)
@@ -139,7 +139,7 @@ func Wire(ctx context.Context, opts *WireOpts) *WireResult {
 	}
 
 	//exhaustruct:enforce
-	return &WireResult{
+	return &SetupResult{
 		Pool:        p,
 		Listener:    lis,
 		ConnMetrics: opts.ListenerMetrics.ConnMetrics,
@@ -149,6 +149,6 @@ func Wire(ctx context.Context, opts *WireOpts) *WireResult {
 // Run runs all components until ctx is canceled.
 //
 // When this method returns, all components are stopped.
-func (wr *WireResult) Run(ctx context.Context) {
-	wr.Listener.Run(ctx)
+func (sr *SetupResult) Run(ctx context.Context) {
+	sr.Listener.Run(ctx)
 }

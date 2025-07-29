@@ -26,9 +26,9 @@ import (
 	"go.opentelemetry.io/otel"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
+	"github.com/FerretDB/FerretDB/v2/internal/util/setup"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
-	"github.com/FerretDB/FerretDB/v2/internal/util/wiring"
 )
 
 // ListenerOpts represents setup options for in-process FerretDB listener.
@@ -108,7 +108,7 @@ func setupListener(tb testing.TB, ctx context.Context, opts *ListenerOpts, logge
 	}
 
 	//exhaustruct:enforce
-	wireOpts := &wiring.WireOpts{
+	wireOpts := &setup.SetupOpts{
 		Logger: logger,
 
 		StateProvider:   sp,
@@ -146,7 +146,7 @@ func setupListener(tb testing.TB, ctx context.Context, opts *ListenerOpts, logge
 		wireOpts.ProxyAddr = *targetProxyAddrF
 	}
 
-	res := wiring.Wire(ctx, wireOpts)
+	res := setup.Setup(ctx, wireOpts)
 	require.NotNil(tb, res)
 
 	runDone := make(chan struct{})

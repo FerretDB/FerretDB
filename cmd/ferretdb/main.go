@@ -48,9 +48,9 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/observability"
+	"github.com/FerretDB/FerretDB/v2/internal/util/setup"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/telemetry"
-	"github.com/FerretDB/FerretDB/v2/internal/util/wiring"
 )
 
 // The cli struct represents all command-line commands, fields and flags.
@@ -480,7 +480,7 @@ func run() {
 	}
 
 	//exhaustruct:enforce
-	res := wiring.Wire(ctx, &wiring.WireOpts{
+	res := setup.Setup(ctx, &setup.SetupOpts{
 		Logger: logger,
 
 		StateProvider:   stateProvider,
