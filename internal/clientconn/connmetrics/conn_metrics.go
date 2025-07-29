@@ -25,6 +25,9 @@ import (
 )
 
 // ConnMetrics represents metrics of an individual conn or a collection of conns.
+//
+// It should be removed and replaced by middleware metrics.
+// TODO https://github.com/FerretDB/FerretDB/issues/4965
 type ConnMetrics struct {
 	Requests  *prometheus.CounterVec
 	Responses *prometheus.CounterVec
