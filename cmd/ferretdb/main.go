@@ -490,7 +490,7 @@ func run() {
 
 		Auth:                   cli.Auth,
 		ReplSetName:            cli.Dev.ReplSetName,
-		SessionCleanupInterval: time.Minute,
+		SessionCleanupInterval: 0,
 
 		TCPAddr:          cli.Listen.Addr,
 		UnixAddr:         cli.Listen.Unix,

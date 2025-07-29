@@ -117,7 +117,7 @@ func setupListener(tb testing.TB, ctx context.Context, opts *ListenerOpts, logge
 		PostgreSQLURL: *postgreSQLURLF,
 
 		Auth:                   true,
-		ReplSetName:            "", // https://github.com/FerretDB/FerretDB-DocumentDB/issues/566
+		ReplSetName:            "", // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/566
 		SessionCleanupInterval: opts.SessionCleanupInterval,
 
 		TCPAddr:          "",

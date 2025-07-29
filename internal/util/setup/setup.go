@@ -69,7 +69,7 @@ type SetupResult struct {
 }
 
 // Setup creates and sets up:
-//   - PostgreSQL/DocumentDB connection pool ([*dociumentdb.Pool]);
+//   - PostgreSQL/DocumentDB connection pool ([*documentdb.Pool]);
 //   - DocumentDB handler ([*handler.Handler]);
 //   - wire protocol listener ([*clientconn.Listener]).
 //
