@@ -27,6 +27,7 @@ func (r *FindManyResponseBody) sealed()   {}
 func (r *InsertOneResponseBody) sealed()  {}
 func (r *InsertManyResponseBody) sealed() {}
 func (r *UpdateResponseBody) sealed()     {}
+func (r *Error) sealed()                  {}
 
 var (
 	_ Response = (*AggregateResponseBody)(nil)
@@ -37,4 +38,5 @@ var (
 	_ Response = (*InsertOneResponseBody)(nil)
 	_ Response = (*UpdateResponseBody)(nil)
 	_ Response = (*FindOneResponseBody)(nil)
+	_ Response = (*Error)(nil)
 )

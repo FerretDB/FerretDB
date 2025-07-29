@@ -192,10 +192,11 @@ func (s *Server) writeJSONError(ctx context.Context, w http.ResponseWriter, resp
 	codeName := doc.Get("codeName").(string)
 
 	w.WriteHeader(http.StatusInternalServerError)
-	s.writeJSONResponse(ctx, w, wirebson.MustDocument(
-		"error", errmsg,
-		"error_code", codeName,
-	))
+
+	s.writeJSONResponse(ctx, w, &api.Error{
+		Error:     errmsg,
+		ErrorCode: codeName,
+	})
 }
 
 // prepareDocument creates a new bson document from the given pairs of
