@@ -29,14 +29,12 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
-	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/v2/internal/util/wiring"
 )
 
 func TestSmokeDataAPI(t *testing.T) {
@@ -240,36 +238,39 @@ func setupDataAPI(tb testing.TB, auth bool) (addr string, dbName string) {
 
 	l := testutil.Logger(tb)
 
-	p, err := documentdb.NewPool(uri, logging.WithName(l, "pool"), sp)
-	require.NoError(tb, err)
+	//exhaustruct:enforce
+	res := wiring.Wire(tb.Context(), &wiring.WireOpts{
+		Logger: l,
 
-	handlerOpts := &handler.NewOpts{
-		Pool: p,
-		Auth: auth,
+		StateProvider:   sp,
+		ListenerMetrics: connmetrics.NewListenerMetrics(),
 
-		L:             logging.WithName(l, "handler"),
-		StateProvider: sp,
-	}
+		PostgreSQLURL: uri,
 
-	h, err := handler.New(handlerOpts)
-	require.NoError(tb, err)
+		Auth:                   auth,
+		ReplSetName:            "",
+		SessionCleanupInterval: 0,
 
-	listenerOpts := clientconn.ListenerOpts{
-		Handler: h,
-		Metrics: connmetrics.NewListenerMetrics(),
-		Logger:  logging.WithName(l, "listener"),
-		TCP:     "127.0.0.1:0",
-		Mode:    middleware.NormalMode,
-	}
-
-	lis, err := clientconn.Listen(&listenerOpts)
-	require.NoError(tb, err)
+		TCPAddr:          "127.0.0.1:0",
+		UnixAddr:         "",
+		TLSAddr:          "",
+		TLSCertFile:      "",
+		TLSKeyFile:       "",
+		TLSCAFile:        "",
+		Mode:             middleware.NormalMode,
+		ProxyAddr:        "",
+		ProxyTLSCertFile: "",
+		ProxyTLSKeyFile:  "",
+		ProxyTLSCAFile:   "",
+		RecordsDir:       "",
+	})
+	require.NotNil(tb, res)
 
 	var apiLis *Listener
 	apiLis, err = Listen(&ListenOpts{
 		TCPAddr: "127.0.0.1:0",
 		L:       logging.WithName(l, "dataapi"),
-		Handler: h,
+		Handler: res.Listener.Handler,
 	})
 	require.NoError(tb, err)
 
@@ -286,7 +287,7 @@ func setupDataAPI(tb testing.TB, auth bool) (addr string, dbName string) {
 
 	go func() {
 		defer wg.Done()
-		lis.Run(ctx)
+		res.Run(ctx)
 	}()
 
 	wg.Add(1)
@@ -298,7 +299,7 @@ func setupDataAPI(tb testing.TB, auth bool) (addr string, dbName string) {
 
 	u := &url.URL{
 		Scheme: "mongodb",
-		Host:   lis.TCPAddr().String(),
+		Host:   res.Listener.TCPAddr().String(),
 		Path:   "/",
 	}
 
