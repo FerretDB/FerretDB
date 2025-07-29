@@ -37,7 +37,6 @@ import (
 	oteltrace "go.opentelemetry.io/otel/trace"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/proxy"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
@@ -51,8 +50,7 @@ type conn struct {
 	netConn        net.Conn
 	mode           middleware.Mode
 	l              *slog.Logger
-	h              middleware.Handler
-	m              *connmetrics.ConnMetrics
+	h              *middleware.Middleware
 	proxy          *proxy.Handler
 	lastRequestID  atomic.Int32
 	testRecordsDir string // if empty, no records are created
@@ -60,11 +58,10 @@ type conn struct {
 
 // newConnOpts represents newConn options.
 type newConnOpts struct {
-	netConn     net.Conn
-	mode        middleware.Mode
-	l           *slog.Logger
-	handler     middleware.Handler
-	connMetrics *connmetrics.ConnMetrics
+	netConn net.Conn
+	mode    middleware.Mode
+	l       *slog.Logger
+	handler *middleware.Middleware
 
 	proxyAddr        string
 	proxyTLSCertFile string
@@ -106,7 +103,6 @@ func newConn(opts *newConnOpts) (*conn, error) {
 		mode:           opts.mode,
 		l:              opts.l,
 		h:              opts.handler,
-		m:              opts.connMetrics,
 		proxy:          p,
 		testRecordsDir: opts.testRecordsDir,
 	}, nil
@@ -408,8 +404,6 @@ func (c *conn) route(connCtx context.Context, reqHeader *wire.MsgHeader, reqBody
 	if command == "" {
 		command = "unknown"
 	}
-
-	c.m.Requests.WithLabelValues(reqHeader.OpCode.String(), command).Inc()
 
 	// set body for error
 	if err != nil {

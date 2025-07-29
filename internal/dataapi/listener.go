@@ -41,7 +41,7 @@ type Listener struct {
 // ListenOpts represents [Listen] options.
 type ListenOpts struct {
 	TCPAddr string
-	Handler middleware.Handler
+	Handler *middleware.Middleware
 	Auth    bool
 	L       *slog.Logger
 }

@@ -46,6 +46,8 @@ type Pool struct {
 // NewPool creates a new pool of PostgreSQL connections.
 // No actual connections are established.
 func NewPool(uri string, l *slog.Logger, sp *state.Provider) (*Pool, error) {
+	must.NotBeZero(uri)
+	must.NotBeZero(l)
 	must.NotBeZero(sp)
 
 	p, err := newPgxPool(uri, logging.WithName(l, "pgx"), sp)

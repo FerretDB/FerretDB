@@ -20,44 +20,16 @@ import (
 	"log/slog"
 	"strings"
 	"sync"
-	"sync/atomic"
 
 	"github.com/pmezard/go-difflib/difflib"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
-
-// Handler is a common interface for handlers and middleware.
-type Handler interface {
-	// Run runs the handler until ctx is canceled.
-	//
-	// When this method returns, the handler is fully stopped.
-	Run(ctx context.Context)
-
-	// Handle processes a single request.
-	//
-	// The passed context is canceled when the client disconnects.
-	//
-	// Response is a normal or error response produced by the handler.
-	//
-	// Error is returned when the handler cannot process the request;
-	// for example, when connection with PostgreSQL or proxy is lost.
-	// Returning an error generally means that the listener should close the client connection.
-	// Error should not be [*mongoerrors.Error] or have that type in its chain.
-	//
-	// Exactly one of Response or error should be non-nil.
-	Handle(ctx context.Context, req *Request) (resp *Response, err error)
-
-	prometheus.Collector
-}
-
-// lastRequestID stores last generated request ID.
-var lastRequestID atomic.Int32
 
 type Middleware struct {
 	*NewOpts
-	m  *metrics
 	wg *sync.WaitGroup
 }
 
@@ -65,22 +37,39 @@ type Middleware struct {
 //
 //nolint:vet // for readability
 type NewOpts struct {
-	Mode  Mode
-	DocDB Handler
-	Proxy Handler
-	L     *slog.Logger
+	Mode    Mode
+	DocDB   Handler
+	Proxy   Handler
+	Metrics *Metrics
+	L       *slog.Logger
 }
 
 // New returns a new middleware.
+// It takes over passed handlers, running them in [Run].
+// It also exposing metrics their metrics, as well as passed [Metrics], via [prometheus.Collector].
 func New(opts *NewOpts) (*Middleware, error) {
+	must.NotBeZero(opts)
+
 	return &Middleware{
 		NewOpts: opts,
-		m:       newMetrics(),
 	}, nil
 }
 
 // Run implements [middleware.Handler].
+// It runs both handlers untix ctx is canceled.
 func (m *Middleware) Run(ctx context.Context) {
+	m.wg.Add(2)
+
+	go func() {
+		defer m.wg.Done()
+		m.DocDB.Run(ctx)
+	}()
+
+	go func() {
+		defer m.wg.Done()
+		m.Proxy.Run(ctx)
+	}()
+
 	<-ctx.Done()
 	m.wg.Wait()
 }
@@ -111,9 +100,9 @@ func (m *Middleware) handle(ctx context.Context, req *Request) (docdb, proxy *Re
 	// FIXME opcode
 	opcode := req.WireHeader().OpCode.String()
 	command := req.Document().Command()
-	m.m.requests.WithLabelValues(opcode, command).Inc()
+	m.Metrics.requests.WithLabelValues(opcode, command).Inc()
 
-	m.m.responses.MustCurryWith(prometheus.Labels{
+	m.Metrics.responses.MustCurryWith(prometheus.Labels{
 		"opcode":  opcode,
 		"command": command,
 	})
@@ -126,7 +115,7 @@ func (m *Middleware) handle(ctx context.Context, req *Request) (docdb, proxy *Re
 			docdb, docdbErr = (&dispatcher{
 				h: m.DocDB,
 				l: logging.WithName(m.L, "docdb"),
-				m: m.m,
+				m: m.Metrics,
 			}).Handle(ctx, req)
 			wg.Done()
 		}()
@@ -138,7 +127,7 @@ func (m *Middleware) handle(ctx context.Context, req *Request) (docdb, proxy *Re
 			proxy, proxyErr = (&dispatcher{
 				h: m.Proxy,
 				l: logging.WithName(m.L, "proxy"),
-				m: m.m,
+				m: m.Metrics,
 			}).Handle(ctx, req)
 
 			wg.Done()
@@ -191,12 +180,24 @@ func (m *Middleware) logDiff(ctx context.Context, docdb, proxy *Response, logLev
 
 // Describe implements [prometheus.Collector].
 func (m *Middleware) Describe(ch chan<- *prometheus.Desc) {
-	m.m.Describe(ch)
+	m.Metrics.Describe(ch)
+	if m.DocDB != nil {
+		m.DocDB.Describe(ch)
+	}
+	if m.Proxy != nil {
+		m.Proxy.Describe(ch)
+	}
 }
 
 // Collect implements [prometheus.Collector].
 func (m *Middleware) Collect(ch chan<- prometheus.Metric) {
-	m.m.Collect(ch)
+	m.Metrics.Collect(ch)
+	if m.DocDB != nil {
+		m.DocDB.Collect(ch)
+	}
+	if m.Proxy != nil {
+		m.Proxy.Collect(ch)
+	}
 }
 
 // check interfaces

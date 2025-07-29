@@ -138,7 +138,7 @@ func New(config *Config) (*FerretDB, error) {
 		ReplSetName: "",
 
 		L:             logging.WithName(logger, "handler"),
-		ConnMetrics:   lm.ConnMetrics,
+		Metrics:       lm.ConnMetrics,
 		StateProvider: stateProvider,
 	}
 

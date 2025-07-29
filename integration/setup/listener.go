@@ -122,7 +122,7 @@ func setupListener(tb testing.TB, ctx context.Context, opts *ListenerOpts, logge
 		ReplSetName: "",
 
 		L:             logging.WithName(logger, "handler"),
-		ConnMetrics:   listenerMetrics.ConnMetrics,
+		Metrics:       listenerMetrics.ConnMetrics,
 		StateProvider: sp,
 
 		SessionCleanupInterval: opts.SessionCleanupInterval,

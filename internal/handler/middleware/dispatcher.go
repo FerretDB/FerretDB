@@ -39,7 +39,7 @@ import (
 type dispatcher struct {
 	h Handler
 	l *slog.Logger
-	m *metrics
+	m *Metrics
 }
 
 // errPanic is returned when a panic occurs in the handler.

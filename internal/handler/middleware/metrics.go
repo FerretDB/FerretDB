@@ -39,8 +39,8 @@ const (
 	resultUnknown = result("unknown")
 )
 
-// metrics represents middleware metrics.
-type metrics struct {
+// Metrics represents middleware Metrics.
+type Metrics struct {
 	requests  *prometheus.CounterVec
 	responses *prometheus.CounterVec
 }
@@ -51,9 +51,9 @@ type CommandMetrics struct {
 	Total    int            // both "ok" and failures
 }
 
-// newMetrics creates new metrics.
-func newMetrics() *metrics {
-	m := &metrics{
+// NewMetrics creates new metrics.
+func NewMetrics() *Metrics {
+	m := &Metrics{
 		requests: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: namespace,
@@ -83,25 +83,25 @@ func newMetrics() *metrics {
 }
 
 // Describe implements [prometheus.Collector].
-func (m *metrics) Describe(ch chan<- *prometheus.Desc) {
+func (m *Metrics) Describe(ch chan<- *prometheus.Desc) {
 	m.requests.Describe(ch)
 	m.responses.Describe(ch)
 }
 
 // Collect implements [prometheus.Collector].
-func (m *metrics) Collect(ch chan<- prometheus.Metric) {
+func (m *Metrics) Collect(ch chan<- prometheus.Metric) {
 	m.requests.Collect(ch)
 	m.responses.Collect(ch)
 }
 
-// getResponses returns a map with all response metrics:
+// GetResponses returns a map with all response metrics:
 //
 // opcode (e.g. "OP_MSG", "OP_QUERY") ->
 // command (e.g. "find", "aggregate") ->
 // argument that caused an error (e.g. "sort", "$count (stage)"; or "unknown") ->
 // result (e.g. "NotImplemented", "panic", or "ok") ->
 // count.
-func (m *metrics) GetResponses() map[string]map[string]map[string]CommandMetrics {
+func (m *Metrics) GetResponses() map[string]map[string]map[string]CommandMetrics {
 	metrics := make(chan prometheus.Metric)
 	go func() {
 		m.responses.Collect(metrics)
@@ -163,5 +163,5 @@ func (m *metrics) GetResponses() map[string]map[string]map[string]CommandMetrics
 
 // check interfaces
 var (
-	_ prometheus.Collector = (*metrics)(nil)
+	_ prometheus.Collector = (*Metrics)(nil)
 )

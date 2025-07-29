@@ -53,7 +53,7 @@ type Listener struct {
 
 // ListenerOpts represents listener configuration.
 type ListenerOpts struct {
-	Handler middleware.Handler
+	Handler *middleware.Middleware
 	Metrics *connmetrics.ListenerMetrics
 	Logger  *slog.Logger
 
@@ -321,11 +321,10 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 			connID := fmt.Sprintf("%s -> %s", remoteAddr, netConn.LocalAddr())
 
 			opts := &newConnOpts{
-				netConn:     netConn,
-				mode:        l.Mode,
-				l:           logging.WithName(l.ll, "// "+connID+" "), // derive from the original unnamed logger
-				handler:     l.Handler,
-				connMetrics: l.Metrics.ConnMetrics, // share between all conns
+				netConn: netConn,
+				mode:    l.Mode,
+				l:       logging.WithName(l.ll, "// "+connID+" "), // derive from the original unnamed logger
+				handler: l.Handler,
 
 				proxyAddr:        l.ProxyAddr,
 				proxyTLSCertFile: l.ProxyTLSCertFile,
