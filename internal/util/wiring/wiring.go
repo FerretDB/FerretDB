@@ -36,17 +36,20 @@ import (
 type WireOpts struct {
 	Logger *slog.Logger
 
-	StateProvider *state.Provider
+	StateProvider   *state.Provider
+	ListenerMetrics *connmetrics.ListenerMetrics
 
 	PostgreSQLURL string
 
+	// DocumentDB handler
 	Auth                   bool
 	ReplSetName            string
 	SessionCleanupInterval time.Duration
 
-	TCPAddr          string
-	UnixAddr         string
-	TLSAddr          string
+	// Wire protocol listener
+	TCPAddr          string // empty value disables TCP listener
+	UnixAddr         string // empty value disables Unix listener
+	TLSAddr          string // empty value disables TLS listener
 	TLSCertFile      string
 	TLSKeyFile       string
 	TLSCAFile        string
@@ -85,8 +88,6 @@ func Wire(ctx context.Context, opts *WireOpts) *WireResult {
 		return nil
 	}
 
-	lm := connmetrics.NewListenerMetrics()
-
 	//exhaustruct:enforce
 	h, err := handler.New(&handler.NewOpts{
 		Pool: p, // handler takes over the pool
@@ -96,7 +97,7 @@ func Wire(ctx context.Context, opts *WireOpts) *WireResult {
 		ReplSetName: opts.ReplSetName,
 
 		L:             logging.WithName(opts.Logger, "handler"),
-		ConnMetrics:   lm.ConnMetrics,
+		ConnMetrics:   opts.ListenerMetrics.ConnMetrics,
 		StateProvider: opts.StateProvider,
 
 		SessionCleanupInterval: opts.SessionCleanupInterval,
@@ -111,7 +112,7 @@ func Wire(ctx context.Context, opts *WireOpts) *WireResult {
 	//exhaustruct:enforce
 	lis, err := clientconn.Listen(&clientconn.ListenerOpts{
 		Handler: h, // listener takes over the handler
-		Metrics: lm,
+		Metrics: opts.ListenerMetrics,
 		Logger:  opts.Logger,
 
 		TCP:  opts.TCPAddr,
@@ -141,7 +142,7 @@ func Wire(ctx context.Context, opts *WireOpts) *WireResult {
 	return &WireResult{
 		Pool:        p,
 		Listener:    lis,
-		ConnMetrics: lm.ConnMetrics,
+		ConnMetrics: opts.ListenerMetrics.ConnMetrics,
 	}
 }
 

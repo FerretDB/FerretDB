@@ -35,14 +35,12 @@ import (
 	"time"
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
-	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/telemetry"
+	"github.com/FerretDB/FerretDB/v2/internal/util/wiring"
 )
 
 // Keep structure and order of Config in sync with the main package and documentation.
@@ -75,7 +73,7 @@ type Config struct {
 // FerretDB represents an instance of embedded FerretDB implementation.
 type FerretDB struct {
 	tl  *telemetry.Reporter
-	lis *clientconn.Listener
+	res *wiring.WireResult
 }
 
 // New creates a new instance of embedded FerretDB implementation.
@@ -125,46 +123,39 @@ func New(config *Config) (*FerretDB, error) {
 		return nil, fmt.Errorf("failed to create telemetry reporter: %w", err)
 	}
 
-	p, err := documentdb.NewPool(config.PostgreSQLURL, logging.WithName(logger, "pool"), stateProvider)
-	if err != nil {
-		return nil, fmt.Errorf("failed to construct pool: %w", err)
-	}
+	//exhaustruct:enforce
+	res := wiring.Wire(context.TODO(), &wiring.WireOpts{
+		Logger: logger,
 
-	handlerOpts := &handler.NewOpts{
-		Pool: p,
-		Auth: false,
+		StateProvider:   stateProvider,
+		ListenerMetrics: lm,
 
-		TCPHost:     "",
-		ReplSetName: "",
+		PostgreSQLURL: config.PostgreSQLURL,
 
-		L:             logging.WithName(logger, "handler"),
-		ConnMetrics:   lm.ConnMetrics,
-		StateProvider: stateProvider,
-	}
+		Auth:                   false,
+		ReplSetName:            "",
+		SessionCleanupInterval: 0,
 
-	h, err := handler.New(handlerOpts)
-	if err != nil {
-		p.Close()
-		return nil, fmt.Errorf("failed to construct handler: %w", err)
-	}
-
-	lis, err := clientconn.Listen(&clientconn.ListenerOpts{
-		Handler: h,
-		Metrics: lm,
-		Logger:  logger,
-
-		TCP: config.ListenAddr,
-
-		Mode: middleware.NormalMode,
+		TCPAddr:          config.ListenAddr,
+		UnixAddr:         "",
+		TLSAddr:          "",
+		TLSCertFile:      "",
+		TLSKeyFile:       "",
+		TLSCAFile:        "",
+		Mode:             middleware.NormalMode,
+		ProxyAddr:        "",
+		ProxyTLSCertFile: "",
+		ProxyTLSKeyFile:  "",
+		ProxyTLSCAFile:   "",
+		RecordsDir:       "",
 	})
-	if err != nil {
-		p.Close()
-		return nil, fmt.Errorf("failed to construct listener: %w", err)
+	if res == nil {
+		return nil, fmt.Errorf("failed to create FerretDB")
 	}
 
 	return &FerretDB{
 		tl:  tr,
-		lis: lis,
+		res: res,
 	}, nil
 }
 
@@ -188,7 +179,7 @@ func (f *FerretDB) Run(ctx context.Context) {
 
 	go func() {
 		defer wg.Done()
-		f.lis.Run(ctx)
+		f.res.Run(ctx)
 	}()
 
 	wg.Wait()
@@ -198,7 +189,7 @@ func (f *FerretDB) Run(ctx context.Context) {
 func (f *FerretDB) MongoDBURI() string {
 	u := &url.URL{
 		Scheme: "mongodb",
-		Host:   f.lis.TCPAddr().String(),
+		Host:   f.res.Listener.TCPAddr().String(),
 		Path:   "/",
 	}
 

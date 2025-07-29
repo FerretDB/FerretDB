@@ -483,7 +483,8 @@ func run() {
 	res := wiring.Wire(ctx, &wiring.WireOpts{
 		Logger: logger,
 
-		StateProvider: stateProvider,
+		StateProvider:   stateProvider,
+		ListenerMetrics: lm,
 
 		PostgreSQLURL: cli.PostgreSQLURL,
 
