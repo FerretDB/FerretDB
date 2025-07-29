@@ -65,7 +65,6 @@ services:
       - POSTGRES_USER=<username>
       - POSTGRES_PASSWORD=<password>
       - POSTGRES_DB=postgres
-      - FERRETDB_AUTH=false
     volumes:
       - ./ferretdb_data:/var/lib/postgresql/data
   wekan:
@@ -74,7 +73,7 @@ services:
     ports:
       - 80:8080
     environment:
-      - MONGO_URL=mongodb://ferretdb:27017/wekan
+      - MONGO_URL=mongodb://<username>:<password>@ferretdb:27017/wekan
       - ROOT_URL=http://localhost
       - WRITABLE_PATH=/data
     volumes:
@@ -89,14 +88,8 @@ networks:
 This setup defines two services: `ferretdb` for the FerretDB instance and `wekan` for the WeKan application.
 The `ferretdb` service uses the [FerretDB evaluation image](https://docs.ferretdb.io/installation/evaluation/), which is designed for quick testing and experiments.
 
-Replace `<username>` and `<password>` with your desired PostgreSQL credentials.
+Replace `<username>` and `<password>` with your desired credentials.
 `WRITABLE_PATH` is set to `/data`, which is where WeKan will store its files and attachments.
-
-:::note
-WeKan primarily attempts authentication using the `SCRAM-SHA-1` mechanism.
-FerretDB, however, currently only supports `SCRAM-SHA-256`.
-Because of this, you must disable authentication on your FerretDB instance for WeKan to connect successfully.
-:::
 
 ### Launch services and access FerretDB and WeKan
 
@@ -121,7 +114,7 @@ Let's inspect how WeKan stores its data within FerretDB.
 Connect to your FerretDB instance using `mongosh` or a GUI tool (like MongoDB Compass or DBeaver).
 
 ```sh
-mongosh mongodb://localhost:27017/wekan
+mongosh mongodb://<username>:<password>@localhost:27017/wekan
 ```
 
 WeKan creates numerous collections to manage all aspects of a Kanban board.
