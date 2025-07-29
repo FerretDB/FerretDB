@@ -42,7 +42,9 @@ const (
 // nameKey is a [slog.Attr] key used by [WithName].
 const nameKey = "name"
 
-// WithName returns a logger with a given dot-separated name set.
+// WithName returns a logger with a given period-separated name.
+//
+// How this name is used depends on the handler.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/4431
 func WithName(l *slog.Logger, name string) *slog.Logger {

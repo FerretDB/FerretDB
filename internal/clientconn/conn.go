@@ -521,3 +521,45 @@ func (c *conn) renamePartialFile(ctx context.Context, f *os.File, h hash.Hash, e
 		c.l.WarnContext(ctx, "Failed to rename file", logging.Error(e))
 	}
 }
+
+// logResponse logs response's header and body and returns the log level that was used.
+//
+// The param `who` will be used in logs and should represent the type of the response,
+// for example "Response" or "Proxy Response".
+func (c *conn) logResponse(ctx context.Context, who string, resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) slog.Level { //nolint:lll // for readability
+	level := slog.LevelDebug
+
+	if resHeader.OpCode == wire.OpCodeMsg {
+		msg := resBody.(*wire.OpMsg)
+
+		doc, _ := msg.Section0()
+
+		var ok bool
+
+		if doc != nil {
+			switch v := doc.Get("ok").(type) {
+			case float64:
+				ok = v == 1
+			case int32:
+				ok = v == 1
+			case int64:
+				ok = v == 1
+			}
+		}
+
+		if !ok {
+			level = slog.LevelWarn
+		}
+	}
+
+	if closeConn {
+		level = slog.LevelError
+	}
+
+	if c.l.Enabled(ctx, level) {
+		c.l.Log(ctx, level, who+" header: "+resHeader.String())
+		c.l.Log(ctx, level, who+" message:\n"+resBody.StringIndent())
+	}
+
+	return level
+}

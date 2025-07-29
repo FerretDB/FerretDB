@@ -21,7 +21,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/FerretDB/wire"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel"
 	otelattribute "go.opentelemetry.io/otel/attribute"
@@ -110,7 +109,7 @@ func (d *dispatcher) Handle(ctx context.Context, req *Request) (resp *Response, 
 		// FIXME
 		attrs := []slog.Attr{
 			slog.String("command", req.Document().Command()),
-			slog.String("result", res),
+			slog.String("result", string(res)),
 			slog.Duration("duration", time.Since(start)),
 		}
 		d.l.LogAttrs(ctx, slog.LevelInfo, "FIXME", attrs...)
@@ -190,42 +189,4 @@ func (d *dispatcher) endSpan(ctx context.Context, resp *Response, res result) {
 	)
 
 	span.End()
-}
-
-func (d *dispatcher) log(ctx context.Context, req *Request, resp *Response) {
-	level := slog.LevelDebug
-
-	if resHeader.OpCode == wire.OpCodeMsg {
-		msg := resBody.(*wire.OpMsg)
-
-		doc, _ := msg.Section0()
-
-		var ok bool
-
-		if doc != nil {
-			switch v := doc.Get("ok").(type) {
-			case float64:
-				ok = v == 1
-			case int32:
-				ok = v == 1
-			case int64:
-				ok = v == 1
-			}
-		}
-
-		if !ok {
-			level = slog.LevelWarn
-		}
-	}
-
-	if closeConn {
-		level = slog.LevelError
-	}
-
-	if c.l.Enabled(ctx, level) {
-		c.l.Log(ctx, level, who+" header: "+resHeader.String())
-		c.l.Log(ctx, level, who+" message:\n"+resBody.StringIndent())
-	}
-
-	return level
 }
