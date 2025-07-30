@@ -37,7 +37,7 @@ func (h *Handler) msgFind(connCtx context.Context, req *middleware.Request) (*mi
 		return nil, err
 	}
 
-	page, cursorID, err := h.Pool.Find(connCtx, dbName, req.DocumentRaw())
+	page, cursorID, err := h.p.Find(connCtx, dbName, req.DocumentRaw())
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

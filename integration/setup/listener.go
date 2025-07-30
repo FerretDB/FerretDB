@@ -25,11 +25,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
 
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn"
-	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
-	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
-	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/setup"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
@@ -110,49 +107,49 @@ func setupListener(tb testing.TB, ctx context.Context, opts *ListenerOpts, logge
 		opts = new(ListenerOpts)
 	}
 
-	p, err := documentdb.NewPool(*postgreSQLURLF, logging.WithName(logger, "pool"), sp)
-	require.NoError(tb, err)
+	//exhaustruct:enforce
+	wireOpts := &setup.SetupOpts{
+		Logger: logger,
 
-	handlerOpts := &handler.NewOpts{
-		Pool: p,
-		Auth: true,
+		StateProvider:   sp,
+		ListenerMetrics: listenerMetrics,
 
-		// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/566
-		TCPHost:     "",
-		ReplSetName: "",
+		PostgreSQLURL: *postgreSQLURLF,
 
-		L:             logging.WithName(logger, "handler"),
-		ConnMetrics:   listenerMetrics.ConnMetrics,
-		StateProvider: sp,
-
+		Auth:                   true,
+		ReplSetName:            "", // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/566
 		SessionCleanupInterval: opts.SessionCleanupInterval,
-	}
 
-	h, err := handler.New(handlerOpts)
-	require.NoError(tb, err)
+		TCPAddr:          "",
+		UnixAddr:         "",
+		TLSAddr:          "",
+		TLSCertFile:      "",
+		TLSKeyFile:       "",
+		TLSCAFile:        "",
+		Mode:             middleware.NormalMode,
+		ProxyAddr:        "",
+		ProxyTLSCertFile: "",
+		ProxyTLSKeyFile:  "",
+		ProxyTLSCAFile:   "",
+		RecordsDir:       testutil.TmpRecordsDir,
 
-	listenerOpts := clientconn.ListenerOpts{
-		Handler:        h,
-		Metrics:        listenerMetrics,
-		Logger:         logger,
-		Mode:           middleware.NormalMode,
-		ProxyAddr:      *targetProxyAddrF,
-		TestRecordsDir: testutil.TmpRecordsDir,
-	}
-
-	if *targetProxyAddrF != "" {
-		listenerOpts.Mode = middleware.DiffNormalMode
+		DataAPIAddr: "",
 	}
 
 	switch {
 	case *targetUnixSocketF:
-		listenerOpts.Unix = unixSocketPath(tb)
+		wireOpts.UnixAddr = unixSocketPath(tb)
 	default:
-		listenerOpts.TCP = "127.0.0.1:0"
+		wireOpts.TCPAddr = "127.0.0.1:0"
 	}
 
-	l, err := clientconn.Listen(&listenerOpts)
-	require.NoError(tb, err)
+	if *targetProxyAddrF != "" {
+		wireOpts.Mode = middleware.DiffNormalMode
+		wireOpts.ProxyAddr = *targetProxyAddrF
+	}
+
+	res := setup.Setup(ctx, wireOpts)
+	require.NotNil(tb, res)
 
 	runDone := make(chan struct{})
 
@@ -162,7 +159,7 @@ func setupListener(tb testing.TB, ctx context.Context, opts *ListenerOpts, logge
 		runCtx, runSpan := otel.Tracer("").Start(ctx, "setupListener.Run")
 		defer runSpan.End()
 
-		l.Run(runCtx)
+		res.Run(runCtx)
 	}()
 
 	// ensure that all listener's and handler's logs are written before test ends
@@ -174,9 +171,9 @@ func setupListener(tb testing.TB, ctx context.Context, opts *ListenerOpts, logge
 
 	switch {
 	case *targetUnixSocketF:
-		unixSocketPath = l.UnixAddr().String()
+		unixSocketPath = res.WireListener.UnixAddr().String()
 	default:
-		hostPort = l.TCPAddr().String()
+		hostPort = res.WireListener.TCPAddr().String()
 	}
 
 	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath)
