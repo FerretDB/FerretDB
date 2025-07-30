@@ -81,7 +81,9 @@ type SetupResult struct {
 // It does not change the global state or creates components that are different in tests.
 // For example, it does not:
 //   - change global logger (it is different in tests);
-//   - set up telemetry reporter (it is not needed in tests).
+//   - set up telemetry reporter (it is not needed in tests);
+//   - set up debug handler (it is global);
+//   - set up OpenTelemetry trace exporter (it is global).
 //
 // It returns nil if any of the components could not be created.
 // The error is already logged, so the caller may just exit.

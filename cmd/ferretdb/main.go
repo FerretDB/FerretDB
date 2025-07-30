@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package main is the entry point for FerretDB server.
 package main
 
 import (
@@ -21,7 +22,6 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
-	"math"
 	"os"
 	"runtime"
 	runtimedebug "runtime/debug"
@@ -33,7 +33,6 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
-	"go.uber.org/automaxprocs/maxprocs"
 	_ "golang.org/x/crypto/x509roots/fallback" // register root TLS certificates for production Docker image
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
@@ -365,18 +364,7 @@ func run() {
 
 	checkFlags(logger)
 
-	maxprocsOpts := []maxprocs.Option{
-		maxprocs.Min(2),
-		maxprocs.RoundQuotaFunc(func(v float64) int {
-			return int(math.Ceil(v))
-		}),
-		maxprocs.Logger(func(format string, a ...any) {
-			logger.Info(fmt.Sprintf(format, a...))
-		}),
-	}
-	if _, err = maxprocs.Set(maxprocsOpts...); err != nil {
-		logger.Warn("Failed to set GOMAXPROCS", logging.Error(err))
-	}
+	setGOMAXPROCS(logger)
 
 	ctx, stop := ctxutil.SigTerm(context.Background())
 
