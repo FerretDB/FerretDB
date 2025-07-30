@@ -15,6 +15,7 @@
 package server
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -70,12 +71,23 @@ func (s *Server) Find(w http.ResponseWriter, r *http.Request) {
 	cursor := resp.Document().Get("cursor").(wirebson.AnyDocument)
 	firstBatch := must.NotFail(cursor.Decode()).Get("firstBatch").(wirebson.AnyArray)
 
+	dummyDoc := wirebson.MustDocument("v", firstBatch)
+
+	//docs, err := dummyDoc.Decode()
+	//if err != nil {
+	//	http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+	//	return
+	//}
+
 	var b json.RawMessage
-	b, err = json.Marshal(firstBatch)
+	b, err = json.Marshal(dummyDoc)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
+
+	b = bytes.TrimPrefix(b, []byte(`{"v":`))
+	b = bytes.TrimSuffix(b, []byte(`}`))
 
 	res := api.FindOneResponseBody{
 		Document: &b,

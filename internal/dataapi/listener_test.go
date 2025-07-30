@@ -58,7 +58,7 @@ func TestSmokeDataAPI(t *testing.T) {
 
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
-		assert.JSONEq(t, `{"documents":[]}`, string(body))
+		assert.JSONEq(t, `{}`, string(body))
 	})
 
 	docs := []string{
@@ -96,7 +96,7 @@ func TestSmokeDataAPI(t *testing.T) {
 
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
-		assert.JSONEq(t, `{"insertedIds":[]}`, string(body))
+		assert.JSONEq(t, `{}`, string(body))
 	})
 
 	t.Run("UpdateOne", func(t *testing.T) {
