@@ -79,6 +79,7 @@ func checkDocFiles(client *github.Client, files []string) error {
 		if err != nil {
 			log.Printf("%q: %s", file, err)
 		}
+
 		if !f || err != nil {
 			failed = true
 		}
