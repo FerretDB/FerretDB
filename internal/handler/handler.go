@@ -70,8 +70,8 @@ type Handler struct {
 //nolint:vet // for readability
 type NewOpts struct {
 	Pool *documentdb.Pool
-	Auth bool
 
+	Auth        bool
 	TCPHost     string
 	ReplSetName string
 
