@@ -49,6 +49,7 @@ type ListenOpts struct {
 }
 
 // Listen creates a new dataapi handler and starts listener on the given TCP address.
+// [Listener.Run] must be called on the returned value.
 func Listen(opts *ListenOpts) (*Listener, error) {
 	lis, err := net.Listen("tcp", opts.TCPAddr)
 	if err != nil {

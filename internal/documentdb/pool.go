@@ -151,7 +151,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, subsystem, "acquires_cancelled_total"),
+			prometheus.BuildFQName(namespace, subsystem, "acquires_canceled_total"),
 			"The cumulative count of connection acquires from the pool that were canceled.",
 			nil, nil,
 		),

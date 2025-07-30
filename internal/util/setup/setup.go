@@ -95,14 +95,22 @@ type SetupResult struct {
 func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 	must.NotBeZero(opts)
 
+	var res SetupResult
+	var err error
+
+	// If we exit early, we must Run what we already created to avoid leaks:
+	// components create resources like listening sockets, database pools, etc in constructors.
+	exitCtx, exitCancel := context.WithCancel(ctx)
+	exitCancel() // no defer - we need canceled context
+
 	//exhaustruct:enforce
-	docdbH, err := handler.New(&handler.NewOpts{
+	res.docdbH, err = handler.New(&handler.NewOpts{
 		PostgreSQLURL: opts.PostgreSQLURL,
 		Auth:          opts.Auth,
-		TCPHost:       opts.TCPAddr,
+		TCPHost:       opts.TCPAddr, // FIXME that might require a started listener?
 		ReplSetName:   opts.ReplSetName,
 
-		L:             logging.WithName(opts.Logger, "handler"),
+		L:             logging.WithName(opts.Logger, "documentdb"),
 		Metrics:       opts.Metrics,
 		StateProvider: opts.StateProvider,
 
@@ -110,14 +118,13 @@ func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 	})
 	if err != nil {
 		opts.Logger.LogAttrs(ctx, logging.LevelDPanic, "Failed to construct DocumentDB handler", logging.Error(err))
-
+		res.Run(exitCtx)
 		return nil
 	}
 
-	var proxyH middleware.Handler
 	if opts.ProxyAddr != "" {
 		//exhaustruct:enforce
-		proxyH, err = proxy.New(&proxy.NewOpts{
+		res.proxyH, err = proxy.New(&proxy.NewOpts{
 			Addr:        opts.ProxyAddr,
 			TLSCertFile: opts.ProxyTLSCertFile,
 			TLSKeyFile:  opts.ProxyTLSKeyFile,
@@ -126,28 +133,23 @@ func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 		})
 		if err != nil {
 			opts.Logger.LogAttrs(ctx, logging.LevelDPanic, "Failed to construct proxy handler", logging.Error(err))
-
+			res.Run(exitCtx)
 			return nil
 		}
 	}
 
 	//exhaustruct:enforce
-	m, err := middleware.New(&middleware.NewOpts{
+	res.m = middleware.New(&middleware.NewOpts{
 		Mode:    opts.Mode,
-		DocDB:   docdbH,
-		Proxy:   proxyH,
+		DocDB:   res.docdbH,
+		Proxy:   res.proxyH,
 		Metrics: opts.Metrics,
 		L:       logging.WithName(opts.Logger, "middleware"),
 	})
-	if err != nil {
-		opts.Logger.LogAttrs(ctx, logging.LevelDPanic, "Failed to construct middleware", logging.Error(err))
-
-		return nil
-	}
 
 	//exhaustruct:enforce
-	wireLis, err := clientconn.Listen(&clientconn.ListenerOpts{
-		M:      m,
+	res.WireListener, err = clientconn.Listen(&clientconn.ListenerOpts{
+		M:      res.m,
 		Logger: opts.Logger,
 
 		TCP:  opts.TCPAddr,
@@ -168,70 +170,61 @@ func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 	})
 	if err != nil {
 		opts.Logger.LogAttrs(ctx, logging.LevelDPanic, "Failed to construct wire protocol listener", logging.Error(err))
-
+		res.Run(exitCtx)
 		return nil
 	}
 
-	var dataapiLis *dataapi.Listener
 	if opts.DataAPIAddr != "" {
-		dataapiLis, err = dataapi.Listen(&dataapi.ListenOpts{
+		res.DataAPIListener, err = dataapi.Listen(&dataapi.ListenOpts{
 			L:       logging.WithName(opts.Logger, "dataapi"),
-			M:       m,
+			M:       res.m,
 			TCPAddr: opts.DataAPIAddr,
 			Auth:    opts.Auth,
 		})
 		if err != nil {
 			opts.Logger.LogAttrs(ctx, logging.LevelDPanic, "Failed to construct DataAPI listener", logging.Error(err))
-
+			res.Run(exitCtx)
 			return nil
 		}
 	}
 
-	//exhaustruct:enforce
-	return &SetupResult{
-		docdbH:          docdbH,
-		proxyH:          proxyH,
-		m:               m,
-		WireListener:    wireLis,
-		DataAPIListener: dataapiLis,
-	}
+	return &res
 }
 
 // Run runs all components until ctx is canceled.
 //
 // When this method returns, all components are stopped.
 func (sr *SetupResult) Run(ctx context.Context) {
+	// Currently, there is no specific order in which components must be started.
+	// But listeners should be stopped first, so that clients can disconnect gracefully.
+	// Listeners' Run methods already implement graceful shutdown;
+	// we just need to wait for them to stop before stopping other components.
+
+	lDone := make(chan struct{})
+	lCtx, lCancel := context.WithCancel(ctx)
+	defer lCancel()
+
+	go func() {
+		defer close(lDone)
+		sr.runListeners(lCtx)
+	}()
+
+	hDone := make(chan struct{})
+	hCtx, hCancel := context.WithCancel(context.WithoutCancel(ctx)) // inherit values
+	defer hCancel()
+
+	go func() {
+		defer close(hDone)
+		sr.runHandlers(hCtx)
+	}()
+
+	<-lDone
+	hCancel()
+	<-hDone
+}
+
+func (sr *SetupResult) runListeners(ctx context.Context) {
 	var wg sync.WaitGroup
-
-	// FIXME we must stop listeners first, and then wait for clients to disconnect,
-	// to let remaining clients send endSessions, etc
-
-	if sr.docdbH != nil {
-		wg.Add(1)
-
-		go func() {
-			defer wg.Done()
-			sr.docdbH.Run(ctx)
-		}()
-	}
-
-	if sr.proxyH != nil {
-		wg.Add(1)
-
-		go func() {
-			defer wg.Done()
-			sr.proxyH.Run(ctx)
-		}()
-	}
-
-	{
-		wg.Add(1)
-
-		go func() {
-			defer wg.Done()
-			sr.m.Run(ctx)
-		}()
-	}
 
 	if sr.WireListener != nil {
 		wg.Add(1)
@@ -251,7 +244,39 @@ func (sr *SetupResult) Run(ctx context.Context) {
 		}()
 	}
 
-	<-ctx.Done()
+	wg.Wait()
+}
+
+func (sr *SetupResult) runHandlers(ctx context.Context) {
+	var wg sync.WaitGroup
+
+	{
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+			sr.m.Run(ctx)
+		}()
+	}
+
+	if sr.docdbH != nil {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+			sr.docdbH.Run(ctx)
+		}()
+	}
+
+	if sr.proxyH != nil {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+			sr.proxyH.Run(ctx)
+		}()
+	}
+
 	wg.Wait()
 }
 

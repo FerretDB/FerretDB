@@ -47,7 +47,7 @@ type NewOpts struct {
 
 // New returns a new middleware.
 // [Middleware.Run] must be called on the returned value.
-func New(opts *NewOpts) (*Middleware, error) {
+func New(opts *NewOpts) *Middleware {
 	must.NotBeZero(opts)
 
 	switch opts.Mode {
@@ -69,7 +69,7 @@ func New(opts *NewOpts) (*Middleware, error) {
 
 	return &Middleware{
 		NewOpts: opts,
-	}, nil
+	}
 }
 
 // Run implements [middleware.Handler].
@@ -122,7 +122,7 @@ func (m *Middleware) handle(ctx context.Context, req *Request) (docdb, proxy *Re
 		go func() {
 			docdb, docdbErr = (&dispatcher{
 				h: m.DocDB,
-				l: logging.WithName(m.L, "docdb"),
+				l: logging.WithName(m.L, "middleware.documentdb"),
 				m: m.Metrics,
 			}).Handle(ctx, req)
 			wg.Done()
@@ -134,7 +134,7 @@ func (m *Middleware) handle(ctx context.Context, req *Request) (docdb, proxy *Re
 		go func() {
 			proxy, proxyErr = (&dispatcher{
 				h: m.Proxy,
-				l: logging.WithName(m.L, "proxy"),
+				l: logging.WithName(m.L, "middleware.proxy"),
 				m: m.Metrics,
 			}).Handle(ctx, req)
 
