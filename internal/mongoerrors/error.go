@@ -26,9 +26,12 @@ import (
 
 // Error represents MongoDB command error.
 type Error struct {
-	// Command's argument, operator, or aggregation pipeline stage that caused an error,
-	// but not the command name itself.
+	// Command's argument name, operator name, or aggregation pipeline stage name that caused an error.
 	// Used for metrics and telemetry.
+	//
+	// It should not be the command name itself (e.g. "create" or "collStats"),
+	// except when it is a problem with the collection name (i.e. create's or collStats's value).
+	// It also should not be a user-supplied value (e.g. collection name or index name).
 	Argument string
 
 	mongo.CommandError
@@ -72,6 +75,9 @@ func NewWithArgument(code Code, msg, argument string) *Error {
 // Error implements error interface.
 //
 // We overload [mongo.CommandError]'s method to ensure that Error is always passed by pointer.
+//
+// We probably should remove that method and un-embed mongo.CommandError to avoid typed nil error confusion.
+// TODO https://github.com/FerretDB/FerretDB/issues/4965
 func (e *Error) Error() string {
 	return fmt.Sprintf("%[1]s (%[1]d): %[2]v", Code(e.Code), e.Message)
 }

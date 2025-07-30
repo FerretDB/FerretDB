@@ -109,6 +109,11 @@ export const categorizedApps = {
       name: 'HeyForm',
       logo: '/img/compatible-applications/heyform-logo.png',
       link: 'https://blog.ferretdb.io/streamlining-form-management-heyform-ferretdb/'
+    },
+    {
+      name: 'HashiCorp Vault',
+      logo: '/img/compatible-applications/vault-logo.png',
+      link: 'https://blog.ferretdb.io/dynamic-database-credentials-with-hashicorp-vault-and-ferretdb/'
     }
   ]
 }
