@@ -467,6 +467,11 @@ func TestGetMoreCommandBatchSize(t *testing.T) {
 				require.Equal(t, i-1, cursor.RemainingBatchLength())
 			}
 
+			if setup.IsYugabyteDB(t) {
+				// TODO https://github.com/yugabyte/yugabyte-db/issues/27989
+				t.Skip("https://github.com/yugabyte/yugabyte-db/issues/27989")
+			}
+
 			// get rest of documents from the cursor to ensure cursor is exhausted
 			var res bson.D
 			err = cursor.All(ctx, &res)
