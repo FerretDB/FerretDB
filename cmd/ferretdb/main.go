@@ -473,8 +473,7 @@ func run() {
 		StateProvider:   stateProvider,
 		ListenerMetrics: lm,
 
-		PostgreSQLURL: cli.PostgreSQLURL,
-
+		PostgreSQLURL:          cli.PostgreSQLURL,
 		Auth:                   cli.Auth,
 		ReplSetName:            cli.Dev.ReplSetName,
 		SessionCleanupInterval: 0,
@@ -490,7 +489,7 @@ func run() {
 		ProxyTLSCertFile: cli.Proxy.TLSCertFile,
 		ProxyTLSKeyFile:  cli.Proxy.TLSKeyFile,
 		ProxyTLSCAFile:   cli.Proxy.TLSCaFile,
-		RecordsDir:       cli.Dev.RecordsDir,
+		TestRecordsDir:   cli.Dev.RecordsDir,
 
 		DataAPIAddr: cli.Listen.DataAPIAddr,
 	})

@@ -102,7 +102,7 @@ func (h *Handler) msgKillCursors(connCtx context.Context, req *middleware.Reques
 			return nil, err
 		}
 
-		if deleted := h.Pool.KillCursor(connCtx, id); !deleted {
+		if deleted := h.p.KillCursor(connCtx, id); !deleted {
 			must.NoError(cursorsNotFound.Add(id))
 			continue
 		}

@@ -243,8 +243,7 @@ func setupDataAPI(tb testing.TB, auth bool) (addr string, dbName string) {
 		StateProvider:   sp,
 		ListenerMetrics: connmetrics.NewListenerMetrics(),
 
-		PostgreSQLURL: uri,
-
+		PostgreSQLURL:          uri,
 		Auth:                   auth,
 		ReplSetName:            "",
 		SessionCleanupInterval: 0,
@@ -260,7 +259,7 @@ func setupDataAPI(tb testing.TB, auth bool) (addr string, dbName string) {
 		ProxyTLSCertFile: "",
 		ProxyTLSKeyFile:  "",
 		ProxyTLSCAFile:   "",
-		RecordsDir:       "",
+		TestRecordsDir:   "",
 
 		DataAPIAddr: "127.0.0.1:0",
 	})

@@ -130,8 +130,7 @@ func New(config *Config) (*FerretDB, error) {
 		StateProvider:   stateProvider,
 		ListenerMetrics: lm,
 
-		PostgreSQLURL: config.PostgreSQLURL,
-
+		PostgreSQLURL:          config.PostgreSQLURL,
 		Auth:                   false,
 		ReplSetName:            "",
 		SessionCleanupInterval: 0,
@@ -147,7 +146,7 @@ func New(config *Config) (*FerretDB, error) {
 		ProxyTLSCertFile: "",
 		ProxyTLSKeyFile:  "",
 		ProxyTLSCAFile:   "",
-		RecordsDir:       "",
+		TestRecordsDir:   "",
 
 		DataAPIAddr: "",
 	})

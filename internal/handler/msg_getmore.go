@@ -53,7 +53,7 @@ func (h *Handler) msgGetMore(connCtx context.Context, req *middleware.Request) (
 		return nil, err
 	}
 
-	page, err := h.Pool.GetMore(connCtx, dbName, req.DocumentRaw(), cursorID)
+	page, err := h.p.GetMore(connCtx, dbName, req.DocumentRaw(), cursorID)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

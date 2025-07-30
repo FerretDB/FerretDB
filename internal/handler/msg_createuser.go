@@ -60,7 +60,7 @@ func (h *Handler) msgCreateUser(connCtx context.Context, req *middleware.Request
 	var res wirebson.RawDocument
 
 	var err error
-	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
+	err = h.p.WithConn(func(conn *pgx.Conn) error {
 		res, err = documentdb.CreateUser(connCtx, conn, h.L, doc)
 		return err
 	})

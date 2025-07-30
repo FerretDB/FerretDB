@@ -131,7 +131,7 @@ func (h *Handler) msgKillAllSessionsByPattern(connCtx context.Context, req *midd
 	}
 
 	for _, cursorID := range allCursorIDs {
-		_ = h.Pool.KillCursor(connCtx, cursorID)
+		_ = h.p.KillCursor(connCtx, cursorID)
 	}
 
 	return middleware.ResponseDoc(req, wirebson.MustDocument(

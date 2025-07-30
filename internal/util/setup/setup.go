@@ -24,7 +24,6 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi"
-	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
@@ -41,9 +40,8 @@ type SetupOpts struct {
 	StateProvider   *state.Provider
 	ListenerMetrics *connmetrics.ListenerMetrics
 
-	PostgreSQLURL string
-
 	// DocumentDB handler
+	PostgreSQLURL          string
 	Auth                   bool
 	ReplSetName            string
 	SessionCleanupInterval time.Duration
@@ -60,7 +58,7 @@ type SetupOpts struct {
 	ProxyTLSCertFile string
 	ProxyTLSKeyFile  string
 	ProxyTLSCAFile   string
-	RecordsDir       string
+	TestRecordsDir   string // empty value disables recording
 
 	// DataAPI listener
 	DataAPIAddr string // empty value disables Data API listener
@@ -90,19 +88,12 @@ type SetupResult struct {
 func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 	must.NotBeZero(opts)
 
-	p, err := documentdb.NewPool(opts.PostgreSQLURL, logging.WithName(opts.Logger, "pool"), opts.StateProvider)
-	if err != nil {
-		opts.Logger.LogAttrs(ctx, logging.LevelDPanic, "Failed to construct connection pool", logging.Error(err))
-		return nil
-	}
-
 	//exhaustruct:enforce
 	h, err := handler.New(&handler.NewOpts{
-		Pool: p, // handler takes over the pool
-
-		Auth:        opts.Auth,
-		TCPHost:     opts.TCPAddr,
-		ReplSetName: opts.ReplSetName,
+		PostgreSQLURL: opts.PostgreSQLURL,
+		Auth:          opts.Auth,
+		TCPHost:       opts.TCPAddr,
+		ReplSetName:   opts.ReplSetName,
 
 		L:             logging.WithName(opts.Logger, "handler"),
 		ConnMetrics:   opts.ListenerMetrics.ConnMetrics,
@@ -137,7 +128,7 @@ func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 		ProxyTLSKeyFile:  opts.ProxyTLSKeyFile,
 		ProxyTLSCAFile:   opts.ProxyTLSCAFile,
 
-		TestRecordsDir: opts.RecordsDir,
+		TestRecordsDir: opts.TestRecordsDir,
 	})
 	if err != nil {
 		p.Close()

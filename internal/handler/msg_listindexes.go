@@ -37,7 +37,7 @@ func (h *Handler) msgListIndexes(connCtx context.Context, req *middleware.Reques
 		return nil, err
 	}
 
-	page, cursorID, err := h.Pool.ListIndexes(connCtx, dbName, req.DocumentRaw())
+	page, cursorID, err := h.p.ListIndexes(connCtx, dbName, req.DocumentRaw())
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

@@ -37,7 +37,7 @@ func (h *Handler) msgListCollections(connCtx context.Context, req *middleware.Re
 		return nil, err
 	}
 
-	page, cursorID, err := h.Pool.ListCollections(connCtx, dbName, req.DocumentRaw())
+	page, cursorID, err := h.p.ListCollections(connCtx, dbName, req.DocumentRaw())
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
