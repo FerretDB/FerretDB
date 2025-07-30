@@ -39,9 +39,6 @@ import (
 	"github.com/FerretDB/FerretDB/v2/build/version"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/v2/internal/dataapi"
-	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
-	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/debug"
@@ -50,6 +47,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/observability"
+	"github.com/FerretDB/FerretDB/v2/internal/util/setup"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/telemetry"
 )
@@ -480,82 +478,43 @@ func run() {
 		}()
 	}
 
-	p, err := documentdb.NewPool(cli.PostgreSQLURL, logging.WithName(logger, "pool"), stateProvider)
-	if err != nil {
-		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct pool", logging.Error(err))
-	}
+	//exhaustruct:enforce
+	res := setup.Setup(ctx, &setup.SetupOpts{
+		Logger: logger,
 
-	handlerOpts := &handler.NewOpts{
-		Pool: p,
-		Auth: cli.Auth,
+		StateProvider:   stateProvider,
+		ListenerMetrics: lm,
 
-		TCPHost:     cli.Listen.Addr,
-		ReplSetName: cli.Dev.ReplSetName,
+		PostgreSQLURL: cli.PostgreSQLURL,
 
-		L:             logging.WithName(logger, "handler"),
-		ConnMetrics:   lm.ConnMetrics,
-		StateProvider: stateProvider,
-	}
+		Auth:                   cli.Auth,
+		ReplSetName:            cli.Dev.ReplSetName,
+		SessionCleanupInterval: 0,
 
-	h, err := handler.New(handlerOpts)
-	if err != nil {
-		p.Close()
-		handlerOpts.L.LogAttrs(ctx, logging.LevelFatal, "Failed to construct handler", logging.Error(err))
-	}
-
-	lis, err := clientconn.Listen(&clientconn.ListenerOpts{
-		Handler: h,
-		Metrics: lm,
-		Logger:  logger,
-
-		TCP:  cli.Listen.Addr,
-		Unix: cli.Listen.Unix,
-
-		TLS:         cli.Listen.TLS,
-		TLSCertFile: cli.Listen.TLSCertFile,
-		TLSKeyFile:  cli.Listen.TLSKeyFile,
-		TLSCAFile:   cli.Listen.TLSCaFile,
-
+		TCPAddr:          cli.Listen.Addr,
+		UnixAddr:         cli.Listen.Unix,
+		TLSAddr:          cli.Listen.TLS,
+		TLSCertFile:      cli.Listen.TLSCertFile,
+		TLSKeyFile:       cli.Listen.TLSKeyFile,
+		TLSCAFile:        cli.Listen.TLSCaFile,
 		Mode:             middleware.Mode(cli.Mode),
 		ProxyAddr:        cli.Proxy.Addr,
 		ProxyTLSCertFile: cli.Proxy.TLSCertFile,
 		ProxyTLSKeyFile:  cli.Proxy.TLSKeyFile,
 		ProxyTLSCAFile:   cli.Proxy.TLSCaFile,
+		RecordsDir:       cli.Dev.RecordsDir,
 
-		TestRecordsDir: cli.Dev.RecordsDir,
+		DataAPIAddr: cli.Listen.DataAPIAddr,
 	})
-	if err != nil {
-		p.Close()
-		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct listener", logging.Error(err))
+	if res == nil {
+		os.Exit(1)
 	}
 
-	if cli.Listen.DataAPIAddr != "" {
-		wg.Add(1)
+	listener.Store(res.WireListener)
 
-		go func() {
-			defer wg.Done()
+	metricsRegisterer.MustRegister(res.WireListener)
 
-			l := logging.WithName(logger, "dataapi")
-
-			lis, e := dataapi.Listen(&dataapi.ListenOpts{
-				TCPAddr: cli.Listen.DataAPIAddr,
-				L:       l,
-				Handler: h,
-			})
-			if e != nil {
-				p.Close()
-				l.LogAttrs(ctx, logging.LevelFatal, "Failed to construct DataAPI listener", logging.Error(e))
-			}
-
-			lis.Run(ctx)
-		}()
-	}
-
-	listener.Store(lis)
-
-	metricsRegisterer.MustRegister(lis)
-
-	lis.Run(ctx)
+	res.Run(ctx)
 
 	wg.Wait()
 
