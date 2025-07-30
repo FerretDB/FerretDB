@@ -180,7 +180,8 @@ func (s *Server) writeJSONResponse(ctx context.Context, w http.ResponseWriter, r
 		}()
 	}
 
-	if err := marshalJSON(res, resWriter); err != nil {
+	err := json.NewEncoder(resWriter).Encode(res)
+	if err != nil {
 		s.l.ErrorContext(ctx, "marshalJSON failed", logging.Error(err))
 	}
 }

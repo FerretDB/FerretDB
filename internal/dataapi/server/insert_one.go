@@ -15,7 +15,6 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -76,12 +75,5 @@ func (s *Server) InsertOne(w http.ResponseWriter, r *http.Request) {
 
 	// TODO insertedID
 	res := api.InsertOneResponseBody{}
-
-	//s.writeJSONResponse(ctx, w, &res)
-
-	w.Header().Set("Content-Type", "application/json")
-	if err = json.NewEncoder(w).Encode(res); err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
-		return
-	}
+	s.writeJSONResponse(ctx, w, &res)
 }

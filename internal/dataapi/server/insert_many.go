@@ -15,7 +15,6 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -63,9 +62,5 @@ func (s *Server) InsertMany(w http.ResponseWriter, r *http.Request) {
 
 	// TODO insertedIDs
 	res := api.InsertManyResponseBody{}
-
-	if err = json.NewEncoder(w).Encode(res); err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
-		return
-	}
+	s.writeJSONResponse(ctx, w, &res)
 }
