@@ -65,7 +65,7 @@ func (h *Handler) msgReIndex(connCtx context.Context, req *middleware.Request) (
 		)
 	}
 
-	conn, err := h.Pool.Acquire()
+	conn, err := h.p.Acquire()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -77,13 +77,13 @@ func (h *Handler) msgReIndex(connCtx context.Context, req *middleware.Request) (
 		"cursor", wirebson.MustDocument("batchSize", int32(10000)),
 	).Encode())
 
-	listRes, cursorID, err := h.Pool.ListIndexes(connCtx, dbName, listIndexesSpec)
+	listRes, cursorID, err := h.p.ListIndexes(connCtx, dbName, listIndexesSpec)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	if cursorID != 0 {
-		_ = h.Pool.KillCursor(connCtx, cursorID)
+		_ = h.p.KillCursor(connCtx, cursorID)
 
 		return nil, lazyerrors.New("too many indexes for re-indexing")
 	}
@@ -131,13 +131,13 @@ func (h *Handler) msgReIndex(connCtx context.Context, req *middleware.Request) (
 		return nil, lazyerrors.Error(err)
 	}
 
-	listRes, cursorID, err = h.Pool.ListIndexes(connCtx, dbName, listIndexesSpec)
+	listRes, cursorID, err = h.p.ListIndexes(connCtx, dbName, listIndexesSpec)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	if cursorID != 0 {
-		_ = h.Pool.KillCursor(connCtx, cursorID)
+		_ = h.p.KillCursor(connCtx, cursorID)
 
 		return nil, lazyerrors.New("too many indexes after re-indexing")
 	}
