@@ -203,6 +203,9 @@ func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 func (sr *SetupResult) Run(ctx context.Context) {
 	var wg sync.WaitGroup
 
+	// FIXME we must stop listeners first, and then wait for clients to disconnect,
+	// to let remaining clients send endSessions, etc
+
 	if sr.docdbH != nil {
 		wg.Add(1)
 

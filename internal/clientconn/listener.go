@@ -207,15 +207,6 @@ func (l *Listener) Listening() bool {
 //
 // When this method returns, listener and all connections are closed, and handler is stopped.
 func (l *Listener) Run(ctx context.Context) {
-	// inherit ctx's values
-	handlerCtx, handlerCancel := context.WithCancel(context.WithoutCancel(ctx))
-	handlerDone := make(chan struct{})
-
-	go func() {
-		defer close(handlerDone)
-		l.M.Run(handlerCtx)
-	}()
-
 	var wg sync.WaitGroup
 
 	if l.tcpListener != nil {
@@ -261,11 +252,6 @@ func (l *Listener) Run(ctx context.Context) {
 	l.close()
 	l.ll.InfoContext(ctx, "Waiting for all connections to close")
 	wg.Wait()
-
-	// to properly handle last client commands like endSession,
-	// stop handler only after the last client disconnects
-	handlerCancel()
-	<-handlerDone
 }
 
 // acceptLoop runs listener's connection accepting loop until context is canceled.
@@ -385,14 +371,14 @@ func (l *Listener) TLSAddr() net.Addr {
 
 // Describe implements [prometheus.Collector].
 func (l *Listener) Describe(ch chan<- *prometheus.Desc) {
+	// FIXME
 	l.lm.Describe(ch)
-	l.M.Describe(ch)
 }
 
 // Collect implements [prometheus.Collector].
 func (l *Listener) Collect(ch chan<- prometheus.Metric) {
+	// FIXME
 	l.lm.Collect(ch)
-	l.M.Collect(ch)
 }
 
 // check interfaces
