@@ -21,10 +21,10 @@ import (
 )
 
 func TestGetResponses(t *testing.T) {
-	m := NewMetrics()
-	m.responses.WithLabelValues("OP_MSG", "update", "$set", "NotImplemented").Inc()
-	m.responses.WithLabelValues("OP_MSG", "update", "$set", "panic").Inc()
-	m.responses.WithLabelValues("OP_MSG", "update", "$set", "ok").Inc()
+	mm := NewMetrics()
+	mm.responses.WithLabelValues("OP_MSG", "update", "$set", "NotImplemented").Inc()
+	mm.responses.WithLabelValues("OP_MSG", "update", "$set", "panic").Inc()
+	mm.responses.WithLabelValues("OP_MSG", "update", "$set", "ok").Inc()
 	expected := map[string]map[string]map[string]CommandMetrics{
 		"OP_MSG": {
 			"update": {
@@ -43,5 +43,5 @@ func TestGetResponses(t *testing.T) {
 			},
 		},
 	}
-	assert.Equal(t, expected, m.GetResponses())
+	assert.Equal(t, expected, mm.GetResponses())
 }

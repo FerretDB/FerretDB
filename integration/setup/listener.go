@@ -109,10 +109,9 @@ func setupListener(tb testing.TB, ctx context.Context, opts *ListenerOpts, logge
 
 	//exhaustruct:enforce
 	wireOpts := &setup.SetupOpts{
-		Logger: logger,
-
-		StateProvider:   sp,
-		ListenerMetrics: listenerMetrics,
+		Logger:        logger,
+		StateProvider: sp,
+		Metrics:       middleware.NewMetrics(),
 
 		PostgreSQLURL:          *postgreSQLURLF,
 		Auth:                   true,

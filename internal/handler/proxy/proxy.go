@@ -43,25 +43,28 @@ type Handler struct {
 //
 //nolint:vet // for readability
 type NewOpts struct {
-	Addr     string
-	CertFile string
-	KeyFile  string
-	CAFile   string
+	Addr        string
+	TLSCertFile string
+	TLSKeyFile  string
+	TLSCAFile   string
 
 	L *slog.Logger
 }
 
 // New creates a new Handler for a service with given address.
+// [Handler.Run] must be called on the returned value.
 func New(opts *NewOpts) (*Handler, error) {
 	must.NotBeZero(opts)
+	must.NotBeZero(opts.Addr)
+	must.NotBeZero(opts.L)
 
 	var conn net.Conn
 	var err error
 
-	if opts.CertFile != "" || opts.KeyFile != "" || opts.CAFile != "" {
+	if opts.TLSCertFile != "" || opts.TLSKeyFile != "" || opts.TLSCAFile != "" {
 		var config *tls.Config
 
-		if config, err = tlsConfig(opts.CertFile, opts.KeyFile, opts.CAFile); err != nil {
+		if config, err = tlsConfig(opts.TLSCertFile, opts.TLSKeyFile, opts.TLSCAFile); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
@@ -164,12 +167,10 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middlew
 
 // Describe implements [prometheus.Collector].
 func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
-	// FIXME
 }
 
 // Collect implements [prometheus.Collector].
 func (h *Handler) Collect(ch chan<- prometheus.Metric) {
-	// FIXME
 }
 
 // check interfaces

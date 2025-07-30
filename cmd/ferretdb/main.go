@@ -37,7 +37,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn"
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/debug"
@@ -436,7 +435,7 @@ func run() {
 		}()
 	}
 
-	lm := connmetrics.NewListenerMetrics()
+	mm := middleware.NewMetrics()
 
 	{
 		wg.Add(1)
@@ -453,7 +452,7 @@ func run() {
 				DNT:            os.Getenv("DO_NOT_TRACK"),
 				ExecName:       os.Args[0],
 				P:              stateProvider,
-				Metrics:        lm.ConnMetrics,
+				Metrics:        mm,
 				L:              l,
 				UndecidedDelay: cli.Dev.Telemetry.UndecidedDelay,
 				ReportInterval: cli.Dev.Telemetry.ReportInterval,
@@ -468,10 +467,9 @@ func run() {
 
 	//exhaustruct:enforce
 	res := setup.Setup(ctx, &setup.SetupOpts{
-		Logger: logger,
-
-		StateProvider:   stateProvider,
-		ListenerMetrics: lm,
+		Logger:        logger,
+		StateProvider: stateProvider,
+		Metrics:       mm,
 
 		PostgreSQLURL:          cli.PostgreSQLURL,
 		Auth:                   cli.Auth,

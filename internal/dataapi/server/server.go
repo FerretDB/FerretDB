@@ -37,7 +37,7 @@ import (
 )
 
 // New creates a new Server.
-func New(l *slog.Logger, handler middleware.Handler) *Server {
+func New(l *slog.Logger, handler *middleware.Middleware) *Server {
 	return &Server{
 		l:       l,
 		handler: handler,
@@ -47,7 +47,7 @@ func New(l *slog.Logger, handler middleware.Handler) *Server {
 // Server implements services described by OpenAPI description file.
 type Server struct {
 	l       *slog.Logger
-	handler middleware.Handler
+	handler *middleware.Middleware
 }
 
 // AuthMiddleware handles SCRAM authentication based on the username and password specified in request.

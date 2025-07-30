@@ -45,10 +45,26 @@ type NewOpts struct {
 }
 
 // New returns a new middleware.
-// It takes over passed handlers, running them in [Run].
-// It also exposing metrics their metrics, as well as passed [Metrics], via [prometheus.Collector].
+// [Middleware.Run] must be called on the returned value.
 func New(opts *NewOpts) (*Middleware, error) {
 	must.NotBeZero(opts)
+
+	switch opts.Mode {
+	case NormalMode:
+		must.NotBeZero(opts.DocDB)
+		must.BeZero(opts.Proxy)
+	case ProxyMode:
+		must.BeZero(opts.DocDB)
+		must.NotBeZero(opts.Proxy)
+	case DiffNormalMode:
+		must.NotBeZero(opts.DocDB)
+		must.NotBeZero(opts.Proxy)
+	case DiffProxyMode:
+		must.NotBeZero(opts.DocDB)
+		must.NotBeZero(opts.Proxy)
+	default:
+		panic("not reached")
+	}
 
 	return &Middleware{
 		NewOpts: opts,
@@ -56,20 +72,7 @@ func New(opts *NewOpts) (*Middleware, error) {
 }
 
 // Run implements [middleware.Handler].
-// It runs both handlers untix ctx is canceled.
 func (m *Middleware) Run(ctx context.Context) {
-	m.wg.Add(2)
-
-	go func() {
-		defer m.wg.Done()
-		m.DocDB.Run(ctx)
-	}()
-
-	go func() {
-		defer m.wg.Done()
-		m.Proxy.Run(ctx)
-	}()
-
 	<-ctx.Done()
 	m.wg.Wait()
 }
@@ -83,11 +86,11 @@ func (m *Middleware) Handle(ctx context.Context, req *Request) (*Response, error
 	switch m.Mode {
 	case NormalMode:
 		return docdb, docdbErr
+	case ProxyMode:
+		return proxy, proxyErr
 	case DiffNormalMode:
 		m.logDiff(ctx, docdb, proxy, slog.LevelDebug)
 		return docdb, docdbErr
-	case ProxyMode:
-		return proxy, proxyErr
 	case DiffProxyMode:
 		m.logDiff(ctx, docdb, proxy, slog.LevelDebug)
 		return proxy, proxyErr
@@ -180,24 +183,12 @@ func (m *Middleware) logDiff(ctx context.Context, docdb, proxy *Response, logLev
 
 // Describe implements [prometheus.Collector].
 func (m *Middleware) Describe(ch chan<- *prometheus.Desc) {
-	m.Metrics.Describe(ch)
-	if m.DocDB != nil {
-		m.DocDB.Describe(ch)
-	}
-	if m.Proxy != nil {
-		m.Proxy.Describe(ch)
-	}
+	// FIXME
 }
 
 // Collect implements [prometheus.Collector].
 func (m *Middleware) Collect(ch chan<- prometheus.Metric) {
-	m.Metrics.Collect(ch)
-	if m.DocDB != nil {
-		m.DocDB.Collect(ch)
-	}
-	if m.Proxy != nil {
-		m.Proxy.Collect(ch)
-	}
+	// FIXME
 }
 
 // check interfaces

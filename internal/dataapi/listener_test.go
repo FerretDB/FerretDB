@@ -28,7 +28,6 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/setup"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
@@ -238,10 +237,9 @@ func setupDataAPI(tb testing.TB, auth bool) (addr string, dbName string) {
 
 	//exhaustruct:enforce
 	res := setup.Setup(tb.Context(), &setup.SetupOpts{
-		Logger: l,
-
-		StateProvider:   sp,
-		ListenerMetrics: connmetrics.NewListenerMetrics(),
+		Logger:        l,
+		StateProvider: sp,
+		Metrics:       middleware.NewMetrics(),
 
 		PostgreSQLURL:          uri,
 		Auth:                   auth,

@@ -37,7 +37,6 @@ import (
 	oteltrace "go.opentelemetry.io/otel/trace"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/proxy"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
@@ -51,8 +50,7 @@ type conn struct {
 	netConn        net.Conn
 	mode           middleware.Mode
 	l              *slog.Logger
-	h              middleware.Handler
-	m              *connmetrics.ConnMetrics
+	h              *middleware.Middleware
 	proxy          *proxy.Handler
 	lastRequestID  atomic.Int32
 	testRecordsDir string // if empty, no records are created
@@ -60,11 +58,10 @@ type conn struct {
 
 // newConnOpts represents newConn options.
 type newConnOpts struct {
-	netConn     net.Conn
-	mode        middleware.Mode
-	l           *slog.Logger
-	handler     middleware.Handler
-	connMetrics *connmetrics.ConnMetrics
+	netConn net.Conn
+	mode    middleware.Mode
+	l       *slog.Logger
+	handler *middleware.Middleware
 
 	proxyAddr        string
 	proxyTLSCertFile string
@@ -89,11 +86,11 @@ func newConn(opts *newConnOpts) (*conn, error) {
 		var err error
 
 		proxyOpts := &proxy.NewOpts{
-			Addr:     opts.proxyAddr,
-			CertFile: opts.proxyTLSCertFile,
-			KeyFile:  opts.proxyTLSKeyFile,
-			CAFile:   opts.proxyTLSCAFile,
-			L:        logging.WithName(opts.l, "proxy"),
+			Addr:        opts.proxyAddr,
+			TLSCertFile: opts.proxyTLSCertFile,
+			TLSKeyFile:  opts.proxyTLSKeyFile,
+			TLSCAFile:   opts.proxyTLSCAFile,
+			L:           logging.WithName(opts.l, "proxy"),
 		}
 		p, err = proxy.New(proxyOpts)
 		if err != nil {

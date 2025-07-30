@@ -21,11 +21,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn"
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/proxy"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
@@ -35,10 +37,9 @@ import (
 //
 //nolint:vet // for readability
 type SetupOpts struct {
-	Logger *slog.Logger
-
-	StateProvider   *state.Provider
-	ListenerMetrics *connmetrics.ListenerMetrics
+	Logger        *slog.Logger
+	StateProvider *state.Provider
+	Metrics       *middleware.Metrics
 
 	// DocumentDB handler
 	PostgreSQLURL          string
@@ -66,21 +67,27 @@ type SetupOpts struct {
 
 // SetupResult represents [Setup] result.
 type SetupResult struct {
+	docdbH          middleware.Handler
+	proxyH          middleware.Handler
+	m               *middleware.Middleware
 	WireListener    *clientconn.Listener
 	DataAPIListener *dataapi.Listener
 }
 
 // Setup creates and sets up:
-//   - PostgreSQL/DocumentDB connection pool ([*documentdb.Pool]);
 //   - DocumentDB handler ([*handler.Handler]);
+//   - proxy handler ([*proxy.Handler]);
+//   - middleware ([*middleware.Middleware]);
 //   - wire protocol listener ([*clientconn.Listener]);
-//   - Data API listener ([*dataapi.Listener]).
+//   - Data API listener ([*dataapi.Listener]);
+//   - unregistered Prometheus collector for the above components.
 //
 // It does not change the global state or creates components that are different in tests.
 // For example, it does not:
 //   - change global logger (it is different in tests);
+//   - set up state provider (it is different in tests);
 //   - set up telemetry reporter (it is not needed in tests);
-//   - set up debug handler (it is global);
+//   - set up debug handler (it is global and uses the global Prometheus registry);
 //   - set up OpenTelemetry trace exporter (it is global).
 //
 // It returns nil if any of the components could not be created.
@@ -89,29 +96,59 @@ func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 	must.NotBeZero(opts)
 
 	//exhaustruct:enforce
-	h, err := handler.New(&handler.NewOpts{
+	docdbH, err := handler.New(&handler.NewOpts{
 		PostgreSQLURL: opts.PostgreSQLURL,
 		Auth:          opts.Auth,
 		TCPHost:       opts.TCPAddr,
 		ReplSetName:   opts.ReplSetName,
 
 		L:             logging.WithName(opts.Logger, "handler"),
-		ConnMetrics:   opts.ListenerMetrics.ConnMetrics,
+		Metrics:       opts.Metrics,
 		StateProvider: opts.StateProvider,
 
 		SessionCleanupInterval: opts.SessionCleanupInterval,
 	})
 	if err != nil {
-		opts.Logger.LogAttrs(ctx, logging.LevelDPanic, "Failed to construct handler", logging.Error(err))
+		opts.Logger.LogAttrs(ctx, logging.LevelDPanic, "Failed to construct DocumentDB handler", logging.Error(err))
+
+		return nil
+	}
+
+	var proxyH middleware.Handler
+	if opts.ProxyAddr != "" {
+		//exhaustruct:enforce
+		proxyH, err = proxy.New(&proxy.NewOpts{
+			Addr:        opts.ProxyAddr,
+			TLSCertFile: opts.ProxyTLSCertFile,
+			TLSKeyFile:  opts.ProxyTLSKeyFile,
+			TLSCAFile:   opts.ProxyTLSCAFile,
+			L:           logging.WithName(opts.Logger, "proxy"),
+		})
+		if err != nil {
+			opts.Logger.LogAttrs(ctx, logging.LevelDPanic, "Failed to construct proxy handler", logging.Error(err))
+
+			return nil
+		}
+	}
+
+	//exhaustruct:enforce
+	m, err := middleware.New(&middleware.NewOpts{
+		Mode:    opts.Mode,
+		DocDB:   docdbH,
+		Proxy:   proxyH,
+		Metrics: opts.Metrics,
+		L:       logging.WithName(opts.Logger, "middleware"),
+	})
+	if err != nil {
+		opts.Logger.LogAttrs(ctx, logging.LevelDPanic, "Failed to construct middleware", logging.Error(err))
 
 		return nil
 	}
 
 	//exhaustruct:enforce
 	wireLis, err := clientconn.Listen(&clientconn.ListenerOpts{
-		Handler: h, // listener takes over the handler
-		Metrics: opts.ListenerMetrics,
-		Logger:  opts.Logger,
+		M:      m,
+		Logger: opts.Logger,
 
 		TCP:  opts.TCPAddr,
 		Unix: opts.UnixAddr,
@@ -139,7 +176,7 @@ func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 	if opts.DataAPIAddr != "" {
 		dataapiLis, err = dataapi.Listen(&dataapi.ListenOpts{
 			L:       logging.WithName(opts.Logger, "dataapi"),
-			Handler: h, // does not takes over
+			M:       m,
 			TCPAddr: opts.DataAPIAddr,
 			Auth:    opts.Auth,
 		})
@@ -152,6 +189,9 @@ func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 
 	//exhaustruct:enforce
 	return &SetupResult{
+		docdbH:          docdbH,
+		proxyH:          proxyH,
+		m:               m,
 		WireListener:    wireLis,
 		DataAPIListener: dataapiLis,
 	}
@@ -163,12 +203,41 @@ func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 func (sr *SetupResult) Run(ctx context.Context) {
 	var wg sync.WaitGroup
 
-	wg.Add(1)
+	if sr.docdbH != nil {
+		wg.Add(1)
 
-	go func() {
-		defer wg.Done()
-		sr.WireListener.Run(ctx)
-	}()
+		go func() {
+			defer wg.Done()
+			sr.docdbH.Run(ctx)
+		}()
+	}
+
+	if sr.proxyH != nil {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+			sr.proxyH.Run(ctx)
+		}()
+	}
+
+	{
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+			sr.m.Run(ctx)
+		}()
+	}
+
+	if sr.WireListener != nil {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+			sr.WireListener.Run(ctx)
+		}()
+	}
 
 	if sr.DataAPIListener != nil {
 		wg.Add(1)
@@ -182,3 +251,50 @@ func (sr *SetupResult) Run(ctx context.Context) {
 	<-ctx.Done()
 	wg.Wait()
 }
+
+// Describe implements [prometheus.Collector].
+func (sr *SetupResult) Describe(ch chan<- *prometheus.Desc) {
+	if sr.docdbH != nil {
+		sr.docdbH.Describe(ch)
+	}
+
+	if sr.proxyH != nil {
+		sr.proxyH.Describe(ch)
+	}
+
+	sr.m.Describe(ch)
+
+	if sr.WireListener != nil {
+		sr.WireListener.Describe(ch)
+	}
+
+	if sr.DataAPIListener != nil {
+		sr.DataAPIListener.Describe(ch)
+	}
+}
+
+// Collect implements [prometheus.Collector].
+func (sr *SetupResult) Collect(ch chan<- prometheus.Metric) {
+	if sr.docdbH != nil {
+		sr.docdbH.Collect(ch)
+	}
+
+	if sr.proxyH != nil {
+		sr.proxyH.Collect(ch)
+	}
+
+	sr.m.Collect(ch)
+
+	if sr.WireListener != nil {
+		sr.WireListener.Collect(ch)
+	}
+
+	if sr.DataAPIListener != nil {
+		sr.DataAPIListener.Collect(ch)
+	}
+}
+
+// check interfaces
+var (
+	_ prometheus.Collector = (*SetupResult)(nil)
+)

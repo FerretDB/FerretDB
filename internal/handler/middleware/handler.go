@@ -41,5 +41,6 @@ type Handler interface {
 	// Exactly one of Response or error should be non-nil.
 	Handle(ctx context.Context, req *Request) (resp *Response, err error)
 
+	// Handler should expose its metrics, but not metrics of passed dependencies.
 	prometheus.Collector
 }

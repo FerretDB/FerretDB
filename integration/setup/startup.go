@@ -27,7 +27,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn"
 	"github.com/FerretDB/FerretDB/v2/internal/util/debug"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/observability"
@@ -36,7 +36,7 @@ import (
 )
 
 // listenerMetrics are shared between tests.
-var listenerMetrics = connmetrics.NewListenerMetrics()
+var listenerMetrics = clientconn.NewListenerMetrics()
 
 // shutdown cancels context passed to startup components.
 var shutdown context.CancelFunc

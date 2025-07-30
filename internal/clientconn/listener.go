@@ -30,7 +30,6 @@ import (
 	"github.com/FerretDB/wire"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
@@ -43,6 +42,7 @@ type Listener struct {
 	*ListenerOpts
 
 	ll *slog.Logger
+	lm *listenerMetrics
 
 	tcpListener  net.Listener
 	unixListener net.Listener
@@ -53,9 +53,8 @@ type Listener struct {
 
 // ListenerOpts represents listener configuration.
 type ListenerOpts struct {
-	Handler *middleware.Middleware
-	Metrics *connmetrics.ListenerMetrics
-	Logger  *slog.Logger
+	M      *middleware.Middleware
+	Logger *slog.Logger
 
 	TCP  string // empty value disables TCP listener
 	Unix string // empty value disables Unix listener
@@ -118,13 +117,13 @@ func tlsConfig(certFile, keyFile, caFile string) (*tls.Config, error) {
 }
 
 // Listen creates a new listener and starts listening on configured interfaces.
-// It takes over the passed handler.
 // [Listener.Run] must be called on the returned value.
 func Listen(opts *ListenerOpts) (l *Listener, err error) {
 	ll := logging.WithName(opts.Logger, "listener")
 	l = &Listener{
 		ListenerOpts:    opts,
 		ll:              ll,
+		lm:              NewListenerMetrics(),
 		listenersClosed: make(chan struct{}),
 	}
 
@@ -214,7 +213,7 @@ func (l *Listener) Run(ctx context.Context) {
 
 	go func() {
 		defer close(handlerDone)
-		l.Handler.Run(handlerCtx)
+		l.M.Run(handlerCtx)
 	}()
 
 	var wg sync.WaitGroup
@@ -280,7 +279,7 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 				return
 			}
 
-			l.Metrics.Accepts.WithLabelValues("1").Inc()
+			l.lm.accepts.WithLabelValues("1").Inc()
 
 			l.ll.WarnContext(ctx, "Failed to accept connection", logging.Error(err))
 			if !errors.Is(err, net.ErrClosed) {
@@ -291,7 +290,7 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 		}
 
 		wg.Add(1)
-		l.Metrics.Accepts.WithLabelValues("0").Inc()
+		l.lm.accepts.WithLabelValues("0").Inc()
 
 		go func() {
 			var connErr error
@@ -303,7 +302,7 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 					lv = "1"
 				}
 
-				l.Metrics.Durations.WithLabelValues(lv).Observe(time.Since(start).Seconds())
+				l.lm.durations.WithLabelValues(lv).Observe(time.Since(start).Seconds())
 				netConn.Close()
 				wg.Done()
 			}()
@@ -320,11 +319,12 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 
 			connID := fmt.Sprintf("%s -> %s", remoteAddr, netConn.LocalAddr())
 
+			//exhaustruct:enforce
 			opts := &newConnOpts{
 				netConn: netConn,
 				mode:    l.Mode,
 				l:       logging.WithName(l.ll, "// "+connID+" "), // derive from the original unnamed logger
-				handler: l.Handler,
+				handler: l.M,
 
 				proxyAddr:        l.ProxyAddr,
 				proxyTLSCertFile: l.ProxyTLSCertFile,
@@ -385,14 +385,14 @@ func (l *Listener) TLSAddr() net.Addr {
 
 // Describe implements [prometheus.Collector].
 func (l *Listener) Describe(ch chan<- *prometheus.Desc) {
-	l.Metrics.Describe(ch)
-	l.Handler.Describe(ch)
+	l.lm.Describe(ch)
+	l.M.Describe(ch)
 }
 
 // Collect implements [prometheus.Collector].
 func (l *Listener) Collect(ch chan<- prometheus.Metric) {
-	l.Metrics.Collect(ch)
-	l.Handler.Collect(ch)
+	l.lm.Collect(ch)
+	l.M.Collect(ch)
 }
 
 // check interfaces
