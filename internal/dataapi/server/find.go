@@ -71,7 +71,11 @@ func (s *Server) Find(w http.ResponseWriter, r *http.Request) {
 	cursor := resp.Document().Get("cursor").(wirebson.AnyDocument)
 	firstBatch := must.NotFail(cursor.Decode()).Get("firstBatch").(wirebson.AnyArray)
 
-	dummyDoc := wirebson.MustDocument("v", firstBatch)
+	dummyDoc, err := wirebson.ToDriver(wirebson.MustDocument("v", firstBatch))
+	if err != nil {
+		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		return
+	}
 
 	//docs, err := dummyDoc.Decode()
 	//if err != nil {
@@ -89,8 +93,8 @@ func (s *Server) Find(w http.ResponseWriter, r *http.Request) {
 	b = bytes.TrimPrefix(b, []byte(`{"v":`))
 	b = bytes.TrimSuffix(b, []byte(`}`))
 
-	res := api.FindOneResponseBody{
-		Document: &b,
+	res := api.FindManyResponseBody{
+		Documents: &b,
 	}
 
 	s.writeJSONResponse(ctx, w, &res)
