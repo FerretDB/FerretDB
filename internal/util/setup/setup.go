@@ -102,7 +102,6 @@ func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 		SessionCleanupInterval: opts.SessionCleanupInterval,
 	})
 	if err != nil {
-		p.Close()
 		opts.Logger.LogAttrs(ctx, logging.LevelDPanic, "Failed to construct handler", logging.Error(err))
 
 		return nil
@@ -131,7 +130,6 @@ func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 		TestRecordsDir: opts.TestRecordsDir,
 	})
 	if err != nil {
-		p.Close()
 		opts.Logger.LogAttrs(ctx, logging.LevelDPanic, "Failed to construct wire protocol listener", logging.Error(err))
 
 		return nil
@@ -146,7 +144,6 @@ func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 			Auth:    opts.Auth,
 		})
 		if err != nil {
-			p.Close()
 			opts.Logger.LogAttrs(ctx, logging.LevelDPanic, "Failed to construct DataAPI listener", logging.Error(err))
 
 			return nil
