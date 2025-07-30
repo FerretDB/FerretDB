@@ -61,7 +61,7 @@ func SpanContextFromComment(comment string) (oteltrace.SpanContext, error) {
 	sc = oteltrace.NewSpanContext(oteltrace.SpanContextConfig{
 		TraceID:    traceID,
 		SpanID:     spanID,
-		TraceFlags: oteltrace.FlagsSampled,
+		TraceFlags: oteltrace.FlagsSampled, // we would not have received it if it hadn't been sampled
 		Remote:     true,
 	})
 

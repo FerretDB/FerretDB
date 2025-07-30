@@ -155,14 +155,17 @@ func (d *dispatcher) startSpan(ctx context.Context, req *Request) context.Contex
 	comment, _ := req.Document().Get("comment").(string)
 
 	spanCtx, err := observability.SpanContextFromComment(comment)
-	if err == nil {
-		ctx = oteltrace.ContextWithRemoteSpanContext(ctx, spanCtx)
-	} else {
+	if err != nil {
 		d.l.DebugContext(ctx, "Failed to extract span context from comment", logging.Error(err))
+	}
+	if spanCtx.IsValid() {
+		ctx = oteltrace.ContextWithSpanContext(ctx, spanCtx)
 	}
 
 	ctx, span := otel.Tracer("").Start(ctx, "")
-	must.BeTrue(span.SpanContext().TraceFlags().IsSampled())
+	must.BeTrue(span.SpanContext().IsValid())
+	must.BeTrue(span.SpanContext().IsRemote())
+	must.BeTrue(span.SpanContext().IsSampled())
 	must.BeTrue(span.IsRecording())
 
 	span.SetName(req.doc.Command())
