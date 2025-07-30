@@ -13,6 +13,7 @@ telemetry.json
 *.tmp
 *.txt
 !website/static/*.txt
+*.xml
 
 .task/
 bin/

@@ -37,6 +37,7 @@ import (
 	oteltrace "go.opentelemetry.io/otel/trace"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/proxy"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
@@ -50,7 +51,8 @@ type conn struct {
 	netConn        net.Conn
 	mode           middleware.Mode
 	l              *slog.Logger
-	h              *middleware.Middleware
+	h              middleware.Handler
+	m              *connmetrics.ConnMetrics
 	proxy          *proxy.Handler
 	lastRequestID  atomic.Int32
 	testRecordsDir string // if empty, no records are created
@@ -58,10 +60,11 @@ type conn struct {
 
 // newConnOpts represents newConn options.
 type newConnOpts struct {
-	netConn net.Conn
-	mode    middleware.Mode
-	l       *slog.Logger
-	handler *middleware.Middleware
+	netConn     net.Conn
+	mode        middleware.Mode
+	l           *slog.Logger
+	handler     middleware.Handler
+	connMetrics *connmetrics.ConnMetrics
 
 	proxyAddr        string
 	proxyTLSCertFile string

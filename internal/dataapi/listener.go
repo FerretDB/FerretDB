@@ -40,10 +40,10 @@ type Listener struct {
 
 // ListenOpts represents [Listen] options.
 type ListenOpts struct {
-	TCPAddr string
-	Handler *middleware.Middleware
-	Auth    bool
 	L       *slog.Logger
+	Handler middleware.Handler
+	TCPAddr string
+	Auth    bool
 }
 
 // Listen creates a new dataapi handler and starts listener on the given TCP address.
@@ -88,4 +88,10 @@ func (lis *Listener) Run(ctx context.Context) {
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/4848
 	<-ctx.Done()
+}
+
+// Addr returns TCP listener's address.
+// It can be used to determine an actually used port, if it was zero.
+func (lis *Listener) Addr() net.Addr {
+	return lis.lis.Addr()
 }

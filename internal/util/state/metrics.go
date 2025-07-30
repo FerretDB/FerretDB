@@ -28,19 +28,19 @@ const (
 	subsystem = ""
 )
 
-// metricsCollector exposes provider's state as Prometheus metrics.
+// metricsCollector exposes provider's state as Prometheus metric.
 type metricsCollector struct {
-	p               *Provider
-	addUUIDToMetric bool
+	p       *Provider
+	addUUID bool
 }
 
 // newMetricsCollector creates a new metricsCollector.
 //
-// If addUUIDToMetric is true, then the UUID is added to the Prometheus metric.
-func newMetricsCollector(p *Provider, addUUIDToMetric bool) *metricsCollector {
+// If addUUID is true, then the "uuid" label is added.
+func newMetricsCollector(p *Provider, addUUID bool) *metricsCollector {
 	return &metricsCollector{
-		p:               p,
-		addUUIDToMetric: addUUIDToMetric,
+		p:       p,
+		addUUID: addUUID,
 	}
 }
 
@@ -50,9 +50,10 @@ func (mc *metricsCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 // Collect implements [prometheus.Collector].
+// It exposes a single metric with various labels.
 func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 	info := version.Get()
-	constLabels := prometheus.Labels{
+	labels := prometheus.Labels{
 		"version": info.Version,
 		"commit":  info.Commit,
 		"branch":  info.Branch,
@@ -63,11 +64,11 @@ func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 
 	s := mc.p.Get()
 
-	constLabels["telemetry"] = s.TelemetryString()
-	constLabels["update_available"] = strconv.FormatBool(s.UpdateAvailable)
+	labels["telemetry"] = s.TelemetryString()
+	labels["update_available"] = strconv.FormatBool(s.UpdateAvailable)
 
-	if mc.addUUIDToMetric {
-		constLabels["uuid"] = s.UUID
+	if mc.addUUID {
+		labels["uuid"] = s.UUID
 	}
 
 	ch <- prometheus.MustNewConstMetric(
@@ -75,7 +76,7 @@ func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 			prometheus.BuildFQName(namespace, subsystem, "up"),
 			"FerretDB instance state.",
 			[]string{"postgresql", "documentdb"},
-			constLabels,
+			labels,
 		),
 		prometheus.GaugeValue,
 		1,
