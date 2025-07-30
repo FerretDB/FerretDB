@@ -218,11 +218,6 @@ func (c *conn) processMessage(ctx context.Context, bufr *bufio.Reader, bufw *buf
 		return err
 	}
 
-	if c.l.Enabled(ctx, slog.LevelDebug) {
-		c.l.DebugContext(ctx, "Request header: "+reqHeader.String())
-		c.l.DebugContext(ctx, "Request message:\n"+reqBody.StringIndent())
-	}
-
 	// diffLogLevel provides the level of logging for the diff between the "normal" and "proxy" responses.
 	// It is set to the highest level of logging used to log response.
 	diffLogLevel := slog.LevelDebug

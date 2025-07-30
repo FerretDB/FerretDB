@@ -57,10 +57,6 @@ func (d *dispatcher) Handle(ctx context.Context, req *Request) (resp *Response, 
 
 	ctx = d.startSpan(ctx, req)
 
-	if d.l.Enabled(ctx, slog.LevelDebug) {
-		d.l.DebugContext(ctx, fmt.Sprintf("<<< %s\n%s", req.WireHeader(), req.WireBody().StringIndent()))
-	}
-
 	defer func() {
 		var res result
 
@@ -110,9 +106,9 @@ func (d *dispatcher) Handle(ctx context.Context, req *Request) (resp *Response, 
 		attrs := []slog.Attr{
 			slog.String("command", req.Document().Command()),
 			slog.String("result", string(res)),
-			slog.Duration("duration", time.Since(start)),
+			slog.String("duration", time.Since(start).String()),
 		}
-		d.l.LogAttrs(ctx, slog.LevelInfo, "FIXME", attrs...)
+		d.l.LogAttrs(ctx, slog.LevelInfo, "Command handled", attrs...)
 	}()
 
 	resp, err = d.h.Handle(ctx, req)
@@ -164,7 +160,6 @@ func (d *dispatcher) startSpan(ctx context.Context, req *Request) context.Contex
 
 	ctx, span := otel.Tracer("").Start(ctx, "")
 	must.BeTrue(span.SpanContext().IsValid())
-	must.BeTrue(span.SpanContext().IsRemote())
 	must.BeTrue(span.SpanContext().IsSampled())
 	must.BeTrue(span.IsRecording())
 

@@ -23,6 +23,7 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	"sync"
 
 	"github.com/FerretDB/wire"
 	"github.com/prometheus/client_golang/prometheus"
@@ -34,6 +35,7 @@ import (
 
 // Handler handles requests by sending them to another wire protocol compatible service.
 type Handler struct {
+	m    sync.Mutex
 	conn net.Conn
 	bufr *bufio.Reader
 	bufw *bufio.Writer
@@ -141,6 +143,10 @@ func (h *Handler) Run(ctx context.Context) {
 
 // Handle processes a request by sending it to another wire protocol compatible service.
 func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/5049
+	h.m.Lock()
+	defer h.m.Unlock()
+
 	deadline, _ := ctx.Deadline()
 	_ = h.conn.SetDeadline(deadline)
 

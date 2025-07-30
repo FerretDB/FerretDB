@@ -17,6 +17,7 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"strings"
 	"sync"
@@ -30,7 +31,7 @@ import (
 
 type Middleware struct {
 	*NewOpts
-	wg *sync.WaitGroup
+	wg sync.WaitGroup
 }
 
 // NewOpts represents middleware configuration.
@@ -110,6 +111,10 @@ func (m *Middleware) handle(ctx context.Context, req *Request) (docdb, proxy *Re
 		"command": command,
 	})
 
+	if m.L.Enabled(ctx, slog.LevelDebug) {
+		m.L.DebugContext(ctx, fmt.Sprintf("<<< %s\n%s", req.WireHeader(), req.WireBody().StringIndent()))
+	}
+
 	var wg sync.WaitGroup
 
 	if m.DocDB != nil {
@@ -165,6 +170,13 @@ func (m *Middleware) logDiff(ctx context.Context, docdb, proxy *Response, logLev
 		return
 	}
 
+	diffHeader = strings.TrimSpace(diffHeader)
+	if diffHeader == "" {
+		diffHeader = " none"
+	} else {
+		diffHeader = "\n" + diffHeader
+	}
+
 	diffBody, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
 		A:        difflib.SplitLines(docdb.WireBody().StringIndent()),
 		FromFile: "docdb body",
@@ -177,7 +189,14 @@ func (m *Middleware) logDiff(ctx context.Context, docdb, proxy *Response, logLev
 		return
 	}
 
-	msg := "Header diff:\n" + strings.TrimSpace(diffHeader) + "\nBody diff:\n" + strings.TrimSpace(diffBody)
+	diffBody = strings.TrimSpace(diffBody)
+	if diffBody == "" {
+		diffBody = " none"
+	} else {
+		diffBody = "\n" + diffBody
+	}
+
+	msg := "Header diff:" + diffHeader + "\nBody diff:" + diffBody
 	m.L.Log(ctx, logLevel, msg)
 }
 
