@@ -497,7 +497,7 @@ func run() {
 
 	listener.Store(res.WireListener)
 
-	metricsRegisterer.MustRegister(res.WireListener)
+	metricsRegisterer.MustRegister(res)
 
 	res.Run(ctx)
 

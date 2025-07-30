@@ -87,7 +87,7 @@ type SetupResult struct {
 //   - change global logger (it is different in tests);
 //   - set up state provider (it is different in tests);
 //   - set up telemetry reporter (it is not needed in tests);
-//   - set up debug handler (it is global and uses the global Prometheus registry);
+//   - set up debug handler (it is global and uses the global Prometheus gatherer);
 //   - set up OpenTelemetry trace exporter (it is global).
 //
 // It returns nil if any of the components could not be created.
