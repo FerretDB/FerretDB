@@ -24,7 +24,6 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi"
-	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
@@ -90,19 +89,12 @@ type SetupResult struct {
 func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 	must.NotBeZero(opts)
 
-	p, err := documentdb.NewPool(opts.PostgreSQLURL, logging.WithName(opts.Logger, "pool"), opts.StateProvider)
-	if err != nil {
-		opts.Logger.LogAttrs(ctx, logging.LevelDPanic, "Failed to construct connection pool", logging.Error(err))
-		return nil
-	}
-
 	//exhaustruct:enforce
 	h, err := handler.New(&handler.NewOpts{
-		Pool: p, // handler takes over the pool
-
-		Auth:        opts.Auth,
-		TCPHost:     opts.TCPAddr,
-		ReplSetName: opts.ReplSetName,
+		PostgreSQLURL: opts.PostgreSQLURL,
+		Auth:          opts.Auth,
+		TCPHost:       opts.TCPAddr,
+		ReplSetName:   opts.ReplSetName,
 
 		L:             logging.WithName(opts.Logger, "handler"),
 		ConnMetrics:   opts.ListenerMetrics.ConnMetrics,
@@ -111,7 +103,6 @@ func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 		SessionCleanupInterval: opts.SessionCleanupInterval,
 	})
 	if err != nil {
-		p.Close()
 		opts.Logger.LogAttrs(ctx, logging.LevelDPanic, "Failed to construct handler", logging.Error(err))
 
 		return nil
@@ -140,7 +131,6 @@ func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 		TestRecordsDir: opts.RecordsDir,
 	})
 	if err != nil {
-		p.Close()
 		opts.Logger.LogAttrs(ctx, logging.LevelDPanic, "Failed to construct wire protocol listener", logging.Error(err))
 
 		return nil
@@ -155,7 +145,6 @@ func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 			Auth:    opts.Auth,
 		})
 		if err != nil {
-			p.Close()
 			opts.Logger.LogAttrs(ctx, logging.LevelDPanic, "Failed to construct DataAPI listener", logging.Error(err))
 
 			return nil

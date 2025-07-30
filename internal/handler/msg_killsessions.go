@@ -45,7 +45,7 @@ func (h *Handler) msgKillSessions(connCtx context.Context, req *middleware.Reque
 		cursorIDs := h.s.DeleteSessionsByUserIDs([]session.UserID{userID})
 
 		for _, cursorID := range cursorIDs {
-			_ = h.Pool.KillCursor(connCtx, cursorID)
+			_ = h.p.KillCursor(connCtx, cursorID)
 		}
 
 		return middleware.ResponseDoc(req, wirebson.MustDocument(
@@ -56,7 +56,7 @@ func (h *Handler) msgKillSessions(connCtx context.Context, req *middleware.Reque
 	cursorIDs := h.s.DeleteSessionsByIDs(userID, ids)
 
 	for _, cursorID := range cursorIDs {
-		_ = h.Pool.KillCursor(connCtx, cursorID)
+		_ = h.p.KillCursor(connCtx, cursorID)
 	}
 
 	return middleware.ResponseDoc(req, wirebson.MustDocument(
