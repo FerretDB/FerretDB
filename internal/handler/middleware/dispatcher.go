@@ -119,7 +119,7 @@ func (d *dispatcher) Handle(ctx context.Context, req *Request) (resp *Response, 
 func (d *dispatcher) enforceContract(ctx context.Context, req *Request, resp *Response, err error) (*Response, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/4965
 	// level := logging.LevelDPanic
-	level := logging.LevelWarn
+	level := slog.LevelWarn
 
 	if resp == nil && err == nil {
 		msg := fmt.Sprintf("%T broke Handler contract: both are nil", d.h)

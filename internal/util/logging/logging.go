@@ -24,11 +24,6 @@ import (
 )
 
 const (
-	LevelDebug = slog.LevelDebug
-	LevelInfo  = slog.LevelInfo
-	LevelWarn  = slog.LevelWarn
-	LevelError = slog.LevelError
-
 	// LevelDPanic panics in development builds.
 	LevelDPanic = slog.LevelError + 1
 
@@ -49,7 +44,6 @@ const nameKey = "name"
 // TODO https://github.com/FerretDB/FerretDB/issues/4431
 func WithName(l *slog.Logger, name string) *slog.Logger {
 	must.NotBeZero(l)
-
 	return l.With(slog.String(nameKey, name))
 }
 
