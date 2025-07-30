@@ -114,7 +114,7 @@ func New(config *Config) (*FerretDB, error) {
 		DNT:            os.Getenv("DO_NOT_TRACK"),
 		ExecName:       os.Args[0],
 		P:              stateProvider,
-		ConnMetrics:    lm.ConnMetrics,
+		Metrics:        lm.ConnMetrics,
 		L:              logging.WithName(logger, "telemetry"),
 		UndecidedDelay: time.Hour,
 		ReportInterval: 24 * time.Hour,

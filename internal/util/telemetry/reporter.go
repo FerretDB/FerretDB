@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
@@ -89,7 +89,7 @@ type NewReporterOpts struct {
 	DNT            string
 	ExecName       string
 	P              *state.Provider
-	ConnMetrics    *connmetrics.ConnMetrics
+	Metrics        *middleware.Metrics
 	L              *slog.Logger
 	UndecidedDelay time.Duration
 	ReportInterval time.Duration
@@ -135,7 +135,7 @@ func (r *Reporter) Run(ctx context.Context) {
 	}
 
 	for context.Cause(ctx) == nil {
-		report := r.makeReport()
+		report := r.makeReport(r.Metrics.GetResponses())
 
 		if s := r.P.Get(); s.Telemetry == nil || *s.Telemetry {
 			r.sendReport(ctx, report)
@@ -146,7 +146,7 @@ func (r *Reporter) Run(ctx context.Context) {
 		ctxutil.Sleep(ctx, r.ReportInterval)
 	}
 
-	report := r.makeReport()
+	report := r.makeReport(r.Metrics.GetResponses())
 
 	// send one last time before exiting only if explicitly enabled (not undecided)
 	if s := r.P.Get(); s.Telemetry != nil && *s.Telemetry {
@@ -188,10 +188,10 @@ func (r *Reporter) firstReportDelay(ctx context.Context) {
 }
 
 // makeReport converts runtime state, metrics, and build information to telemetry data.
-func (r *Reporter) makeReport() *report {
+func (r *Reporter) makeReport(m map[string]map[string]map[string]middleware.CommandMetrics) *report {
 	commandMetrics := map[string]map[string]map[string]map[string]int{}
 
-	for opcode, commands := range r.ConnMetrics.GetResponses() {
+	for opcode, commands := range m {
 		for command, arguments := range commands {
 			for argument, m := range arguments {
 				if _, ok := commandMetrics[opcode]; !ok {
