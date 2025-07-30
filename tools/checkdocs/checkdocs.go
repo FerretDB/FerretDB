@@ -39,6 +39,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	err = checkBlogFiles(blogFiles)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	docsFiles, err := getMarkdownFiles(filepath.Join("website", "docs"))
 	if err != nil {
 		log.Fatal(err)
@@ -54,11 +59,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = checkBlogFiles(blogFiles)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	err = checkDocFiles(client, docsFiles)
 	if err != nil {
 		log.Fatal(err)
@@ -70,42 +70,35 @@ func checkDocFiles(client *github.Client, files []string) error {
 	var failed bool
 
 	for _, file := range files {
-		docFailed, err := checkDocFile(client, file)
+		b, err := os.ReadFile(file)
 		if err != nil {
-			return err
+			return fmt.Errorf("Couldn't read file %s: %s", file, err)
 		}
 
-		if docFailed {
+		f, err := checkIssueURLs(client, bytes.NewReader(b), file, log.Default())
+		if err != nil {
+			log.Printf("%q: %s", file, err)
+		}
+		if !f || err != nil {
+			failed = true
+		}
+
+		fm, err := extractFrontMatter(b)
+		if err != nil {
+			return fmt.Errorf("Couldn't extract front matter from %s: %s", file, err)
+		}
+
+		if err = verifyHideTOC(fm); err != nil {
+			log.Printf("%q: %s", file, err)
 			failed = true
 		}
 	}
 
 	if failed {
-		return fmt.Errorf("one or more docs contain invalid issue URLs")
+		return fmt.Errorf("One or more doc file is not correctly formatted")
 	}
 
 	return nil
-}
-
-// checkDocFile verifies the file contain valid issue URLs.
-func checkDocFile(client *github.Client, file string) (bool, error) {
-	f, err := os.Open(file)
-	if err != nil {
-		return true, fmt.Errorf("could not read file %s: %s", file, err)
-	}
-
-	defer func() {
-		if err = f.Close(); err != nil {
-			log.Fatal(err)
-		}
-	}()
-
-	issueURLFailed, err := checkIssueURLs(client, f, file, log.Default())
-	if err != nil {
-		log.Printf("%q: %s", file, err)
-	}
-
-	return issueURLFailed, nil
 }
 
 // getMarkdownFiles returns markdown files in the given directory.
@@ -143,39 +136,39 @@ func checkBlogFiles(files []string) error {
 	var failed bool
 
 	for _, file := range files {
-		fileInBytes, err := os.ReadFile(file)
+		b, err := os.ReadFile(file)
 		if err != nil {
 			return fmt.Errorf("Couldn't read file %s: %s", file, err)
 		}
 
-		b, err := extractFrontMatter(fileInBytes)
+		fm, err := extractFrontMatter(b)
 		if err != nil {
 			return fmt.Errorf("Couldn't extract front matter from %s: %s", file, err)
 		}
 
-		if err = verifySlug(filepath.Base(file), b); err != nil {
+		if err = verifySlug(filepath.Base(file), fm); err != nil {
 			log.Printf("%q: %s", file, err)
 			failed = true
 		}
 
-		if err = verifyDateNotPresent(b); err != nil {
+		if err = verifyDateNotPresent(fm); err != nil {
 			log.Printf("%q: %s", file, err)
 			failed = true
 		}
 
-		if err = verifyTags(b); err != nil {
+		if err = verifyTags(fm); err != nil {
 			log.Printf("%q: %s", file, err)
 			failed = true
 		}
 
-		if err = verifyTruncateString(fileInBytes); err != nil {
+		if err = verifyTruncateString(b); err != nil {
 			log.Printf("%q: %s", file, err)
 			failed = true
 		}
 	}
 
 	if failed {
-		return fmt.Errorf("One or more blog posts are not correctly formatted")
+		return fmt.Errorf("One or more blog post is not correctly formatted")
 	}
 
 	return nil
@@ -317,6 +310,15 @@ func verifyTags(fm []byte) error {
 		if _, ok := expectedTags[tag]; !ok {
 			return fmt.Errorf("tag %q is not in the allowed list", tag)
 		}
+	}
+
+	return nil
+}
+
+func verifyHideTOC(fm []byte) error {
+	n := "hide_table_of_contents: true"
+	if !bytes.Contains(fm, []byte(n)) {
+		return fmt.Errorf("front matter should contain %q", n)
 	}
 
 	return nil
