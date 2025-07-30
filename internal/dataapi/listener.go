@@ -86,7 +86,6 @@ func (lis *Listener) Run(ctx context.Context) {
 		}
 	}()
 
-	// Shouldn't we also call lis.lis.Close()?
 	// TODO https://github.com/FerretDB/FerretDB/issues/4848
 	<-ctx.Done()
 }
