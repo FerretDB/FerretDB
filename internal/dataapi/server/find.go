@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"log/slog"
 	"net/http"
 	"net/http/httputil"
@@ -71,11 +72,30 @@ func (s *Server) Find(w http.ResponseWriter, r *http.Request) {
 	cursor := resp.Document().Get("cursor").(wirebson.AnyDocument)
 	firstBatch := must.NotFail(cursor.Decode()).Get("firstBatch").(wirebson.AnyArray)
 
-	dummyDoc, err := wirebson.ToDriver(wirebson.MustDocument("v", firstBatch))
+	//dummyDoc, err := wirebson.ToDriver(wirebson.MustDocument("v", firstBatch))
+	//if err != nil {
+	//	http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+	//	return
+	//}
+
+	arr, err := wirebson.ToDriver(firstBatch)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
+
+	log.Print(arr)
+
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+
+	err = enc.Encode(arr)
+	if err != nil {
+		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		return
+	}
+
+	b := json.RawMessage(buf.Bytes())
 
 	//docs, err := dummyDoc.Decode()
 	//if err != nil {
@@ -83,15 +103,12 @@ func (s *Server) Find(w http.ResponseWriter, r *http.Request) {
 	//	return
 	//}
 
-	var b json.RawMessage
-	b, err = json.Marshal(dummyDoc)
-	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
-		return
-	}
-
-	b = bytes.TrimPrefix(b, []byte(`{"v":`))
-	b = bytes.TrimSuffix(b, []byte(`}`))
+	//var b json.RawMessage
+	//b, err = json.Marshal(dummyDoc)
+	//if err != nil {
+	//	http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+	//	return
+	//}
 
 	res := api.FindManyResponseBody{
 		Documents: &b,
