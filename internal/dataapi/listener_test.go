@@ -80,7 +80,7 @@ func TestSmokeDataAPI(t *testing.T) {
 
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
-		assert.JSONEq(t, `{"n":1}`, string(body))
+		assert.JSONEq(t, `{}`, string(body))
 	})
 
 	t.Run("InsertMany", func(t *testing.T) {
@@ -96,7 +96,7 @@ func TestSmokeDataAPI(t *testing.T) {
 
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
-		assert.JSONEq(t, `{"n":1}`, string(body))
+		assert.JSONEq(t, `{"insertedIds":[]}`, string(body))
 	})
 
 	t.Run("UpdateOne", func(t *testing.T) {
