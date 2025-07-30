@@ -30,6 +30,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/session"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 )
@@ -61,6 +62,7 @@ const (
 // Handler instance is shared between all client connections.
 type Handler struct {
 	*NewOpts
+	p        *documentdb.Pool
 	commands map[string]*command
 	s        *session.Registry
 }
@@ -69,11 +71,10 @@ type Handler struct {
 //
 //nolint:vet // for readability
 type NewOpts struct {
-	Pool *documentdb.Pool
-	Auth bool
-
-	TCPHost     string
-	ReplSetName string
+	PostgreSQLURL string
+	Auth          bool
+	TCPHost       string
+	ReplSetName   string
 
 	L             *slog.Logger
 	ConnMetrics   *connmetrics.ConnMetrics
@@ -83,7 +84,6 @@ type NewOpts struct {
 }
 
 // New returns a new handler.
-// It takes over the passed pool.
 // [Handler.Run] must be called on the returned value.
 func New(opts *NewOpts) (*Handler, error) {
 	sessionTimeout := time.Duration(session.LogicalSessionTimeoutMinutes) * time.Minute
@@ -92,8 +92,14 @@ func New(opts *NewOpts) (*Handler, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/4750
 	_ = opts.L.Handler().(*logging.Handler)
 
+	p, err := documentdb.NewPool(opts.PostgreSQLURL, logging.WithName(opts.L, "pool"), opts.StateProvider)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	h := &Handler{
 		NewOpts: opts,
+		p:       p,
 		s:       session.NewRegistry(sessionTimeout, opts.L),
 	}
 
@@ -108,7 +114,7 @@ func New(opts *NewOpts) (*Handler, error) {
 func (h *Handler) Run(ctx context.Context) {
 	defer func() {
 		h.s.Stop()
-		h.Pool.Close()
+		h.p.Close()
 		h.L.InfoContext(ctx, "Handler stopped")
 	}()
 
@@ -131,7 +137,7 @@ func (h *Handler) Run(ctx context.Context) {
 			cursorIDs := h.s.DeleteExpired()
 
 			for _, cursorID := range cursorIDs {
-				_ = h.Pool.KillCursor(ctx, cursorID)
+				_ = h.p.KillCursor(ctx, cursorID)
 			}
 		}
 	}
@@ -203,13 +209,13 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middlew
 
 // Describe implements [prometheus.Collector].
 func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
-	h.Pool.Describe(ch)
+	h.p.Describe(ch)
 	h.s.Describe(ch)
 }
 
 // Collect implements [prometheus.Collector].
 func (h *Handler) Collect(ch chan<- prometheus.Metric) {
-	h.Pool.Collect(ch)
+	h.p.Collect(ch)
 	h.s.Collect(ch)
 }
 

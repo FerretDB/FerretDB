@@ -43,7 +43,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/proxy"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
@@ -58,7 +57,7 @@ type conn struct {
 	netConn        net.Conn
 	mode           middleware.Mode
 	l              *slog.Logger
-	h              *handler.Handler
+	h              middleware.Handler
 	m              *connmetrics.ConnMetrics
 	proxy          *proxy.Handler
 	lastRequestID  atomic.Int32
@@ -70,7 +69,7 @@ type newConnOpts struct {
 	netConn     net.Conn
 	mode        middleware.Mode
 	l           *slog.Logger
-	handler     *handler.Handler
+	handler     middleware.Handler
 	connMetrics *connmetrics.ConnMetrics
 
 	proxyAddr        string

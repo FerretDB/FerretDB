@@ -172,6 +172,20 @@ jobs:
           flag-name: unit
           parallel: true
 
+      - name: Convert test results to JUnit XML format
+        if: always()
+        run: >
+          ./bin/go-junit-report
+          -in ./unit.txt
+          -out ./unit.xml
+
+      - name: Upload test results to Codecov
+        if: always()
+        uses: codecov/test-results-action@v1
+        with:
+          flags: unit
+          file: ./unit.xml
+
       # we don't want them on CI
       - name: Clean test and fuzz caches
         if: always()
@@ -199,7 +213,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task: [postgresql]
+        task: [postgresql, yugabytedb]
         shard_index: [1, 2, 3, 4, 5]
         shard_total: [5]
         include:
