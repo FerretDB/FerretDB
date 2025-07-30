@@ -15,8 +15,6 @@
 package server
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -76,21 +74,11 @@ func (s *Server) FindOne(w http.ResponseWriter, r *http.Request) {
 		doc = docs.Get(0).(wirebson.AnyDocument)
 	}
 
-	driverDoc, err := wirebson.ToDriver(doc)
+	b, err := marshalSingleJSON(doc)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
-
-	var buf bytes.Buffer
-
-	err = json.NewEncoder(&buf).Encode(driverDoc)
-	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
-		return
-	}
-
-	b := json.RawMessage(buf.Bytes())
 
 	res := api.FindOneResponseBody{
 		Document: &b,

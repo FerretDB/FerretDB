@@ -15,8 +15,6 @@
 package server
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -71,41 +69,11 @@ func (s *Server) Find(w http.ResponseWriter, r *http.Request) {
 	cursor := resp.Document().Get("cursor").(wirebson.AnyDocument)
 	firstBatch := must.NotFail(cursor.Decode()).Get("firstBatch").(wirebson.AnyArray)
 
-	//dummyDoc, err := wirebson.ToDriver(wirebson.MustDocument("v", firstBatch))
-	//if err != nil {
-	//	http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
-	//	return
-	//}
-
-	arr, err := wirebson.ToDriver(firstBatch)
+	b, err := marshalSingleJSON(firstBatch)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
-
-	var buf bytes.Buffer
-	enc := json.NewEncoder(&buf)
-
-	err = enc.Encode(arr)
-	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
-		return
-	}
-
-	b := json.RawMessage(buf.Bytes())
-
-	//docs, err := dummyDoc.Decode()
-	//if err != nil {
-	//	http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
-	//	return
-	//}
-
-	//var b json.RawMessage
-	//b, err = json.Marshal(dummyDoc)
-	//if err != nil {
-	//	http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
-	//	return
-	//}
 
 	res := api.FindManyResponseBody{
 		Documents: &b,

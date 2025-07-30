@@ -15,6 +15,7 @@
 package server
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -36,6 +37,21 @@ func marshalJSON(raw any, jsonDst io.Writer) error {
 	}
 
 	return nil
+}
+
+func marshalSingleJSON(v any) (json.RawMessage, error) {
+	bv, err := wirebson.ToDriver(v)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var buf bytes.Buffer
+
+	err = json.NewEncoder(&buf).Encode(bv)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	return json.RawMessage(buf.Bytes()), nil
 }
 
 // unmarshalSingleJSON takes extended JSON object and unmarshals it into the wirebson composite.
