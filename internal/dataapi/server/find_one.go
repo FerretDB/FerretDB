@@ -15,6 +15,7 @@
 package server
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -68,19 +69,28 @@ func (s *Server) FindOne(w http.ResponseWriter, r *http.Request) {
 	cursor := resp.Document().Get("cursor").(wirebson.AnyDocument)
 	firstBatch := must.NotFail(cursor.Decode()).Get("firstBatch").(wirebson.AnyArray)
 
-	var doc wirebson.RawDocument
+	var doc wirebson.AnyDocument
 
 	docs := must.NotFail(firstBatch.Decode())
 	if docs.Len() > 0 {
-		doc = must.NotFail(docs.Get(0).(wirebson.AnyDocument).Encode())
+		doc = docs.Get(0).(wirebson.AnyDocument)
 	}
 
-	var b json.RawMessage
-	b, err = json.Marshal(doc)
+	driverDoc, err := wirebson.ToDriver(doc)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
+
+	var buf bytes.Buffer
+
+	err = json.NewEncoder(&buf).Encode(driverDoc)
+	if err != nil {
+		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		return
+	}
+
+	b := json.RawMessage(buf.Bytes())
 
 	res := api.FindOneResponseBody{
 		Document: &b,

@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"log/slog"
 	"net/http"
 	"net/http/httputil"
@@ -83,8 +82,6 @@ func (s *Server) Find(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
-
-	log.Print(arr)
 
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)

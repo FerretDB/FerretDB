@@ -15,6 +15,7 @@
 package server
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -67,19 +68,22 @@ func (s *Server) Aggregate(w http.ResponseWriter, r *http.Request) {
 	cursor := resp.Document().Get("cursor").(wirebson.AnyDocument)
 	firstBatch := must.NotFail(cursor.Decode()).Get("firstBatch").(wirebson.AnyArray)
 
-	docs, err := firstBatch.Decode()
+	arr, err := wirebson.ToDriver(firstBatch)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
-	var b json.RawMessage
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
 
-	b, err = json.Marshal(docs)
+	err = enc.Encode(arr)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
+
+	b := json.RawMessage(buf.Bytes())
 
 	res := api.AggregateResponseBody{
 		Documents: b,
