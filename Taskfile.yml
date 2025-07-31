@@ -263,7 +263,20 @@ tasks:
 
   test-integration-yugabytedb:
     desc: "Run integration tests for FerretDB with YugabyteDB sequentially"
-    deps: [gen-version, test-integration-build]
+    vars:
+      # DPanic on InternalError stops execution of remaining tests,
+      # ensure to complete all tests by using build tag ferretdb_yugabytedb.
+      # See [build/version] package documentation for more details.
+      BUILD_TAGS: ferretdb_yugabytedb
+      RACE_FLAG: -race=false
+    deps:
+      - task: gen-version
+        vars:
+          BUILD_TAGS:
+            ref: .BUILD_TAGS
+          RACE_FLAG:
+            ref: .RACE_FLAG
+      - task: test-integration-build
     dir: integration
     cmds:
       - >
@@ -279,7 +292,7 @@ tasks:
         -p=1
         -timeout={{.TEST_TIMEOUT}}
         {{.RACE_FLAG}}
-        -tags=ferretdb_yugabytedb
+        -tags={{.BUILD_TAGS}}
         -shuffle=on
         -coverpkg=../...
         -coverprofile=integration-yugabytedb.txt
