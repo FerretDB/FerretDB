@@ -39,6 +39,7 @@ Supported URL parameters are documented there:
 Additionally:
 
 - `pool_max_conns` parameter is set to 50 if it is unset in the URL;
+- `pool_max_conn_idle_time` is set to 5m if it is unset in the URL;
 - `application_name` is always set to "FerretDB";
 - `timezone` is always set to "UTC".
 
