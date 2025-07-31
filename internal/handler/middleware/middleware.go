@@ -29,6 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
+// Middleware connects listeners and handlers.
 type Middleware struct {
 	*NewOpts
 	wg sync.WaitGroup
@@ -78,6 +79,8 @@ func (m *Middleware) Run(ctx context.Context) {
 	m.wg.Wait()
 }
 
+// Handle implements [middleware.Handler].
+// It dispatches the request to one or both handlers based on the mode.
 func (m *Middleware) Handle(ctx context.Context, req *Request) (*Response, error) {
 	m.wg.Add(1)
 	defer m.wg.Done()
@@ -100,6 +103,7 @@ func (m *Middleware) Handle(ctx context.Context, req *Request) (*Response, error
 	}
 }
 
+// handle dispatches the request to both handlers.
 func (m *Middleware) handle(ctx context.Context, req *Request) (docdb, proxy *Response, docdbErr, proxyErr error) {
 	// FIXME opcode
 	opcode := req.WireHeader().OpCode.String()
@@ -202,12 +206,12 @@ func (m *Middleware) logDiff(ctx context.Context, docdb, proxy *Response, logLev
 
 // Describe implements [prometheus.Collector].
 func (m *Middleware) Describe(ch chan<- *prometheus.Desc) {
-	// FIXME
+	// TODO https://github.com/FerretDB/FerretDB/issues/4965
 }
 
 // Collect implements [prometheus.Collector].
 func (m *Middleware) Collect(ch chan<- prometheus.Metric) {
-	// FIXME
+	// TODO https://github.com/FerretDB/FerretDB/issues/4965
 }
 
 // check interfaces
