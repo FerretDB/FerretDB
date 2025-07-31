@@ -37,26 +37,26 @@ func TestReporterLocked(t *testing.T) {
 		locked   bool
 	}{
 		"NoSet": {
-			f: new(Flag),
+			f: NewFlag(nil),
 		},
 		"FlagEnable": {
-			f:      &Flag{v: pointer.ToBool(true)},
+			f:      NewFlag(pointer.ToBool(true)),
 			t:      pointer.ToBool(true),
 			locked: true,
 		},
 		"FlagDisable": {
-			f:      &Flag{v: pointer.ToBool(false)},
+			f:      NewFlag(pointer.ToBool(false)),
 			t:      pointer.ToBool(false),
 			locked: true,
 		},
 		"DoNotTrack": {
-			f:      new(Flag),
+			f:      NewFlag(nil),
 			dnt:    "enable",
 			t:      pointer.ToBool(false),
 			locked: true,
 		},
 		"ExecName": {
-			f:        new(Flag),
+			f:        NewFlag(nil),
 			execName: "exec_donottrack",
 			t:        pointer.ToBool(false),
 			locked:   true,
