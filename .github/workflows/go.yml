@@ -225,6 +225,7 @@ jobs:
       task: ${{ matrix.task }}
       shard_index: ${{ matrix.shard_index }}
       shard_total: ${{ matrix.shard_total }}
+      skip_flaky_check: ${{ matrix.skip_flaky_check }}
 
   integration-no-xfail:
     name: postgresql no-xfail
