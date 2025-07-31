@@ -27,8 +27,7 @@
 //
 // The following Go build tags (also known as build constraints) affect builds of FerretDB:
 //
-//	ferretdb_dev        - enables development build (see below; implied by builds with race detector)
-//	ferretdb_yugabytedb - uses production build for YugabyteDB (use race detector for development build)
+//	ferretdb_dev - enables development build (see below; implied by builds with race detector)
 //
 // # Development builds
 //
