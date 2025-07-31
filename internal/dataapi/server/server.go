@@ -30,7 +30,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
-	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
@@ -38,7 +37,7 @@ import (
 )
 
 // New creates a new Server.
-func New(l *slog.Logger, handler *handler.Handler) *Server {
+func New(l *slog.Logger, handler middleware.Handler) *Server {
 	return &Server{
 		l:       l,
 		handler: handler,
@@ -48,7 +47,7 @@ func New(l *slog.Logger, handler *handler.Handler) *Server {
 // Server implements services described by OpenAPI description file.
 type Server struct {
 	l       *slog.Logger
-	handler *handler.Handler
+	handler middleware.Handler
 }
 
 // AuthMiddleware handles SCRAM authentication based on the username and password specified in request.

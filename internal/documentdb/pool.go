@@ -46,6 +46,8 @@ type Pool struct {
 // NewPool creates a new pool of PostgreSQL connections.
 // No actual connections are established.
 func NewPool(uri string, l *slog.Logger, sp *state.Provider) (*Pool, error) {
+	must.NotBeZero(uri)
+	must.NotBeZero(l)
 	must.NotBeZero(sp)
 
 	p, err := newPgxPool(uri, logging.WithName(l, "pgx"), sp)
@@ -120,7 +122,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "acquired_total"),
-			"The total count of successful acquires from the pool.",
+			"The cumulative count of successful connection acquires from the pool.",
 			nil, nil,
 		),
 		prometheus.CounterValue,
@@ -140,7 +142,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "acquired"),
-			"The number of currently acquired connection in the pool.",
+			"The number of currently acquired connections in the pool.",
 			nil, nil,
 		),
 		prometheus.GaugeValue,
@@ -149,8 +151,8 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, subsystem, "acquired_cancelled_total"),
-			"The total number of acquired connection in the pool that were cancelled by a context.",
+			prometheus.BuildFQName(namespace, subsystem, "acquires_canceled_total"),
+			"The cumulative count of connection acquires from the pool that were canceled.",
 			nil, nil,
 		),
 		prometheus.CounterValue,
@@ -160,7 +162,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "constructing"),
-			"The current number of connections with construction in progress in the pool.",
+			"The number of connections with construction in progress in the pool.",
 			nil, nil,
 		),
 		prometheus.GaugeValue,
@@ -170,8 +172,8 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "acquired_empty_total"),
-			"The total count of successful acquires from the pool that waited for a resource to be released "+
-				"or constructed because the pool was empty.",
+			"The cumulative count of successful connection acquires from the pool "+
+				"that waited for a resource to be released or constructed because the pool was empty.",
 			nil, nil,
 		),
 		prometheus.CounterValue,
@@ -181,7 +183,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "idle"),
-			"The current number of idle connections in the pool.",
+			"The number of currently idle connections in the pool.",
 			nil, nil,
 		),
 		prometheus.GaugeValue,
@@ -191,7 +193,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "max_size"),
-			"The maximum size of connections in the pool.",
+			"The maximum size of the connection pool.",
 			nil, nil,
 		),
 		prometheus.GaugeValue,
@@ -201,7 +203,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "size"),
-			"The current number of connections in the pool.",
+			"Total number of connections currently in the pool. Should be a sum of constructing, acquired, and idle.",
 			nil, nil,
 		),
 		prometheus.GaugeValue,
@@ -211,7 +213,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "opened_total"),
-			"The total count of new connections opened.",
+			"The cumulative count of new connections opened.",
 			nil, nil,
 		),
 		prometheus.CounterValue,
@@ -221,7 +223,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "destroyed_maxlifetime_total"),
-			"The total count of connections destroyed because they exceeded MaxConnLifetime.",
+			"The cumulative count of connections destroyed because they exceeded pool_max_conn_lifetime.",
 			nil, nil,
 		),
 		prometheus.CounterValue,
@@ -231,7 +233,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "destroyed_maxidle_total"),
-			"The total count of connections destroyed because they exceeded MaxConnIdleTime.",
+			"The cumulative count of connections destroyed because they exceeded pool_max_conn_idle_time.",
 			nil, nil,
 		),
 		prometheus.CounterValue,
