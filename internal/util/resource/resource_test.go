@@ -18,7 +18,6 @@ import (
 	"runtime"
 	"runtime/pprof"
 	"testing"
-	"unsafe"
 
 	"github.com/stretchr/testify/assert"
 
@@ -70,10 +69,9 @@ func TestTrackUntrack(t *testing.T) {
 		Track(obj, obj.token)
 
 		assert.Equal(t, 1, pprof.Lookup(name).Count())
-		runtime.KeepAlive(obj)
 
-		// see below
-		p := unsafe.Pointer(obj.token)
+		tt := obj.token
+		runtime.KeepAlive(obj)
 
 		runtime.GC()
 		msg := <-ch
@@ -82,7 +80,7 @@ func TestTrackUntrack(t *testing.T) {
 		assert.Equal(t, 1, pprof.Lookup(name).Count())
 
 		// remove profile manually to support `go test -count=X`
-		pprof.Lookup(name).Remove((*Token)(p))
+		pprof.Lookup(name).Remove(tt)
 		assert.Equal(t, 0, pprof.Lookup(name).Count())
 	})
 
