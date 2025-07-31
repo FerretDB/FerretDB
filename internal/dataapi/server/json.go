@@ -30,12 +30,12 @@ func marshalSingleJSON(v any) (json.RawMessage, error) {
 	var err error
 
 	switch vt := v.(type) {
-	case wirebson.RawArray:
+	case wirebson.RawDocument:
 		v, err = vt.DecodeDeep()
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
-	case wirebson.RawDocument:
+	case wirebson.RawArray:
 		v, err = vt.DecodeDeep()
 		if err != nil {
 			return nil, lazyerrors.Error(err)
@@ -53,6 +53,7 @@ func marshalSingleJSON(v any) (json.RawMessage, error) {
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
 	return json.RawMessage(buf.Bytes()), nil
 }
 
