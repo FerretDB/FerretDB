@@ -1,6 +1,7 @@
 ---
 sidebar_position: 2
 description: Learn to secure connections using TLS
+hide_table_of_contents: true
 ---
 
 # TLS connections

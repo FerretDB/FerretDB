@@ -1,6 +1,7 @@
 ---
 sidebar_position: 2
 slug: /configuration/operation-modes/ # referenced in CONTRIBUTING.md
+hide_table_of_contents: true
 ---
 
 # Operation modes

@@ -1,6 +1,7 @@
 ---
 sidebar_position: 1
 description: How to set up FerretDB using Docker
+hide_table_of_contents: true
 ---
 
 # Docker
