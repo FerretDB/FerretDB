@@ -60,7 +60,6 @@ func (s *Server) InsertMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO insertedIDs
 	res := api.InsertManyResponseBody{}
 	s.writeJSONResponse(ctx, w, &res)
 }

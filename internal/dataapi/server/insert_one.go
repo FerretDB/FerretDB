@@ -73,7 +73,6 @@ func (s *Server) InsertOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO insertedID
 	res := api.InsertOneResponseBody{}
 	s.writeJSONResponse(ctx, w, &res)
 }
