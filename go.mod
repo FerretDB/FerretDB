@@ -69,4 +69,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/FerretDB/wire => /home/user/wire
+//replace github.com/FerretDB/wire => /home/user/wire

@@ -26,6 +26,21 @@ import (
 )
 
 func marshalSingleJSON(v any) (json.RawMessage, error) {
+	var err error
+
+	switch vt := v.(type) {
+	case wirebson.RawArray:
+		v, err = vt.DecodeDeep()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	case wirebson.RawDocument:
+		v, err = vt.DecodeDeep()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
 	bv, err := wirebson.ToDriver(v)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
