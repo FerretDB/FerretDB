@@ -49,13 +49,13 @@ func (h *Handler) msgCreateIndexes(connCtx context.Context, req *middleware.Requ
 		return nil, mongoerrors.NewWithArgument(
 			mongoerrors.ErrLocation40414,
 			"BSON field 'createIndexes.indexes' is missing but a required field",
-			"createIndexes",
+			"indexes",
 		)
 	}
 
 	var res wirebson.AnyDocument
 
-	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
+	err = h.p.WithConn(func(conn *pgx.Conn) error {
 		res, err = h.createIndexes(connCtx, conn, doc.Command(), dbName, req.DocumentRaw())
 		return err
 	})
@@ -105,7 +105,7 @@ func (h *Handler) createIndexes(connCtx context.Context, conn *pgx.Conn, command
 
 	if code != 0 {
 		errMsg, _ := defaultShard.Get("errmsg").(string)
-		return nil, mongoerrors.NewWithArgument(code, errMsg, command)
+		return nil, mongoerrors.New(code, errMsg)
 	}
 
 	resOk := defaultShard.Get("ok").(int32)

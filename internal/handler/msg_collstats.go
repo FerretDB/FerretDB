@@ -67,13 +67,13 @@ func (h *Handler) msgCollStats(connCtx context.Context, req *middleware.Request)
 				scaleV,
 			)
 
-			return nil, mongoerrors.NewWithArgument(mongoerrors.ErrTypeMismatch, msg, command)
+			return nil, mongoerrors.NewWithArgument(mongoerrors.ErrTypeMismatch, msg, "scale")
 		}
 	}
 
 	var res wirebson.RawDocument
 
-	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
+	err = h.p.WithConn(func(conn *pgx.Conn) error {
 		res, err = documentdb_api.CollStats(connCtx, conn, h.L, dbName, collection, scale)
 		return err
 	})

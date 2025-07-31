@@ -37,7 +37,7 @@ func (h *Handler) msgAggregate(connCtx context.Context, req *middleware.Request)
 		return nil, err
 	}
 
-	page, cursorID, err := h.Pool.Aggregate(connCtx, dbName, req.DocumentRaw())
+	page, cursorID, err := h.p.Aggregate(connCtx, dbName, req.DocumentRaw())
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

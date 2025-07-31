@@ -73,6 +73,14 @@ jobs:
       - name: Run init
         run: bin/task init
 
+      - name: Setup Ollama and MCPHost
+        run: |
+          mkdir -p /tmp/logs
+          curl -fsSL https://ollama.com/install.sh | sh
+          sudo systemctl stop ollama
+          bin/task ollama  > /tmp/logs/ollama.log  2>&1 &
+          bin/task mcphost > /tmp/logs/mcphost.log 2>&1 &
+
       - name: Wait for and setup environment
         run: bin/task env-setup
 
@@ -91,7 +99,6 @@ jobs:
       - name: Collect logs
         if: failure()
         run: |
-          mkdir -p /tmp/logs
           bin/task env-logs-collect > /tmp/logs/compose-logs.txt
           cp -v integration/*.json.tmp integration/*.txt.tmp /tmp/logs/
 
@@ -124,6 +131,20 @@ jobs:
           file: ./integration/integration-${{ inputs.task }}.txt
           flag-name: integration-${{ inputs.task }}-${{ inputs.shard_index }}
           parallel: true
+
+      - name: Convert test results to JUnit XML format
+        if: always()
+        run: >
+          ./bin/go-junit-report -parser=gojson
+          -in ./integration/*.json.tmp
+          -out ./integration/${{ inputs.task }}.xml
+
+      - name: Upload test results to Codecov
+        if: always()
+        uses: codecov/test-results-action@v1
+        with:
+          flags: integration,${{ inputs.task }}-${{ inputs.shard_index }}
+          file: ./integration/${{ inputs.task }}.xml
 
       # we don't want them on CI
       - name: Clean test and fuzz caches
