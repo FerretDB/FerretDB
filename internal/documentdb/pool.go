@@ -46,6 +46,8 @@ type Pool struct {
 // NewPool creates a new pool of PostgreSQL connections.
 // No actual connections are established.
 func NewPool(uri string, l *slog.Logger, sp *state.Provider) (*Pool, error) {
+	must.NotBeZero(uri)
+	must.NotBeZero(l)
 	must.NotBeZero(sp)
 
 	p, err := newPgxPool(uri, logging.WithName(l, "pgx"), sp)
@@ -149,7 +151,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, subsystem, "acquires_cancelled_total"),
+			prometheus.BuildFQName(namespace, subsystem, "acquires_canceled_total"),
 			"The cumulative count of connection acquires from the pool that were canceled.",
 			nil, nil,
 		),
