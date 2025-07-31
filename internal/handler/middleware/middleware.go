@@ -31,8 +31,8 @@ import (
 
 // Middleware connects listeners and handlers.
 type Middleware struct {
-	*NewOpts
-	wg sync.WaitGroup
+	opts *NewOpts
+	wg   sync.WaitGroup
 }
 
 // NewOpts represents middleware configuration.
@@ -69,7 +69,7 @@ func New(opts *NewOpts) *Middleware {
 	}
 
 	return &Middleware{
-		NewOpts: opts,
+		opts: opts,
 	}
 }
 
@@ -85,9 +85,27 @@ func (m *Middleware) Handle(ctx context.Context, req *Request) (*Response, error
 	m.wg.Add(1)
 	defer m.wg.Done()
 
+	opcode := req.WireHeader().OpCode.String()
+	command := req.Document().Command()
+
+	labels := prometheus.Labels{
+		"opcode":  opcode,
+		"command": command,
+	}
+	m.opts.Metrics.requests.With(labels).Inc()
+
+	if m.opts.L.Enabled(ctx, slog.LevelDebug) {
+		m.opts.L.DebugContext(ctx, fmt.Sprintf("<<< %s\n%s", req.WireHeader(), req.WireBody().StringIndent()))
+	}
+
 	docdb, proxy, docdbErr, proxyErr := m.handle(ctx, req)
 
-	switch m.Mode {
+	// FIXME should we do it there on in the dispatcher?
+	// labels["argument"] = argument
+	// labels["result"] = string(res)
+	// d.m.responses.With(labels).Inc()
+
+	switch m.opts.Mode {
 	case NormalMode:
 		return docdb, docdbErr
 	case ProxyMode:
@@ -105,42 +123,30 @@ func (m *Middleware) Handle(ctx context.Context, req *Request) (*Response, error
 
 // handle dispatches the request to both handlers.
 func (m *Middleware) handle(ctx context.Context, req *Request) (docdb, proxy *Response, docdbErr, proxyErr error) {
-	// FIXME opcode
-	opcode := req.WireHeader().OpCode.String()
-	command := req.Document().Command()
-	m.Metrics.requests.WithLabelValues(opcode, command).Inc()
-
-	m.Metrics.responses.MustCurryWith(prometheus.Labels{
-		"opcode":  opcode,
-		"command": command,
-	})
-
-	if m.L.Enabled(ctx, slog.LevelDebug) {
-		m.L.DebugContext(ctx, fmt.Sprintf("<<< %s\n%s", req.WireHeader(), req.WireBody().StringIndent()))
-	}
-
 	var wg sync.WaitGroup
 
-	if m.DocDB != nil {
+	if m.opts.DocDB != nil {
 		wg.Add(1)
 		go func() {
-			docdb, docdbErr = (&dispatcher{
-				h: m.DocDB,
-				l: logging.WithName(m.L, "middleware.documentdb"),
-				m: m.Metrics,
-			}).Handle(ctx, req)
+			//exhaustruct:enforce
+			d := &dispatcher{
+				h: m.opts.DocDB,
+				l: logging.WithName(m.opts.L, "middleware.documentdb"),
+			}
+			docdb, docdbErr = d.Handle(ctx, req)
 			wg.Done()
 		}()
 	}
 
-	if m.Proxy != nil {
+	if m.opts.Proxy != nil {
 		wg.Add(1)
 		go func() {
-			proxy, proxyErr = (&dispatcher{
-				h: m.Proxy,
-				l: logging.WithName(m.L, "middleware.proxy"),
-				m: m.Metrics,
-			}).Handle(ctx, req)
+			//exhaustruct:enforce
+			d := &dispatcher{
+				h: m.opts.Proxy,
+				l: logging.WithName(m.opts.L, "middleware.proxy"),
+			}
+			proxy, proxyErr = d.Handle(ctx, req)
 
 			wg.Done()
 		}()
@@ -158,7 +164,7 @@ func (m *Middleware) logDiff(ctx context.Context, docdb, proxy *Response, logLev
 		return
 	}
 
-	if !m.L.Enabled(ctx, logLevel) {
+	if !m.opts.L.Enabled(ctx, logLevel) {
 		return
 	}
 
@@ -170,7 +176,7 @@ func (m *Middleware) logDiff(ctx context.Context, docdb, proxy *Response, logLev
 		Context:  1,
 	})
 	if err != nil {
-		m.L.Log(ctx, slog.LevelWarn, "Failed to get header diff", logging.Error(err))
+		m.opts.L.Log(ctx, slog.LevelWarn, "Failed to get header diff", logging.Error(err))
 		return
 	}
 
@@ -189,7 +195,7 @@ func (m *Middleware) logDiff(ctx context.Context, docdb, proxy *Response, logLev
 		Context:  1,
 	})
 	if err != nil {
-		m.L.Log(ctx, slog.LevelWarn, "Failed to get body diff", logging.Error(err))
+		m.opts.L.Log(ctx, slog.LevelWarn, "Failed to get body diff", logging.Error(err))
 		return
 	}
 
@@ -201,17 +207,17 @@ func (m *Middleware) logDiff(ctx context.Context, docdb, proxy *Response, logLev
 	}
 
 	msg := "Header diff:" + diffHeader + "\nBody diff:" + diffBody
-	m.L.Log(ctx, logLevel, msg)
+	m.opts.L.Log(ctx, logLevel, msg)
 }
 
 // Describe implements [prometheus.Collector].
 func (m *Middleware) Describe(ch chan<- *prometheus.Desc) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/4965
+	// m.opts.Metrics is not owned by the middleware; it exposes its own metrics.
 }
 
 // Collect implements [prometheus.Collector].
 func (m *Middleware) Collect(ch chan<- prometheus.Metric) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/4965
+	// m.opts.Metrics is not owned by the middleware; it exposes its own metrics.
 }
 
 // check interfaces

@@ -23,8 +23,8 @@ import (
 func TestGetResponses(t *testing.T) {
 	mm := NewMetrics()
 	mm.responses.WithLabelValues("OP_MSG", "update", "$set", "NotImplemented").Inc()
-	mm.responses.WithLabelValues("OP_MSG", "update", "$set", "panic").Inc()
-	mm.responses.WithLabelValues("OP_MSG", "update", "$set", "ok").Inc()
+	mm.responses.WithLabelValues("OP_MSG", "update", "$set", string(resultPanic)).Inc()
+	mm.responses.WithLabelValues("OP_MSG", "update", "$set", string(resultOK)).Inc()
 	expected := map[string]map[string]map[string]CommandMetrics{
 		"OP_MSG": {
 			"update": {

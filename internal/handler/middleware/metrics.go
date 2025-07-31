@@ -30,6 +30,7 @@ const (
 	subsystem = "client"
 )
 
+// result represents the result of a command execution.
 type result string
 
 const (
@@ -53,6 +54,10 @@ type CommandMetrics struct {
 
 // NewMetrics creates new metrics.
 func NewMetrics() *Metrics {
+	// Do we want to use "opcode" as a label?
+	// Should we use to track the listener that created the request?
+	// Or metric for that should be in the listener itself?
+	// TODO https://github.com/FerretDB/FerretDB/issues/4965
 	m := &Metrics{
 		requests: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
@@ -64,7 +69,8 @@ func NewMetrics() *Metrics {
 			[]string{"opcode", "command"},
 		),
 
-		// FIXME duration
+		// That probably should be a histogram or summary by duration.
+		// TODO https://github.com/FerretDB/FerretDB/issues/4965
 		responses: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: namespace,
@@ -77,7 +83,7 @@ func NewMetrics() *Metrics {
 	}
 
 	m.requests.WithLabelValues("OP_MSG", "find")
-	m.responses.WithLabelValues("OP_MSG", "find", "unknown", "ok")
+	m.responses.WithLabelValues("OP_MSG", "find", "unknown", string(resultOK))
 
 	return m
 }

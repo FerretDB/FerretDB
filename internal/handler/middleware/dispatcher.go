@@ -21,7 +21,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel"
 	otelattribute "go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
@@ -39,7 +38,6 @@ import (
 type dispatcher struct {
 	h Handler
 	l *slog.Logger
-	m *Metrics
 }
 
 // errPanic is returned when a panic occurs in the handler.
@@ -48,12 +46,6 @@ var errPanic = errors.New("panic")
 // Handle dispatches the request to the handler, handling panics, metrics, tracing, and logging.
 func (d *dispatcher) Handle(ctx context.Context, req *Request) (resp *Response, err error) {
 	start := time.Now()
-
-	labels := prometheus.Labels{
-		"opcode":  req.WireHeader().OpCode.String(),
-		"command": req.Document().Command(),
-	}
-	d.m.requests.With(labels).Inc()
 
 	ctx = d.startSpan(ctx, req)
 
@@ -72,7 +64,7 @@ func (d *dispatcher) Handle(ctx context.Context, req *Request) (resp *Response, 
 		switch err {
 		case nil:
 			if resp.OK() {
-				res = "ok"
+				res = resultOK
 				break
 			}
 
@@ -88,13 +80,6 @@ func (d *dispatcher) Handle(ctx context.Context, req *Request) (resp *Response, 
 			d.l.LogAttrs(ctx, logging.LevelDPanic, "Unexpected result")
 			res = resultUnknown
 		}
-
-		// FIXME
-		argument := "unknown"
-
-		labels["argument"] = argument
-		labels["result"] = string(res)
-		d.m.responses.With(labels).Inc()
 
 		d.endSpan(ctx, resp, res)
 
