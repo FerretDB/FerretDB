@@ -110,6 +110,9 @@ func TestUntrackConcurrently(t *testing.T) {
 	obj := &Object{token: NewToken()}
 	Track(obj, obj.token)
 
+	name := profileName(obj)
+	assert.Equal(t, 1, pprof.Lookup(name).Count())
+
 	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
 		ready <- struct{}{}
 
@@ -117,6 +120,8 @@ func TestUntrackConcurrently(t *testing.T) {
 
 		Untrack(obj, obj.token)
 	})
+
+	assert.Equal(t, 0, pprof.Lookup(name).Count())
 
 	runtime.GC()
 }
