@@ -114,6 +114,7 @@ func TestUntrackConcurrently(t *testing.T) {
 
 	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
 		ready <- struct{}{}
+
 		<-start
 
 		Untrack(obj, obj.token)
