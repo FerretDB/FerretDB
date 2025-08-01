@@ -144,6 +144,9 @@ func (h *Handler) Run(ctx context.Context) {
 
 // Handle processes a request.
 func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	// FIXME exit early if we are already shutting down?
+	// or wait in Close on a waitgroup?
+
 	switch req.WireBody().(type) {
 	case *wire.OpMsg:
 		msgCmd := req.Document().Command()

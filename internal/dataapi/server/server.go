@@ -153,11 +153,11 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 // calls the next handler, and closes the connection info after the request is done.
 func (s *Server) ConnInfoMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		connInfo := conninfo.New()
+		ci := conninfo.New()
 
-		defer connInfo.Close()
+		defer ci.Close()
 
-		next.ServeHTTP(w, r.WithContext(conninfo.Ctx(r.Context(), connInfo)))
+		next.ServeHTTP(w, r.WithContext(conninfo.Ctx(r.Context(), ci)))
 	})
 }
 

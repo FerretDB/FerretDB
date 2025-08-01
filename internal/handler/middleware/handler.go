@@ -24,11 +24,14 @@ import (
 type Handler interface {
 	// Run runs the handler until ctx is canceled.
 	//
+	// FIXME Handle should not be called when ctx is canceled.
+	//
 	// When this method returns, the handler is fully stopped.
 	Run(ctx context.Context)
 
 	// Handle processes a single request.
 	//
+	// FIXME
 	// The passed context is canceled when the client disconnects.
 	//
 	// Response is a normal or error response produced by the handler.
