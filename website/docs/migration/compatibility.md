@@ -2,6 +2,7 @@
 sidebar_position: 1
 slug: /migration/compatibility/ # referenced in README.md and redirects
 description: Known differences and supported commands
+hide_table_of_contents: true
 ---
 
 # Compatibility
