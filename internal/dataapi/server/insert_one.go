@@ -20,12 +20,39 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	"github.com/AlekSi/pointer"
 	"github.com/FerretDB/wire/wirebson"
+	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
+
+func ensureId(doc wirebson.AnyDocument) (*wirebson.Document, error) {
+	decoded, err := doc.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	for field := range decoded.Fields() {
+		if field == "_id" {
+			return decoded, nil
+		}
+	}
+
+	id, err := wirebson.FromDriver(bson.NewObjectID())
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	err = decoded.Add("_id", id)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return decoded, err
+}
 
 // InsertOne implements [ServerInterface].
 func (s *Server) InsertOne(w http.ResponseWriter, r *http.Request) {
@@ -47,10 +74,18 @@ func (s *Server) InsertOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var documents any
-	if insertDoc != nil {
-		documents = wirebson.MustArray(insertDoc)
+	if _, ok := insertDoc.(wirebson.AnyDocument); !ok {
+		http.Error(w, lazyerrors.New("document must be a BSON document").Error(), http.StatusInternalServerError)
+		return
 	}
+
+	doc, err := ensureId(insertDoc.(wirebson.AnyDocument))
+	if err != nil {
+		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		return
+	}
+
+	documents := wirebson.MustArray(doc)
 
 	msg, err := prepareRequest(
 		"insert", req.Collection,
@@ -73,6 +108,14 @@ func (s *Server) InsertOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := api.InsertOneResponseBody{}
+	insertedId, err := wirebson.ToDriver(doc.Get("_id"))
+	if err != nil {
+		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res := api.InsertOneResponseBody{
+		InsertedId: pointer.To(insertedId),
+	}
 	s.writeJSONResponse(ctx, w, &res)
 }

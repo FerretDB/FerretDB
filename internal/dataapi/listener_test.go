@@ -76,7 +76,7 @@ func TestSmokeDataAPI(t *testing.T) {
 
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
-		assert.JSONEq(t, `{}`, string(body))
+		assert.JSONEq(t, `{"insertedId":1}`, string(body))
 	})
 
 	t.Run("InsertMany", func(t *testing.T) {
@@ -207,6 +207,27 @@ func TestSmokeDataAPI(t *testing.T) {
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
 		assert.JSONEq(t, `{"documents":[`+docs[2]+`]}`, string(body))
+	})
+
+	t.Run("InsertOneEmptyId", func(t *testing.T) {
+		jsonBody := `{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"document": ` + `{"v":"foo"}` + `
+		}`
+
+		res, err := postJSON(t, "http://"+addr+"/action/insertOne", jsonBody)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+
+		bodyStr := strings.TrimSpace(string(body))
+		bodyStr = strings.TrimPrefix(bodyStr, `{"insertedId":"`)
+		bodyStr = strings.TrimSuffix(bodyStr, `"}`)
+
+		assert.Regexp(t, `^[0-9a-f]{24}$`, bodyStr, "expected %q, got %q", `{"insertedId":"<ObjectID>"} (%s)`, string(body))
 	})
 }
 
