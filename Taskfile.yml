@@ -266,6 +266,7 @@ tasks:
     vars:
       # DPanic on InternalError stops execution of remaining tests,
       # ensure to complete all tests by not setting development build tag and without race detector.
+      # TODO https://github.com/FerretDB/FerretDB/issues/5397
       BUILD_TAGS: ""
       RACE_FLAG: -race=false
     deps:
