@@ -72,6 +72,8 @@ func ResponseWire(header *wire.MsgHeader, body wire.MsgBody) (*Response, error) 
 		return nil, lazyerrors.Errorf("unsupported body type %T", body)
 	}
 
+	resp.doc.Freeze()
+
 	return resp, nil
 }
 
@@ -181,11 +183,11 @@ func (resp *Response) DocumentDeep() (*wirebson.Document, error) {
 	return resp.DocumentRaw().DecodeDeep()
 }
 
-// OK returns true if response documents contains "ok" field with numeric value 1.
+// OK returns true if the response document contains the "ok" field with numeric value 1.
 func (resp *Response) OK() bool {
 	switch v := resp.doc.Get("ok").(type) {
 	case float64:
-		return v == float64(1.0)
+		return v == float64(1)
 	case int32:
 		return v == int32(1)
 	case int64:
