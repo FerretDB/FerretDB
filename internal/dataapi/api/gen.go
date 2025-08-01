@@ -39,7 +39,7 @@ type AggregateRequestBody struct {
 // AggregateResponseBody defines model for AggregateResponseBody.
 type AggregateResponseBody struct {
 	// Documents An array that contains the result set of the aggregation.
-	Documents []map[string]interface{} `json:"documents"`
+	Documents json.RawMessage `json:"documents"`
 }
 
 // DeleteRequestBody defines model for DeleteRequestBody.
@@ -144,7 +144,7 @@ type FindManyRequestBody struct {
 // FindManyResponseBody The result of a find operation.
 type FindManyResponseBody struct {
 	// Documents A list of documents that match the specified filter.
-	Documents *[]map[string]interface{} `json:"documents,omitempty"`
+	Documents *json.RawMessage `json:"documents,omitempty"`
 }
 
 // FindOneRequestBody defines model for FindOneRequestBody.
@@ -171,7 +171,7 @@ type FindOneRequestBody struct {
 // FindOneResponseBody The result of a findOne operation.
 type FindOneResponseBody struct {
 	// Document A document that matches the specified filter. If no documents match, this is `null`.
-	Document *map[string]interface{} `json:"document"`
+	Document *json.RawMessage `json:"document"`
 }
 
 // InsertManyRequestBody defines model for InsertManyRequestBody.
