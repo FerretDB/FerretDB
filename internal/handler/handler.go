@@ -25,7 +25,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/session"
@@ -77,7 +76,7 @@ type NewOpts struct {
 	ReplSetName   string
 
 	L             *slog.Logger
-	ConnMetrics   *connmetrics.ConnMetrics
+	Metrics       *middleware.Metrics
 	StateProvider *state.Provider
 
 	SessionCleanupInterval time.Duration
@@ -145,6 +144,9 @@ func (h *Handler) Run(ctx context.Context) {
 
 // Handle processes a request.
 func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	// FIXME exit early if we are already shutting down?
+	// or wait in Close on a waitgroup?
+
 	switch req.WireBody().(type) {
 	case *wire.OpMsg:
 		msgCmd := req.Document().Command()

@@ -93,9 +93,9 @@ func newPgxPoolSetDefaults(values url.Values) {
 		values.Set("pool_max_conns", "50")
 	}
 
-	// to avoid the need to close unused pools ourselves
+	// the default is too high
 	if !values.Has("pool_max_conn_idle_time") {
-		values.Set("pool_max_conn_idle_time", "1m")
+		values.Set("pool_max_conn_idle_time", "5m")
 	}
 
 	// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNECT-APPLICATION-NAME
