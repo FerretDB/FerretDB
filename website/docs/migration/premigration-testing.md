@@ -7,14 +7,20 @@ sidebar_position: 2
 To ensure a smooth and successful migration from MongoDB,
 we offer several methods through which you can test your application with FerretDB.
 
+## Performance testing
+
+For performance testing and benchmarking, we recommend using the FerretDB production image or package rather than the development image.
+For details on how to install FerretDB, [refer to the installation guide](../installation/ferretdb/docker.md).
+Also, ensure to disable debug logging to avoid performance degradation.
+
+Additional information on debugging and performance testing can be found on our [observability page](../configuration/observability.md).
+
 ## Operation modes
 
 We offer multiple operation modes which help facilitate the testing of your application by enabling FerretDB to act as a proxy.
 For more details, refer to the [operation modes](../configuration/operation-modes.md).
 
 ### Manual and automated testing with `diff-normal` mode
-
-For details on how to install FerretDB, [refer to the installation guide](../installation/ferretdb/docker.md).
 
 You can manually test your application or use integration tests, among other methods.
 Afterward, you can inspect the differential output for errors or inconsistencies between responses that require your attention.
@@ -41,8 +47,8 @@ You would do the following:
 
    The `--listen-addr` flag or the `FERRERDB_LISTEN_ADDR` environment variable is set to `127.0.0.1:27017` by default.
 
-2. Run `mongosh` to connect to the `--listen-addr` and then insert some documents.
-3. Run a command to determine the total storage space occupied by the collection.
+2. Connect to the `--listen-addr` using the correct authentication credentials and then insert some documents.
+3. Run a command to convert a collection to a capped collection.
 
    Please note that due to running in `diff-normal` mode, any error returned from FerretDB will be transmitted to the client, allowing us to promptly identify the issue.
    In the majority of cases, this does not necessitate additional scrutiny of the diff output.
@@ -63,10 +69,10 @@ You would do the following:
    ])
 
    // run the command
-   db.runCommand({ dataSize: '<DB-NAME>.locations' })
+   db.runCommand({ convertToCapped: 'locations', size: 1024 })
 
    // the below error is returned to the client:
-   // MongoServerError[NotImplemented]: "dataSize" is not implemented for FerretDB yet
+   // MongoServerError[CommandNotFound]: no such command: 'convertToCapped'
    ```
 
 ### Manual and automated testing with `diff-proxy` mode
@@ -78,43 +84,33 @@ Continuing with the same example above, we can further examine the diff output w
 2. Follow the same instructions as the one for `diff-normal` above to run FerretDB in `diff-proxy` mode and re-run the command.
 
    ```js
-   db.runCommand({ dataSize: '<DB-NAME>.locations' })
+   db.runCommand({ convertToCapped: 'locations', size: 1024 })
    ```
 
    ```text
    // the operation was handled by MongoDB, so the following response was returned:
-   {
-     size: Long('424'),
-     numObjects: Long('4'),
-     millis: Long('1'),
-     estimate: false,
-     ok: 1
-   }
+   { ok: 1 }
    ```
 
-In the diff output below, however, we have discovered that the command cannot be serviced by our application because the `dataSize` command is not implemented yet in FerretDB.
+In the diff output below, however, we have discovered that the command cannot be serviced by our application because the `convertToCapped` command is not implemented.
 
-```diff
+```text
 --- res header
 +++ proxy header
 @@ -1 +1 @@
--length:   133, id:    3, response_to:   28, opcode: OP_MSG
-+length:    99, id:   37, response_to:   28, opcode: OP_MSG
+-length:   125, id:    5, response_to:   19, opcode: OP_MSG
++length:    38, id: 2621, response_to:   19, opcode: OP_MSG
 
 Body diff:
 --- res body
 +++ proxy body
-@@ -7,6 +7,7 @@
-       "Document": {
--        "ok": 0.0,
--        "errmsg": "\"dataSize\" is not implemented for FerretDB yet",
--        "code": 238,
--        "codeName": "NotImplemented",
-+        "size": int64(424),
-+        "numObjects": int64(4),
-+        "millis": int64(0),
-+        "estimate": false,
-+        "ok": 1.0,
+@@ -7,6 +7,3 @@
+       `Document`: {
+-        `ok`: 0.0,
+-        `errmsg`: `no such command: 'convertToCapped'`,
+-        `code`: 59,
+-        `codeName`: `CommandNotFound`,
++        `ok`: 1.0,
        },
 ```
 
@@ -122,34 +118,47 @@ Body diff:
 
 Metrics are captured and written to standard output (`stdout`) upon exiting in [development builds](https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/build/version#hdr-Development_builds).
 This is a useful way to quickly determine what commands are not implemented for the client requests sent by your application.
-In the metrics provided below, we can observe that the `dataSize` command was invoked once.
-The operations resulted in `result="NotImplemented"`.
+In the metrics provided below, we can observe that the `convertToCapped` command was invoked once.
 
 ```text
+# HELP ferretdb_client_accepts_total Total number of accepted client connections.
+# TYPE ferretdb_client_accepts_total counter
+ferretdb_client_accepts_total{error="0"} 11
+# HELP ferretdb_client_duration_seconds Client connection lifetime in seconds.
+# TYPE ferretdb_client_duration_seconds histogram
+ferretdb_client_duration_seconds_bucket{error="0",le="1"} 2
+ferretdb_client_duration_seconds_bucket{error="0",le="5"} 2
+ferretdb_client_duration_seconds_bucket{error="0",le="10"} 2
+ferretdb_client_duration_seconds_bucket{error="0",le="30"} 2
+ferretdb_client_duration_seconds_bucket{error="0",le="60"} 4
+ferretdb_client_duration_seconds_bucket{error="0",le="300"} 4
+ferretdb_client_duration_seconds_bucket{error="0",le="600"} 4
+ferretdb_client_duration_seconds_bucket{error="0",le="1800"} 4
+ferretdb_client_duration_seconds_bucket{error="0",le="+Inf"} 4
+ferretdb_client_duration_seconds_sum{error="0"} 101.054557752
+ferretdb_client_duration_seconds_count{error="0"} 4
 # HELP ferretdb_client_requests_total Total number of requests.
 # TYPE ferretdb_client_requests_total counter
 ferretdb_client_requests_total{command="aggregate",opcode="OP_MSG"} 1
 ferretdb_client_requests_total{command="atlasVersion",opcode="OP_MSG"} 1
 ferretdb_client_requests_total{command="buildInfo",opcode="OP_MSG"} 1
-ferretdb_client_requests_total{command="dataSize",opcode="OP_MSG"} 1
+ferretdb_client_requests_total{command="convertToCapped",opcode="OP_MSG"} 1
 ferretdb_client_requests_total{command="getLog",opcode="OP_MSG"} 1
 ferretdb_client_requests_total{command="getParameter",opcode="OP_MSG"} 1
-ferretdb_client_requests_total{command="hello",opcode="OP_MSG"} 13
-ferretdb_client_requests_total{command="insert",opcode="OP_MSG"} 1
-ferretdb_client_requests_total{command="ping",opcode="OP_MSG"} 1
-ferretdb_client_requests_total{command="unknown",opcode="OP_QUERY"} 7
+ferretdb_client_requests_total{command="hello",opcode="OP_MSG"} 12
+ferretdb_client_requests_total{command="ping",opcode="OP_MSG"} 3
+ferretdb_client_requests_total{command="unknown",opcode="OP_QUERY"} 9
 # HELP ferretdb_client_responses_total Total number of responses.
 # TYPE ferretdb_client_responses_total counter
 ferretdb_client_responses_total{argument="unknown",command="aggregate",opcode="OP_MSG",result="ok"} 1
-ferretdb_client_responses_total{argument="unknown",command="atlasVersion",opcode="OP_MSG",result="CommandNotFound"} 1
+ferretdb_client_responses_total{argument="unknown",command="atlasVersion",opcode="OP_MSG",result="ok"} 1
 ferretdb_client_responses_total{argument="unknown",command="buildInfo",opcode="OP_MSG",result="ok"} 1
-ferretdb_client_responses_total{argument="unknown",command="dataSize",opcode="OP_MSG",result="NotImplemented"} 1
+ferretdb_client_responses_total{argument="unknown",command="convertToCapped",opcode="OP_MSG",result="ok"} 1
 ferretdb_client_responses_total{argument="unknown",command="getLog",opcode="OP_MSG",result="ok"} 1
 ferretdb_client_responses_total{argument="unknown",command="getParameter",opcode="OP_MSG",result="ok"} 1
-ferretdb_client_responses_total{argument="unknown",command="hello",opcode="OP_MSG",result="ok"} 13
-ferretdb_client_responses_total{argument="unknown",command="insert",opcode="OP_MSG",result="ok"} 1
-ferretdb_client_responses_total{argument="unknown",command="ping",opcode="OP_MSG",result="ok"} 1
-ferretdb_client_responses_total{argument="unknown",command="unknown",opcode="OP_REPLY",result="ok"} 7
+ferretdb_client_responses_total{argument="unknown",command="hello",opcode="OP_MSG",result="ok"} 12
+ferretdb_client_responses_total{argument="unknown",command="ping",opcode="OP_MSG",result="ok"} 3
+ferretdb_client_responses_total{argument="unknown",command="unknown",opcode="OP_REPLY",result="ok"} 9
 ```
 
 ### Other tools
