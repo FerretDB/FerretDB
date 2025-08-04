@@ -101,6 +101,7 @@ jobs:
         run: |
           bin/task env-logs-collect > /tmp/logs/compose-logs.txt
           cp -v integration/*.json.tmp integration/*.txt.tmp /tmp/logs/
+          cp -rv tmp/logs /tmp/logs
 
       - name: Compress logs before upload
         if: failure()
