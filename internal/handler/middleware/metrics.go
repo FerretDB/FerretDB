@@ -26,7 +26,7 @@ import (
 // Parts of Prometheus metric names.
 // TODO https://github.com/FerretDB/FerretDB/issues/4965
 const (
-	namespace = "ferretdb"
+	namespace = "ferretdb_unstable"
 	subsystem = "client"
 )
 
