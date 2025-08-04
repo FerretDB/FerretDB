@@ -101,7 +101,7 @@ jobs:
         run: |
           bin/task env-logs-collect > /tmp/logs/compose-logs.txt
           cp -v integration/*.json.tmp integration/*.txt.tmp /tmp/logs/
-          cp -rv tmp/logs/yugabytedb /tmp/logs/
+          cp -rv tmp/yugabytedb-logs /tmp/logs/yugabytedb
 
       - name: Compress logs before upload
         if: failure()
