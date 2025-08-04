@@ -23,16 +23,15 @@ import (
 // Handler is a common interface for handlers and middleware.
 type Handler interface {
 	// Run runs the handler until ctx is canceled.
-	//
-	// FIXME Handle should not be called when ctx is canceled.
+	// Canceling ctx should stop the processing of request and prevent future calls to Handle.
 	//
 	// When this method returns, the handler is fully stopped.
 	Run(ctx context.Context)
 
 	// Handle processes a single request.
 	//
-	// FIXME
 	// The passed context is canceled when the client disconnects.
+	// Canceling ctx (or Run's ctx) should stop the processing of the request.
 	//
 	// Response is a normal or error response produced by the handler.
 	//

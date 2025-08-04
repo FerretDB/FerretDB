@@ -110,6 +110,9 @@ func New(opts *NewOpts) (*Handler, error) {
 // Run runs the handler until ctx is canceled.
 //
 // When this method returns, handler is stopped and pool is closed.
+//
+// There is no special arrangement for canceling the processing of requests,
+// since the [*middleware.Middleware] already implements it.
 func (h *Handler) Run(ctx context.Context) {
 	defer func() {
 		h.s.Stop()
@@ -143,10 +146,11 @@ func (h *Handler) Run(ctx context.Context) {
 }
 
 // Handle processes a request.
+// Ctx is canceled when the client disconnects.
+//
+// There is no special arrangement for handling the cancellation of Run's ctx,
+// since the [*middleware.Middleware] already implements it.
 func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	// FIXME exit early if we are already shutting down?
-	// or wait in Close on a waitgroup?
-
 	switch req.WireBody().(type) {
 	case *wire.OpMsg:
 		msgCmd := req.Document().Command()

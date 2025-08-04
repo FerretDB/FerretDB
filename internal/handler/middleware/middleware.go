@@ -82,6 +82,10 @@ func (m *Middleware) Run(ctx context.Context) {
 // Handle implements [middleware.Handler].
 // It dispatches the request to one or both handlers based on the mode.
 func (m *Middleware) Handle(ctx context.Context, req *Request) (*Response, error) {
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+
 	m.wg.Add(1)
 	defer m.wg.Done()
 

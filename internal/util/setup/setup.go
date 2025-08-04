@@ -195,19 +195,11 @@ func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 //
 // When this method returns, all components are stopped.
 func (sr *SetupResult) Run(ctx context.Context) {
-	// Currently, there is no specific order in which components must be started.
-	// But listeners should be stopped first, so that clients can disconnect gracefully.
+	// Handlers should be started first to prevent Handle calls before Run.
+	//
+	// Listeners should be stopped first to allow graceful disconnect.
 	// Listeners' Run methods already implement graceful shutdown;
 	// we just need to wait for them to stop before stopping other components.
-
-	lDone := make(chan struct{})
-	lCtx, lCancel := context.WithCancel(ctx)
-	defer lCancel()
-
-	go func() {
-		defer close(lDone)
-		sr.runListeners(lCtx)
-	}()
 
 	hDone := make(chan struct{})
 	hCtx, hCancel := context.WithCancel(context.WithoutCancel(ctx)) // inherit values
@@ -216,6 +208,15 @@ func (sr *SetupResult) Run(ctx context.Context) {
 	go func() {
 		defer close(hDone)
 		sr.runHandlers(hCtx)
+	}()
+
+	lDone := make(chan struct{})
+	lCtx, lCancel := context.WithCancel(ctx)
+	defer lCancel()
+
+	go func() {
+		defer close(lDone)
+		sr.runListeners(lCtx)
 	}()
 
 	<-lDone
