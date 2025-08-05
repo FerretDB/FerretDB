@@ -15,12 +15,12 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httputil"
 
-	"github.com/AlekSi/pointer"
 	"github.com/FerretDB/wire/wirebson"
 	"go.mongodb.org/mongo-driver/v2/bson"
 
@@ -115,7 +115,11 @@ func (s *Server) InsertOne(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := api.InsertOneResponseBody{
-		InsertedId: pointer.To(fmt.Sprint(insertedId)),
+		InsertedId: &insertedId,
 	}
-	s.writeJSONResponse(ctx, w, &res)
+
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		return
+	}
 }

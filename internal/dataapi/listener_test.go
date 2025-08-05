@@ -92,7 +92,7 @@ func TestSmokeDataAPI(t *testing.T) {
 
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
-		assert.JSONEq(t, `{}`, string(body))
+		assert.JSONEq(t, `{"insertedIds": [2, 3]}`, string(body))
 	})
 
 	t.Run("UpdateOne", func(t *testing.T) {

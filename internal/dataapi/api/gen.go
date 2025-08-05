@@ -195,7 +195,7 @@ type InsertManyRequestBody struct {
 // InsertManyResponseBody The result of an insertMany operation.
 type InsertManyResponseBody struct {
 	// InsertedIds A list of the `_id` values of the inserted documents.
-	InsertedIds *[]string `json:"insertedIds,omitempty"`
+	InsertedIds *[]any `json:"insertedIds,omitempty"`
 }
 
 // InsertOneRequestBody defines model for InsertOneRequestBody.
@@ -219,7 +219,7 @@ type InsertOneRequestBody struct {
 // InsertOneResponseBody The result of an insertOne operation.
 type InsertOneResponseBody struct {
 	// InsertedId The `_id` value of the inserted document.
-	InsertedId *string `json:"insertedId,omitempty"`
+	InsertedId *any `json:"insertedId,omitempty"`
 }
 
 // Limit defines model for Limit.
