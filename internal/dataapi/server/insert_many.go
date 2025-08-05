@@ -21,10 +21,11 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	"github.com/FerretDB/wire/wirebson"
+
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
-	"github.com/FerretDB/wire/wirebson"
 )
 
 // InsertMany implements [ServerInterface].
@@ -54,6 +55,7 @@ func (s *Server) InsertMany(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var insertedIds []any
+
 	for i, v := range documents.All() {
 		v, ok := v.(wirebson.AnyDocument)
 		if !ok {
@@ -61,19 +63,27 @@ func (s *Server) InsertMany(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		doc, err := ensureId(v)
+		var doc *wirebson.Document
+
+		doc, err = ensureId(v)
 		if err != nil {
 			http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 			return
 		}
 
-		insertedId, err := wirebson.ToDriver(doc.Get("_id"))
+		var insertedId any
+
+		insertedId, err = wirebson.ToDriver(doc.Get("_id"))
 		if err != nil {
 			http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 			return
 		}
 
-		documents.Replace(i, doc)
+		if err = documents.Replace(i, doc); err != nil {
+			http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+			return
+		}
+
 		insertedIds = append(insertedIds, insertedId)
 	}
 
@@ -102,7 +112,7 @@ func (s *Server) InsertMany(w http.ResponseWriter, r *http.Request) {
 		InsertedIds: &insertedIds,
 	}
 
-	if err := json.NewEncoder(w).Encode(res); err != nil {
+	if err = json.NewEncoder(w).Encode(res); err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
