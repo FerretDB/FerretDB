@@ -88,14 +88,15 @@ func newPgxPool(uri string, l *slog.Logger, sp *state.Provider) (*pgxpool.Pool, 
 //
 // Keep it in sync with docs.
 func newPgxPoolSetDefaults(values url.Values) {
-	// the default is too low
-	if !values.Has("pool_max_conns") {
-		values.Set("pool_max_conns", "50")
+	// https://pkg.go.dev/github.com/jackc/pgx/v5@v5.7.5/pgxpool#ParseConfig's
+	// defaults are too low.
+
+	if !values.Has("pool_min_conns") {
+		values.Set("pool_min_conns", "10")
 	}
 
-	// to avoid the need to close unused pools ourselves
-	if !values.Has("pool_max_conn_idle_time") {
-		values.Set("pool_max_conn_idle_time", "1m")
+	if !values.Has("pool_max_conns") {
+		values.Set("pool_max_conns", "50")
 	}
 
 	// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNECT-APPLICATION-NAME
