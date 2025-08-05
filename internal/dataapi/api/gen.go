@@ -219,7 +219,7 @@ type InsertOneRequestBody struct {
 // InsertOneResponseBody The result of an insertOne operation.
 type InsertOneResponseBody struct {
 	// InsertedId The `_id` value of the inserted document.
-	InsertedId *interface{} `json:"insertedId,omitempty"`
+	InsertedId *string `json:"insertedId,omitempty"`
 }
 
 // Limit defines model for Limit.

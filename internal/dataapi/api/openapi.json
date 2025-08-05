@@ -1440,6 +1440,7 @@
         "type": "object",
         "properties": {
           "insertedId": {
+            "x-go-type": "string",
             "description": "The `_id` value of the inserted document."
           }
         }

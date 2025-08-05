@@ -23,6 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
+	"github.com/FerretDB/wire/wirebson"
 )
 
 // InsertMany implements [ServerInterface].
@@ -39,10 +40,46 @@ func (s *Server) InsertMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	docsArr, err := unmarshalSingleJSON(&req.Documents)
+	if err != nil {
+		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		return
+	}
+
+	documents, err := docsArr.(wirebson.RawArray).DecodeDeep()
+	if err != nil {
+		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var insertedIds []string
+	for i, v := range documents.All() {
+		v, ok := v.(wirebson.AnyDocument)
+		if !ok {
+			http.Error(w, fmt.Sprintf("document %d is not a valid BSON document", i), http.StatusBadRequest)
+			return
+		}
+
+		doc, err := ensureId(v)
+		if err != nil {
+			http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+			return
+		}
+
+		insertedId, err := wirebson.ToDriver(doc.Get("_id"))
+		if err != nil {
+			http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+			return
+		}
+
+		documents.Replace(i, doc)
+		insertedIds = append(insertedIds, fmt.Sprint(insertedId))
+	}
+
 	msg, err := prepareRequest(
 		"insert", req.Collection,
 		"$db", req.Database,
-		"documents", req.Documents,
+		"documents", documents,
 	)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
@@ -60,6 +97,8 @@ func (s *Server) InsertMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := api.InsertManyResponseBody{}
+	res := api.InsertManyResponseBody{
+		InsertedIds: &insertedIds,
+	}
 	s.writeJSONResponse(ctx, w, &res)
 }

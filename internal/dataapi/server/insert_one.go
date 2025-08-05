@@ -115,7 +115,7 @@ func (s *Server) InsertOne(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := api.InsertOneResponseBody{
-		InsertedId: pointer.To(insertedId),
+		InsertedId: pointer.To(fmt.Sprint(insertedId)),
 	}
 	s.writeJSONResponse(ctx, w, &res)
 }
