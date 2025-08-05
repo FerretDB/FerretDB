@@ -31,7 +31,7 @@ import (
 
 // Parts of Prometheus metric names.
 const (
-	// TODO https://github.com/FerretDB/FerretDB/issues/3554
+	// TODO https://github.com/FerretDB/FerretDB/issues/5402
 	namespace = "ferretdb_unstable"
 	subsystem = "pool"
 )
@@ -118,7 +118,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	stats := p.p.Stat()
 
 	// check metrics and labels, set zero values
-	// TODO https://github.com/FerretDB/FerretDB/issues/3554
+	// TODO https://github.com/FerretDB/FerretDB/issues/5402
 
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
