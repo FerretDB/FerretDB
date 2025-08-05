@@ -118,7 +118,7 @@ func (s *Server) InsertOne(w http.ResponseWriter, r *http.Request) {
 		InsertedId: &insertedId,
 	}
 
-	if err = json.NewEncoder(w).Encode(res); err != nil {
+	if err = s.writeJSONResponse(ctx, w, &res); err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
