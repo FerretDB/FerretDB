@@ -219,6 +219,7 @@ jobs:
         include:
           - { task: "mongodb", shard_index: 1, shard_total: 1 }
           - { task: "yugabytedb", skip_flaky_check: true } # Too many failures for now
+          - { task: "postgresql", skip_flaky_check: false } # Too many failures for now
 
     uses: ./.github/workflows/_integration.yml
     with:
