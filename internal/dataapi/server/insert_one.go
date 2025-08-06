@@ -28,31 +28,6 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-func ensureId(doc wirebson.AnyDocument) (*wirebson.Document, error) {
-	decoded, err := doc.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	for field := range decoded.Fields() {
-		if field == "_id" {
-			return decoded, nil
-		}
-	}
-
-	id, err := wirebson.FromDriver(bson.NewObjectID())
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	err = decoded.Add("_id", id)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return decoded, err
-}
-
 // InsertOne implements [ServerInterface].
 func (s *Server) InsertOne(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -118,4 +93,30 @@ func (s *Server) InsertOne(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.writeJSONResponse(ctx, w, &res)
+}
+
+// ensureId ensures that inserted document has an "_id" field.
+func ensureId(doc wirebson.AnyDocument) (*wirebson.Document, error) {
+	decoded, err := doc.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	for field := range decoded.Fields() {
+		if field == "_id" {
+			return decoded, nil
+		}
+	}
+
+	id, err := wirebson.FromDriver(bson.NewObjectID())
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	err = decoded.Add("_id", id)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return decoded, err
 }
