@@ -224,7 +224,13 @@ func TestSmokeDataAPI(t *testing.T) {
 		require.NoError(t, err)
 
 		bodyStr := strings.TrimSpace(string(body))
-		assert.Regexp(t, `^{"insertedId":"[0-9a-f]{24}"}$`, bodyStr, "expected %q, got %q", `{"insertedId":"<ObjectID>"} (%s)`, string(body))
+		assert.Regexp(t,
+			`^{"insertedId":"[0-9a-f]{24}"}$`,
+			bodyStr,
+			"expected %q, got %q",
+			`{"insertedId":"<ObjectID>"} (%s)`,
+			string(body),
+		)
 	})
 }
 
