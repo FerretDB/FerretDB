@@ -109,13 +109,11 @@ func setupListener(tb testing.TB, ctx context.Context, opts *ListenerOpts, logge
 
 	//exhaustruct:enforce
 	wireOpts := &setup.SetupOpts{
-		Logger: logger,
+		Logger:        logger,
+		StateProvider: sp,
+		Metrics:       middleware.NewMetrics(),
 
-		StateProvider:   sp,
-		ListenerMetrics: listenerMetrics,
-
-		PostgreSQLURL: *postgreSQLURLF,
-
+		PostgreSQLURL:          *postgreSQLURLF,
 		Auth:                   true,
 		ReplSetName:            "", // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/566
 		SessionCleanupInterval: opts.SessionCleanupInterval,
@@ -131,7 +129,7 @@ func setupListener(tb testing.TB, ctx context.Context, opts *ListenerOpts, logge
 		ProxyTLSCertFile: "",
 		ProxyTLSKeyFile:  "",
 		ProxyTLSCAFile:   "",
-		RecordsDir:       testutil.TmpRecordsDir,
+		TestRecordsDir:   testutil.TmpRecordsDir,
 
 		DataAPIAddr: "",
 	}

@@ -25,7 +25,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/session"
@@ -77,7 +76,7 @@ type NewOpts struct {
 	ReplSetName   string
 
 	L             *slog.Logger
-	ConnMetrics   *connmetrics.ConnMetrics
+	Metrics       *middleware.Metrics
 	StateProvider *state.Provider
 
 	SessionCleanupInterval time.Duration
@@ -111,6 +110,9 @@ func New(opts *NewOpts) (*Handler, error) {
 // Run runs the handler until ctx is canceled.
 //
 // When this method returns, handler is stopped and pool is closed.
+//
+// There is no special arrangement for canceling the processing of requests,
+// since the [*middleware.Middleware] already implements it.
 func (h *Handler) Run(ctx context.Context) {
 	defer func() {
 		h.s.Stop()
@@ -144,6 +146,10 @@ func (h *Handler) Run(ctx context.Context) {
 }
 
 // Handle processes a request.
+// Ctx is canceled when the client disconnects.
+//
+// There is no special arrangement for handling the cancellation of Run's ctx,
+// since the [*middleware.Middleware] already implements it.
 func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	switch req.WireBody().(type) {
 	case *wire.OpMsg:

@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package connmetrics provides listener and connection metrics.
-package connmetrics
+package middleware
 
 import (
 	"fmt"
@@ -24,57 +23,81 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// ConnMetrics represents metrics of an individual conn or a collection of conns.
-type ConnMetrics struct {
-	Requests  *prometheus.CounterVec
-	Responses *prometheus.CounterVec
+// Parts of Prometheus metric names.
+// TODO https://github.com/FerretDB/FerretDB/issues/4965
+const (
+	namespace = "ferretdb_unstable"
+	subsystem = "client"
+)
+
+// result represents the result of a command execution.
+type result string
+
+const (
+	resultOK      = result("ok")
+	resultPanic   = result("panic")
+	resultError   = result("error")
+	resultUnknown = result("unknown")
+)
+
+// Metrics represents middleware Metrics.
+type Metrics struct {
+	requests  *prometheus.CounterVec
+	responses *prometheus.CounterVec
 }
 
-// commandMetrics represents command results metrics.
-type commandMetrics struct {
+// CommandMetrics represents command results metrics.
+type CommandMetrics struct {
 	Failures map[string]int // count by result, except "ok"
 	Total    int            // both "ok" and failures
 }
 
-// newConnMetrics creates connection metrics.
-func newConnMetrics() *ConnMetrics {
-	cm := &ConnMetrics{
-		Requests: prometheus.NewCounterVec(
+// NewMetrics creates new metrics.
+func NewMetrics() *Metrics {
+	// Do we want to use "opcode" as a label?
+	// Should we use to track the listener that created the request?
+	// Or metric for that should be in the listener itself?
+	// TODO https://github.com/FerretDB/FerretDB/issues/4965
+	m := &Metrics{
+		requests: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: namespace,
 				Subsystem: subsystem,
 				Name:      "requests_total",
-				Help:      "Total number of requests.",
+				Help:      "Unstable: Total number of requests.",
 			},
 			[]string{"opcode", "command"},
 		),
-		Responses: prometheus.NewCounterVec(
+
+		// That probably should be a histogram or summary by duration.
+		// TODO https://github.com/FerretDB/FerretDB/issues/4965
+		responses: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: namespace,
 				Subsystem: subsystem,
 				Name:      "responses_total",
-				Help:      "Total number of responses.",
+				Help:      "Unstable: Total number of responses.",
 			},
 			[]string{"opcode", "command", "argument", "result"},
 		),
 	}
 
-	cm.Requests.WithLabelValues("OP_MSG", "find")
-	cm.Responses.WithLabelValues("OP_MSG", "find", "unknown", "ok")
+	m.requests.WithLabelValues("OP_MSG", "find")
+	m.responses.WithLabelValues("OP_MSG", "find", "unknown", string(resultOK))
 
-	return cm
+	return m
 }
 
 // Describe implements [prometheus.Collector].
-func (cm *ConnMetrics) Describe(ch chan<- *prometheus.Desc) {
-	cm.Requests.Describe(ch)
-	cm.Responses.Describe(ch)
+func (m *Metrics) Describe(ch chan<- *prometheus.Desc) {
+	m.requests.Describe(ch)
+	m.responses.Describe(ch)
 }
 
 // Collect implements [prometheus.Collector].
-func (cm *ConnMetrics) Collect(ch chan<- prometheus.Metric) {
-	cm.Requests.Collect(ch)
-	cm.Responses.Collect(ch)
+func (m *Metrics) Collect(ch chan<- prometheus.Metric) {
+	m.requests.Collect(ch)
+	m.responses.Collect(ch)
 }
 
 // GetResponses returns a map with all response metrics:
@@ -84,14 +107,14 @@ func (cm *ConnMetrics) Collect(ch chan<- prometheus.Metric) {
 // argument that caused an error (e.g. "sort", "$count (stage)"; or "unknown") ->
 // result (e.g. "NotImplemented", "panic", or "ok") ->
 // count.
-func (cm *ConnMetrics) GetResponses() map[string]map[string]map[string]commandMetrics {
+func (m *Metrics) GetResponses() map[string]map[string]map[string]CommandMetrics {
 	metrics := make(chan prometheus.Metric)
 	go func() {
-		cm.Responses.Collect(metrics)
+		m.responses.Collect(metrics)
 		close(metrics)
 	}()
 
-	res := map[string]map[string]map[string]commandMetrics{}
+	res := map[string]map[string]map[string]CommandMetrics{}
 
 	for m := range metrics {
 		var content dto.Metric
@@ -99,33 +122,31 @@ func (cm *ConnMetrics) GetResponses() map[string]map[string]map[string]commandMe
 
 		var opcode, command, argument, result string
 		for _, label := range content.GetLabel() {
-			switch label.GetName() {
+			v := label.GetValue()
+			switch name := label.GetName(); name {
 			case "opcode":
-				opcode = label.GetValue()
+				opcode = v
 			case "command":
-				command = label.GetValue()
+				command = v
 			case "argument":
-				argument = label.GetValue()
+				argument = v
 			case "result":
-				result = label.GetValue()
+				result = v
 			default:
-				panic(fmt.Sprintf(
-					"%s is not a valid label. Allowed: [opcode, command, argument, result]",
-					label.GetName(),
-				))
+				panic(fmt.Sprintf("%q is not a valid label. Allowed: [opcode, command, argument, result]", name))
 			}
 		}
 
 		if _, ok := res[opcode]; !ok {
-			res[opcode] = map[string]map[string]commandMetrics{}
+			res[opcode] = map[string]map[string]CommandMetrics{}
 		}
 
 		if _, ok := res[opcode][command]; !ok {
-			res[opcode][command] = map[string]commandMetrics{}
+			res[opcode][command] = map[string]CommandMetrics{}
 		}
 
 		if _, ok := res[opcode][command][argument]; !ok {
-			res[opcode][command][argument] = commandMetrics{}
+			res[opcode][command][argument] = CommandMetrics{}
 		}
 
 		m := res[opcode][command][argument]
@@ -133,7 +154,7 @@ func (cm *ConnMetrics) GetResponses() map[string]map[string]map[string]commandMe
 		v := int(content.GetCounter().GetValue())
 		m.Total += v
 
-		if result != "ok" {
+		if result != string(resultOK) {
 			if m.Failures == nil {
 				m.Failures = map[string]int{}
 			}
@@ -148,5 +169,5 @@ func (cm *ConnMetrics) GetResponses() map[string]map[string]map[string]commandMe
 
 // check interfaces
 var (
-	_ prometheus.Collector = (*ConnMetrics)(nil)
+	_ prometheus.Collector = (*Metrics)(nil)
 )

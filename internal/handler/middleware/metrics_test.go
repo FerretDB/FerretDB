@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package connmetrics
+package middleware
 
 import (
 	"testing"
@@ -21,14 +21,14 @@ import (
 )
 
 func TestGetResponses(t *testing.T) {
-	cm := newConnMetrics()
-	cm.Responses.WithLabelValues("OP_MSG", "update", "$set", "NotImplemented").Inc()
-	cm.Responses.WithLabelValues("OP_MSG", "update", "$set", "panic").Inc()
-	cm.Responses.WithLabelValues("OP_MSG", "update", "$set", "ok").Inc()
-	expected := map[string]map[string]map[string]commandMetrics{
+	mm := NewMetrics()
+	mm.responses.WithLabelValues("OP_MSG", "update", "$set", "NotImplemented").Inc()
+	mm.responses.WithLabelValues("OP_MSG", "update", "$set", string(resultPanic)).Inc()
+	mm.responses.WithLabelValues("OP_MSG", "update", "$set", string(resultOK)).Inc()
+	expected := map[string]map[string]map[string]CommandMetrics{
 		"OP_MSG": {
 			"update": {
-				"$set": commandMetrics{
+				"$set": CommandMetrics{
 					Failures: map[string]int{
 						"NotImplemented": 1,
 						"panic":          1,
@@ -37,11 +37,11 @@ func TestGetResponses(t *testing.T) {
 				},
 			},
 			"find": {
-				"unknown": commandMetrics{
+				"unknown": CommandMetrics{
 					Total: 0,
 				},
 			},
 		},
 	}
-	assert.Equal(t, expected, cm.GetResponses())
+	assert.Equal(t, expected, mm.GetResponses())
 }

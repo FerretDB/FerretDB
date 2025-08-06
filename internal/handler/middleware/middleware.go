@@ -17,23 +17,215 @@ package middleware
 
 import (
 	"context"
-	"sync/atomic"
+	"fmt"
+	"log/slog"
+	"strings"
+	"sync"
+
+	"github.com/pmezard/go-difflib/difflib"
+	"github.com/prometheus/client_golang/prometheus"
+
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// Handler is a common interface for handlers.
-type Handler interface {
-	// Handle processes a single request.
-	//
-	// The passed context is canceled when the client disconnects.
-	//
-	// Response is a normal or error response produced by the handler.
-	//
-	// Error is returned when the handler cannot process the request;
-	// for example, when connection with PostgreSQL or proxy is lost.
-	// Returning an error generally means that the listener should close the client connection.
-	// Error should not be [*mongoerrors.Error].
-	Handle(ctx context.Context, req *Request) (resp *Response, err error)
+// Middleware connects listeners and handlers.
+type Middleware struct {
+	opts *NewOpts
+	wg   sync.WaitGroup
 }
 
-// lastRequestID stores last generated request ID.
-var lastRequestID atomic.Int32
+// NewOpts represents middleware configuration.
+//
+//nolint:vet // for readability
+type NewOpts struct {
+	Mode    Mode
+	DocDB   Handler
+	Proxy   Handler
+	Metrics *Metrics
+	L       *slog.Logger
+}
+
+// New returns a new middleware.
+// [Middleware.Run] must be called on the returned value.
+func New(opts *NewOpts) *Middleware {
+	must.NotBeZero(opts)
+
+	switch opts.Mode {
+	case NormalMode:
+		must.NotBeZero(opts.DocDB)
+		must.BeZero(opts.Proxy)
+	case ProxyMode:
+		must.BeZero(opts.DocDB)
+		must.NotBeZero(opts.Proxy)
+	case DiffNormalMode:
+		must.NotBeZero(opts.DocDB)
+		must.NotBeZero(opts.Proxy)
+	case DiffProxyMode:
+		must.NotBeZero(opts.DocDB)
+		must.NotBeZero(opts.Proxy)
+	default:
+		panic("not reached")
+	}
+
+	return &Middleware{
+		opts: opts,
+	}
+}
+
+// Run implements [middleware.Handler].
+func (m *Middleware) Run(ctx context.Context) {
+	<-ctx.Done()
+	m.wg.Wait()
+}
+
+// Handle implements [middleware.Handler].
+// It dispatches the request to one or both handlers based on the mode.
+func (m *Middleware) Handle(ctx context.Context, req *Request) (*Response, error) {
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+
+	m.wg.Add(1)
+	defer m.wg.Done()
+
+	opcode := req.WireHeader().OpCode.String()
+	command := req.Document().Command()
+
+	labels := prometheus.Labels{
+		"opcode":  opcode,
+		"command": command,
+	}
+	m.opts.Metrics.requests.With(labels).Inc()
+
+	if m.opts.L.Enabled(ctx, slog.LevelDebug) {
+		m.opts.L.DebugContext(ctx, fmt.Sprintf("<<< %s\n%s", req.WireHeader(), req.WireBody().StringIndent()))
+	}
+
+	docdb, proxy, docdbErr, proxyErr := m.handle(ctx, req)
+
+	// FIXME should we do it there on in the dispatcher?
+	// labels["argument"] = argument
+	// labels["result"] = string(res)
+	// d.m.responses.With(labels).Inc()
+
+	switch m.opts.Mode {
+	case NormalMode:
+		return docdb, docdbErr
+	case ProxyMode:
+		return proxy, proxyErr
+	case DiffNormalMode:
+		m.logDiff(ctx, docdb, proxy, slog.LevelDebug)
+		return docdb, docdbErr
+	case DiffProxyMode:
+		m.logDiff(ctx, docdb, proxy, slog.LevelDebug)
+		return proxy, proxyErr
+	default:
+		panic("not reached")
+	}
+}
+
+// handle dispatches the request to both handlers.
+func (m *Middleware) handle(ctx context.Context, req *Request) (docdb, proxy *Response, docdbErr, proxyErr error) {
+	var wg sync.WaitGroup
+
+	if m.opts.DocDB != nil {
+		wg.Add(1)
+		go func() {
+			//exhaustruct:enforce
+			d := &dispatcher{
+				h: m.opts.DocDB,
+				l: logging.WithName(m.opts.L, "middleware.documentdb"),
+			}
+			docdb, docdbErr = d.Handle(ctx, req)
+			wg.Done()
+		}()
+	}
+
+	if m.opts.Proxy != nil {
+		wg.Add(1)
+		go func() {
+			//exhaustruct:enforce
+			d := &dispatcher{
+				h: m.opts.Proxy,
+				l: logging.WithName(m.opts.L, "middleware.proxy"),
+			}
+			proxy, proxyErr = d.Handle(ctx, req)
+
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+
+	return
+}
+
+// logDiff logs the diff between the DocumentDB and proxy responses.
+// It does nothing if either response is nil or logging for the given level is disabled.
+func (m *Middleware) logDiff(ctx context.Context, docdb, proxy *Response, logLevel slog.Level) {
+	if docdb == nil || proxy == nil {
+		return
+	}
+
+	if !m.opts.L.Enabled(ctx, logLevel) {
+		return
+	}
+
+	diffHeader, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
+		A:        difflib.SplitLines(docdb.WireHeader().String()),
+		FromFile: "docdb header",
+		B:        difflib.SplitLines(proxy.WireHeader().String()),
+		ToFile:   "proxy header",
+		Context:  1,
+	})
+	if err != nil {
+		m.opts.L.Log(ctx, slog.LevelWarn, "Failed to get header diff", logging.Error(err))
+		return
+	}
+
+	diffHeader = strings.TrimSpace(diffHeader)
+	if diffHeader == "" {
+		diffHeader = " none"
+	} else {
+		diffHeader = "\n" + diffHeader
+	}
+
+	diffBody, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
+		A:        difflib.SplitLines(docdb.WireBody().StringIndent()),
+		FromFile: "docdb body",
+		B:        difflib.SplitLines(proxy.WireBody().StringIndent()),
+		ToFile:   "proxy body",
+		Context:  1,
+	})
+	if err != nil {
+		m.opts.L.Log(ctx, slog.LevelWarn, "Failed to get body diff", logging.Error(err))
+		return
+	}
+
+	diffBody = strings.TrimSpace(diffBody)
+	if diffBody == "" {
+		diffBody = " none"
+	} else {
+		diffBody = "\n" + diffBody
+	}
+
+	msg := "Header diff:" + diffHeader + "\nBody diff:" + diffBody
+	m.opts.L.Log(ctx, logLevel, msg)
+}
+
+// Describe implements [prometheus.Collector].
+func (m *Middleware) Describe(ch chan<- *prometheus.Desc) {
+	// m.opts.Metrics is not owned by the middleware; it exposes its own metrics.
+}
+
+// Collect implements [prometheus.Collector].
+func (m *Middleware) Collect(ch chan<- prometheus.Metric) {
+	// m.opts.Metrics is not owned by the middleware; it exposes its own metrics.
+}
+
+// check interfaces
+var (
+	_ Handler              = (*Middleware)(nil)
+	_ prometheus.Collector = (*Middleware)(nil)
+)
