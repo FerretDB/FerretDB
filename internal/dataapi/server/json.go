@@ -40,6 +40,8 @@ func marshalSingleJSON(v any) (json.RawMessage, error) {
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+	default:
+		// no need to decode other types
 	}
 
 	bv, err := wirebson.ToDriver(v)
