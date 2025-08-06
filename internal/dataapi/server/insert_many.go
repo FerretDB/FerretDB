@@ -15,7 +15,6 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -48,7 +47,7 @@ func (s *Server) InsertMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	documents, err := docsArr.(wirebson.RawArray).DecodeDeep()
+	documents, err := docsArr.(wirebson.RawArray).Decode()
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
@@ -112,8 +111,5 @@ func (s *Server) InsertMany(w http.ResponseWriter, r *http.Request) {
 		InsertedIds: &insertedIds,
 	}
 
-	if err = json.NewEncoder(w).Encode(res); err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
-		return
-	}
+	s.writeJSONResponse(ctx, w, &res)
 }

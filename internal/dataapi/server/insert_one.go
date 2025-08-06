@@ -15,7 +15,6 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -118,8 +117,5 @@ func (s *Server) InsertOne(w http.ResponseWriter, r *http.Request) {
 		InsertedId: &insertedId,
 	}
 
-	if err = s.writeJSONResponse(ctx, w, &res); err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
-		return
-	}
+	s.writeJSONResponse(ctx, w, &res)
 }
