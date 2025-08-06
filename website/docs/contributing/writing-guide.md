@@ -1,6 +1,7 @@
 ---
 sidebar_position: 99
 unlisted: true # linked from CONTRIBUTING.md
+hide_table_of_contents: true
 ---
 
 # Writing guide
@@ -9,12 +10,14 @@ unlisted: true # linked from CONTRIBUTING.md
 
 The front matter represents the metadata for each page.
 It is written at the top of each page and must be enclosed by `---` on both sides.
+Ensure to include the position of the page in the sidebar using `sidebar_position` and hide the table of contents with `hide_table_of_contents`.
 
 Example:
 
 ```yaml
 ---
 sidebar_position: 1
+hide_table_of_contents: true
 description: How to write documentation
 ---
 ```
