@@ -30,7 +30,7 @@ import (
 
 // Parts of Prometheus metric names.
 const (
-	namespace = "ferretdb"
+	namespace = "ferretdb_unstable"
 	subsystem = "cursors"
 )
 
