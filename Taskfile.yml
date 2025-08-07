@@ -115,12 +115,13 @@ tasks:
       - docker compose logs --follow
 
   env-logs-collect:
+    desc: "Collects logs from Docker in tmp/logs directory"
     cmds:
       - docker compose ps --all
-      - docker compose logs
-      - docker compose exec yugabytedb sh -c "bin/yugabyted collect_logs --stdout | gunzip | tar -xf - --one-top-level=/tmp/yugabytedb-logs"
-      - bin/envtool{{exeExt}} shell mkdir tmp
-      - docker compose cp yugabytedb:/tmp/yugabytedb-logs/ tmp/yugabytedb-logs
+      - bin/envtool{{exeExt}} shell mkdir tmp/logs
+      - docker compose logs > tmp/logs/compose-logs.txt
+      - docker compose exec yugabytedb sh -c "bin/yugabyted collect_logs --stdout | gunzip | tar -xf - --one-top-level=/tmp/logs"
+      - docker compose cp yugabytedb:/tmp/logs tmp/logs/yugabytedb
 
   env-up:
     desc: "Start development environment"
