@@ -103,5 +103,4 @@ func testSleepCompat(t *testing.T, testCases map[string]sleepCompatTestCase) {
 			assert.InDelta(t, compatDuration.Milliseconds(), targetDuration.Milliseconds(), 100, "Compat and target sleep durations should be approximately equal")
 		})
 	}
-
 }
