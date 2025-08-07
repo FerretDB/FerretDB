@@ -117,6 +117,7 @@ tasks:
   env-logs-collect:
     desc: "Collect logs from Docker and save them to tmp/logs"
     cmds:
+      - bin/envtool{{exeExt}} shell rmdir tmp/logs
       - bin/envtool{{exeExt}} shell mkdir tmp/logs
       - docker compose ps --all > tmp/logs/compose-ps.txt
       - docker compose logs > tmp/logs/compose-logs.txt
