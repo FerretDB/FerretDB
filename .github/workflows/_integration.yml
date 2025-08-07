@@ -103,7 +103,8 @@ jobs:
       - name: Collect logs
         if: failure()
         run: |
-          bin/task env-logs-collect > /tmp/logs/compose-logs.txt
+          bin/task env-logs-collect
+          cp -rv tmp/logs/* /tmp/logs/
           cp -v integration/*.json.tmp integration/*.txt.tmp /tmp/logs/
 
       - name: Compress logs before upload
