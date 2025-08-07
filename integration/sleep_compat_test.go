@@ -25,8 +25,38 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+type sleepCompatTestCase struct {
+	request bson.D
+}
+
 func TestSleepCompat(t *testing.T) {
 	t.Parallel()
+
+	testCases := map[string]sleepCompatTestCase{
+		"Millis": {
+			request: bson.D{
+				{"sleep", int32(1)},
+				{"millis", int32(500)},
+			},
+		},
+		"Secs": {
+			request: bson.D{
+				{"sleep", int32(1)},
+				{"secs", int32(1)},
+			},
+		},
+		"Default": {
+			request: bson.D{
+				{"sleep", int32(1)},
+			},
+		},
+	}
+
+	testSleepCompat(t, testCases)
+}
+
+func testSleepCompat(t *testing.T, testCases map[string]sleepCompatTestCase) {
+	t.Helper()
 
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
 		Providers: shareddata.Providers{shareddata.Bools},
@@ -36,39 +66,42 @@ func TestSleepCompat(t *testing.T) {
 	targetDB := s.TargetCollections[0].Database().Client().Database("admin")
 	compatDB := s.CompatCollections[0].Database().Client().Database("admin")
 
-	var targetRes, compatRes bson.D
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			t.Helper()
 
-	timeBefore := time.Now()
-	targetErr := targetDB.RunCommand(ctx, bson.D{
-		{"sleep", int32(1)},
-		{"millis", int32(1000)},
-	}).Decode(&targetRes)
+			t.Parallel()
 
-	targetDuration := time.Since(timeBefore)
+			var targetRes, compatRes bson.D
 
-	timeBefore = time.Now()
-	compatErr := compatDB.RunCommand(ctx, bson.D{
-		{"sleep", int32(1)},
-		{"millis", int32(1000)},
-	}).Decode(&compatRes)
+			timeBefore := time.Now()
+			targetErr := targetDB.RunCommand(ctx, tc.request).Decode(&targetRes)
 
-	compatDuration := time.Since(timeBefore)
+			targetDuration := time.Since(timeBefore)
 
-	if targetErr != nil {
-		t.Logf("Target error: %v", targetErr)
-		t.Logf("Compat error: %v", compatErr)
+			timeBefore = time.Now()
+			compatErr := compatDB.RunCommand(ctx, tc.request).Decode(&compatRes)
 
-		targetErr = UnsetRaw(t, targetErr)
-		compatErr = UnsetRaw(t, compatErr)
-		assert.Equal(t, compatErr, targetErr)
-		return
+			compatDuration := time.Since(timeBefore)
+
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
+
+				targetErr = UnsetRaw(t, targetErr)
+				compatErr = UnsetRaw(t, compatErr)
+				assert.Equal(t, compatErr, targetErr)
+				return
+			}
+			require.NoError(t, compatErr, "compat error; target returned no error")
+
+			t.Logf("Compat (expected) result: %v", compatRes)
+			t.Logf("Target (actual)   result: %v", targetRes)
+
+			AssertEqualDocuments(t, compatRes, targetRes)
+
+			assert.InDelta(t, compatDuration.Milliseconds(), targetDuration.Milliseconds(), 100, "Compat and target sleep durations should be approximately equal")
+		})
 	}
-	require.NoError(t, compatErr, "compat error; target returned no error")
 
-	t.Logf("Compat (expected) result: %v", compatRes)
-	t.Logf("Target (actual)   result: %v", targetRes)
-
-	AssertEqualDocuments(t, compatRes, targetRes)
-
-	assert.InDelta(t, compatDuration.Milliseconds(), targetDuration.Milliseconds(), 100, "Compat and target sleep durations should be approximately equal")
 }
