@@ -25,7 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// marshalSingleJSON takes a single value and marshals it into the JSON format.
+// marshalSingleJSON converts wirebson value to the standard JSON representation.
 func marshalSingleJSON(v any) (json.RawMessage, error) {
 	var err error
 

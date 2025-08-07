@@ -228,7 +228,7 @@ func TestSmokeDataAPI(t *testing.T) {
 			`^{"insertedId":"[0-9a-f]{24}"}$`,
 			bodyStr,
 			"expected %q, got %q",
-			`{"insertedId":"<ObjectID>"} (%s)`,
+			`{"insertedId":"<ObjectID>"}`,
 			string(body),
 		)
 	})

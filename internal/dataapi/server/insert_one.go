@@ -42,18 +42,21 @@ func (s *Server) InsertOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	insertDoc, err := unmarshalSingleJSON(&req.Document)
+	insert, err := unmarshalSingleJSON(&req.Document)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if _, ok := insertDoc.(wirebson.AnyDocument); !ok {
+	insertDoc, ok := insert.(wirebson.AnyDocument)
+	if !ok {
 		http.Error(w, lazyerrors.New("document must be a BSON document").Error(), http.StatusInternalServerError)
 		return
 	}
 
-	doc, err := ensureId(insertDoc.(wirebson.AnyDocument))
+	var doc *wirebson.Document
+
+	doc, err = ensureID(insertDoc)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
@@ -95,8 +98,8 @@ func (s *Server) InsertOne(w http.ResponseWriter, r *http.Request) {
 	s.writeJSONResponse(ctx, w, &res)
 }
 
-// ensureId ensures that inserted document has an "_id" field.
-func ensureId(doc wirebson.AnyDocument) (*wirebson.Document, error) {
+// ensureID ensures that inserted document has an "_id" field.
+func ensureID(doc wirebson.AnyDocument) (*wirebson.Document, error) {
 	decoded, err := doc.Decode()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

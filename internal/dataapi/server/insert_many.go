@@ -64,7 +64,7 @@ func (s *Server) InsertMany(w http.ResponseWriter, r *http.Request) {
 
 		var doc *wirebson.Document
 
-		doc, err = ensureId(v)
+		doc, err = ensureID(v)
 		if err != nil {
 			http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 			return
