@@ -29,7 +29,7 @@ func TestSleepParallel(t *testing.T) {
 	t.Parallel()
 
 	ctx, coll := setup.Setup(t)
-	db := coll.Database().Client().Database("admin")
+	adminDB := coll.Database().Client().Database("admin")
 
 	var wg sync.WaitGroup
 
@@ -43,25 +43,25 @@ func TestSleepParallel(t *testing.T) {
 
 		timeBefore := time.Now()
 		close(start)
-		err := db.RunCommand(ctx, bson.D{
+		err := adminDB.RunCommand(ctx, bson.D{
 			{"sleep", int32(1)},
 			{"millis", int32(2000)},
 		}).Decode(&res)
 
 		dur := time.Since(timeBefore)
+		AssertEqualDocuments(t, bson.D{{"ok", float64(1.0)}}, res)
 
 		assert.InDelta(t, 2000, dur.Milliseconds(), 100)
-
 		require.NoError(t, err)
 	}()
 
 	<-start
 	timeBefore := time.Now()
-	_, err := db.Collection(t.Name()).InsertOne(ctx, bson.D{{"foo", 1}})
+	_, err := coll.InsertOne(ctx, bson.D{{"foo", 1}})
 
 	dur := time.Since(timeBefore)
-	assert.InDelta(t, 2000, dur.Milliseconds(), 100)
 
+	assert.InDelta(t, 2000, dur.Milliseconds(), 100)
 	require.NoError(t, err)
 
 	wg.Wait()
