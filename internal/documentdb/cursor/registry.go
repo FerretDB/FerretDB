@@ -172,7 +172,6 @@ func (r *Registry) NewCursor(id int64, continuation wirebson.RawDocument, conn *
 
 	r.cursors[id] = newCursor(continuation, conn)
 
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/97
 	t := "normal"
 	if persist {
 		t = "persist"
@@ -263,7 +262,6 @@ func (r *Registry) closeCursor(ctx context.Context, id int64) bool {
 	c.close(ctx)
 	delete(r.cursors, id)
 
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/97
 	t := "normal"
 	if persist {
 		t = "persist"

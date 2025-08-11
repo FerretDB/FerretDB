@@ -22,12 +22,6 @@ import (
 	"github.com/FerretDB/FerretDB/v2/build/version"
 )
 
-// Parts of Prometheus metric names.
-const (
-	namespace = "ferretdb"
-	subsystem = ""
-)
-
 // metricsCollector exposes provider's state as Prometheus metric.
 type metricsCollector struct {
 	p       *Provider
@@ -73,7 +67,7 @@ func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, subsystem, "up"),
+			"ferretdb_up",
 			"FerretDB instance state.",
 			[]string{"postgresql", "documentdb"},
 			labels,

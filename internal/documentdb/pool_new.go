@@ -22,7 +22,6 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jackc/pgx/v5/tracelog"
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
@@ -65,14 +64,7 @@ func newPgxPool(uri string, l *slog.Logger, sp *state.Provider) (*pgxpool.Pool, 
 		return nil
 	}
 
-	// port tracing, tweak logging
-	// TODO https://github.com/FerretDB/FerretDB/issues/3554
-
-	// try to log everything; logger's configuration will skip extra levels if needed
-	config.ConnConfig.Tracer = &tracelog.TraceLog{
-		Logger:   logging.NewPgxLogger(l),
-		LogLevel: tracelog.LogLevelTrace,
-	}
+	config.ConnConfig.Tracer = newTracer(l)
 
 	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeCacheStatement
 
