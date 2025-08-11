@@ -92,7 +92,7 @@ func NewRegistry(l *slog.Logger) *Registry {
 
 	// That probably should be the user from the PostgreSQL URI?
 	// TODO https://github.com/FerretDB/FerretDB/issues/3974
-	user := ""
+	user := "unknown"
 
 	res.created.With(prometheus.Labels{
 		"user": user,
@@ -177,7 +177,7 @@ func (r *Registry) NewCursor(id int64, continuation wirebson.RawDocument, conn *
 		t = "persist"
 	}
 
-	user := "" // TODO https://github.com/FerretDB/FerretDB/issues/3974
+	user := "unknown" // TODO https://github.com/FerretDB/FerretDB/issues/3974
 	r.created.With(prometheus.Labels{"user": user, "type": t}).Inc()
 }
 
@@ -267,7 +267,7 @@ func (r *Registry) closeCursor(ctx context.Context, id int64) bool {
 		t = "persist"
 	}
 
-	user := "" // TODO https://github.com/FerretDB/FerretDB/issues/3974
+	user := "unknown" // TODO https://github.com/FerretDB/FerretDB/issues/3974
 	r.duration.With(prometheus.Labels{"user": user, "type": t}).Observe(dur.Seconds())
 
 	return true
