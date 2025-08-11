@@ -44,7 +44,7 @@ Since FerretDB is designed to be an open-source alternative to MongoDB, it can s
 
 Connecting a self-hosted Form.io Community Edition instance to your FerretDB instance is straightforward, as Form.io expects a MongoDB-compatible database.
 
-Create a `docker-compose.yml` file with the following content to define the services for Form.io CE and FerretDB:
+Create a `docker-compose.yml` file with the following content to define the services for Form.io Community Edition and FerretDB:
 
 ```yaml
 services:
