@@ -104,6 +104,7 @@ func setupUser(ctx context.Context, uri string, l *slog.Logger) error {
 	for ctx.Err() == nil {
 		err = func() error {
 			var conn *pgxpool.Conn
+
 			if conn, err = pool.Acquire(ctx); err != nil {
 				return lazyerrors.Error(err)
 			}
