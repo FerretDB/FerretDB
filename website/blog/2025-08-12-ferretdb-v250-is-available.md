@@ -23,10 +23,10 @@ This version works best with [DocumentDB v0.106.0-ferretdb-2.6.0](https://github
 ### Metric names
 
 We changed Prometheus metric names and updated their `HELP` text to make it clear that the current set of metrics is not yet stable.
+FerretDB currently exposes Prometheus metrics on `/debug/metrics`.
 If you scrape FerretDB metrics, please review and update your dashboards and alerts accordingly.
 
 We plan to refine and promote some metrics to stable in the next release.
-See the [metrics documentation](https://docs.ferretdb.io/configuration/observability/#metrics) for details.
 
 ## What's Changed
 
