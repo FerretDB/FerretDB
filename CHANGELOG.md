@@ -5,13 +5,13 @@
 ## [v2.5.0](https://github.com/FerretDB/FerretDB/releases/tag/v2.5.0) (2025-08-12)
 
 This version works best with
-[DocumentDB v0.106.0-ferretdb-2.6.0](https://github.com/FerretDB/documentdb/releases/tag/v0.106.0-ferretdb-2.5.0).
+[DocumentDB v0.106.0-ferretdb-2.5.0](https://github.com/FerretDB/documentdb/releases/tag/v0.106.0-ferretdb-2.5.0).
 
 ### Breaking changes
 
 #### Metric names
 
-We changed Prometheus metric names and `HELP` text to highlight the fact that they are
+We changed Prometheus metric names and `HELP` texts to highlight the fact that they are
 [not stable yet](https://docs.ferretdb.io/configuration/observability/#metrics).
 We plan to promote most of them to stable in the next release.
 
