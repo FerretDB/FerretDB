@@ -246,7 +246,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "acquires_empty_duration_seconds_total"),
 			"Unstable: The cumulative time waited for successful acquires from the pool "+
-				"for a resource to be released or constructed because the pool was empty",
+				"for a resource to be released or constructed because the pool was empty.",
 			nil, nil,
 		),
 		prometheus.CounterValue,

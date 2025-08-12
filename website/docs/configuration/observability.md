@@ -106,7 +106,8 @@ There is no need to use an external exporter.
 
 <!-- https://github.com/FerretDB/FerretDB/issues/3420 -->
 
-The set of metrics is not stable yet; metric and label names and value formatting might change in minor releases.
+The set of metrics is not stable yet;
+types, metric and label names, and value formatting might change in minor releases.
 :::
 
 ### Probes
