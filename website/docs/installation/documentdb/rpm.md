@@ -4,8 +4,7 @@ sidebar_position: 4
 
 # RPM package
 
-To install the `.rpm` packages for DocumentDB on your RHEL, CentOS, and other `.rpm`-based systems,
-you can use the `rpm` tool.
+To install the `.rpm` packages for DocumentDB, you can use the `rpm` tool.
 
 We provide different `.rpm` packages for various deployments on [our release page](https://github.com/FerretDB/documentdb/releases/).
 
