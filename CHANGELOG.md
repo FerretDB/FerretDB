@@ -17,9 +17,9 @@ We plan to promote most of them to stable in the next release.
 
 ### What's Changed
 
-#### RPM packages
+#### RPM packages for DocumentDB
 
-`.rpm` packages for Red Hat Enterprise Linux are
+DocumentDB `.rpm` packages for Red Hat Enterprise Linux are
 [now available](https://docs.ferretdb.io/installation/documentdb/rpm/)!
 
 ### Documentation 📄
