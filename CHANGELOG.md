@@ -2,6 +2,59 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v2.5.0](https://github.com/FerretDB/FerretDB/releases/tag/v2.5.0) (2025-08-12)
+
+This version works best with
+[DocumentDB v0.106.0-ferretdb-2.5.0](https://github.com/FerretDB/documentdb/releases/tag/v0.106.0-ferretdb-2.5.0).
+
+### Breaking changes
+
+#### Metric names
+
+We changed Prometheus metric names and `HELP` texts to highlight the fact that they are
+[not stable yet](https://docs.ferretdb.io/configuration/observability/#metrics).
+We plan to promote most of them to stable in the next release.
+
+### What's Changed
+
+#### RPM packages
+
+`.rpm` packages for Red Hat Enterprise Linux are
+[now available](https://docs.ferretdb.io/installation/documentdb/rpm/)!
+
+### Documentation 📄
+
+- Enable full visibility for images on zoom by @Fashander in https://github.com/FerretDB/FerretDB/pull/5346
+- Add Vault blog post by @Fashander in https://github.com/FerretDB/FerretDB/pull/5368
+- Add WeKan blog post by @Fashander in https://github.com/FerretDB/FerretDB/pull/5381
+
+### Other Changes 🤖
+
+- Add YugabyteDB integration tests by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5274
+- Run all YugabyteDB integration tests by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5283
+- Refactor normal and error responses by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5326
+- Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5353
+- Use Codecov for flaky integration tests detection by @noisersup in https://github.com/FerretDB/FerretDB/pull/5361
+- Make accessing YugabyteDB logs easier by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5362
+- Add components in codecov by @noisersup in https://github.com/FerretDB/FerretDB/pull/5364
+- Skip YugabyteDB setup for `arm64` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5372
+- Tweak Ollama and MCPHost setup by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5375
+- Simplify flags handling by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5378
+- Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5380
+- Extract wiring into a separate package by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5383
+- Small cleanup by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5388
+- Encapsulate PostgreSQL pool in the Handler by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5389
+- Bump DocumentDB version by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5392
+- Test flaky tests detection by @noisersup in https://github.com/FerretDB/FerretDB/pull/5393
+- Small tweaks by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5394
+- Make a resource.Untrack thread-safe by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5396
+- Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5398
+- Enable MongoDB test commands by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5400
+- Update Prometheus metrics by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5403
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/79?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v2.4.0...v2.5.0).
+
 ## [v2.4.0](https://github.com/FerretDB/FerretDB/releases/tag/v2.4.0) (2025-07-16)
 
 This version works best with
