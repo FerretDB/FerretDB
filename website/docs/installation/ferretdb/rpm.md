@@ -5,7 +5,7 @@ sidebar_position: 4
 # RPM package
 
 To install the `.rpm` packages for FerretDB on your RHEL, CentOS, and other `.rpm`-based systems,
-you can use `rpm` tool.
+you can use `rpm`, `dnf`, or any other appropriate package manager for your system.
 
 We provide different `.rpm` packages for various deployments on [our release page](https://github.com/FerretDB/FerretDB/releases/).
 
@@ -20,7 +20,7 @@ rename it to `ferretdb.rpm`,
 then run the following command in your terminal:
 
 ```sh
-sudo rpm -i ferretdb.rpm
+dnf install -y ferretdb.rpm
 ```
 
 You can check that FerretDB was installed by running:
@@ -29,12 +29,10 @@ You can check that FerretDB was installed by running:
 ferretdb --version
 ```
 
-FerretDB does not automatically install PostgreSQL.
-To install PostgreSQL, run the following commands:
-
-```sh
-sudo yum install -y postgresql
-```
+:::note
+FerretDB does not automatically install PostgreSQL with the DocumentDB extension,
+see DocumentDB extension RPM package [installation guide](../documentdb/rpm.md) for more details.
+:::
 
 The `.rpm` package ships with the systemd unit for starting FerretDB automatically.
 For more information about its configuration, please take a look at [systemd configuration guide](systemd.md).
@@ -49,10 +47,10 @@ Before updating to a new FerretDB version, make sure to update to the matching D
 Following the [DocumentDB update guide](../documentdb/rpm.md#updating-to-a-new-version) is critical for a successful update.
 
 Download the new `.rpm` package from the release page.
-Then, install the new package using `rpm`:
+Then, install the new package using `dnf`:
 
 ```sh
-sudo rpm -i /path/to/<new-ferretdb-package>.rpm
+dnf install -y /path/to/<new-ferretdb-package>.rpm
 ```
 
 Then verify that the new version is installed by running:
