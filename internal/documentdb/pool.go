@@ -35,7 +35,8 @@ import (
 
 // Parts of Prometheus metric names.
 const (
-	namespace = "ferretdb"
+	// TODO https://github.com/FerretDB/FerretDB/issues/5402
+	namespace = "ferretdb_unstable"
 	subsystem = "pool"
 )
 
@@ -185,12 +186,12 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	// check metrics and labels, set zero values
-	// TODO https://github.com/FerretDB/FerretDB/issues/3420
+	// TODO https://github.com/FerretDB/FerretDB/issues/5402
 
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, subsystem, "acquired_total"),
-			"The cumulative count of successful connection acquires from the pool.",
+			prometheus.BuildFQName(namespace, subsystem, "acquires_total"),
+			"Unstable: The cumulative count of successful connection acquires from the pool.",
 			nil, nil,
 		),
 		prometheus.CounterValue,
@@ -199,8 +200,8 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, subsystem, "acquired_duration_seconds_total"),
-			"The total duration of all successful connection acquires from the pool.",
+			prometheus.BuildFQName(namespace, subsystem, "acquires_duration_seconds_total"),
+			"Unstable: The total duration of all successful connection acquires from the pool.",
 			nil, nil,
 		),
 		prometheus.CounterValue,
@@ -210,7 +211,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "acquired"),
-			"The number of currently acquired connections in the pool.",
+			"Unstable: The number of currently acquired connections in the pool.",
 			nil, nil,
 		),
 		prometheus.GaugeValue,
@@ -220,7 +221,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "acquires_canceled_total"),
-			"The cumulative count of connection acquires from the pool that were canceled.",
+			"Unstable: The cumulative count of connection acquires from the pool that were canceled.",
 			nil, nil,
 		),
 		prometheus.CounterValue,
@@ -230,7 +231,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "constructing"),
-			"The number of connections with construction in progress in the pool.",
+			"Unstable: The number of connections with construction in progress in the pool.",
 			nil, nil,
 		),
 		prometheus.GaugeValue,
@@ -239,8 +240,8 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, subsystem, "acquired_empty_total"),
-			"The cumulative count of successful connection acquires from the pool "+
+			prometheus.BuildFQName(namespace, subsystem, "acquires_empty_total"),
+			"Unstable: The cumulative count of successful connection acquires from the pool "+
 				"that waited for a resource to be released or constructed because the pool was empty.",
 			nil, nil,
 		),
@@ -251,7 +252,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "idle"),
-			"The number of currently idle connections in the pool.",
+			"Unstable: The number of currently idle connections in the pool.",
 			nil, nil,
 		),
 		prometheus.GaugeValue,
@@ -261,7 +262,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "max_size"),
-			"The maximum size of the connection pool.",
+			"Unstable: The maximum size of the connection pool.",
 			nil, nil,
 		),
 		prometheus.GaugeValue,
@@ -271,7 +272,8 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "size"),
-			"Total number of connections currently in the pool. Should be a sum of constructing, acquired, and idle.",
+			"Unstable: Total number of connections currently in the pool. "+
+				"Should be a sum of constructing, acquired, and idle.",
 			nil, nil,
 		),
 		prometheus.GaugeValue,
@@ -281,7 +283,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "opened_total"),
-			"The cumulative count of new connections opened.",
+			"Unstable: The cumulative count of new connections opened.",
 			nil, nil,
 		),
 		prometheus.CounterValue,
@@ -291,7 +293,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "destroyed_maxlifetime_total"),
-			"The cumulative count of connections destroyed because they exceeded pool_max_conn_lifetime.",
+			"Unstable: The cumulative count of connections destroyed because they exceeded pool_max_conn_lifetime.",
 			nil, nil,
 		),
 		prometheus.CounterValue,
@@ -301,11 +303,22 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "destroyed_maxidle_total"),
-			"The cumulative count of connections destroyed because they exceeded pool_max_conn_idle_time.",
+			"Unstable: The cumulative count of connections destroyed because they exceeded pool_max_conn_idle_time.",
 			nil, nil,
 		),
 		prometheus.CounterValue,
 		float64(maxIdleDestroyCount),
+	)
+
+	ch <- prometheus.MustNewConstMetric(
+		prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "acquires_empty_duration_seconds_total"),
+			"Unstable: The cumulative time waited for successful acquires from the pool "+
+				"for a resource to be released or constructed because the pool was empty.",
+			nil, nil,
+		),
+		prometheus.CounterValue,
+		stats.EmptyAcquireWaitTime().Seconds(),
 	)
 }
 
