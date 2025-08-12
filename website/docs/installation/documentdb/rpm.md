@@ -65,7 +65,7 @@ Download the new `.rpm` package that matches the FerretDB release you are updati
 Then install the new package using `dnf`:
 
 ```sh
-dnf install -y /path/to/<new-documentdb-package.rpm>
+dnf install -y /path/to/<new-documentdb-package>.rpm
 ```
 
 Replace `/path/to/<new-documentdb-package.rpm>` with the actual path and filename of the downloaded `.rpm` package.
