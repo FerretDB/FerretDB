@@ -3,7 +3,7 @@ slug: ferretdb-v250-is-available
 title: 'FerretDB v2.5.0 is available!'
 authors: [alex]
 description: >
-  FerretDB v2.5.0 now includes an RPM package for DocumentDB, changes to metrics, and new additions to our compatible apps documentation.
+  FerretDB v2.5.0 now includes an RPM package for DocumentDB, changes to metric names, and new additions to our compatible apps documentation.
 image: /img/blog/ferretdb-v2.5.0.jpg
 tags: [release]
 ---
