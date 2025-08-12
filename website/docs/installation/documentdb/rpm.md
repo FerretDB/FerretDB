@@ -73,7 +73,7 @@ Replace `/path/to/<new-documentdb-package.rpm>` with the actual path and filenam
 After installing the new package, update the DocumentDB extension in your PostgreSQL database.
 To do this, run the following command from within the `postgres` database:
 
-```sh
+```sql
 ALTER EXTENSION documentdb UPDATE;
 ```
 
