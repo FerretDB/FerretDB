@@ -166,7 +166,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 
 	p.rw.Unlock()
 
-	var acquireDuration float64
+	var acquireDuration, emptyAcquireWaitTime float64
 	var acquireConns, constructingConns, idleConns, maxConns, totalConns int32
 	var acquireCount, canceledAcquireCount, emptyAcquireCount, newConnsCount, maxLifetimeDestroyCount, maxIdleDestroyCount int64
 
@@ -183,6 +183,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 		newConnsCount += stat.NewConnsCount()
 		maxLifetimeDestroyCount += stat.MaxLifetimeDestroyCount()
 		maxIdleDestroyCount += stat.MaxIdleDestroyCount()
+		emptyAcquireWaitTime += stat.EmptyAcquireWaitTime().Seconds()
 	}
 
 	// check metrics and labels, set zero values
@@ -318,7 +319,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 			nil, nil,
 		),
 		prometheus.CounterValue,
-		stats.EmptyAcquireWaitTime().Seconds(),
+		emptyAcquireWaitTime,
 	)
 }
 
