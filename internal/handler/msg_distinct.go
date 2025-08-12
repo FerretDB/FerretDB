@@ -63,7 +63,7 @@ func (h *Handler) msgDistinct(connCtx context.Context, req *middleware.Request) 
 
 	var res wirebson.RawDocument
 
-	err = h.p.WithConn(func(conn *pgx.Conn) error {
+	err = h.p.WithConn(connCtx, func(conn *pgx.Conn) error {
 		res, err = documentdb_api.DistinctQuery(connCtx, conn, h.L, dbName, req.DocumentRaw())
 		return err
 	})

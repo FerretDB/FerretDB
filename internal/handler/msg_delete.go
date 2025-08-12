@@ -47,7 +47,7 @@ func (h *Handler) msgDelete(connCtx context.Context, req *middleware.Request) (*
 
 	var res wirebson.RawDocument
 
-	err = h.p.WithConn(func(conn *pgx.Conn) error {
+	err = h.p.WithConn(connCtx, func(conn *pgx.Conn) error {
 		res, _, err = documentdb_api.Delete(connCtx, conn, h.L, dbName, spec, seq)
 		return err
 	})

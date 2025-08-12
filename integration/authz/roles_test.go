@@ -47,7 +47,7 @@ func TestRolesCommand(t *testing.T) {
 		"Unauthorized": {
 			user: "userA",
 			roles: bson.A{bson.D{
-				{"role", "dbAdminAnyDatabase"},
+				{"role", "readAnyDatabase"},
 				{"db", db.Name()},
 			}},
 			authzCommand: bson.D{{"updateUser", "userX"}, {"pwd", "password"}},

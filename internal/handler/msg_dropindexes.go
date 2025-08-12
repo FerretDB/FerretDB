@@ -51,7 +51,7 @@ func (h *Handler) msgDropIndexes(connCtx context.Context, req *middleware.Reques
 
 	var res wirebson.RawDocument
 
-	err = h.p.WithConn(func(conn *pgx.Conn) error {
+	err = h.p.WithConn(connCtx, func(conn *pgx.Conn) error {
 		res, err = documentdb_api.DropIndexes(connCtx, conn, h.L, dbName, req.DocumentRaw(), nil)
 		return err
 	})

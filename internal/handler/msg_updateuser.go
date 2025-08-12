@@ -78,7 +78,7 @@ func (h *Handler) msgUpdateUser(connCtx context.Context, req *middleware.Request
 
 	var res wirebson.RawDocument
 
-	err = h.p.WithConn(func(conn *pgx.Conn) error {
+	err = h.p.WithConn(connCtx, func(conn *pgx.Conn) error {
 		// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/859
 		res, err = documentdb_api.UpdateUser(connCtx, conn, h.L, must.NotFail(updateSpec.Encode()))
 		return err

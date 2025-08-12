@@ -65,7 +65,7 @@ func (h *Handler) msgReIndex(connCtx context.Context, req *middleware.Request) (
 		)
 	}
 
-	conn, err := h.p.Acquire()
+	conn, err := h.p.Acquire(connCtx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
