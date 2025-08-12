@@ -51,6 +51,7 @@ We plan to promote most of them to stable in the next release.
 - Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5398
 - Enable MongoDB test commands by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5400
 - Update Prometheus metrics by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5403
+- Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5411
 
 [All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/79?closed=1).
 [All commits](https://github.com/FerretDB/FerretDB/compare/v2.4.0...v2.5.0).
