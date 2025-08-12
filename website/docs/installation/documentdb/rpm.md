@@ -6,11 +6,7 @@ sidebar_position: 4
 
 To install the `.rpm` packages for DocumentDB, you can use the `rpm` tool.
 
-We provide different `.rpm` packages for various deployments on [our release page](https://github.com/FerretDB/documentdb/releases/).
-
-- For most use cases, we recommend using the production package (e.g., `documentdb.rpm`).
-- For debugging purposes, use the development package (contains either `-dev` or `-dbgsym` suffix e.g., `documentdb-dev.rpm`/`documentdb-dbgsym.rpm`).
-  It includes features that significantly slow down performance and is not recommended for production use.
+We provide different `.rpm` packages for various Red Hat Enterprise Linux (RHEL) and PostgreSQL major versions on [our release page](https://github.com/FerretDB/documentdb/releases/) (e.g. `rhel8-postgresql16-documentdb-<version>-1.el8.x86_64.rpm`)
 
 ## Installation
 
