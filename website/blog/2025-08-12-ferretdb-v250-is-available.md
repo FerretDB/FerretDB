@@ -3,7 +3,7 @@ slug: ferretdb-v250-is-available
 title: 'FerretDB v2.5.0 is available!'
 authors: [alex]
 description: >
-  FerretDB v2.5.0 now includes an RPM package for DocumentDB, changes to metric names, and new additions to our compatible apps documentation.
+  FerretDB v2.5.0 now includes RPM packages for DocumentDB, changes to metric names, and new additions to our compatible apps documentation.
 image: /img/blog/ferretdb-v2.5.0.jpg
 tags: [release]
 ---
@@ -14,7 +14,7 @@ We are pleased to announce the release of FerretDB v2.5.0!
 
 <!--truncate-->
 
-This release introduces an RPM package for DocumentDB, changes to metrics, and some new additions to our compatible apps documentation.
+This release introduces RPM packages for DocumentDB, changes to metrics, and some new additions to our compatible apps documentation.
 
 This version works best with [DocumentDB v0.106.0-ferretdb-2.6.0](https://github.com/FerretDB/documentdb/releases/tag/v0.106.0-ferretdb-2.5.0).
 
@@ -30,9 +30,9 @@ See the [metrics documentation](https://docs.ferretdb.io/configuration/observabi
 
 ## What's Changed
 
-### DocumentDB RPM package
+### DocumentDB RPM packages
 
-`.rpm` packages for Red Hat Enterprise Linux are now available!
+DocumentDB `.rpm` packages for Red Hat Enterprise Linux are now available!
 Installation instructions are in the docs:
 [https://docs.ferretdb.io/installation/documentdb/rpm/](https://docs.ferretdb.io/installation/documentdb/rpm/)
 
