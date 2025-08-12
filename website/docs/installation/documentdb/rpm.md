@@ -22,7 +22,7 @@ sudo rpm -i /path/to/documentdb.rpm
 
 Ensure to replace `/path/to/documentdb.rpm` with the actual path and filename of the downloaded `.rpm` package.
 
-You can check that DocumentDB was installed by running
+You can check that DocumentDB was installed by running:
 
 ```sh
 documentdb --version
