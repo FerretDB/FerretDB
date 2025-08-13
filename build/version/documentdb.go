@@ -18,7 +18,7 @@ import "runtime"
 
 const (
 	// DocumentDB is a version of DocumentDB this version of FerretDB is compatible with.
-	DocumentDB = "0.106.0 gitref: ferretdb sha:b33e3aa51d buildId:0"
+	DocumentDB = "0.106.0 gitref: HEAD sha:beb9d25d98 buildId:0"
 
 	// DocumentDBURL points to the release page of the DocumentDB version above.
 	DocumentDBURL = "https://github.com/FerretDB/documentdb/releases/tag/v0.106.0-ferretdb-2.5.0"
@@ -30,6 +30,7 @@ var DocumentDBSafeToUpdate = []string{
 	"0.103.0 gitref: HEAD sha:7514232 buildId:0",  // v2.2.0
 	"0.104.0 gitref: HEAD sha:2045d0e buildId:0",  // v2.3.0, v2.3.1
 	"0.105.0 gitref: HEAD sha:8453d93b buildId:0", // v2.4.0
+	// "0.106.0 gitref: HEAD sha:beb9d25d98 buildId:0", // v2.5.0
 }
 
 // PostgreSQLTest is a version of PostgreSQL used by tests.
