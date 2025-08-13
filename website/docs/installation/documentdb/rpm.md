@@ -53,31 +53,3 @@ CREATE EXTENSION documentdb CASCADE;
 ```
 
 You can now go ahead and set up FerretDB by following [this installation guide](../ferretdb/rpm.md).
-
-## Updating to a new version
-
-Before [updating to a new FerretDB release](../ferretdb/rpm.md#updating-to-a-new-version), it is critical to install the matching DocumentDB `.rpm` package first.
-
-The following steps are critical to ensuring a successful update.
-
-Download the new `.rpm` package that matches the FerretDB release you are updating to from the release page.
-
-Then install the new package using `dnf`:
-
-```sh
-dnf install -y /path/to/<new-documentdb-package>.rpm
-```
-
-Replace `/path/to/<new-documentdb-package>.rpm` with the actual path and filename of the downloaded `.rpm` package.
-
-After installing the new package, update the DocumentDB extension in your PostgreSQL database.
-To do this, run the following command from within the `postgres` database:
-
-```sql
-ALTER EXTENSION documentdb UPDATE;
-```
-
-Next, verify or update your `postgresql.conf` to include the correct extension libraries on startup (same as listed in the Installation section above).
-Restart PostgreSQL to apply changes.
-
-Once the DocumentDB update is complete, proceed with the [FerretDB update steps](../ferretdb/rpm.md#updating-to-a-new-version).

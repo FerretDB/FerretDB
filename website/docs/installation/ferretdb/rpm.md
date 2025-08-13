@@ -16,12 +16,13 @@ We provide different `.rpm` packages for various deployments on [our release pag
 ## Installation
 
 Download the appropriate FerretDB `.rpm` package from our release page,
-rename it to `ferretdb.rpm`,
 then run the following command in your terminal:
 
 ```sh
-dnf install -y ferretdb.rpm
+dnf install -y /path/to/ferretdb.rpm
 ```
+
+Makse sure to replace `/path/to/ferretdb.rpm` with the actual path and filename of the downloaded `.rpm` package.
 
 You can check that FerretDB was installed by running:
 
@@ -44,14 +45,16 @@ Find out more about:
 ## Updating to a new version
 
 Before updating to a new FerretDB version, make sure to update to the matching DocumentDB package first.
-Following the [DocumentDB update guide](../documentdb/rpm.md#updating-to-a-new-version) is critical for a successful update.
+See the [DocumentDB guide](../documentdb/rpm.md) for more details.
 
 Download the new `.rpm` package from the release page.
 Then, install the new package using `dnf`:
 
 ```sh
-dnf install -y /path/to/<new-ferretdb-package>.rpm
+dnf install -y /path/to/new-ferretdb-package.rpm
 ```
+
+Ensure to replace `/path/to/new-ferretdb-package.rpm` with the actual path and filename of the downloaded `.rpm` package.
 
 Then verify that the new version is installed by running:
 
