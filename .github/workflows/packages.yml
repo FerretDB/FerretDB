@@ -64,7 +64,7 @@ jobs:
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
         if: github.event_name != 'pull_request_target'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
@@ -72,7 +72,7 @@ jobs:
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout pull request code
         if: github.event_name == 'pull_request_target'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
