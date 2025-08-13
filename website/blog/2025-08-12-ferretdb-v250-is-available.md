@@ -16,7 +16,7 @@ We are pleased to announce the release of FerretDB v2.5.0!
 
 This release introduces RPM packages for DocumentDB, changes to metrics, and some new additions to our compatible apps documentation.
 
-This version works best with [DocumentDB v0.106.0-ferretdb-2.6.0](https://github.com/FerretDB/documentdb/releases/tag/v0.106.0-ferretdb-2.5.0).
+This version works best with [DocumentDB v0.106.0-ferretdb-2.5.0](https://github.com/FerretDB/documentdb/releases/tag/v0.106.0-ferretdb-2.5.0).
 
 ## Breaking changes
 
