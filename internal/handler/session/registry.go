@@ -35,7 +35,8 @@ import (
 
 // Parts of Prometheus metric names.
 const (
-	namespace = "ferretdb"
+	// TODO https://github.com/FerretDB/FerretDB/issues/3420
+	namespace = "ferretdb_unstable"
 	subsystem = "sessions"
 )
 
@@ -84,7 +85,7 @@ func NewRegistry(timeout time.Duration, l *slog.Logger) *Registry {
 				Namespace: namespace,
 				Subsystem: subsystem,
 				Name:      "created_total",
-				Help:      "Total number of sessions created.",
+				Help:      "Unstable: Total number of sessions created.",
 			},
 			[]string{"kind"},
 		),
@@ -93,7 +94,7 @@ func NewRegistry(timeout time.Duration, l *slog.Logger) *Registry {
 				Namespace: namespace,
 				Subsystem: subsystem,
 				Name:      "duration_seconds",
-				Help:      "Session lifetime in seconds.",
+				Help:      "Unstable: Session lifetime in seconds.",
 				Buckets: []float64{
 					1,
 					5,

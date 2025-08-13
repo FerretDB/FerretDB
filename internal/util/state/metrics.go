@@ -22,12 +22,6 @@ import (
 	"github.com/FerretDB/FerretDB/v2/build/version"
 )
 
-// Parts of Prometheus metric names.
-const (
-	namespace = "ferretdb"
-	subsystem = ""
-)
-
 // metricsCollector exposes provider's state as Prometheus metric.
 type metricsCollector struct {
 	p       *Provider
@@ -53,7 +47,7 @@ func (mc *metricsCollector) Describe(ch chan<- *prometheus.Desc) {
 // It exposes a single metric with various labels.
 func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 	info := version.Get()
-	labels := prometheus.Labels{
+	constLabels := prometheus.Labels{
 		"version": info.Version,
 		"commit":  info.Commit,
 		"branch":  info.Branch,
@@ -62,26 +56,38 @@ func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 		"dev":     strconv.FormatBool(info.DevBuild),
 	}
 
+	labels := []string{
+		"postgresql",
+		"documentdb",
+		"telemetry",
+		"update_available",
+	}
+	if mc.addUUID {
+		labels = append(labels, "uuid")
+	}
+
 	s := mc.p.Get()
 
-	labels["telemetry"] = s.TelemetryString()
-	labels["update_available"] = strconv.FormatBool(s.UpdateAvailable)
-
+	values := []string{
+		s.PostgreSQLVersion,
+		s.DocumentDBVersion,
+		s.TelemetryString(),
+		strconv.FormatBool(s.UpdateAvailable),
+	}
 	if mc.addUUID {
-		labels["uuid"] = s.UUID
+		values = append(values, s.UUID)
 	}
 
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, subsystem, "up"),
+			"ferretdb_up",
 			"FerretDB instance state.",
-			[]string{"postgresql", "documentdb"},
 			labels,
+			constLabels,
 		),
 		prometheus.GaugeValue,
 		1,
-		s.PostgreSQLVersion,
-		s.DocumentDBVersion,
+		values...,
 	)
 }
 
