@@ -68,7 +68,7 @@ Then install the new package using `dnf`:
 dnf install -y /path/to/<new-documentdb-package>.rpm
 ```
 
-Replace `/path/to/<new-documentdb-package.rpm>` with the actual path and filename of the downloaded `.rpm` package.
+Replace `/path/to/<new-documentdb-package>.rpm` with the actual path and filename of the downloaded `.rpm` package.
 
 After installing the new package, update the DocumentDB extension in your PostgreSQL database.
 To do this, run the following command from within the `postgres` database:
