@@ -22,7 +22,7 @@ then run the following command in your terminal:
 dnf install -y /path/to/ferretdb.rpm
 ```
 
-Makse sure to replace `/path/to/ferretdb.rpm` with the actual path and filename of the downloaded `.rpm` package.
+Make sure to replace `/path/to/ferretdb.rpm` with the actual path and filename of the downloaded `.rpm` package.
 
 You can check that FerretDB was installed by running:
 
