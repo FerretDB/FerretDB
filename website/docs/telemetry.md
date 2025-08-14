@@ -1,6 +1,7 @@
 ---
 sidebar_position: 8
 slug: /telemetry/ # referenced in many places
+hide_table_of_contents: true
 ---
 
 # Telemetry reporting
