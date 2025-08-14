@@ -15,12 +15,16 @@
 package documentdb
 
 import (
+	"context"
 	"log/slog"
+	"net/url"
+	"sync"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/cursor"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
@@ -38,10 +42,13 @@ const (
 
 // Pool represent a pool of PostgreSQL connections.
 type Pool struct {
-	p     *pgxpool.Pool
+	p     map[string]*pgxpool.Pool
 	r     *cursor.Registry
 	l     *slog.Logger
 	token *resource.Token
+	uri   *url.URL
+	sp    *state.Provider
+	rw    sync.RWMutex
 }
 
 // NewPool creates a new pool of PostgreSQL connections.
@@ -51,16 +58,23 @@ func NewPool(uri string, l *slog.Logger, sp *state.Provider) (*Pool, error) {
 	must.NotBeZero(l)
 	must.NotBeZero(sp)
 
+	u, err := url.Parse(uri)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	p, err := newPgxPool(uri, logging.WithName(l, "pgx"), sp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	res := &Pool{
-		p:     p,
+		p:     map[string]*pgxpool.Pool{uri: p},
 		r:     cursor.NewRegistry(logging.WithName(l, "cursors")),
 		l:     l,
 		token: resource.NewToken(),
+		uri:   u,
+		sp:    sp,
 	}
 	resource.Track(res, res.token)
 
@@ -71,7 +85,14 @@ func NewPool(uri string, l *slog.Logger, sp *state.Provider) (*Pool, error) {
 func (p *Pool) Close() {
 	p.r.Close(todoCtx)
 
-	p.p.Close()
+	p.rw.Lock()
+	defer p.rw.Unlock()
+
+	for _, pool := range p.p {
+		pool.Close()
+	}
+
+	p.p = nil
 
 	resource.Untrack(p, p.token)
 }
@@ -80,8 +101,28 @@ func (p *Pool) Close() {
 //
 // It is caller's responsibility to call [Conn.Release].
 // Most callers should use [Pool.WithConn] instead.
-func (p *Pool) Acquire() (*Conn, error) {
-	conn, err := p.p.Acquire(todoCtx)
+func (p *Pool) Acquire(ctx context.Context) (*Conn, error) {
+	connInfo := conninfo.Get(ctx)
+
+	uri := p.uri
+	if connInfo.Conv() != nil && connInfo.Conv().Succeed() {
+		uri.User = url.UserPassword(connInfo.Conv().Username(), "")
+	}
+
+	p.rw.Lock()
+	defer p.rw.Unlock()
+
+	pool, ok := p.p[uri.String()]
+	if !ok {
+		var err error
+		if pool, err = newPgxPool(uri.String(), logging.WithName(p.l, "pgx"), p.sp); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		p.p[uri.String()] = pool
+	}
+
+	conn, err := pool.Acquire(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -91,8 +132,8 @@ func (p *Pool) Acquire() (*Conn, error) {
 
 // WithConn acquires a connection from the pool and calls the provided function with it.
 // The connection is automatically released after the function returns.
-func (p *Pool) WithConn(f func(*pgx.Conn) error) error {
-	conn, err := p.Acquire()
+func (p *Pool) WithConn(ctx context.Context, f func(*pgx.Conn) error) error {
+	conn, err := p.Acquire(ctx)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -115,7 +156,35 @@ func (p *Pool) Describe(ch chan<- *prometheus.Desc) {
 func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	p.r.Collect(ch)
 
-	stats := p.p.Stat()
+	var poolsStats []*pgxpool.Stat
+
+	p.rw.Lock()
+
+	for _, pool := range p.p {
+		poolsStats = append(poolsStats, pool.Stat())
+	}
+
+	p.rw.Unlock()
+
+	var acquireDuration, emptyAcquireWaitTime float64
+	var acquireConns, constructingConns, idleConns, maxConns, totalConns int32
+	var acquireCount, canceledAcquireCount, emptyAcquireCount, newConnsCount, maxLifetimeDestroyCount, maxIdleDestroyCount int64
+
+	for _, stat := range poolsStats {
+		acquireCount += stat.AcquireCount()
+		acquireDuration += stat.AcquireDuration().Seconds()
+		acquireConns += stat.AcquiredConns()
+		canceledAcquireCount += stat.CanceledAcquireCount()
+		constructingConns += stat.ConstructingConns()
+		emptyAcquireCount += stat.EmptyAcquireCount()
+		idleConns += stat.IdleConns()
+		maxConns += stat.MaxConns()
+		totalConns += stat.TotalConns()
+		newConnsCount += stat.NewConnsCount()
+		maxLifetimeDestroyCount += stat.MaxLifetimeDestroyCount()
+		maxIdleDestroyCount += stat.MaxIdleDestroyCount()
+		emptyAcquireWaitTime += stat.EmptyAcquireWaitTime().Seconds()
+	}
 
 	// check metrics and labels, set zero values
 	// TODO https://github.com/FerretDB/FerretDB/issues/5402
@@ -127,7 +196,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 			nil, nil,
 		),
 		prometheus.CounterValue,
-		float64(stats.AcquireCount()),
+		float64(acquireCount),
 	)
 
 	ch <- prometheus.MustNewConstMetric(
@@ -137,7 +206,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 			nil, nil,
 		),
 		prometheus.CounterValue,
-		stats.AcquireDuration().Seconds(),
+		acquireDuration,
 	)
 
 	ch <- prometheus.MustNewConstMetric(
@@ -147,7 +216,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 			nil, nil,
 		),
 		prometheus.GaugeValue,
-		float64(stats.AcquiredConns()),
+		float64(acquireConns),
 	)
 
 	ch <- prometheus.MustNewConstMetric(
@@ -157,7 +226,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 			nil, nil,
 		),
 		prometheus.CounterValue,
-		float64(stats.CanceledAcquireCount()),
+		float64(canceledAcquireCount),
 	)
 
 	ch <- prometheus.MustNewConstMetric(
@@ -167,7 +236,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 			nil, nil,
 		),
 		prometheus.GaugeValue,
-		float64(stats.ConstructingConns()),
+		float64(constructingConns),
 	)
 
 	ch <- prometheus.MustNewConstMetric(
@@ -178,7 +247,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 			nil, nil,
 		),
 		prometheus.CounterValue,
-		float64(stats.EmptyAcquireCount()),
+		float64(emptyAcquireCount),
 	)
 
 	ch <- prometheus.MustNewConstMetric(
@@ -188,7 +257,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 			nil, nil,
 		),
 		prometheus.GaugeValue,
-		float64(stats.IdleConns()),
+		float64(idleConns),
 	)
 
 	ch <- prometheus.MustNewConstMetric(
@@ -198,7 +267,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 			nil, nil,
 		),
 		prometheus.GaugeValue,
-		float64(stats.MaxConns()),
+		float64(maxConns),
 	)
 
 	ch <- prometheus.MustNewConstMetric(
@@ -209,7 +278,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 			nil, nil,
 		),
 		prometheus.GaugeValue,
-		float64(stats.TotalConns()),
+		float64(totalConns),
 	)
 
 	ch <- prometheus.MustNewConstMetric(
@@ -219,7 +288,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 			nil, nil,
 		),
 		prometheus.CounterValue,
-		float64(stats.NewConnsCount()),
+		float64(newConnsCount),
 	)
 
 	ch <- prometheus.MustNewConstMetric(
@@ -229,7 +298,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 			nil, nil,
 		),
 		prometheus.CounterValue,
-		float64(stats.MaxLifetimeDestroyCount()),
+		float64(maxLifetimeDestroyCount),
 	)
 
 	ch <- prometheus.MustNewConstMetric(
@@ -239,7 +308,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 			nil, nil,
 		),
 		prometheus.CounterValue,
-		float64(stats.MaxIdleDestroyCount()),
+		float64(maxIdleDestroyCount),
 	)
 
 	ch <- prometheus.MustNewConstMetric(
@@ -250,7 +319,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 			nil, nil,
 		),
 		prometheus.CounterValue,
-		stats.EmptyAcquireWaitTime().Seconds(),
+		emptyAcquireWaitTime,
 	)
 }
 

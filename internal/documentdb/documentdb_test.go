@@ -100,7 +100,7 @@ func TestError(t *testing.T) {
 
 	var res wirebson.RawDocument
 
-	err = pool.WithConn(func(conn *pgx.Conn) error {
+	err = pool.WithConn(ctx, func(conn *pgx.Conn) error {
 		b := must.NotFail(wirebson.MustDocument(
 			"delete", testutil.CollectionName(t),
 			"deletes", wirebson.MustArray(wirebson.MustDocument(
@@ -156,7 +156,7 @@ func TestSeqNoSeq(t *testing.T) {
 	collName := testutil.CollectionName(t)
 
 	defer func() {
-		_ = pool.WithConn(func(conn *pgx.Conn) error {
+		_ = pool.WithConn(ctx, func(conn *pgx.Conn) error {
 			var drop bool
 			drop, err = documentdb_api.DropCollection(ctx, conn, l, dbName, collName, nil, nil, false)
 			require.NoError(t, err)
@@ -171,7 +171,7 @@ func TestSeqNoSeq(t *testing.T) {
 	var res *wirebson.Document
 
 	// insert document using sequence from [wire.OpMsg.Sections]
-	err = pool.WithConn(func(conn *pgx.Conn) error {
+	err = pool.WithConn(ctx, func(conn *pgx.Conn) error {
 		b := must.NotFail(wirebson.MustDocument(
 			"insert", collName,
 		).Encode())
@@ -193,7 +193,7 @@ func TestSeqNoSeq(t *testing.T) {
 	wiretest.AssertEqual(t, wirebson.MustDocument("n", int32(2), "ok", float64(1)), res)
 
 	// insert document using single document from, for example, Data API
-	err = pool.WithConn(func(conn *pgx.Conn) error {
+	err = pool.WithConn(ctx, func(conn *pgx.Conn) error {
 		b := must.NotFail(wirebson.MustDocument(
 			"insert", collName,
 			"documents", wirebson.MustArray(
