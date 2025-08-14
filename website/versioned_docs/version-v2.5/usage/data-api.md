@@ -20,7 +20,7 @@ Make sure to provide your authentication credential in the request headers or as
 ## Using the Data API
 
 The Data API supports standard MongoDB operations like `insert`, `find`, `update`, and `delete`.
-It follows the [Data API OpenAPI 3.0 specification defined here](https://github.com/FerretDB/FerretDB/blob/refs/tags/v2.3.1/internal/dataapi/api/openapi.json).
+It follows the [Data API OpenAPI 3.0 specification defined here](https://github.com/FerretDB/FerretDB/blob/refs/tags/v2.5.0/internal/dataapi/api/openapi.json).
 
 ### Insert a document
 
@@ -99,7 +99,7 @@ Below is an example using Postman.
 Import the FerretDB Data API specification into Postman using the following URL:
 
 ```text
-https://raw.githubusercontent.com/FerretDB/FerretDB/refs/tags/v2.3.1/internal/dataapi/api/openapi.json
+https://raw.githubusercontent.com/FerretDB/FerretDB/refs/tags/v2.5.0/internal/dataapi/api/openapi.json
 ```
 
 This will load available endpoints into Postman, as shown below:
