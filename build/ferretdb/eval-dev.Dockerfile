@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # prepare stage
 
-FROM --platform=$BUILDPLATFORM golang:1.24.6 AS eval-dev-prepare
+FROM --platform=$BUILDPLATFORM golang:1.25.0 AS eval-dev-prepare
 
 # use a single directory for all Go caches to simplify RUN --mount commands below
 ENV GOPATH=/cache/gopath
@@ -36,7 +36,7 @@ EOF
 
 # build stage
 
-FROM golang:1.24.6 AS eval-dev-build
+FROM golang:1.25.0 AS eval-dev-build
 
 ARG TARGETARCH
 
