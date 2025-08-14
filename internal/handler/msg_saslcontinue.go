@@ -32,12 +32,9 @@ import (
 // msgSASLContinue implements `saslContinue` command.
 //
 // The passed context is canceled when the client connection is closed.
+// The command saslContinue does not create or update session.
 func (h *Handler) msgSASLContinue(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	doc := req.Document()
-
-	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
-		return nil, err
-	}
 
 	res, err := h.saslContinue(connCtx, doc)
 	if err != nil {
