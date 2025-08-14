@@ -26,11 +26,11 @@ const (
 
 // DocumentDBSafeToUpdate represents versions of DocumentDB that FerretDB can update.
 var DocumentDBSafeToUpdate = []string{
-	"0.102.0 gitref: HEAD sha:80462f5 buildId:0",  // v2.1.0
-	"0.103.0 gitref: HEAD sha:7514232 buildId:0",  // v2.2.0
-	"0.104.0 gitref: HEAD sha:2045d0e buildId:0",  // v2.3.0, v2.3.1
-	"0.105.0 gitref: HEAD sha:8453d93b buildId:0", // v2.4.0
-	// "0.106.0 gitref: HEAD sha:beb9d25d98 buildId:0", // v2.5.0
+	"0.102.0 gitref: HEAD sha:80462f5 buildId:0",    // v2.1.0
+	"0.103.0 gitref: HEAD sha:7514232 buildId:0",    // v2.2.0
+	"0.104.0 gitref: HEAD sha:2045d0e buildId:0",    // v2.3.0, v2.3.1
+	"0.105.0 gitref: HEAD sha:8453d93b buildId:0",   // v2.4.0
+	"0.106.0 gitref: HEAD sha:beb9d25d98 buildId:0", // v2.5.0
 }
 
 // PostgreSQLTest is a version of PostgreSQL used by tests.
