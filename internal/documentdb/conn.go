@@ -27,13 +27,15 @@ import (
 type Conn struct {
 	conn  *pgxpool.Conn
 	token *resource.Token
+	stat  *Stat
 }
 
 // newConn returns [*Conn] for the given [*pgxpool.Conn].
-func newConn(conn *pgxpool.Conn) *Conn {
+func newConn(conn *pgxpool.Conn, stat *Stat) *Conn {
 	res := &Conn{
 		conn:  conn,
 		token: resource.NewToken(),
+		stat:  stat,
 	}
 
 	resource.Track(res, res.token)
@@ -47,6 +49,7 @@ func (conn *Conn) Release() {
 	if conn.conn != nil {
 		conn.conn.Release()
 		conn.conn = nil
+		conn.stat.releasedTotal.Add(1)
 	}
 
 	resource.Untrack(conn, conn.token)
@@ -69,6 +72,7 @@ func (conn *Conn) hijack() *pgx.Conn {
 
 	res := conn.conn.Hijack()
 	conn.conn = nil
+	conn.stat.hijackedTotal.Add(1)
 
 	return res
 }
