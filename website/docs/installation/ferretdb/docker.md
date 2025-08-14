@@ -43,7 +43,7 @@ The following steps describe a quick local setup:
    ```yaml
    services:
      postgres:
-       image: ghcr.io/ferretdb/postgres-documentdb:17-0.107.0-ferretdb-2.6.0
+       image: ghcr.io/ferretdb/postgres-documentdb:17-0.106.0-ferretdb-2.5.0
        restart: on-failure
        environment:
          - POSTGRES_USER=username
