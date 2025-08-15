@@ -17,6 +17,7 @@ package cursor
 
 import (
 	"context"
+	"sync/atomic"
 	"time"
 
 	"github.com/FerretDB/wire/wirebson"
@@ -30,21 +31,24 @@ import (
 type cursor struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
-	created      time.Time
-	token        *resource.Token
-	conn         *pgx.Conn // only if persisted/hijacked
-	continuation wirebson.RawDocument
+	created        time.Time
+	token          *resource.Token
+	conn           *pgx.Conn // only if persisted/hijacked
+	continuation   wirebson.RawDocument
+	persistedTotal *atomic.Int64
 }
 
 // newCursor creates a new cursor for the given continuation and connection (if any).
-func newCursor(continuation wirebson.RawDocument, conn *pgx.Conn) *cursor {
+// It takes counter to track the total number of closed connections.
+func newCursor(continuation wirebson.RawDocument, conn *pgx.Conn, persistedTotal *atomic.Int64) *cursor {
 	must.BeTrue(len(continuation) > 0)
 
 	res := &cursor{
-		continuation: continuation,
-		conn:         conn,
-		token:        resource.NewToken(),
-		created:      time.Now(),
+		continuation:   continuation,
+		conn:           conn,
+		token:          resource.NewToken(),
+		created:        time.Now(),
+		persistedTotal: persistedTotal,
 	}
 
 	resource.Track(res, res.token)
@@ -67,6 +71,7 @@ func (c *cursor) close(ctx context.Context) {
 
 		_ = c.conn.Close(ctx)
 		c.conn = nil
+		c.persistedTotal.Add(1)
 	}
 
 	resource.Untrack(c, c.token)

@@ -18,6 +18,7 @@ import (
 	"context"
 	"log/slog"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/FerretDB/wire/wirebson"
@@ -47,10 +48,13 @@ type Registry struct {
 
 	created  *prometheus.CounterVec
 	duration *prometheus.HistogramVec
+
+	persistedTotal *atomic.Int64
 }
 
 // NewRegistry creates a new cursor registry.
 func NewRegistry(l *slog.Logger) *Registry {
+	var persistedTotal atomic.Int64
 	res := &Registry{
 		cursors: map[int64]*cursor{},
 		l:       l,
@@ -88,6 +92,7 @@ func NewRegistry(l *slog.Logger) *Registry {
 			},
 			[]string{"user", "type"},
 		),
+		persistedTotal: &persistedTotal,
 	}
 
 	// That probably should be the user from the PostgreSQL URI?
@@ -144,6 +149,8 @@ func (r *Registry) NewCursor(id int64, continuation wirebson.RawDocument, conn *
 			)
 
 			_ = conn.Close(context.TODO())
+
+			r.persistedTotal.Add(1)
 		}
 
 		if id != 0 {
@@ -170,7 +177,7 @@ func (r *Registry) NewCursor(id int64, continuation wirebson.RawDocument, conn *
 		slog.Int64("id", id), slog.Any("continuation", cont), slog.Bool("persist", persist),
 	)
 
-	r.cursors[id] = newCursor(continuation, conn)
+	r.cursors[id] = newCursor(continuation, conn, r.persistedTotal)
 
 	t := "normal"
 	if persist {
@@ -275,14 +282,23 @@ func (r *Registry) closeCursor(ctx context.Context, id int64) bool {
 
 // Describe implements [prometheus.Collector].
 func (r *Registry) Describe(ch chan<- *prometheus.Desc) {
-	r.created.Describe(ch)
-	r.duration.Describe(ch)
+	prometheus.DescribeByCollect(r, ch)
 }
 
 // Collect implements [prometheus.Collector].
 func (r *Registry) Collect(ch chan<- prometheus.Metric) {
 	r.created.Collect(ch)
 	r.duration.Collect(ch)
+
+	ch <- prometheus.MustNewConstMetric(
+		prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "persisted_total"),
+			"Unstable: The cumulative count of connections hijacked from the pool and closed.",
+			nil, nil,
+		),
+		prometheus.CounterValue,
+		float64(r.persistedTotal.Load()),
+	)
 }
 
 // check interfaces

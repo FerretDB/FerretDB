@@ -16,7 +16,7 @@ package documentdb
 
 import (
 	"log/slog"
-	"sync/atomic"
+	"sync"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -48,8 +48,9 @@ type Pool struct {
 
 // Stat represents statistics of the snapshot of the connections.
 type Stat struct {
-	hijackedTotal atomic.Uint64
-	releasedTotal atomic.Uint64
+	hijackedTotal int64
+	releasedTotal int64
+	mux           sync.RWMutex
 }
 
 // NewPool creates a new pool of PostgreSQL connections.
@@ -262,6 +263,9 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 		stats.EmptyAcquireWaitTime().Seconds(),
 	)
 
+	p.stat.mux.RLock()
+	defer p.stat.mux.RUnlock()
+
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "hijacked_total"),
@@ -269,7 +273,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 			nil, nil,
 		),
 		prometheus.CounterValue,
-		float64(p.stat.hijackedTotal.Load()),
+		float64(p.stat.hijackedTotal),
 	)
 
 	ch <- prometheus.MustNewConstMetric(
@@ -279,7 +283,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 			nil, nil,
 		),
 		prometheus.CounterValue,
-		float64(p.stat.releasedTotal.Load()),
+		float64(p.stat.releasedTotal),
 	)
 }
 
