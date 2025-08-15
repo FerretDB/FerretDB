@@ -45,8 +45,9 @@ type Registry struct {
 	l     *slog.Logger
 	token *resource.Token
 
-	created  *prometheus.CounterVec
-	duration *prometheus.HistogramVec
+	created   *prometheus.CounterVec
+	duration  *prometheus.HistogramVec
+	persisted *prometheus.CounterVec
 }
 
 // NewRegistry creates a new cursor registry.
@@ -87,6 +88,15 @@ func NewRegistry(l *slog.Logger) *Registry {
 				},
 			},
 			[]string{"user", "type"},
+		),
+		persisted: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace: namespace,
+				Subsystem: subsystem,
+				Name:      "persisted_total",
+				Help:      "The cumulative count of connections hijacked from the pool and closed.",
+			},
+			[]string{},
 		),
 	}
 
@@ -144,6 +154,8 @@ func (r *Registry) NewCursor(id int64, continuation wirebson.RawDocument, conn *
 			)
 
 			_ = conn.Close(context.TODO())
+
+			r.persisted.WithLabelValues().Inc()
 		}
 
 		if id != 0 {
@@ -170,7 +182,7 @@ func (r *Registry) NewCursor(id int64, continuation wirebson.RawDocument, conn *
 		slog.Int64("id", id), slog.Any("continuation", cont), slog.Bool("persist", persist),
 	)
 
-	r.cursors[id] = newCursor(continuation, conn)
+	r.cursors[id] = newCursor(continuation, conn, r.persisted)
 
 	t := "normal"
 	if persist {
@@ -277,12 +289,14 @@ func (r *Registry) closeCursor(ctx context.Context, id int64) bool {
 func (r *Registry) Describe(ch chan<- *prometheus.Desc) {
 	r.created.Describe(ch)
 	r.duration.Describe(ch)
+	r.persisted.Describe(ch)
 }
 
 // Collect implements [prometheus.Collector].
 func (r *Registry) Collect(ch chan<- prometheus.Metric) {
 	r.created.Collect(ch)
 	r.duration.Collect(ch)
+	r.persisted.Collect(ch)
 }
 
 // check interfaces
