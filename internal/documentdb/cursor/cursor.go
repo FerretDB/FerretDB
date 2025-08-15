@@ -39,7 +39,7 @@ type cursor struct {
 }
 
 // newCursor creates a new cursor for the given continuation and connection (if any).
-// It takes counter to track the total number of closed connections.
+// It takes metrics counter to track the total persisted closed connections.
 func newCursor(continuation wirebson.RawDocument, conn *pgx.Conn, persisted *prometheus.CounterVec) *cursor {
 	must.BeTrue(len(continuation) > 0)
 

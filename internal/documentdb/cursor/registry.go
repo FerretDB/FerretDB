@@ -94,7 +94,7 @@ func NewRegistry(l *slog.Logger) *Registry {
 				Namespace: namespace,
 				Subsystem: subsystem,
 				Name:      "persisted_total",
-				Help:      "Unstable: The cumulative count of connections hijacked from the pool and closed.",
+				Help:      "The cumulative count of connections hijacked from the pool and closed.",
 			},
 			[]string{},
 		),

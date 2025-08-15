@@ -27,11 +27,11 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
-// contextKey is a type for keys used in context.Context to avoid collisions.
-type contextKey string
+// contextKey  is a named unexported type for the safe use of [context.WithValue].
+type contextKey struct{}
 
-// startTimeKey is a key used to store the start time of a query.
-var startTimeKey contextKey = "startTime"
+// queryKey is used for setting and getting a value with [context.WithValue].
+var queryKey = contextKey{}
 
 // port tracing, tweak logging
 // See:
@@ -63,9 +63,9 @@ func newTracer(l *slog.Logger) *tracer {
 				Namespace: namespace,
 				Subsystem: subsystem,
 				Name:      "requests_total",
-				Help:      "The cumulative count of queries to PostgreSQL.",
+				Help:      "The cumulative count of the total queries to PostgreSQL.",
 			},
-			[]string{"type"},
+			[]string{},
 		),
 		duration: prometheus.NewHistogramVec(
 			prometheus.HistogramOpts{
@@ -88,7 +88,7 @@ func newTracer(l *slog.Logger) *tracer {
 					(10000 * time.Millisecond).Seconds(),
 				},
 			},
-			[]string{"type"},
+			[]string{},
 		),
 	}
 }
@@ -146,18 +146,18 @@ func (t *tracer) TracePrepareEnd(ctx context.Context, conn *pgx.Conn, data pgx.T
 // It is called at the beginning of [pgx.Conn.Query], [pgx.Conn.QueryRow], and [pgx.Conn.Exec] calls.
 // The returned context is used for the rest of the call and will be passed to [tracer.TraceQueryEnd].
 func (t *tracer) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
-	ctx = context.WithValue(ctx, startTimeKey, time.Now())
+	ctx = context.WithValue(ctx, queryKey, time.Now())
 
-	t.requestsTotal.WithLabelValues("unknown").Inc()
+	t.requestsTotal.WithLabelValues().Inc()
 
 	return t.tl.TraceQueryStart(ctx, conn, data)
 }
 
 // TraceQueryEnd implements [pgx.QueryTracer].
 func (t *tracer) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryEndData) {
-	duration := time.Since(ctx.Value(startTimeKey).(time.Time))
+	duration := time.Since(ctx.Value(queryKey).(time.Time))
 
-	t.duration.WithLabelValues("unknown").Observe(duration.Seconds())
+	t.duration.WithLabelValues().Observe(duration.Seconds())
 
 	t.tl.TraceQueryEnd(ctx, conn, data)
 }
