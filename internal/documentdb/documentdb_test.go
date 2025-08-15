@@ -38,7 +38,7 @@ import (
 func testPool(t testing.TB, ctx context.Context, uri string, sp *state.Provider) (error, error) {
 	t.Helper()
 
-	pool, err := newPgxPool(uri, testutil.Logger(t), sp)
+	pool, err := newPgxPool(uri, testutil.Logger(t), sp, newTracer(testutil.Logger(t)))
 	if err != nil {
 		return err, nil
 	}

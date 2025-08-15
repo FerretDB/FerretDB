@@ -39,11 +39,12 @@ const (
 
 // Pool represent a pool of PostgreSQL connections.
 type Pool struct {
-	p     *pgxpool.Pool
-	r     *cursor.Registry
-	l     *slog.Logger
-	token *resource.Token
-	stat  *Stat
+	p      *pgxpool.Pool
+	r      *cursor.Registry
+	l      *slog.Logger
+	token  *resource.Token
+	stat   *Stat
+	tracer *tracer
 }
 
 // Stat represents statistics of the snapshot of the connections.
@@ -60,17 +61,21 @@ func NewPool(uri string, l *slog.Logger, sp *state.Provider) (*Pool, error) {
 	must.NotBeZero(l)
 	must.NotBeZero(sp)
 
-	p, err := newPgxPool(uri, logging.WithName(l, "pgx"), sp)
+	tl := logging.WithName(l, "pgx")
+	t := newTracer(tl)
+
+	p, err := newPgxPool(uri, tl, sp, t)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	res := &Pool{
-		p:     p,
-		r:     cursor.NewRegistry(logging.WithName(l, "cursors")),
-		l:     l,
-		token: resource.NewToken(),
-		stat:  new(Stat),
+		p:      p,
+		r:      cursor.NewRegistry(logging.WithName(l, "cursors")),
+		l:      l,
+		token:  resource.NewToken(),
+		stat:   new(Stat),
+		tracer: t,
 	}
 	resource.Track(res, res.token)
 
@@ -124,6 +129,7 @@ func (p *Pool) Describe(ch chan<- *prometheus.Desc) {
 // Collect implements [prometheus.Collector].
 func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	p.r.Collect(ch)
+	p.tracer.Collect(ch)
 
 	stats := p.p.Stat()
 

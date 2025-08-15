@@ -17,13 +17,21 @@ package documentdb
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/tracelog"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
+
+// contextKey is a type for keys used in context.Context to avoid collisions.
+type contextKey string
+
+// startTimeKey is a key used to store the start time of a query.
+const startTimeKey contextKey = "startTime"
 
 // port tracing, tweak logging
 // See:
@@ -35,7 +43,9 @@ import (
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/3554
 type tracer struct {
-	tl *tracelog.TraceLog
+	tl            *tracelog.TraceLog
+	requestsTotal *prometheus.CounterVec
+	duration      *prometheus.HistogramVec
 }
 
 func newTracer(l *slog.Logger) *tracer {
@@ -48,6 +58,38 @@ func newTracer(l *slog.Logger) *tracer {
 				TimeKey: slog.TimeKey,
 			},
 		},
+		requestsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace: namespace,
+				Subsystem: subsystem,
+				Name:      "requests_total",
+				Help:      "The cumulative count of queries to PostgreSQL.",
+			},
+			[]string{"type"},
+		),
+		duration: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Namespace: namespace,
+				Subsystem: subsystem,
+				Name:      "responses_duration_seconds",
+				Help:      "The duration took for PostgreSQL query response in seconds.",
+				Buckets: []float64{
+					(1 * time.Millisecond).Seconds(),
+					(5 * time.Millisecond).Seconds(),
+					(10 * time.Millisecond).Seconds(),
+					(25 * time.Millisecond).Seconds(),
+					(50 * time.Millisecond).Seconds(),
+					(100 * time.Millisecond).Seconds(),
+					(250 * time.Millisecond).Seconds(),
+					(500 * time.Millisecond).Seconds(),
+					(1000 * time.Millisecond).Seconds(),
+					(2500 * time.Millisecond).Seconds(),
+					(5000 * time.Millisecond).Seconds(),
+					(10000 * time.Millisecond).Seconds(),
+				},
+			},
+			[]string{"type"},
+		),
 	}
 }
 
@@ -104,12 +146,32 @@ func (t *tracer) TracePrepareEnd(ctx context.Context, conn *pgx.Conn, data pgx.T
 // It is called at the beginning of [pgx.Conn.Query], [pgx.Conn.QueryRow], and [pgx.Conn.Exec] calls.
 // The returned context is used for the rest of the call and will be passed to [tracer.TraceQueryEnd].
 func (t *tracer) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
+	ctx = context.WithValue(ctx, startTimeKey, time.Now())
+
+	t.requestsTotal.WithLabelValues("unknown").Inc()
+
 	return t.tl.TraceQueryStart(ctx, conn, data)
 }
 
 // TraceQueryEnd implements [pgx.QueryTracer].
 func (t *tracer) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryEndData) {
+	duration := time.Since(ctx.Value(startTimeKey).(time.Time))
+
+	t.duration.WithLabelValues("unknown").Observe(duration.Seconds())
+
 	t.tl.TraceQueryEnd(ctx, conn, data)
+}
+
+// Describe implements prometheus.Collector.
+func (t *tracer) Describe(ch chan<- *prometheus.Desc) {
+	t.requestsTotal.Describe(ch)
+	t.duration.Describe(ch)
+}
+
+// Collect implements prometheus.Collector.
+func (t *tracer) Collect(ch chan<- prometheus.Metric) {
+	t.requestsTotal.Collect(ch)
+	t.duration.Collect(ch)
 }
 
 // check interfaces
@@ -119,4 +181,5 @@ var (
 	_ pgx.ConnectTracer     = (*tracer)(nil)
 	_ pgx.PrepareTracer     = (*tracer)(nil)
 	_ pgx.QueryTracer       = (*tracer)(nil)
+	_ prometheus.Collector  = (*tracer)(nil)
 )
