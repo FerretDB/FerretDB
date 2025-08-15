@@ -17,11 +17,11 @@ package cursor
 
 import (
 	"context"
-	"sync/atomic"
 	"time"
 
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgx/v5"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/resource"
@@ -31,24 +31,24 @@ import (
 type cursor struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
-	created        time.Time
-	token          *resource.Token
-	conn           *pgx.Conn // only if persisted/hijacked
-	continuation   wirebson.RawDocument
-	persistedTotal *atomic.Int64
+	created      time.Time
+	token        *resource.Token
+	conn         *pgx.Conn // only if persisted/hijacked
+	continuation wirebson.RawDocument
+	persisted    *prometheus.CounterVec
 }
 
 // newCursor creates a new cursor for the given continuation and connection (if any).
 // It takes counter to track the total number of closed connections.
-func newCursor(continuation wirebson.RawDocument, conn *pgx.Conn, persistedTotal *atomic.Int64) *cursor {
+func newCursor(continuation wirebson.RawDocument, conn *pgx.Conn, persisted *prometheus.CounterVec) *cursor {
 	must.BeTrue(len(continuation) > 0)
 
 	res := &cursor{
-		continuation:   continuation,
-		conn:           conn,
-		token:          resource.NewToken(),
-		created:        time.Now(),
-		persistedTotal: persistedTotal,
+		continuation: continuation,
+		conn:         conn,
+		token:        resource.NewToken(),
+		created:      time.Now(),
+		persisted:    persisted,
 	}
 
 	resource.Track(res, res.token)
@@ -71,7 +71,7 @@ func (c *cursor) close(ctx context.Context) {
 
 		_ = c.conn.Close(ctx)
 		c.conn = nil
-		c.persistedTotal.Add(1)
+		c.persisted.WithLabelValues().Inc()
 	}
 
 	resource.Untrack(c, c.token)
