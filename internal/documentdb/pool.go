@@ -16,7 +16,6 @@ package documentdb
 
 import (
 	"log/slog"
-	"sync"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -43,15 +42,7 @@ type Pool struct {
 	r      *cursor.Registry
 	l      *slog.Logger
 	token  *resource.Token
-	stat   *Stat
 	tracer *tracer
-}
-
-// Stat represents statistics of the snapshot of the connections.
-type Stat struct {
-	hijackedTotal int64
-	releasedTotal int64
-	mux           sync.RWMutex
 }
 
 // NewPool creates a new pool of PostgreSQL connections.
@@ -74,7 +65,6 @@ func NewPool(uri string, l *slog.Logger, sp *state.Provider) (*Pool, error) {
 		r:      cursor.NewRegistry(logging.WithName(l, "cursors")),
 		l:      l,
 		token:  resource.NewToken(),
-		stat:   new(Stat),
 		tracer: t,
 	}
 	resource.Track(res, res.token)
@@ -101,7 +91,7 @@ func (p *Pool) Acquire() (*Conn, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return newConn(conn, p.stat), nil
+	return newConn(conn), nil
 }
 
 // WithConn acquires a connection from the pool and calls the provided function with it.
@@ -267,29 +257,6 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 		),
 		prometheus.CounterValue,
 		stats.EmptyAcquireWaitTime().Seconds(),
-	)
-
-	p.stat.mux.RLock()
-	defer p.stat.mux.RUnlock()
-
-	ch <- prometheus.MustNewConstMetric(
-		prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, subsystem, "hijacked_total"),
-			"Unstable: The cumulative count of hijacked connections from the pool.",
-			nil, nil,
-		),
-		prometheus.CounterValue,
-		float64(p.stat.hijackedTotal),
-	)
-
-	ch <- prometheus.MustNewConstMetric(
-		prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, subsystem, "released_total"),
-			"Unstable: The cumulative count of released connections to the pool.",
-			nil, nil,
-		),
-		prometheus.CounterValue,
-		float64(p.stat.releasedTotal),
 	)
 }
 
