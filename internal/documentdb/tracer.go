@@ -31,7 +31,7 @@ import (
 type contextKey string
 
 // startTimeKey is a key used to store the start time of a query.
-const startTimeKey contextKey = "startTime"
+var startTimeKey contextKey = "startTime"
 
 // port tracing, tweak logging
 // See:
