@@ -19,8 +19,10 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"log/slog"
 	"net"
 	"os"
+	"sync"
 
 	"github.com/FerretDB/wire"
 
@@ -30,6 +32,9 @@ import (
 
 // conn represents a single connection to a wire protocol compatible service.
 type conn struct {
+	l *slog.Logger
+
+	m    sync.Mutex
 	c    net.Conn
 	bufr *bufio.Reader
 	bufw *bufio.Writer
@@ -52,6 +57,11 @@ func newConn(ctx context.Context, opts *NewOpts) (*conn, error) {
 	}
 
 	return &conn{
+		l: opts.L.WithGroup("conn").With(
+			slog.String("local", c.LocalAddr().String()),
+			slog.String("remote", c.RemoteAddr().String()),
+		),
+
 		c:    c,
 		bufw: bufio.NewWriter(c),
 		bufr: bufio.NewReader(c),
@@ -116,6 +126,19 @@ func dialTLS(ctx context.Context, addr, certFile, keyFile, caFile string) (net.C
 
 // handle sends a single request to the proxy.
 func (c *conn) handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	// It is not clear if clients actually send multiple requests in parallel over the same connection.
+	// If they do, we better support that, too.
+	// TODO https://github.com/FerretDB/FerretDB/issues/5049
+	if !c.m.TryLock() {
+		c.l.DebugContext(ctx, "Connection is busy, waiting for lock")
+		c.m.Lock()
+	}
+	defer c.m.Unlock()
+
+	if ctx.Err() != nil {
+		return nil, lazyerrors.Error(ctx.Err())
+	}
+
 	deadline, _ := ctx.Deadline()
 	_ = c.c.SetDeadline(deadline)
 

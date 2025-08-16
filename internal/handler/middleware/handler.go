@@ -20,18 +20,24 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// Handler is a common interface for handlers and middleware.
+// Handler is a common interface for [Middleware], [handler.Handler], and [proxy.Handler].
+//
+// (There is no longer a reason for them to have the same interface:
+// differences between handlers, if any, are abstracted away by the Middleware.
+// But there is also no reason yet for them not to share the interface.)
 type Handler interface {
-	// Run runs the handler until ctx is canceled.
-	// Canceling ctx should stop the processing of request and prevent future calls to Handle.
-	//
+	// Run runs the handler until ctx is canceled and all requests are processed.
 	// When this method returns, the handler is fully stopped.
+	//
+	// It is handler's responsibility to wait for all in-progress requests to be processed,
+	// and to return from the future calls to Handle with an error early.
 	Run(ctx context.Context)
 
 	// Handle processes a single request.
 	//
 	// The passed context is canceled when the client disconnects.
-	// Canceling ctx (or Run's ctx) should stop the processing of the request.
+	// Canceling ctx should stop the processing of the request.
+	// Handle should also exit early when ctx passed to Run is canceled.
 	//
 	// Response is a normal or error response produced by the handler.
 	//

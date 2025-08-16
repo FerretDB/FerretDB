@@ -25,6 +25,7 @@ import (
 	"github.com/pmezard/go-difflib/difflib"
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
@@ -32,7 +33,10 @@ import (
 // Middleware connects listeners and handlers.
 type Middleware struct {
 	opts *NewOpts
-	wg   sync.WaitGroup
+
+	runM   sync.Mutex
+	runCtx context.Context
+	runWG  sync.WaitGroup
 }
 
 // NewOpts represents middleware configuration.
@@ -75,19 +79,33 @@ func New(opts *NewOpts) *Middleware {
 
 // Run implements [middleware.Handler].
 func (m *Middleware) Run(ctx context.Context) {
+	m.runM.Lock()
+	m.runCtx = ctx
+	m.runM.Unlock()
+
 	<-ctx.Done()
-	m.wg.Wait()
+	m.runWG.Wait()
 }
 
 // Handle implements [middleware.Handler].
 // It dispatches the request to one or both handlers based on the mode.
 func (m *Middleware) Handle(ctx context.Context, req *Request) (*Response, error) {
 	if ctx.Err() != nil {
-		return nil, ctx.Err()
+		return nil, lazyerrors.Error(ctx.Err())
 	}
 
-	m.wg.Add(1)
-	defer m.wg.Done()
+	m.runM.Lock()
+
+	if rc := m.runCtx; rc != nil && rc.Err() != nil {
+		m.runM.Unlock()
+		return nil, lazyerrors.Error(rc.Err())
+	}
+
+	// we need to use Add under a lock to avoid a race with Wait in Run
+	m.runWG.Add(1)
+	defer m.runWG.Done()
+
+	m.runM.Unlock()
 
 	opcode := req.WireHeader().OpCode.String()
 	command := req.Document().Command()

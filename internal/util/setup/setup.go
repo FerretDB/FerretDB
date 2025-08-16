@@ -195,7 +195,8 @@ func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 //
 // When this method returns, all components are stopped.
 func (sr *SetupResult) Run(ctx context.Context) {
-	// Handlers should be started first to prevent Handle calls before Run.
+	// Handlers should be started first to prevent commands from clients
+	// reach handlers before they are Run.
 	//
 	// Listeners should be stopped first to allow graceful disconnect.
 	// Listeners' Run methods already implement graceful shutdown;

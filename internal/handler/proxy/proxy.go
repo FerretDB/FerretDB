@@ -28,12 +28,23 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
+// Parts of Prometheus metric names.
+// TODO https://github.com/FerretDB/FerretDB/issues/4965
+const (
+	namespace = "ferretdb_unstable"
+	subsystem = "proxy"
+)
+
 // Handler handles requests by sending them to another wire protocol compatible service.
 type Handler struct {
 	opts *NewOpts
 
-	rw    sync.RWMutex
-	conns map[*conninfo.ConnInfo]*conn
+	connsRW  sync.RWMutex
+	connsGet map[*conninfo.ConnInfo]func() (*conn, error)
+
+	runM   sync.Mutex
+	runCtx context.Context
+	runWG  sync.WaitGroup
 }
 
 // NewOpts represents handler configuration.
@@ -56,62 +67,140 @@ func New(opts *NewOpts) (*Handler, error) {
 	must.NotBeZero(opts.L)
 
 	return &Handler{
-		opts:  opts,
-		conns: make(map[*conninfo.ConnInfo]*conn),
+		opts:     opts,
+		connsGet: make(map[*conninfo.ConnInfo]func() (*conn, error)),
 	}, nil
 }
 
 // Run implements [middleware.Handler].
 func (h *Handler) Run(ctx context.Context) {
-	<-ctx.Done()
+	h.runM.Lock()
+	h.runCtx = ctx
+	h.runM.Unlock()
 
-	// FIXME do we need a lock there?
-	for ci := range h.conns {
-		h.closeConn(ci)
+	<-ctx.Done()
+	h.opts.L.InfoContext(ctx, "Stopping...")
+
+	h.runWG.Wait()
+
+	h.connsRW.Lock()
+
+	for _, cg := range h.connsGet {
+		if c, _ := cg(); c != nil {
+			c.close()
+		}
 	}
+	h.connsGet = nil
+
+	h.connsRW.Unlock()
+
+	h.opts.L.InfoContext(ctx, "Stopped")
 }
 
 // Handle processes a request by sending it to another wire protocol compatible service.
 func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	if ctx.Err() != nil {
+		return nil, lazyerrors.Error(ctx.Err())
+	}
+
+	h.runM.Lock()
+
+	if rc := h.runCtx; rc != nil && rc.Err() != nil {
+		h.runM.Unlock()
+		return nil, lazyerrors.Error(rc.Err())
+	}
+
+	// we need to use Add under a lock to avoid a race with Wait in Run
+	h.runWG.Add(1)
+	defer h.runWG.Done()
+
+	h.runM.Unlock()
+
 	ci := conninfo.Get(ctx)
 
-	h.rw.RLock()
-	c := h.conns[ci]
-	h.rw.RUnlock()
-
-	if c == nil {
-		var err error
-		if c, err = newConn(ctx, h.opts); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		ci.OnClose(h.closeConn)
-
-		h.rw.Lock()
-		h.conns[ci] = c
-		h.rw.Unlock()
+	c, err := h.getConn(ctx, ci)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	return c.handle(ctx, req)
 }
 
-func (h *Handler) closeConn(ci *conninfo.ConnInfo) {
-	h.rw.Lock()
-	defer h.rw.Unlock()
+// getConn returns a proxy connection for the given client connection info,
+// establishing it if necessary, while preserving one-to-one mapping.
+func (h *Handler) getConn(ctx context.Context, ci *conninfo.ConnInfo) (*conn, error) {
+	// fast path
+	h.connsRW.RLock()
+	cg := h.connsGet[ci]
+	h.connsRW.RUnlock()
 
-	c := h.conns[ci]
-	if c != nil {
-		c.close()
-		delete(h.conns, ci)
+	if cg != nil {
+		return cg()
+	}
+
+	// slow path
+
+	h.connsRW.Lock()
+
+	// a concurrent call might have started creating connection already; check again
+	if cg = h.connsGet[ci]; cg != nil {
+		h.connsRW.Unlock()
+		return cg()
+	}
+
+	cg = sync.OnceValues(func() (*conn, error) {
+		c, err := newConn(ctx, h.opts)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		ci.OnClose(h.closeConn)
+
+		return c, nil
+	})
+
+	h.connsGet[ci] = cg
+
+	h.connsRW.Unlock()
+
+	return cg()
+}
+
+// closeConn closes the proxy connection for the given client connection info.
+func (h *Handler) closeConn(ci *conninfo.ConnInfo) {
+	h.connsRW.Lock()
+	defer h.connsRW.Unlock()
+
+	if cg := h.connsGet[ci]; cg != nil {
+		delete(h.connsGet, ci)
+		if c, _ := cg(); c != nil {
+			c.close()
+		}
 	}
 }
 
 // Describe implements [prometheus.Collector].
 func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
+	prometheus.DescribeByCollect(h, ch)
 }
 
 // Collect implements [prometheus.Collector].
 func (h *Handler) Collect(ch chan<- prometheus.Metric) {
+	h.connsRW.RLock()
+	defer h.connsRW.RUnlock()
+
+	// We should have counters for connects/disconnects, not gauge for the current number.
+	// TODO https://github.com/FerretDB/FerretDB/issues/1997
+
+	ch <- prometheus.MustNewConstMetric(
+		prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "conns"),
+			"Unstable: The current number of connections.",
+			nil, nil,
+		),
+		prometheus.GaugeValue,
+		float64(len(h.connsGet)),
+	)
 }
 
 // check interfaces

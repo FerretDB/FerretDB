@@ -39,15 +39,15 @@ import (
 // New creates a new Server.
 func New(l *slog.Logger, handler *middleware.Middleware) *Server {
 	return &Server{
-		l:       l,
-		handler: handler,
+		l: l,
+		m: handler,
 	}
 }
 
 // Server implements services described by OpenAPI description file.
 type Server struct {
-	l       *slog.Logger
-	handler *middleware.Middleware
+	l *slog.Logger
+	m *middleware.Middleware
 }
 
 // AuthMiddleware handles SCRAM authentication based on the username and password specified in request.
@@ -90,7 +90,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			"$db", "admin",
 		))
 
-		resp, err := s.handler.Handle(ctx, msg)
+		resp, err := s.m.Handle(ctx, msg)
 		if err != nil {
 			http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 			return
@@ -117,7 +117,7 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			"$db", "admin",
 		))
 
-		resp, err = s.handler.Handle(ctx, msg)
+		resp, err = s.m.Handle(ctx, msg)
 		if err != nil {
 			http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 			return
