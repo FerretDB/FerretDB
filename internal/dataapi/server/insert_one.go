@@ -62,7 +62,7 @@ func (s *Server) InsertOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := s.handler.Handle(ctx, msg)
+	resp, err := s.m.Handle(ctx, msg)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return

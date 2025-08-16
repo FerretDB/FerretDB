@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package connmetrics
+package clientconn
 
 import (
 	"time"
@@ -27,17 +27,16 @@ const (
 	subsystem = "client"
 )
 
-// ListenerMetrics represents listener metrics.
-type ListenerMetrics struct {
-	Accepts     *prometheus.CounterVec
-	Durations   *prometheus.HistogramVec
-	ConnMetrics *ConnMetrics
+// listenerMetrics represents listener metrics.
+type listenerMetrics struct {
+	accepts   *prometheus.CounterVec
+	durations *prometheus.HistogramVec
 }
 
 // NewListenerMetrics creates new listener metrics.
-func NewListenerMetrics() *ListenerMetrics {
-	lm := &ListenerMetrics{
-		Accepts: prometheus.NewCounterVec(
+func NewListenerMetrics() *listenerMetrics {
+	lm := &listenerMetrics{
+		accepts: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: namespace,
 				Subsystem: subsystem,
@@ -46,7 +45,7 @@ func NewListenerMetrics() *ListenerMetrics {
 			},
 			[]string{"error"},
 		),
-		Durations: prometheus.NewHistogramVec(
+		durations: prometheus.NewHistogramVec(
 			prometheus.HistogramOpts{
 				Namespace: namespace,
 				Subsystem: subsystem,
@@ -65,31 +64,27 @@ func NewListenerMetrics() *ListenerMetrics {
 			},
 			[]string{"error"},
 		),
-
-		ConnMetrics: newConnMetrics(),
 	}
 
-	lm.Accepts.WithLabelValues("0")
-	lm.Durations.WithLabelValues("0")
+	lm.accepts.WithLabelValues("0")
+	lm.durations.WithLabelValues("0")
 
 	return lm
 }
 
 // Describe implements [prometheus.Collector].
-func (lm *ListenerMetrics) Describe(ch chan<- *prometheus.Desc) {
-	lm.Accepts.Describe(ch)
-	lm.Durations.Describe(ch)
-	lm.ConnMetrics.Describe(ch)
+func (lm *listenerMetrics) Describe(ch chan<- *prometheus.Desc) {
+	lm.accepts.Describe(ch)
+	lm.durations.Describe(ch)
 }
 
 // Collect implements [prometheus.Collector].
-func (lm *ListenerMetrics) Collect(ch chan<- prometheus.Metric) {
-	lm.Accepts.Collect(ch)
-	lm.Durations.Collect(ch)
-	lm.ConnMetrics.Collect(ch)
+func (lm *listenerMetrics) Collect(ch chan<- prometheus.Metric) {
+	lm.accepts.Collect(ch)
+	lm.durations.Collect(ch)
 }
 
 // check interfaces
 var (
-	_ prometheus.Collector = (*ListenerMetrics)(nil)
+	_ prometheus.Collector = (*listenerMetrics)(nil)
 )

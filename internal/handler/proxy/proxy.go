@@ -16,151 +16,191 @@
 package proxy
 
 import (
-	"bufio"
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"log/slog"
-	"net"
-	"os"
+	"sync"
 
-	"github.com/FerretDB/wire"
+	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
+// Parts of Prometheus metric names.
+// TODO https://github.com/FerretDB/FerretDB/issues/4965
+const (
+	namespace = "ferretdb_unstable"
+	subsystem = "proxy"
+)
+
 // Handler handles requests by sending them to another wire protocol compatible service.
 type Handler struct {
-	conn net.Conn
-	bufr *bufio.Reader
-	bufw *bufio.Writer
+	opts *NewOpts
+
+	connsRW  sync.RWMutex
+	connsGet map[*conninfo.ConnInfo]func() (*conn, error)
+
+	runM   sync.Mutex
+	runCtx context.Context
+	runWG  sync.WaitGroup
 }
 
 // NewOpts represents handler configuration.
 //
 //nolint:vet // for readability
 type NewOpts struct {
-	Addr     string
-	CertFile string
-	KeyFile  string
-	CAFile   string
+	Addr        string
+	TLSCertFile string
+	TLSKeyFile  string
+	TLSCAFile   string
 
 	L *slog.Logger
 }
 
 // New creates a new Handler for a service with given address.
+// [Handler.Run] must be called on the returned value.
 func New(opts *NewOpts) (*Handler, error) {
 	must.NotBeZero(opts)
-
-	var conn net.Conn
-	var err error
-
-	if opts.CertFile != "" || opts.KeyFile != "" || opts.CAFile != "" {
-		var config *tls.Config
-
-		if config, err = tlsConfig(opts.CertFile, opts.KeyFile, opts.CAFile); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		// TODO https://github.com/FerretDB/FerretDB/issues/5049
-		conn, err = dialTLS(context.TODO(), opts.Addr, config)
-	} else {
-		conn, err = net.Dial("tcp", opts.Addr)
-	}
-
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	must.NotBeZero(opts.Addr)
+	must.NotBeZero(opts.L)
 
 	return &Handler{
-		conn: conn,
-		bufr: bufio.NewReader(conn),
-		bufw: bufio.NewWriter(conn),
+		opts:     opts,
+		connsGet: make(map[*conninfo.ConnInfo]func() (*conn, error)),
 	}, nil
 }
 
-// tlsConfig provides client TLS configuration for the given certificate and key files.
-func tlsConfig(certFile, keyFile, caFile string) (*tls.Config, error) {
-	var config tls.Config
-
-	if certFile != "" || keyFile != "" {
-		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
-		if err != nil {
-			return nil, lazyerrors.Errorf("Failed to load client TLS cert/key for proxy: %w", err)
-		}
-
-		config.Certificates = []tls.Certificate{cert}
-	}
-
-	if caFile != "" {
-		b, err := os.ReadFile(caFile)
-		if err != nil {
-			return nil, lazyerrors.Errorf("Failed to read CA TLS cert for proxy: %w", err)
-		}
-
-		ca := x509.NewCertPool()
-		if ok := ca.AppendCertsFromPEM(b); !ok {
-			return nil, lazyerrors.New("Failed to parse CA TLS cert for proxy")
-		}
-
-		config.RootCAs = ca
-	}
-
-	return &config, nil
-}
-
-// dialTLS connects to the given address using TLS.
-func dialTLS(ctx context.Context, addr string, config *tls.Config) (net.Conn, error) {
-	d := &tls.Dialer{
-		Config: config,
-	}
-
-	conn, err := d.DialContext(ctx, "tcp", addr)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if err = conn.(*tls.Conn).HandshakeContext(ctx); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return conn, nil
-}
-
-// Run runs the handler until ctx is canceled.
-//
-// When this method returns, handler is stopped.
+// Run implements [middleware.Handler].
 func (h *Handler) Run(ctx context.Context) {
+	h.runM.Lock()
+	h.runCtx = ctx
+	h.runM.Unlock()
+
 	<-ctx.Done()
-	_ = h.conn.Close()
+	h.opts.L.InfoContext(ctx, "Stopping...")
+
+	h.runWG.Wait()
+
+	h.connsRW.Lock()
+
+	for _, cg := range h.connsGet {
+		if c, _ := cg(); c != nil {
+			c.close()
+		}
+	}
+	h.connsGet = nil
+
+	h.connsRW.Unlock()
+
+	h.opts.L.InfoContext(ctx, "Stopped")
 }
 
-// Handle processes a request by sending it to another wire protocol compatible service.
+// Handle implements [middleware.Handler] by sending it to another wire protocol compatible service.
 func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	deadline, _ := ctx.Deadline()
-	_ = h.conn.SetDeadline(deadline)
-
-	if err := wire.WriteMessage(h.bufw, req.WireHeader(), req.WireBody()); err != nil {
-		return nil, lazyerrors.Error(err)
+	if ctx.Err() != nil {
+		return nil, lazyerrors.Error(ctx.Err())
 	}
 
-	if err := h.bufw.Flush(); err != nil {
-		return nil, lazyerrors.Error(err)
+	h.runM.Lock()
+
+	if rc := h.runCtx; rc != nil && rc.Err() != nil {
+		h.runM.Unlock()
+		return nil, lazyerrors.Error(rc.Err())
 	}
 
-	header, body, err := wire.ReadMessage(h.bufr)
+	// we need to use Add under a lock to avoid a race with Wait in Run
+	h.runWG.Add(1)
+	h.runM.Unlock()
+
+	defer h.runWG.Done()
+
+	ci := conninfo.Get(ctx)
+
+	c, err := h.getConn(ctx, ci)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	resp, err := middleware.ResponseWire(header, body)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+	return c.handle(ctx, req)
+}
+
+// getConn returns a proxy connection for the given client connection info,
+// establishing it if necessary, while preserving one-to-one mapping.
+func (h *Handler) getConn(ctx context.Context, ci *conninfo.ConnInfo) (*conn, error) {
+	// fast path
+	h.connsRW.RLock()
+	cg := h.connsGet[ci]
+	h.connsRW.RUnlock()
+
+	if cg != nil {
+		return cg()
 	}
 
-	return resp, nil
+	// slow path
+
+	h.connsRW.Lock()
+
+	// a concurrent call might have started creating connection already; check again
+	if cg = h.connsGet[ci]; cg != nil {
+		h.connsRW.Unlock()
+		return cg()
+	}
+
+	cg = sync.OnceValues(func() (*conn, error) {
+		c, err := newConn(ctx, h.opts)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		ci.OnClose(h.closeConn)
+
+		return c, nil
+	})
+
+	h.connsGet[ci] = cg
+
+	h.connsRW.Unlock()
+
+	return cg()
+}
+
+// closeConn closes the proxy connection for the given client connection info.
+func (h *Handler) closeConn(ci *conninfo.ConnInfo) {
+	h.connsRW.Lock()
+	defer h.connsRW.Unlock()
+
+	if cg := h.connsGet[ci]; cg != nil {
+		delete(h.connsGet, ci)
+		if c, _ := cg(); c != nil {
+			c.close()
+		}
+	}
+}
+
+// Describe implements [prometheus.Collector].
+func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
+	prometheus.DescribeByCollect(h, ch)
+}
+
+// Collect implements [prometheus.Collector].
+func (h *Handler) Collect(ch chan<- prometheus.Metric) {
+	h.connsRW.RLock()
+	defer h.connsRW.RUnlock()
+
+	// We should have counters for connects/disconnects, not gauge for the current number.
+	// TODO https://github.com/FerretDB/FerretDB/issues/1997
+
+	ch <- prometheus.MustNewConstMetric(
+		prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "conns"),
+			"Unstable: The current number of connections.",
+			nil, nil,
+		),
+		prometheus.GaugeValue,
+		float64(len(h.connsGet)),
+	)
 }
 
 // check interfaces

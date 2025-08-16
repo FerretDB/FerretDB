@@ -16,6 +16,7 @@ package middleware
 
 import (
 	"fmt"
+	"sync/atomic"
 
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
@@ -23,6 +24,9 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
+
+// lastRequestID stores last generated request ID.
+var lastRequestID atomic.Int32
 
 // Request represents an incoming command from the client.
 //
