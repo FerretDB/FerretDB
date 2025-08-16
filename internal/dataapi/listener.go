@@ -101,10 +101,8 @@ func (lis *Listener) Addr() net.Addr {
 
 // Describe implements [prometheus.Collector].
 func (lis *Listener) Describe(ch chan<- *prometheus.Desc) {
-	// FIXME
 }
 
 // Collect implements [prometheus.Collector].
 func (lis *Listener) Collect(ch chan<- prometheus.Metric) {
-	// FIXME
 }

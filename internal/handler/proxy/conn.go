@@ -31,6 +31,7 @@ import (
 )
 
 // conn represents a single connection to a wire protocol compatible service.
+// It can be used concurrently from multiple goroutines.
 type conn struct {
 	l *slog.Logger
 
@@ -125,12 +126,13 @@ func dialTLS(ctx context.Context, addr, certFile, keyFile, caFile string) (net.C
 }
 
 // handle sends a single request to the proxy.
+// It can be called concurrently from multiple goroutines.
 func (c *conn) handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	// It is not clear if clients actually send multiple requests in parallel over the same connection.
 	// If they do, we better support that, too.
 	// TODO https://github.com/FerretDB/FerretDB/issues/5049
 	if !c.m.TryLock() {
-		c.l.DebugContext(ctx, "Connection is busy, waiting for lock")
+		c.l.WarnContext(ctx, "Connection is busy, waiting for lock")
 		c.m.Lock()
 	}
 	defer c.m.Unlock()

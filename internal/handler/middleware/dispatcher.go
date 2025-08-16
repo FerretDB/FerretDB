@@ -87,7 +87,6 @@ func (d *dispatcher) Handle(ctx context.Context, req *Request) (resp *Response, 
 			d.l.DebugContext(ctx, fmt.Sprintf(">>> %s\n%s", resp.WireHeader(), resp.WireBody().StringIndent()))
 		}
 
-		// FIXME
 		attrs := []slog.Attr{
 			slog.String("command", req.Document().Command()),
 			slog.String("result", string(res)),

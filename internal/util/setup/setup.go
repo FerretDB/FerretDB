@@ -225,6 +225,7 @@ func (sr *SetupResult) Run(ctx context.Context) {
 	<-hDone
 }
 
+// runListeners runs all listeners until ctx is canceled.
 func (sr *SetupResult) runListeners(ctx context.Context) {
 	var wg sync.WaitGroup
 
@@ -249,6 +250,7 @@ func (sr *SetupResult) runListeners(ctx context.Context) {
 	wg.Wait()
 }
 
+// runHandlers runs all handlers until ctx is canceled.
 func (sr *SetupResult) runHandlers(ctx context.Context) {
 	var wg sync.WaitGroup
 

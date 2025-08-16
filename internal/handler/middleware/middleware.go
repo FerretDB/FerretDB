@@ -103,9 +103,9 @@ func (m *Middleware) Handle(ctx context.Context, req *Request) (*Response, error
 
 	// we need to use Add under a lock to avoid a race with Wait in Run
 	m.runWG.Add(1)
-	defer m.runWG.Done()
-
 	m.runM.Unlock()
+
+	defer m.runWG.Done()
 
 	opcode := req.WireHeader().OpCode.String()
 	command := req.Document().Command()
@@ -121,11 +121,6 @@ func (m *Middleware) Handle(ctx context.Context, req *Request) (*Response, error
 	}
 
 	docdb, proxy, docdbErr, proxyErr := m.handle(ctx, req)
-
-	// FIXME should we do it there on in the dispatcher?
-	// labels["argument"] = argument
-	// labels["result"] = string(res)
-	// d.m.responses.With(labels).Inc()
 
 	switch m.opts.Mode {
 	case NormalMode:

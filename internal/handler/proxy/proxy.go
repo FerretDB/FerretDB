@@ -97,7 +97,7 @@ func (h *Handler) Run(ctx context.Context) {
 	h.opts.L.InfoContext(ctx, "Stopped")
 }
 
-// Handle processes a request by sending it to another wire protocol compatible service.
+// Handle implements [middleware.Handler] by sending it to another wire protocol compatible service.
 func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	if ctx.Err() != nil {
 		return nil, lazyerrors.Error(ctx.Err())
@@ -112,9 +112,9 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middlew
 
 	// we need to use Add under a lock to avoid a race with Wait in Run
 	h.runWG.Add(1)
-	defer h.runWG.Done()
-
 	h.runM.Unlock()
+
+	defer h.runWG.Done()
 
 	ci := conninfo.Get(ctx)
 

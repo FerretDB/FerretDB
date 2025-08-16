@@ -113,12 +113,9 @@ func New(opts *NewOpts) (*Handler, error) {
 	return h, nil
 }
 
-// Run runs the handler until ctx is canceled.
+// Run implements [middleware.Handler].
 //
 // When this method returns, handler is stopped and pool is closed.
-//
-// There is no special arrangement for canceling the processing of requests,
-// since the [*middleware.Middleware] already implements it.
 func (h *Handler) Run(ctx context.Context) {
 	h.runM.Lock()
 	h.runCtx = ctx
@@ -157,11 +154,7 @@ func (h *Handler) Run(ctx context.Context) {
 	}
 }
 
-// Handle processes a request.
-// Ctx is canceled when the client disconnects.
-//
-// There is no special arrangement for handling the cancellation of Run's ctx,
-// since the [*middleware.Middleware] already implements it.
+// Handle implements [middleware.Handler].
 func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	if ctx.Err() != nil {
 		return nil, lazyerrors.Error(ctx.Err())
@@ -176,9 +169,9 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middlew
 
 	// we need to use Add under a lock to avoid a race with Wait in Run
 	h.runWG.Add(1)
-	defer h.runWG.Done()
-
 	h.runM.Unlock()
+
+	defer h.runWG.Done()
 
 	switch req.WireBody().(type) {
 	case *wire.OpMsg:
