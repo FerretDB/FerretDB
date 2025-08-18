@@ -21,7 +21,6 @@ import (
 
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgx/v5"
-	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/resource"
@@ -35,12 +34,10 @@ type cursor struct {
 	token        *resource.Token
 	conn         *pgx.Conn // only if persisted/hijacked
 	continuation wirebson.RawDocument
-	persisted    *prometheus.CounterVec
 }
 
 // newCursor creates a new cursor for the given continuation and connection (if any).
-// It takes metrics counter to track the total persisted closed connections.
-func newCursor(continuation wirebson.RawDocument, conn *pgx.Conn, persisted *prometheus.CounterVec) *cursor {
+func newCursor(continuation wirebson.RawDocument, conn *pgx.Conn) *cursor {
 	must.BeTrue(len(continuation) > 0)
 
 	res := &cursor{
@@ -48,7 +45,6 @@ func newCursor(continuation wirebson.RawDocument, conn *pgx.Conn, persisted *pro
 		conn:         conn,
 		token:        resource.NewToken(),
 		created:      time.Now(),
-		persisted:    persisted,
 	}
 
 	resource.Track(res, res.token)
@@ -63,16 +59,20 @@ func newCursor(continuation wirebson.RawDocument, conn *pgx.Conn, persisted *pro
 // The underlying net.Conn.close() will always be called regardless of any other errors.
 //
 // It is safe to call this method multiple times, but not concurrently.
-func (c *cursor) close(ctx context.Context) {
-	if c.conn != nil {
+// It returns false for already closed connection.
+func (c *cursor) close(ctx context.Context) bool {
+	wasOpen := c.conn != nil
+
+	if wasOpen {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, 3*time.Second)
 		defer cancel()
 
 		_ = c.conn.Close(ctx)
 		c.conn = nil
-		c.persisted.WithLabelValues().Inc()
 	}
 
 	resource.Untrack(c, c.token)
+
+	return wasOpen
 }

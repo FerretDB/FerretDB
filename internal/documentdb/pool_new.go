@@ -34,7 +34,7 @@ import (
 // No actual connections are established immediately.
 // State's version fields will be set only after a connection is established
 // by some query or ping.
-func newPgxPool(uri string, l *slog.Logger, sp *state.Provider, tracer pgx.QueryTracer) (*pgxpool.Pool, error) {
+func newPgxPool(uri string, l *slog.Logger, tracer pgx.QueryTracer, sp *state.Provider) (*pgxpool.Pool, error) {
 	must.NotBeZero(sp)
 
 	u, err := url.Parse(uri)

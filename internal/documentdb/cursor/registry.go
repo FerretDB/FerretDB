@@ -94,9 +94,9 @@ func NewRegistry(l *slog.Logger) *Registry {
 				Namespace: namespace,
 				Subsystem: subsystem,
 				Name:      "persisted_total",
-				Help:      "The cumulative count of connections hijacked from the pool and closed.",
+				Help:      "Unstable: The cumulative count of connections persisted from the pool and closed.",
 			},
-			[]string{},
+			[]string{""},
 		),
 	}
 
@@ -182,7 +182,7 @@ func (r *Registry) NewCursor(id int64, continuation wirebson.RawDocument, conn *
 		slog.Int64("id", id), slog.Any("continuation", cont), slog.Bool("persist", persist),
 	)
 
-	r.cursors[id] = newCursor(continuation, conn, r.persisted)
+	r.cursors[id] = newCursor(continuation, conn)
 
 	t := "normal"
 	if persist {
@@ -271,7 +271,11 @@ func (r *Registry) closeCursor(ctx context.Context, id int64) bool {
 		ctx, "Closing and removing cursor",
 		slog.Int64("id", id), slog.Bool("persist", persist), slog.Duration("duration", dur),
 	)
-	c.close(ctx)
+
+	if wasOpen := c.close(ctx); wasOpen {
+		r.persisted.WithLabelValues().Inc()
+	}
+
 	delete(r.cursors, id)
 
 	t := "normal"

@@ -41,8 +41,8 @@ type Pool struct {
 	p      *pgxpool.Pool
 	r      *cursor.Registry
 	l      *slog.Logger
-	token  *resource.Token
 	tracer *tracer
+	token  *resource.Token
 }
 
 // NewPool creates a new pool of PostgreSQL connections.
@@ -55,7 +55,7 @@ func NewPool(uri string, l *slog.Logger, sp *state.Provider) (*Pool, error) {
 	tl := logging.WithName(l, "pgx")
 	t := newTracer(tl)
 
-	p, err := newPgxPool(uri, tl, sp, t)
+	p, err := newPgxPool(uri, tl, t, sp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -64,8 +64,8 @@ func NewPool(uri string, l *slog.Logger, sp *state.Provider) (*Pool, error) {
 		p:      p,
 		r:      cursor.NewRegistry(logging.WithName(l, "cursors")),
 		l:      l,
-		token:  resource.NewToken(),
 		tracer: t,
+		token:  resource.NewToken(),
 	}
 	resource.Track(res, res.token)
 
