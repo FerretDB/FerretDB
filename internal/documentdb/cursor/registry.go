@@ -96,7 +96,7 @@ func NewRegistry(l *slog.Logger) *Registry {
 				Name:      "persisted_total",
 				Help:      "Unstable: The cumulative count of connections persisted from the pool and closed.",
 			},
-			[]string{},
+			[]string{"user"},
 		),
 	}
 
@@ -111,6 +111,9 @@ func NewRegistry(l *slog.Logger) *Registry {
 	res.duration.With(prometheus.Labels{
 		"user": user,
 		"type": "normal",
+	})
+	res.persisted.With(prometheus.Labels{
+		"user": user,
 	})
 
 	resource.Track(res, res.token)
@@ -272,8 +275,10 @@ func (r *Registry) closeCursor(ctx context.Context, id int64) bool {
 		slog.Int64("id", id), slog.Bool("persist", persist), slog.Duration("duration", dur),
 	)
 
+	user := "unknown" // TODO https://github.com/FerretDB/FerretDB/issues/3974
+
 	if wasOpen := c.close(ctx); wasOpen {
-		r.persisted.WithLabelValues().Inc()
+		r.persisted.WithLabelValues(user).Inc()
 	}
 
 	delete(r.cursors, id)
@@ -283,7 +288,6 @@ func (r *Registry) closeCursor(ctx context.Context, id int64) bool {
 		t = "persist"
 	}
 
-	user := "unknown" // TODO https://github.com/FerretDB/FerretDB/issues/3974
 	r.duration.With(prometheus.Labels{"user": user, "type": t}).Observe(dur.Seconds())
 
 	return true
