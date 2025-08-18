@@ -1148,6 +1148,20 @@ func BsonGeonearWithinRange(ctx context.Context, conn *pgx.Conn, l *slog.Logger,
 	return
 }
 
+// BsonIndexTransform is a wrapper for
+//
+//	documentdb_api_internal.bson_index_transform(anonymous bytea, anonymous1 bytea, anonymous12 smallint, anonymous123 internal, OUT bson_index_transform bytea).
+func BsonIndexTransform(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}, anonymous12 struct{}, anonymous123 struct{}) (outBsonIndexTransform struct{}, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_index_transform", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_index_transform FROM documentdb_api_internal.bson_index_transform($1, $2, $3, $4)", anonymous, anonymous1, anonymous12, anonymous123)
+	if err = row.Scan(&outBsonIndexTransform); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_index_transform", l)
+	}
+	return
+}
+
 // BsonIntegralDerivativeFinal is a wrapper for
 //
 //	documentdb_api_internal.bson_integral_derivative_final(anonymous bytea, OUT bson_integral_derivative_final documentdb_core.bson).
@@ -1428,6 +1442,20 @@ func BsonOrderbyCompare(ctx context.Context, conn *pgx.Conn, l *slog.Logger, ano
 	return
 }
 
+// BsonOrderbyCompareSortSupport is a wrapper for
+//
+//	documentdb_api_internal.bson_orderby_compare_sort_support(anonymous internal).
+func BsonOrderbyCompareSortSupport(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_orderby_compare_sort_support", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_internal.bson_orderby_compare_sort_support($1)", anonymous)
+	if err = row.Scan(); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_orderby_compare_sort_support", l)
+	}
+	return
+}
+
 // BsonOrderbyEq is a wrapper for
 //
 //	documentdb_api_internal.bson_orderby_eq(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, OUT bson_orderby_eq boolean).
@@ -1494,6 +1522,20 @@ func BsonOrderbyPartition1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, 
 	row := conn.QueryRow(ctx, "SELECT bson_orderby_partition::bytea FROM documentdb_api_internal.bson_orderby_partition($1::bytea, $2::bytea, $3, $4)", document, filter, istimerangewindow, collationstring)
 	if err = row.Scan(&outBsonOrderbyPartition); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_orderby_partition", l)
+	}
+	return
+}
+
+// BsonOrderbyReverse is a wrapper for
+//
+//	documentdb_api_internal.bson_orderby_reverse(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, OUT bson_orderby_reverse documentdb_core.bson).
+func BsonOrderbyReverse(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonOrderbyReverse wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_orderby_reverse", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_orderby_reverse::bytea FROM documentdb_api_internal.bson_orderby_reverse($1::bytea, $2::bytea)", anonymous, anonymous1)
+	if err = row.Scan(&outBsonOrderbyReverse); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_orderby_reverse", l)
 	}
 	return
 }
