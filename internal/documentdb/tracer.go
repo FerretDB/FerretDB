@@ -43,9 +43,9 @@ var queryKey = contextKey{}
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/3554
 type tracer struct {
-	tl            *tracelog.TraceLog
-	requestsTotal *prometheus.CounterVec
-	duration      *prometheus.HistogramVec
+	tl       *tracelog.TraceLog
+	requests *prometheus.CounterVec
+	duration *prometheus.HistogramVec
 }
 
 func newTracer(l *slog.Logger) *tracer {
@@ -58,7 +58,7 @@ func newTracer(l *slog.Logger) *tracer {
 				TimeKey: slog.TimeKey,
 			},
 		},
-		requestsTotal: prometheus.NewCounterVec(
+		requests: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: namespace,
 				Subsystem: subsystem,
@@ -148,7 +148,7 @@ func (t *tracer) TracePrepareEnd(ctx context.Context, conn *pgx.Conn, data pgx.T
 func (t *tracer) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
 	ctx = context.WithValue(ctx, queryKey, time.Now())
 
-	t.requestsTotal.WithLabelValues().Inc()
+	t.requests.WithLabelValues().Inc()
 
 	return t.tl.TraceQueryStart(ctx, conn, data)
 }
@@ -164,13 +164,13 @@ func (t *tracer) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, data pgx.Tra
 
 // Describe implements prometheus.Collector.
 func (t *tracer) Describe(ch chan<- *prometheus.Desc) {
-	t.requestsTotal.Describe(ch)
+	t.requests.Describe(ch)
 	t.duration.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
 func (t *tracer) Collect(ch chan<- prometheus.Metric) {
-	t.requestsTotal.Collect(ch)
+	t.requests.Collect(ch)
 	t.duration.Collect(ch)
 }
 
