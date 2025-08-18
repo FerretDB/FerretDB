@@ -96,7 +96,7 @@ func NewRegistry(l *slog.Logger) *Registry {
 				Name:      "persisted_total",
 				Help:      "Unstable: The cumulative count of connections persisted from the pool and closed.",
 			},
-			[]string{""},
+			[]string{},
 		),
 	}
 
