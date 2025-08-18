@@ -158,7 +158,8 @@ func (r *Registry) NewCursor(id int64, continuation wirebson.RawDocument, conn *
 
 			_ = conn.Close(context.TODO())
 
-			r.persisted.WithLabelValues().Inc()
+			user := "unknown" // TODO https://github.com/FerretDB/FerretDB/issues/3974
+			r.persisted.WithLabelValues(user).Inc()
 		}
 
 		if id != 0 {
