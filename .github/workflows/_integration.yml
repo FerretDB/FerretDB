@@ -79,11 +79,11 @@ jobs:
 
       - name: Setup Ollama and MCPHost
         run: |
-          mkdir -p /tmp/logs
+          mkdir -p tmp/logs
           curl -fsSL https://ollama.com/install.sh | sh
           sudo systemctl stop ollama
-          bin/task ollama  > /tmp/logs/ollama.log  2>&1 &
-          bin/task mcphost > /tmp/logs/mcphost.log 2>&1 &
+          bin/task ollama  > tmp/logs/ollama.log  2>&1 &
+          bin/task mcphost > tmp/logs/mcphost.log 2>&1 &
 
       - name: Wait for and setup environment
         run: bin/task env-setup
@@ -103,12 +103,12 @@ jobs:
       - name: Collect logs
         if: failure()
         run: |
-          bin/task env-logs-collect > /tmp/logs/compose-logs.txt
-          cp -v integration/*.json.tmp integration/*.txt.tmp /tmp/logs/
+          bin/task env-logs-collect
+          cp -v integration/*.json.tmp integration/*.txt.tmp tmp/logs/
 
       - name: Compress logs before upload
         if: failure()
-        run: zip -r -q -9 logs.zip /tmp/logs
+        run: zip -r -q -9 logs.zip tmp/logs
 
       - name: Upload logs
         if: failure()
