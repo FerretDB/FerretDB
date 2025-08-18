@@ -31,9 +31,10 @@ import (
 // from [wirebson.AnyDocument] (for the DocumentDB handler),
 // or from [*mongoerrors.Error] (for both).
 type Response struct {
-	header *wire.MsgHeader
-	body   wire.MsgBody
-	doc    *wirebson.Document
+	header     *wire.MsgHeader
+	body       wire.MsgBody
+	doc        *wirebson.Document // only section 0 for OpMsg
+	mongoError *mongoerrors.Error
 }
 
 // ResponseWire creates a new response from the given wire protocol header and body.
@@ -146,7 +147,10 @@ func ResponseErr(req *Request, err *mongoerrors.Error) *Response {
 	must.NotBeZero(req)
 	must.NotBeZero(err)
 
-	return must.NotFail(ResponseDoc(req, err.Doc()))
+	resp := must.NotFail(ResponseDoc(req, err.Doc()))
+	resp.mongoError = err
+
+	return resp
 }
 
 // WireHeader returns the response header for the wire protocol.
@@ -159,7 +163,8 @@ func (resp *Response) WireBody() wire.MsgBody {
 	return resp.body
 }
 
-// DocumentRaw returns the raw response document.
+// DocumentRaw returns the raw response document
+// (only section 0 for OpMsg).
 func (resp *Response) DocumentRaw() wirebson.RawDocument {
 	switch body := resp.body.(type) {
 	case *wire.OpMsg:
@@ -171,12 +176,14 @@ func (resp *Response) DocumentRaw() wirebson.RawDocument {
 	}
 }
 
-// Document returns the response document.
+// Document returns the response document
+// (only section 0 for OpMsg).
 func (resp *Response) Document() *wirebson.Document {
 	return resp.doc
 }
 
-// DocumentDeep returns the deeply decoded response document.
+// DocumentDeep returns the deeply decoded response document
+// (only section 0 for OpMsg).
 // Callers should use it instead of `resp.DocumentRaw().DecodeDeep()`.
 func (resp *Response) DocumentDeep() (*wirebson.Document, error) {
 	// we might want to cache it in the future if there are many callers
@@ -195,4 +202,9 @@ func (resp *Response) OK() bool {
 	default:
 		return false
 	}
+}
+
+// MongoError returns [*mongoerrors.Error], if the response was created with [ResponseErr].
+func (resp *Response) MongoError() *mongoerrors.Error {
+	return resp.mongoError
 }

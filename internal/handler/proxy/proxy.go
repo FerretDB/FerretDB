@@ -162,8 +162,3 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middlew
 
 	return resp, nil
 }
-
-// check interfaces
-var (
-	_ middleware.Handler = (*Handler)(nil)
-)
