@@ -27,7 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
-// contextKey  is a named unexported type for the safe use of [context.WithValue].
+// contextKey is a named unexported type for the safe use of [context.WithValue].
 type contextKey struct{}
 
 // queryKey is used for setting and getting a value with [context.WithValue].
@@ -72,7 +72,7 @@ func newTracer(l *slog.Logger) *tracer {
 				Namespace: namespace,
 				Subsystem: subsystem,
 				Name:      "responses_duration_seconds",
-				Help:      "The duration took for PostgreSQL query response in seconds.",
+				Help:      "The duration taken for PostgreSQL query response in seconds.",
 				Buckets: []float64{
 					(1 * time.Millisecond).Seconds(),
 					(5 * time.Millisecond).Seconds(),
