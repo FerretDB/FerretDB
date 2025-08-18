@@ -42,6 +42,6 @@ func init() {
 		arch = "aarch64-unknown-linux-gnu"
 	}
 
-	PostgreSQLTest = "PostgreSQL 17.5 (Debian 17.5-1.pgdg120+1) on " + arch + ", " +
-		"compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit"
+	PostgreSQLTest = "PostgreSQL 17.6 (Debian 17.6-1.pgdg12+1) on " + arch + ", " +
+		"compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit"
 }
