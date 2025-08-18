@@ -130,18 +130,18 @@ func (c *conn) run(ctx context.Context) (err error) {
 		cancel(lazyerrors.Errorf("run exits: %w", err))
 	}()
 
-	connInfo := conninfo.New()
+	ci := conninfo.New()
 
-	defer connInfo.Close()
+	defer ci.Close()
 
 	if c.netConn.RemoteAddr().Network() != "unix" {
-		connInfo.Peer, err = netip.ParseAddrPort(c.netConn.RemoteAddr().String())
+		ci.Peer, err = netip.ParseAddrPort(c.netConn.RemoteAddr().String())
 		if err != nil {
 			return
 		}
 	}
 
-	ctx = conninfo.Ctx(ctx, connInfo)
+	ctx = conninfo.Ctx(ctx, ci)
 
 	// That's not the best – it makes proxy handler very different from the main handler.
 	// Instead, proxy handler should map connections based on connInfo.
