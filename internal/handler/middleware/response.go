@@ -89,7 +89,7 @@ func ResponseDoc(req *Request, doc wirebson.AnyDocument) (*Response, error) {
 	resp := &Response{
 		header: &wire.MsgHeader{
 			RequestID:  lastRequestID.Add(1),
-			ResponseTo: req.header.ResponseTo,
+			ResponseTo: req.header.RequestID,
 		},
 	}
 
@@ -190,11 +190,15 @@ func (resp *Response) DocumentDeep() (*wirebson.Document, error) {
 	return resp.DocumentRaw().DecodeDeep()
 }
 
-// OK returns true if the response document contains the "ok" field with numeric value 1.
+// OK returns true if the response document contains the "ok" field with numeric value 1
+// (and, temporarily, boolean value true).
 func (resp *Response) OK() bool {
 	switch v := resp.doc.Get("ok").(type) {
 	case float64:
 		return v == float64(1)
+	case bool:
+		// TODO https://github.com/microsoft/documentdb/issues/49
+		return v
 	case int32:
 		return v == int32(1)
 	case int64:

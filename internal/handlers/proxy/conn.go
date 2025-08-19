@@ -59,7 +59,7 @@ func newConn(ctx context.Context, opts *NewOpts) (*conn, error) {
 	}
 
 	return &conn{
-		l: opts.L.WithGroup("conn").With(
+		l: opts.L.With(
 			slog.String("local", c.LocalAddr().String()),
 			slog.String("remote", c.RemoteAddr().String()),
 		),
