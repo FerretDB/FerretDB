@@ -151,7 +151,7 @@ func (m *Middleware) Handle(ctx context.Context, req *Request) (resp *Response) 
 }
 
 // dispatch sends the request to both handlers.
-// It returns nil if unrecoverable error occurred.
+// It returns nil for the given handler if it is not enabled, or if unrecoverable error occurs in it.
 func (m *Middleware) dispatch(ctx context.Context, req *Request) (docdb, proxy *Response) {
 	var wg sync.WaitGroup
 

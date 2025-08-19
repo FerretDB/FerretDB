@@ -27,6 +27,7 @@ import (
 	oteltrace "go.opentelemetry.io/otel/trace"
 
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
@@ -56,16 +57,10 @@ func (d *dispatcher) Dispatch(ctx context.Context, req *Request) (resp *Response
 			err = errors.New("panic")
 		}
 
-		resp = d.enforceHandlerContract(ctx, req, resp, err)
-		err = nil
+		resp, err = d.enforceContract(ctx, req, resp, err)
 
-		switch resp {
-		case nil: // unrecoverable error occurred
-			if res == "" { // it might be set by panic
-				res = resultError
-			}
-
-		default: // normal or error response
+		switch err {
+		case nil: // normal or error response
 			if d.l.Enabled(ctx, slog.LevelDebug) {
 				d.l.DebugContext(ctx, fmt.Sprintf(">>> %s\n%s", resp.WireHeader(), resp.WireBody().StringIndent()))
 			}
@@ -83,6 +78,11 @@ func (d *dispatcher) Dispatch(ctx context.Context, req *Request) (resp *Response
 			if res == "" {
 				d.l.LogAttrs(ctx, logging.LevelDPanic, "Unexpected result")
 				res = resultUnknown
+			}
+
+		default: // unrecoverable error occurred
+			if res == "" { // it might be set by panic
+				res = resultError
 			}
 		}
 
@@ -114,6 +114,9 @@ func (d *dispatcher) Dispatch(ctx context.Context, req *Request) (resp *Response
 			slog.String("result", string(res)),
 			slog.String("duration", time.Since(start).String()),
 		}
+		if err != nil {
+			attrs = append(attrs, logging.Error(err))
+		}
 
 		var level slog.Level
 
@@ -134,9 +137,8 @@ func (d *dispatcher) Dispatch(ctx context.Context, req *Request) (resp *Response
 	return
 }
 
-// enforceHandlerContract checks that [Handler]'s contract is not broken.
-// It returns nil if unrecoverable error occurred.
-func (d *dispatcher) enforceHandlerContract(ctx context.Context, req *Request, resp *Response, err error) *Response {
+// enforceContract checks that [Handler]'s contract is not broken.
+func (d *dispatcher) enforceContract(ctx context.Context, req *Request, resp *Response, err error) (*Response, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/4965
 	level := logging.LevelDPanic
 
@@ -144,14 +146,14 @@ func (d *dispatcher) enforceHandlerContract(ctx context.Context, req *Request, r
 		msg := fmt.Sprintf("%T broke Handler contract: both are nil", d.h)
 		d.l.LogAttrs(ctx, level, msg)
 
-		return nil
+		return nil, lazyerrors.New(msg)
 	}
 
 	if resp != nil && err != nil {
 		msg := fmt.Sprintf("%T broke Handler contract: both are non-nil", d.h)
 		d.l.LogAttrs(ctx, level, msg, logging.Error(err))
 
-		return nil
+		return nil, lazyerrors.New(msg)
 	}
 
 	var mongoErr *mongoerrors.Error
@@ -159,10 +161,10 @@ func (d *dispatcher) enforceHandlerContract(ctx context.Context, req *Request, r
 		msg := fmt.Sprintf("%T broke Handler contract: %T has %T in its chain", d.h, err, mongoErr)
 		d.l.LogAttrs(ctx, level, msg, logging.Error(err))
 
-		return ResponseErr(req, mongoErr)
+		return ResponseErr(req, mongoErr), nil
 	}
 
-	return resp
+	return resp, err
 }
 
 // endSpan ends the OpenTelemetry span from the context, that is started in [Middleware.dispatch].
