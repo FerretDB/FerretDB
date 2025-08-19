@@ -34,7 +34,7 @@ type Response struct {
 	header     *wire.MsgHeader
 	body       wire.MsgBody
 	doc        *wirebson.Document // only section 0 for OpMsg
-	mongoError *mongoerrors.Error
+	mongoError *mongoerrors.Error // may be nil
 }
 
 // ResponseWire creates a new response from the given wire protocol header and body.
@@ -147,7 +147,14 @@ func ResponseErr(req *Request, err *mongoerrors.Error) *Response {
 	must.NotBeZero(req)
 	must.NotBeZero(err)
 
-	resp := must.NotFail(ResponseDoc(req, err.Doc()))
+	doc := wirebson.MustDocument(
+		"ok", float64(0),
+		"errmsg", err.Message,
+		"code", err.Code,
+		"codeName", err.Name,
+	)
+
+	resp := must.NotFail(ResponseDoc(req, doc))
 	resp.mongoError = err
 
 	return resp
@@ -205,6 +212,32 @@ func (resp *Response) OK() bool {
 		return v == int64(1)
 	default:
 		return false
+	}
+}
+
+// ErrorName returns the error name of the response, if any.
+func (resp *Response) ErrorName() string {
+	if resp.mongoError != nil {
+		return resp.mongoError.Name
+	}
+
+	if resp.OK() {
+		return ""
+	}
+
+	if v := resp.doc.Get("codeName"); v != nil {
+		n, _ := v.(string)
+		return n
+	}
+
+	// legacy reply
+	switch v := resp.doc.Get("code").(type) {
+	case int32:
+		return mongoerrors.Code(v).String()
+	case int64:
+		return mongoerrors.Code(v).String()
+	default:
+		return ""
 	}
 }
 

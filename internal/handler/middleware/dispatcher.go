@@ -70,10 +70,7 @@ func (d *dispatcher) Dispatch(ctx context.Context, req *Request) (resp *Response
 				break
 			}
 
-			codeName, _ := resp.Document().Get("codeName").(string)
-			if codeName != "" {
-				res = result(codeName)
-			}
+			res = result(resp.ErrorName())
 
 			if res == "" {
 				d.l.LogAttrs(ctx, logging.LevelDPanic, "Unexpected result")
