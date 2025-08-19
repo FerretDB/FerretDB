@@ -37,7 +37,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn"
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/debug"
@@ -436,7 +435,7 @@ func run() {
 		}()
 	}
 
-	lm := connmetrics.NewListenerMetrics()
+	mm := middleware.NewMetrics()
 
 	{
 		wg.Add(1)
@@ -453,7 +452,7 @@ func run() {
 				DNT:            os.Getenv("DO_NOT_TRACK"),
 				ExecName:       os.Args[0],
 				P:              stateProvider,
-				ConnMetrics:    lm.ConnMetrics,
+				Metrics:        mm,
 				L:              l,
 				UndecidedDelay: cli.Dev.Telemetry.UndecidedDelay,
 				ReportInterval: cli.Dev.Telemetry.ReportInterval,
@@ -468,29 +467,28 @@ func run() {
 
 	//exhaustruct:enforce
 	res := setup.Setup(ctx, &setup.SetupOpts{
-		Logger: logger,
+		Logger:        logger,
+		StateProvider: stateProvider,
+		Metrics:       mm,
 
-		StateProvider:   stateProvider,
-		ListenerMetrics: lm,
-
-		PostgreSQLURL: cli.PostgreSQLURL,
-
+		PostgreSQLURL:          cli.PostgreSQLURL,
 		Auth:                   cli.Auth,
 		ReplSetName:            cli.Dev.ReplSetName,
 		SessionCleanupInterval: 0,
 
-		TCPAddr:          cli.Listen.Addr,
-		UnixAddr:         cli.Listen.Unix,
-		TLSAddr:          cli.Listen.TLS,
-		TLSCertFile:      cli.Listen.TLSCertFile,
-		TLSKeyFile:       cli.Listen.TLSKeyFile,
-		TLSCAFile:        cli.Listen.TLSCaFile,
-		Mode:             middleware.Mode(cli.Mode),
 		ProxyAddr:        cli.Proxy.Addr,
 		ProxyTLSCertFile: cli.Proxy.TLSCertFile,
 		ProxyTLSKeyFile:  cli.Proxy.TLSKeyFile,
 		ProxyTLSCAFile:   cli.Proxy.TLSCaFile,
-		RecordsDir:       cli.Dev.RecordsDir,
+
+		TCPAddr:        cli.Listen.Addr,
+		UnixAddr:       cli.Listen.Unix,
+		TLSAddr:        cli.Listen.TLS,
+		TLSCertFile:    cli.Listen.TLSCertFile,
+		TLSKeyFile:     cli.Listen.TLSKeyFile,
+		TLSCAFile:      cli.Listen.TLSCaFile,
+		Mode:           middleware.Mode(cli.Mode),
+		TestRecordsDir: cli.Dev.RecordsDir,
 
 		DataAPIAddr: cli.Listen.DataAPIAddr,
 	})
@@ -500,7 +498,7 @@ func run() {
 
 	listener.Store(res.WireListener)
 
-	metricsRegisterer.MustRegister(res.WireListener)
+	metricsRegisterer.MustRegister(res)
 
 	res.Run(ctx)
 
