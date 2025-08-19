@@ -310,8 +310,8 @@ func TestGetMoreCommand(t *testing.T) {
 
 			// Do not run subtests in t.Parallel() to eliminate the occurrence
 			// of session error.
-			// Supporting session would help us understand fix it
-			// https://github.com/FerretDB/FerretDB/issues/153.
+			// Supporting session would help us understand fix it.
+			// TODO https://github.com/FerretDB/FerretDB/issues/153
 			//
 			// > Location50738
 			// > Cannot run getMore on cursor 2053655655200551971,
@@ -568,8 +568,8 @@ func TestGetMoreCommandConnection(t *testing.T) {
 	t.Run("SameClient", func(t *testing.T) {
 		// Do not run subtests in t.Parallel() to eliminate the occurrence
 		// of session error.
-		// Supporting session would help us understand fix it
-		// https://github.com/FerretDB/FerretDB/issues/153.
+		// Supporting session would help us understand fix it.
+		// TODO https://github.com/FerretDB/FerretDB/issues/153
 		//
 		// > Location50738
 		// > Cannot run getMore on cursor 2053655655200551971,

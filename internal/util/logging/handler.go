@@ -177,6 +177,9 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 		case strings.TrimRight(r.Message, ".?!") != r.Message:
 			panic(fmt.Sprintf("message %q ends with punctuation", r.Message))
 		}
+
+		// Check duplicate attributes.
+		// TODO https://github.com/FerretDB/FerretDB/issues/4431
 	}
 
 	h.recentEntries.add(&r)
