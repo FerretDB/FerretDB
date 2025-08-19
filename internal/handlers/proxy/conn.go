@@ -28,6 +28,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
 // conn represents a single connection to a wire protocol compatible service.
@@ -133,7 +134,7 @@ func (c *conn) handle(ctx context.Context, req *middleware.Request) (*middleware
 	// If they do, we better support that, too.
 	// TODO https://github.com/FerretDB/FerretDB/issues/5049
 	if !c.m.TryLock() {
-		c.l.WarnContext(ctx, "Connection is busy, waiting for lock")
+		c.l.Log(ctx, logging.LevelDPanic, "Connection is busy, waiting for lock")
 		c.m.Lock()
 	}
 	defer c.m.Unlock()
