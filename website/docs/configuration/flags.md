@@ -31,7 +31,7 @@ Some default values are overridden in [our Docker image](../installation/ferretd
 | `--postgresql-url-file` | Path to a file containing the PostgreSQL connection URL. If non-empty, this overrides `--postgresql-url`. | `FERRETDB_POSTGRESQL_URL_FILE` |                                      |
 
 FerretDB uses [pgx v5](https://github.com/jackc/pgx) library for connecting to PostgreSQL.
-Supported URL parameters are documented there:
+Supported URL query parameters and default values are documented there:
 
 - https://pkg.go.dev/github.com/jackc/pgx/v5/pgconn#ParseConfig
 - https://pkg.go.dev/github.com/jackc/pgx/v5#ParseConfig
@@ -39,7 +39,8 @@ Supported URL parameters are documented there:
 
 Additionally:
 
-- `pool_max_conns` parameter is set to 50 if it is unset in the URL;
+- `pool_min_conns` is set to 10 if unset (overriding pgx's value of 0);
+- `pool_max_conns` is set to 50 if unset (overriding pgx's value of 4);
 - `application_name` is always set to "FerretDB";
 - `timezone` is always set to "UTC".
 

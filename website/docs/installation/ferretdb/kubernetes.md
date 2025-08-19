@@ -12,7 +12,7 @@ We provide different FerretDB images for various deployments.
 Please see the [Docker installation docs](docker.md) to learn more on the available images.
 
 :::tip
-We strongly recommend specifying the full image tag (e.g., `2.5.0`)
+We strongly recommend specifying the full image tag (e.g., `2.6.0`)
 to ensure consistency across deployments.
 Ensure to [enable telemetry](../../telemetry.md) to receive notifications on the latest versions.
 
@@ -38,7 +38,7 @@ spec:
     spec:
       containers:
         - name: ferretdb
-          image: ghcr.io/ferretdb/ferretdb:2.5.0
+          image: ghcr.io/ferretdb/ferretdb:2.6.0
           ports:
             - containerPort: 27017
           env:

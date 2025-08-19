@@ -35,7 +35,6 @@ import (
 	"time"
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/setup"
@@ -72,7 +71,7 @@ type Config struct {
 
 // FerretDB represents an instance of embedded FerretDB implementation.
 type FerretDB struct {
-	tl  *telemetry.Reporter
+	tr  *telemetry.Reporter
 	res *setup.SetupResult
 }
 
@@ -105,7 +104,7 @@ func New(config *Config) (*FerretDB, error) {
 	}
 	logger := logging.WithName(logging.Logger(logOutput, lOpts, ""), "ferretdb")
 
-	lm := connmetrics.NewListenerMetrics()
+	mm := middleware.NewMetrics()
 
 	tr, err := telemetry.NewReporter(&telemetry.NewReporterOpts{
 		URL:            "https://beacon.ferretdb.com/",
@@ -114,7 +113,7 @@ func New(config *Config) (*FerretDB, error) {
 		DNT:            os.Getenv("DO_NOT_TRACK"),
 		ExecName:       os.Args[0],
 		P:              stateProvider,
-		ConnMetrics:    lm.ConnMetrics,
+		Metrics:        mm,
 		L:              logging.WithName(logger, "telemetry"),
 		UndecidedDelay: time.Hour,
 		ReportInterval: 24 * time.Hour,
@@ -125,29 +124,28 @@ func New(config *Config) (*FerretDB, error) {
 
 	//exhaustruct:enforce
 	res := setup.Setup(context.TODO(), &setup.SetupOpts{
-		Logger: logger,
+		Logger:        logger,
+		StateProvider: stateProvider,
+		Metrics:       mm,
 
-		StateProvider:   stateProvider,
-		ListenerMetrics: lm,
-
-		PostgreSQLURL: config.PostgreSQLURL,
-
+		PostgreSQLURL:          config.PostgreSQLURL,
 		Auth:                   false,
 		ReplSetName:            "",
 		SessionCleanupInterval: 0,
 
-		TCPAddr:          config.ListenAddr,
-		UnixAddr:         "",
-		TLSAddr:          "",
-		TLSCertFile:      "",
-		TLSKeyFile:       "",
-		TLSCAFile:        "",
-		Mode:             middleware.NormalMode,
 		ProxyAddr:        "",
 		ProxyTLSCertFile: "",
 		ProxyTLSKeyFile:  "",
 		ProxyTLSCAFile:   "",
-		RecordsDir:       "",
+
+		TCPAddr:        config.ListenAddr,
+		UnixAddr:       "",
+		TLSAddr:        "",
+		TLSCertFile:    "",
+		TLSKeyFile:     "",
+		TLSCAFile:      "",
+		Mode:           middleware.NormalMode,
+		TestRecordsDir: "",
 
 		DataAPIAddr: "",
 	})
@@ -156,7 +154,7 @@ func New(config *Config) (*FerretDB, error) {
 	}
 
 	return &FerretDB{
-		tl:  tr,
+		tr:  tr,
 		res: res,
 	}, nil
 }
@@ -174,7 +172,7 @@ func (f *FerretDB) Run(ctx context.Context) {
 
 	go func() {
 		defer wg.Done()
-		f.tl.Run(ctx)
+		f.tr.Run(ctx)
 	}()
 
 	wg.Add(1)

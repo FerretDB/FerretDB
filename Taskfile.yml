@@ -115,10 +115,13 @@ tasks:
       - docker compose logs --follow
 
   env-logs-collect:
+    desc: "Collect logs from Docker and save them to tmp/logs"
     cmds:
-      - docker compose ps --all
-      - docker compose logs
-      - docker compose exec yugabytedb sh -c "bin/yugabyted collect_logs --stdout | gunzip | tar -xOf -"
+      - bin/envtool{{exeExt}} shell mkdir tmp/logs
+      - docker compose ps --all > tmp/logs/compose-ps.txt
+      - docker compose logs > tmp/logs/compose-logs.txt
+      - docker compose exec yugabytedb sh -c "bin/yugabyted collect_logs --stdout | gunzip | tar -xf - --one-top-level=/tmp/logs"
+      - docker compose cp yugabytedb:/tmp/logs tmp/logs/yugabytedb
 
   env-up:
     desc: "Start development environment"
@@ -263,7 +266,20 @@ tasks:
 
   test-integration-yugabytedb:
     desc: "Run integration tests for FerretDB with YugabyteDB sequentially"
-    deps: [gen-version, test-integration-build]
+    vars:
+      # DPanic on InternalError stops execution of remaining tests,
+      # ensure to complete all tests by not setting development build tag and without race detector.
+      # TODO https://github.com/FerretDB/FerretDB/issues/5397
+      BUILD_TAGS: ""
+      RACE_FLAG: -race=false
+    deps:
+      - task: gen-version
+        vars:
+          BUILD_TAGS:
+            ref: .BUILD_TAGS
+          RACE_FLAG:
+            ref: .RACE_FLAG
+      - task: test-integration-build
     dir: integration
     cmds:
       - >

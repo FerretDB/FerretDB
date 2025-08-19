@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # prepare stage
 
-FROM --platform=$BUILDPLATFORM golang:1.24.5 AS eval-dev-prepare
+FROM --platform=$BUILDPLATFORM golang:1.24.6 AS eval-dev-prepare
 
 # use a single directory for all Go caches to simplify RUN --mount commands below
 ENV GOPATH=/cache/gopath
@@ -36,7 +36,7 @@ EOF
 
 # build stage
 
-FROM golang:1.24.5 AS eval-dev-build
+FROM golang:1.24.6 AS eval-dev-build
 
 ARG TARGETARCH
 
@@ -97,7 +97,7 @@ EOF
 # final stage
 
 # Use development image and full tag close to the release.
-# FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-0.106.0-ferretdb-2.5.0 AS eval-dev
+# FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-0.106.0-ferretdb-2.6.0 AS eval-dev
 
 # Use moving development image during development.
 FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-ferretdb AS eval-dev
