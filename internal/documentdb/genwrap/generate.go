@@ -43,6 +43,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel"
 	oteltrace "go.opentelemetry.io/otel/trace"
+	otelsemconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 )
@@ -60,7 +61,14 @@ var funcTemplate = template.Must(template.New("func").Parse(`
 //
 //	{{.Comment}}.
 func {{.FuncName}}({{.Params}}) ({{.Returns}}) {
-	ctx, span := otel.Tracer("").Start(ctx, "{{.SQLFuncName}}", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	ctx, span := otel.Tracer("").Start(
+		ctx,
+		"{{.SQLFuncName}}",
+		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
+		oteltrace.WithAttributes(
+			otelsemconv.DBStoredProcedureNameKey.String("{{.SQLFuncName}}"),
+		),
+	)
 	defer span.End()
 
 	row := conn.QueryRow({{.QueryRowArgs}})

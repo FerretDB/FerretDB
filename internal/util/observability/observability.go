@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	otelsdkresource "go.opentelemetry.io/otel/sdk/resource"
 	otelsdktrace "go.opentelemetry.io/otel/sdk/trace"
-	otelsemconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	otelsemconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"

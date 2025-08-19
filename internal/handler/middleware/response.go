@@ -215,7 +215,27 @@ func (resp *Response) OK() bool {
 	}
 }
 
-// ErrorName returns the error name of the response, if any.
+// ErrorCode returns the error code of the response, or [mongoerrors.ErrUnset] (zero).
+func (resp *Response) ErrorCode() mongoerrors.Code {
+	if resp.mongoError != nil {
+		return mongoerrors.Code(resp.mongoError.Code)
+	}
+
+	if resp.OK() {
+		return mongoerrors.ErrUnset
+	}
+
+	switch v := resp.doc.Get("code").(type) {
+	case int32:
+		return mongoerrors.Code(v)
+	case int64:
+		return mongoerrors.Code(v)
+	default:
+		return mongoerrors.ErrUnset
+	}
+}
+
+// ErrorName returns the error name of the response, or an empty string.
 func (resp *Response) ErrorName() string {
 	if resp.mongoError != nil {
 		return resp.mongoError.Name
@@ -230,15 +250,12 @@ func (resp *Response) ErrorName() string {
 		return n
 	}
 
-	// legacy reply
-	switch v := resp.doc.Get("code").(type) {
-	case int32:
-		return mongoerrors.Code(v).String()
-	case int64:
-		return mongoerrors.Code(v).String()
-	default:
-		return ""
+	// legacy replies do not have "codeName" field
+	if c := resp.ErrorCode(); c != mongoerrors.ErrUnset {
+		return c.String()
 	}
+
+	return ""
 }
 
 // MongoError returns [*mongoerrors.Error], if the response was created with [ResponseErr].
