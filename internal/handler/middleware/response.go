@@ -89,11 +89,11 @@ func ResponseDoc(req *Request, doc wirebson.AnyDocument) (*Response, error) {
 	resp := &Response{
 		header: &wire.MsgHeader{
 			RequestID:  lastRequestID.Add(1),
-			ResponseTo: req.header.RequestID,
+			ResponseTo: req.WireHeader().RequestID,
 		},
 	}
 
-	switch req.header.OpCode {
+	switch req.WireHeader().OpCode {
 	case wire.OpCodeMsg:
 		resp.header.OpCode = wire.OpCodeMsg
 
@@ -127,7 +127,7 @@ func ResponseDoc(req *Request, doc wirebson.AnyDocument) (*Response, error) {
 	case wire.OpCodeCompressed:
 		fallthrough
 	default:
-		return nil, lazyerrors.Errorf("unexpected request header %s", req.header)
+		return nil, lazyerrors.Errorf("unexpected request header %s", req.WireHeader())
 	}
 
 	resp.header.MessageLength = int32(wire.MsgHeaderLen + resp.body.Size())

@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	otelattribute "go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
 	oteltrace "go.opentelemetry.io/otel/trace"
 
@@ -173,11 +172,5 @@ func (d *dispatcher) endSpan(ctx context.Context, resp *Response, res result) {
 		span.SetStatus(otelcodes.Error, string(res))
 	}
 
-	if resp != nil {
-		span.SetAttributes(
-			otelattribute.Int("db.ferretdb.response_id", int(resp.header.RequestID)),
-		)
-	}
-
-	span.End()
+	endSpan(ctx, resp)
 }
