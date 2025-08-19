@@ -16,6 +16,7 @@ package middleware
 
 import (
 	"fmt"
+	"sync/atomic"
 
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
@@ -24,17 +25,20 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
+// lastRequestID stores last generated request ID.
+var lastRequestID atomic.Int32
+
 // Request represents an incoming command from the client.
 //
 // It may be constructed from [*wire.MsgHeader]/[wire.MsgBody] (for the wire protocol listener)
 // or from [*wirebson.Document] (for data API and MCP listeners).
 // The other value is extracted/generated and cached during Request creation, because we need both:
-//   - raw documents carried by [wire.MsgBody] are used bu both DocumentDB and proxy handlers;
+//   - raw documents carried by [wire.MsgBody] are used by both DocumentDB and proxy handlers;
 //   - (non-deeply) decoded documents are used by routing, metrics, etc.
 type Request struct {
 	header *wire.MsgHeader
 	body   wire.MsgBody
-	doc    *wirebson.Document
+	doc    *wirebson.Document // only section 0 for OpMsg
 }
 
 // RequestWire creates a new request from the given wire protocol header and body.
@@ -120,7 +124,8 @@ func (req *Request) WireBody() wire.MsgBody {
 	return req.body
 }
 
-// DocumentRaw returns the raw request document.
+// DocumentRaw returns the raw request document
+// (only section 0 for OpMsg).
 func (req *Request) DocumentRaw() wirebson.RawDocument {
 	switch body := req.body.(type) {
 	case *wire.OpMsg:
@@ -132,7 +137,8 @@ func (req *Request) DocumentRaw() wirebson.RawDocument {
 	}
 }
 
-// Document returns the request document.
+// Document returns the request document
+// (only section 0 for OpMsg).
 func (req *Request) Document() *wirebson.Document {
 	return req.doc
 }

@@ -261,7 +261,7 @@ func main() {
 
 	switch cmd {
 	case "setup":
-		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
 
 		err = setup(ctx, logger)

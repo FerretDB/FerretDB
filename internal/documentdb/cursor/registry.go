@@ -30,7 +30,8 @@ import (
 
 // Parts of Prometheus metric names.
 const (
-	namespace = "ferretdb"
+	// TODO https://github.com/FerretDB/FerretDB/issues/5402
+	namespace = "ferretdb_unstable"
 	subsystem = "cursors"
 )
 
@@ -60,16 +61,16 @@ func NewRegistry(l *slog.Logger) *Registry {
 				Namespace: namespace,
 				Subsystem: subsystem,
 				Name:      "created_total",
-				Help:      "Total number of cursors created.",
+				Help:      "Unstable: Total number of cursors created.",
 			},
-			[]string{"type"},
+			[]string{"user", "type"},
 		),
 		duration: prometheus.NewHistogramVec(
 			prometheus.HistogramOpts{
 				Namespace: namespace,
 				Subsystem: subsystem,
 				Name:      "duration_seconds",
-				Help:      "Cursors lifetime in seconds.",
+				Help:      "Unstable: Cursors lifetime in seconds.",
 				Buckets: []float64{
 					(1 * time.Millisecond).Seconds(),
 					(5 * time.Millisecond).Seconds(),
@@ -85,12 +86,22 @@ func NewRegistry(l *slog.Logger) *Registry {
 					(10000 * time.Millisecond).Seconds(),
 				},
 			},
-			[]string{"type"},
+			[]string{"user", "type"},
 		),
 	}
 
-	res.created.WithLabelValues("normal")
-	res.duration.WithLabelValues("normal")
+	// That probably should be the user from the PostgreSQL URI?
+	// TODO https://github.com/FerretDB/FerretDB/issues/3974
+	user := "unknown"
+
+	res.created.With(prometheus.Labels{
+		"user": user,
+		"type": "normal",
+	})
+	res.duration.With(prometheus.Labels{
+		"user": user,
+		"type": "normal",
+	})
 
 	resource.Track(res, res.token)
 
@@ -161,13 +172,13 @@ func (r *Registry) NewCursor(id int64, continuation wirebson.RawDocument, conn *
 
 	r.cursors[id] = newCursor(continuation, conn)
 
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/97
 	t := "normal"
 	if persist {
 		t = "persist"
 	}
 
-	r.created.WithLabelValues(t).Inc()
+	user := "unknown" // TODO https://github.com/FerretDB/FerretDB/issues/3974
+	r.created.With(prometheus.Labels{"user": user, "type": t}).Inc()
 }
 
 // GetCursor returns the continuation and the connection for the given cursor id.
@@ -251,13 +262,13 @@ func (r *Registry) closeCursor(ctx context.Context, id int64) bool {
 	c.close(ctx)
 	delete(r.cursors, id)
 
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/97
 	t := "normal"
 	if persist {
 		t = "persist"
 	}
 
-	r.duration.WithLabelValues(t).Observe(dur.Seconds())
+	user := "unknown" // TODO https://github.com/FerretDB/FerretDB/issues/3974
+	r.duration.With(prometheus.Labels{"user": user, "type": t}).Observe(dur.Seconds())
 
 	return true
 }
