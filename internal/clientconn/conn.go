@@ -78,10 +78,8 @@ func (c *conn) run(ctx context.Context) (err error) {
 	go func() {
 		<-ctx.Done()
 
-		// unblocks ReadMessage in processRequest below; any non-zero past value will do
-		if e := c.netConn.SetDeadline(time.Unix(0, 0)); e != nil {
-			c.l.WarnContext(ctx, fmt.Sprintf("Failed to set deadline: %s", e))
-		}
+		// unblocks ReadMessage in the processRequest below; any non-zero past value will do
+		_ = c.netConn.SetDeadline(time.Unix(0, 0))
 	}()
 
 	bufr := bufio.NewReader(c.netConn)
