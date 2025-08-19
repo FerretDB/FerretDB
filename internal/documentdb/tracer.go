@@ -21,6 +21,10 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/tracelog"
+	"go.opentelemetry.io/otel"
+	otelcodes "go.opentelemetry.io/otel/codes"
+	otelsemconv "go.opentelemetry.io/otel/semconv/v1.34.0"
+	oteltrace "go.opentelemetry.io/otel/trace"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
@@ -104,12 +108,32 @@ func (t *tracer) TracePrepareEnd(ctx context.Context, conn *pgx.Conn, data pgx.T
 // It is called at the beginning of [pgx.Conn.Query], [pgx.Conn.QueryRow], and [pgx.Conn.Exec] calls.
 // The returned context is used for the rest of the call and will be passed to [tracer.TraceQueryEnd].
 func (t *tracer) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
+	ctx, _ = otel.Tracer("").Start(
+		ctx,
+		"Query",
+		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
+		oteltrace.WithAttributes(
+			otelsemconv.DBQueryText(data.SQL),
+		),
+	)
+
 	return t.tl.TraceQueryStart(ctx, conn, data)
 }
 
 // TraceQueryEnd implements [pgx.QueryTracer].
 func (t *tracer) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryEndData) {
 	t.tl.TraceQueryEnd(ctx, conn, data)
+
+	span := oteltrace.SpanFromContext(ctx)
+
+	if data.Err == nil {
+		span.SetStatus(otelcodes.Ok, "")
+	} else {
+		span.SetStatus(otelcodes.Error, "")
+		span.RecordError(data.Err)
+	}
+
+	span.End()
 }
 
 // check interfaces

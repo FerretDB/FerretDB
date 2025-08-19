@@ -19,14 +19,21 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/pmezard/go-difflib/difflib"
 	"github.com/prometheus/client_golang/prometheus"
+	"go.opentelemetry.io/otel"
+	otelattribute "go.opentelemetry.io/otel/attribute"
+	otelsemconv "go.opentelemetry.io/otel/semconv/v1.34.0"
+	oteltrace "go.opentelemetry.io/otel/trace"
 
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
+	"github.com/FerretDB/FerretDB/v2/internal/util/observability"
 )
 
 // Middleware connects listeners and handlers.
@@ -117,9 +124,9 @@ func (m *Middleware) Handle(ctx context.Context, req *Request) (resp *Response) 
 	}
 	m.opts.Metrics.requests.With(labels).Inc()
 
-	ctx = startSpan(ctx, req, m.opts.L)
+	ctx = m.startSpan(ctx, req)
 	defer func() {
-		endSpan(ctx, resp)
+		m.endSpan(ctx, resp)
 	}()
 
 	if m.opts.L.Enabled(ctx, slog.LevelDebug) {
@@ -155,14 +162,12 @@ func (m *Middleware) dispatch(ctx context.Context, req *Request) (docdb, proxy *
 		wg.Add(1)
 
 		go func() {
-			l := m.opts.L.With("handler", "documentdb")
-
-			dCtx := startSpan(ctx, req, l)
+			dCtx, _ := otel.Tracer("").Start(ctx, "Middleware.Handle/documentdb")
 
 			//exhaustruct:enforce
 			d := &dispatcher{
 				h:         m.opts.DocDB,
-				l:         l,
+				l:         m.opts.L.With("handler", "documentdb"),
 				responses: m.opts.Metrics.responses,
 			}
 			docdb = d.Dispatch(dCtx, req)
@@ -175,14 +180,12 @@ func (m *Middleware) dispatch(ctx context.Context, req *Request) (docdb, proxy *
 		wg.Add(1)
 
 		go func() {
-			l := m.opts.L.With("handler", "proxy")
-
-			dCtx := startSpan(ctx, req, l)
+			dCtx, _ := otel.Tracer("").Start(ctx, "Middleware.Handle/proxy")
 
 			//exhaustruct:enforce
 			d := &dispatcher{
 				h:         m.opts.Proxy,
-				l:         l,
+				l:         m.opts.L.With("handler", "proxy"),
 				responses: m.opts.Metrics.responses,
 			}
 			proxy = d.Dispatch(dCtx, req)
@@ -194,6 +197,64 @@ func (m *Middleware) dispatch(ctx context.Context, req *Request) (docdb, proxy *
 	wg.Wait()
 
 	return
+}
+
+// startSpan starts a new OpenTelemetry span for the request and returns the derived context.
+func (m *Middleware) startSpan(ctx context.Context, req *Request) context.Context {
+	comment, _ := req.Document().Get("comment").(string)
+
+	spanCtx, err := observability.SpanContextFromComment(comment)
+	if err != nil {
+		m.opts.L.DebugContext(ctx, "Failed to extract span context from comment", logging.Error(err))
+	}
+
+	if spanCtx.IsValid() {
+		ctx = oteltrace.ContextWithSpanContext(ctx, spanCtx)
+	}
+
+	command := req.Document().Command()
+	database, _ := req.Document().Get("$db").(string)
+
+	var collection string
+	if command != "" {
+		collection, _ = req.Document().Get(command).(string)
+	}
+
+	ctx, _ = otel.Tracer("").Start(
+		ctx,
+		"Middleware.Handle",
+		oteltrace.WithAttributes(
+			otelsemconv.DBOperationName(command),
+			otelsemconv.DBNamespace(database),
+			otelsemconv.DBCollectionName(collection),
+			otelattribute.Int("db.ferretdb.request_id", int(req.WireHeader().RequestID)),
+		),
+	)
+
+	// Created span might be invalid, not sampled, and/or not recording,
+	// if OpenTelemetry wasn't set up (for example, by the user of embeddable package).
+	// We can't check span.SpanContext().IsValid(), span.SpanContext().IsSampled(), and span.IsRecording().
+
+	return ctx
+}
+
+// endSpan ends the OpenTelemetry span from the context.
+func (m *Middleware) endSpan(ctx context.Context, resp *Response) {
+	span := oteltrace.SpanFromContext(ctx)
+
+	if resp != nil {
+		if c := resp.ErrorCode(); c != mongoerrors.ErrUnset {
+			span.SetAttributes(
+				otelsemconv.DBResponseStatusCode(strconv.Itoa(int(c))),
+			)
+		}
+
+		span.SetAttributes(
+			otelattribute.Int("db.ferretdb.response_id", int(resp.WireHeader().RequestID)),
+		)
+	}
+
+	span.End()
 }
 
 // logDiff logs the diff between the DocumentDB and proxy responses.

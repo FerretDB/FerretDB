@@ -25,6 +25,9 @@ import (
 	"sync"
 
 	"github.com/FerretDB/wire"
+	"go.opentelemetry.io/otel"
+	otelcodes "go.opentelemetry.io/otel/codes"
+	oteltrace "go.opentelemetry.io/otel/trace"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
@@ -129,7 +132,24 @@ func dialTLS(ctx context.Context, addr, certFile, keyFile, caFile string) (net.C
 
 // handle sends a single request to the proxy.
 // It can be called concurrently from multiple goroutines.
-func (c *conn) handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
+func (c *conn) handle(ctx context.Context, req *middleware.Request) (resp *middleware.Response, err error) {
+	ctx, span := otel.Tracer("").Start(
+		ctx,
+		"handle",
+		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
+	)
+
+	defer func() {
+		if err == nil {
+			span.SetStatus(otelcodes.Ok, "")
+		} else {
+			span.SetStatus(otelcodes.Error, "")
+			span.RecordError(err)
+		}
+
+		span.End()
+	}()
+
 	// It is not clear if clients actually send multiple requests in parallel over the same connection.
 	// If they do, we better support that, too.
 	// TODO https://github.com/FerretDB/FerretDB/issues/5049
@@ -140,31 +160,36 @@ func (c *conn) handle(ctx context.Context, req *middleware.Request) (*middleware
 	defer c.m.Unlock()
 
 	if ctx.Err() != nil {
-		return nil, lazyerrors.Error(ctx.Err())
+		err = lazyerrors.Error(ctx.Err())
+		return
 	}
 
 	deadline, _ := ctx.Deadline()
 	_ = c.c.SetDeadline(deadline)
 
-	if err := wire.WriteMessage(c.bufw, req.WireHeader(), req.WireBody()); err != nil {
-		return nil, lazyerrors.Error(err)
+	if err = wire.WriteMessage(c.bufw, req.WireHeader(), req.WireBody()); err != nil {
+		err = lazyerrors.Error(ctx.Err())
+		return
 	}
 
-	if err := c.bufw.Flush(); err != nil {
-		return nil, lazyerrors.Error(err)
+	if err = c.bufw.Flush(); err != nil {
+		err = lazyerrors.Error(ctx.Err())
+		return
 	}
 
 	header, body, err := wire.ReadMessage(c.bufr)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		err = lazyerrors.Error(ctx.Err())
+		return
 	}
 
-	resp, err := middleware.ResponseWire(header, body)
+	resp, err = middleware.ResponseWire(header, body)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		err = lazyerrors.Error(ctx.Err())
+		return
 	}
 
-	return resp, nil
+	return
 }
 
 // close closes the connection.
