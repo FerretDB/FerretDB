@@ -111,7 +111,7 @@ func (p *Pool) ListCollections(ctx context.Context, db string, spec wirebson.Raw
 
 	p.checkCursorID(ctx, cursorID, page)
 
-	if persistConn := p.persistConn(persist, cursorID, continuation); persistConn {
+	if shouldPersist := p.shouldPersistConn(persist, cursorID, continuation); shouldPersist {
 		conn = poolConn.hijack()
 	} else {
 		conn = nil
@@ -148,7 +148,7 @@ func (p *Pool) Find(ctx context.Context, db string, spec wirebson.RawDocument) (
 
 	p.checkCursorID(ctx, cursorID, page)
 
-	if persistConn := p.persistConn(persist, cursorID, continuation); persistConn {
+	if shouldPersist := p.shouldPersistConn(persist, cursorID, continuation); shouldPersist {
 		conn = poolConn.hijack()
 	} else {
 		conn = nil
@@ -185,7 +185,7 @@ func (p *Pool) Aggregate(ctx context.Context, db string, spec wirebson.RawDocume
 
 	p.checkCursorID(ctx, cursorID, page)
 
-	if persistConn := p.persistConn(persist, cursorID, continuation); persistConn {
+	if shouldPersist := p.shouldPersistConn(persist, cursorID, continuation); shouldPersist {
 		conn = poolConn.hijack()
 	} else {
 		conn = nil
@@ -223,7 +223,7 @@ func (p *Pool) ListIndexes(ctx context.Context, db string, spec wirebson.RawDocu
 
 	p.checkCursorID(ctx, cursorID, page)
 
-	if persistConn := p.persistConn(persist, cursorID, continuation); persistConn {
+	if shouldPersist := p.shouldPersistConn(persist, cursorID, continuation); shouldPersist {
 		conn = poolConn.hijack()
 	} else {
 		conn = nil
@@ -234,10 +234,11 @@ func (p *Pool) ListIndexes(ctx context.Context, db string, spec wirebson.RawDocu
 	return page, cursorID, nil
 }
 
-// persistConn returns true if the connection should be persisted.
+// shouldPersistConn returns true if the connection should be persisted.
 // The zero cursor ID or empty continuation should not persist the connection.
 // It logs where persist is true but continuation is empty or cursorID is zero.
-func (p *Pool) persistConn(persist bool, cursorID int64, continuation wirebson.RawDocument) bool {
+// TODO https://github.com/FerretDB/FerretDB/issues/5445
+func (p *Pool) shouldPersistConn(persist bool, cursorID int64, continuation wirebson.RawDocument) bool {
 	if !persist {
 		return false
 	}
@@ -264,6 +265,7 @@ func (p *Pool) persistConn(persist bool, cursorID int64, continuation wirebson.R
 }
 
 // checkCursorID checks if the cursor ID matches the one in the page for development builds.
+// TODO https://github.com/FerretDB/FerretDB/issues/5445
 func (p *Pool) checkCursorID(ctx context.Context, cursorID int64, page wirebson.RawDocument) {
 	if devbuild.Enabled {
 		doc := must.NotFail(page.Decode())
