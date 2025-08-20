@@ -124,7 +124,8 @@ func (r *Registry) Close(ctx context.Context) {
 
 // NewCursor stores a cursor with given continuation and connection (if any).
 //
-// The continuation must not be empty.
+// As a special case, if continuation is empty, this method does nothing.
+// That simplifies the typical usage.
 func (r *Registry) NewCursor(id int64, continuation wirebson.RawDocument, conn *pgx.Conn) {
 	// to have better logging for now
 	var cont *wirebson.Document

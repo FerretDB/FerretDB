@@ -106,7 +106,7 @@ func (p *Pool) ListCollections(ctx context.Context, db string, spec wirebson.Raw
 		slog.Bool("persist", persist), slog.Int64("cursor", cursorID),
 	)
 
-	if persist && cursorID != 0 && len(continuation) > 0 {
+	if persistConn := p.persistConn(persist, cursorID, continuation); persistConn {
 		conn = poolConn.hijack()
 	} else {
 		conn = nil
@@ -140,7 +140,7 @@ func (p *Pool) Find(ctx context.Context, db string, spec wirebson.RawDocument) (
 		slog.Bool("persist", persist), slog.Int64("cursor", cursorID),
 	)
 
-	if persist && cursorID != 0 && len(continuation) > 0 {
+	if persistConn := p.persistConn(persist, cursorID, continuation); persistConn {
 		conn = poolConn.hijack()
 	} else {
 		conn = nil
@@ -174,7 +174,7 @@ func (p *Pool) Aggregate(ctx context.Context, db string, spec wirebson.RawDocume
 		slog.Bool("persist", persist), slog.Int64("cursor", cursorID),
 	)
 
-	if persist && cursorID != 0 && len(continuation) > 0 {
+	if persistConn := p.persistConn(persist, cursorID, continuation); persistConn {
 		conn = poolConn.hijack()
 	} else {
 		conn = nil
@@ -210,7 +210,7 @@ func (p *Pool) ListIndexes(ctx context.Context, db string, spec wirebson.RawDocu
 		slog.Bool("persist", persist), slog.Int64("cursor", cursorID),
 	)
 
-	if persist && cursorID != 0 && len(continuation) > 0 {
+	if persistConn := p.persistConn(persist, cursorID, continuation); persistConn {
 		conn = poolConn.hijack()
 	} else {
 		conn = nil
@@ -219,4 +219,27 @@ func (p *Pool) ListIndexes(ctx context.Context, db string, spec wirebson.RawDocu
 	p.r.NewCursor(cursorID, continuation, conn)
 
 	return page, cursorID, nil
+}
+
+// persistConn returns true if the connection should be persisted.
+// The empty continuation or zero cursor ID should not persist the connection.
+// It logs where persist is true but continuation is empty or cursorID is zero.
+func (p *Pool) persistConn(persist bool, cursorID int64, continuation wirebson.RawDocument) bool {
+	if persist {
+		if len(continuation) == 0 {
+			p.l.Debug(
+				"Not persisting connection with empty continuation",
+				slog.Int64("id", cursorID), slog.Any("continuation", continuation), slog.Bool("persist", persist),
+			)
+		}
+
+		if cursorID == 0 {
+			p.l.Debug(
+				"Not persisting connection with zero cursor ID",
+				slog.Int64("id", cursorID), slog.Any("continuation", continuation), slog.Bool("persist", persist),
+			)
+		}
+	}
+
+	return persist && cursorID != 0 && len(continuation) > 0
 }
