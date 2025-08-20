@@ -31,7 +31,7 @@ Ensure that you are logged in to your FerretDB Cloud account.
    - Free Tier: Ideal for developers, students, and small projects getting started with FerretDB.
    - Pro Tier: Designed for professional teams and growing businesses requiring predictable pricing and enterprise-grade features.
    - Enterprise Tier: Ideal for enterprises requiring dedicated support and premium service levels.
-   - Bring Your Own Account - Enterprise Tier: Perfect for large enterprises requiring maximum flexibility and control
+   - Bring Your Own Account - Enterprise Tier: Perfect for large enterprises requiring maximum flexibility and control.
      :::
 
 2. Configure your instance by selecting the cloud provider, region, network type, compute size, among other settings.
