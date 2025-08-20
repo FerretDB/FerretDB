@@ -227,21 +227,27 @@ func (p *Pool) ListIndexes(ctx context.Context, db string, spec wirebson.RawDocu
 // The empty continuation or zero cursor ID should not persist the connection.
 // It logs where persist is true but continuation is empty or cursorID is zero.
 func (p *Pool) persistConn(persist bool, cursorID int64, continuation wirebson.RawDocument) bool {
-	if persist {
-		if len(continuation) == 0 {
-			p.l.Debug(
-				"Not persisting connection with empty continuation",
-				slog.Int64("id", cursorID), slog.Any("continuation", continuation), slog.Bool("persist", persist),
-			)
-		}
-
-		if cursorID == 0 {
-			p.l.Debug(
-				"Not persisting connection with zero cursor ID",
-				slog.Int64("id", cursorID), slog.Any("continuation", continuation), slog.Bool("persist", persist),
-			)
-		}
+	if !persist {
+		return false
 	}
 
-	return persist && cursorID != 0 && len(continuation) > 0
+	if len(continuation) == 0 {
+		p.l.Debug(
+			"Not persisting connection with empty continuation",
+			slog.Int64("id", cursorID), slog.Any("continuation", continuation), slog.Bool("persist", persist),
+		)
+
+		return false
+	}
+
+	if cursorID == 0 {
+		p.l.Debug(
+			"Not persisting connection with zero cursor ID",
+			slog.Int64("id", cursorID), slog.Any("continuation", continuation), slog.Bool("persist", persist),
+		)
+
+		return false
+	}
+
+	return true
 }
