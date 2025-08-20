@@ -26,8 +26,6 @@ import (
 )
 
 func TestSleepParallelWrite(t *testing.T) {
-	t.Parallel()
-
 	ctx, coll := setup.Setup(t)
 	adminDB := coll.Database().Client().Database("admin")
 
@@ -68,8 +66,6 @@ func TestSleepParallelWrite(t *testing.T) {
 }
 
 func TestSleepParallelRead(t *testing.T) {
-	t.Parallel()
-
 	ctx, coll := setup.Setup(t)
 	adminDB := coll.Database().Client().Database("admin")
 
