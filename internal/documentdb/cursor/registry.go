@@ -24,6 +24,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/resource"
 )
@@ -137,7 +138,9 @@ func (r *Registry) NewCursor(id int64, continuation wirebson.RawDocument, conn *
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/5445
 	if len(continuation) == 0 {
-		must.BeZero(conn)
+		if devbuild.Enabled {
+			must.BeZero(conn)
+		}
 
 		if id != 0 {
 			r.l.Debug(
