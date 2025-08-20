@@ -106,7 +106,8 @@ func (p *Pool) ListCollections(ctx context.Context, db string, spec wirebson.Raw
 		slog.Bool("persist", persist), slog.Int64("cursor", cursorID),
 	)
 
-	if persist {
+	// zero indicates drained cursor
+	if persist && cursorID != 0 {
 		conn = poolConn.hijack()
 	} else {
 		conn = nil
@@ -141,7 +142,8 @@ func (p *Pool) Find(ctx context.Context, db string, spec wirebson.RawDocument) (
 		slog.Bool("persist", persist), slog.Int64("cursor", cursorID),
 	)
 
-	if persist {
+	// zero indicates drained cursor
+	if persist && cursorID != 0 {
 		conn = poolConn.hijack()
 	} else {
 		conn = nil
@@ -176,7 +178,8 @@ func (p *Pool) Aggregate(ctx context.Context, db string, spec wirebson.RawDocume
 		slog.Bool("persist", persist), slog.Int64("cursor", cursorID),
 	)
 
-	if persist {
+	// zero indicates drained cursor
+	if persist && cursorID != 0 {
 		conn = poolConn.hijack()
 	} else {
 		conn = nil
@@ -212,7 +215,8 @@ func (p *Pool) ListIndexes(ctx context.Context, db string, spec wirebson.RawDocu
 		slog.Bool("persist", persist), slog.Int64("cursor", cursorID),
 	)
 
-	if persist {
+	// zero indicates drained cursor
+	if persist && cursorID != 0 {
 		conn = poolConn.hijack()
 	} else {
 		conn = nil
