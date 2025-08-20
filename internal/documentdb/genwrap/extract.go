@@ -28,6 +28,7 @@ import (
 // Extract returns routines and parameters for given schemas.
 // Keys are specific routines name (specific_schema.specific_name).
 // Values are sorted by parameter position.
+// USER-DEFINED types are placed by proper type names.
 func Extract(ctx context.Context, uri string, schemas []string) (map[string][]map[string]any, error) {
 	conn, err := pgx.Connect(ctx, uri)
 	if err != nil {
@@ -96,6 +97,19 @@ func Extract(ctx context.Context, uri string, schemas []string) (map[string][]ma
 			name = n
 			params = nil
 		}
+
+		if r["routine_data_type"] == "USER-DEFINED" {
+			r["routine_data_type"] = fmt.Sprintf("%s.%s", r["routine_udt_schema"], r["routine_udt_name"])
+		}
+
+		if r["data_type"] == "USER-DEFINED" {
+			r["data_type"] = fmt.Sprintf("%s.%s", r["udt_schema"], r["udt_name"])
+		}
+
+		delete(r, "routine_udt_schema")
+		delete(r, "routine_udt_name")
+		delete(r, "udt_schema")
+		delete(r, "udt_name")
 
 		params = append(params, r)
 	}

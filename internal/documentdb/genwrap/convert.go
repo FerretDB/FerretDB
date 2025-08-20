@@ -68,7 +68,7 @@ func Convert(routineParams map[string][]map[string]any, l *slog.Logger) map[stri
 			}
 
 			comment = append(comment, c.toParamComment(name, row))
-			dataType := c.dataType(row)
+			dataType := row["data_type"].(string)
 
 			if row["parameter_mode"] == "IN" || row["parameter_mode"] == "INOUT" {
 				placeholder := fmt.Sprintf("$%d", placeholderCounter+1)
@@ -95,7 +95,7 @@ func Convert(routineParams map[string][]map[string]any, l *slog.Logger) map[stri
 			// parameter data type, but it has routine data type for the return variable,
 			// except void data type which does not return anything.
 			goName := "out" + c.pascalCase(c.parameterName(routineName))
-			dataType := c.routineDataType(params[0])
+			dataType := params[0]["routine_data_type"].(string)
 			sqlReturns = append(sqlReturns, c.parameterCast(routineName, dataType))
 			goReturns = append(goReturns, fmt.Sprintf("%s %s", goName, c.parameterType(dataType)))
 			scanArgs = append(scanArgs, fmt.Sprintf("&%s", goName))
@@ -243,31 +243,11 @@ func (c *converter) parameterCast(sqlName string, sqlType string) string {
 	}
 }
 
-// dataType returns SQL datatype of a parameter. If the data type is USER-DEFINED,
-// it returns schema and name concatenated by dot.
-func (c *converter) dataType(row map[string]any) string {
-	if row["data_type"] == "USER-DEFINED" {
-		return row["udt_schema"].(string) + "." + row["udt_name"].(string)
-	}
-
-	return row["data_type"].(string)
-}
-
-// routineDataType returns SQL datatype of a routine. If the data type is USER-DEFINED,
-// it returns schema and name concatenated by dot.
-func (c *converter) routineDataType(row map[string]any) string {
-	if row["routine_data_type"] == "USER-DEFINED" {
-		return row["routine_udt_schema"].(string) + "." + row["routine_udt_name"].(string)
-	}
-
-	return row["routine_data_type"].(string)
-}
-
 // toParamComment returns concatenated string of parameter name, data type
 // and default value to use for the parameter description of a function.
 // If the parameter is not an input, prefix OUT/INOUT is added to the comment.
 func (c *converter) toParamComment(paramName string, row map[string]any) string {
-	comment := paramName + " " + c.dataType(row)
+	comment := paramName + " " + row["data_type"].(string)
 	if row["parameter_mode"] != "IN" {
 		comment = row["parameter_mode"].(string) + " " + comment
 	}
