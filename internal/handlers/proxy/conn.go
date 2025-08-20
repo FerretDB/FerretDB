@@ -27,6 +27,7 @@ import (
 	"github.com/FerretDB/wire"
 	"go.opentelemetry.io/otel"
 	otelcodes "go.opentelemetry.io/otel/codes"
+	otelsemconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 	oteltrace "go.opentelemetry.io/otel/trace"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
@@ -48,9 +49,35 @@ type conn struct {
 
 // newConn creates a new connection.
 // Context cancellation stops dialing, but does not affect established connection.
-func newConn(ctx context.Context, opts *NewOpts) (*conn, error) {
+func newConn(ctx context.Context, opts *NewOpts) (res *conn, err error) {
+	host, port, err := net.SplitHostPort(opts.Addr)
+	if err != nil {
+		err = lazyerrors.Error(err)
+		return
+	}
+
+	ctx, span := otel.Tracer("").Start(
+		ctx,
+		"proxy.newConn",
+		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
+		oteltrace.WithAttributes(
+			otelsemconv.ServerAddress(host),
+			otelsemconv.ServerPort(port),
+		),
+	)
+
+	defer func() {
+		if err == nil {
+			span.SetStatus(otelcodes.Ok, "")
+		} else {
+			span.SetStatus(otelcodes.Error, "")
+			span.RecordError(err)
+		}
+
+		span.End()
+	}()
+
 	var c net.Conn
-	var err error
 
 	if opts.TLSCertFile == "" && opts.TLSKeyFile == "" && opts.TLSCAFile == "" {
 		c, err = dialTCP(ctx, opts.Addr)
@@ -59,10 +86,11 @@ func newConn(ctx context.Context, opts *NewOpts) (*conn, error) {
 	}
 
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		err = lazyerrors.Error(err)
+		return
 	}
 
-	return &conn{
+	res = &conn{
 		l: opts.L.With(
 			slog.String("local", c.LocalAddr().String()),
 			slog.String("remote", c.RemoteAddr().String()),
@@ -71,7 +99,8 @@ func newConn(ctx context.Context, opts *NewOpts) (*conn, error) {
 		c:    c,
 		bufw: bufio.NewWriter(c),
 		bufr: bufio.NewReader(c),
-	}, nil
+	}
+	return
 }
 
 // dialTCP connects to the given address using TCP.
@@ -135,7 +164,7 @@ func dialTLS(ctx context.Context, addr, certFile, keyFile, caFile string) (net.C
 func (c *conn) handle(ctx context.Context, req *middleware.Request) (resp *middleware.Response, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"handle",
+		"proxy.conn.handle",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 	)
 

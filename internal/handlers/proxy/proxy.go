@@ -21,6 +21,9 @@ import (
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"go.opentelemetry.io/otel"
+	otelcodes "go.opentelemetry.io/otel/codes"
+	oteltrace "go.opentelemetry.io/otel/trace"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
@@ -131,6 +134,24 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middlew
 // getConn returns a proxy connection for the given client connection info,
 // establishing it if necessary, while preserving one-to-one mapping.
 func (h *Handler) getConn(ctx context.Context, ci *conninfo.ConnInfo) (*conn, error) {
+	ctx, span := otel.Tracer("").Start(
+		ctx,
+		"proxy.Handler.getConn",
+		// FIXME data from ci
+		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
+	)
+
+	defer func() {
+		if err == nil {
+			span.SetStatus(otelcodes.Ok, "")
+		} else {
+			span.SetStatus(otelcodes.Error, "")
+			span.RecordError(err)
+		}
+
+		span.End()
+	}()
+
 	// fast path
 	h.connsRW.RLock()
 	cg := h.connsGet[ci]
