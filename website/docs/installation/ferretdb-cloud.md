@@ -9,7 +9,7 @@ FerretDB Cloud is a managed service that lets you create, deploy, and manage Fer
 
 ## Create an account
 
-1. Visit [FerretDB Cloud](https://cloud.ferretdb.com/) to create an account.
+1. Visit [FerretDB Cloud](https://cloud.ferretdb.com/signup) to create an account.
 
 2. Fill in the required information, including your name, email address, company name, company URL, and preferred password.
 
