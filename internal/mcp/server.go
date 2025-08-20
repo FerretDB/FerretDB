@@ -16,6 +16,7 @@ package mcp
 
 import (
 	"context"
+	"errors"
 
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -44,12 +45,17 @@ func (srv *server) initTools(s *mcp.Server) {
 	mcp.AddTool(s, listDatabasesTool, srv.listDatabases)
 }
 
-// request sends a request document to the handler and returns decoded response document.
+// request sends a request document to the middleware and returns decoded response document.
 func (srv *server) request(ctx context.Context, reqDoc *wirebson.Document) (*wirebson.Document, error) {
 	req, err := middleware.RequestDoc(reqDoc)
 	if err != nil {
 		return nil, err
 	}
 
-	return srv.m.Handle(ctx, req).Document(), nil
+	resp := srv.m.Handle(ctx, req)
+	if resp == nil {
+		return nil, errors.New("internal error")
+	}
+
+	return resp.DocumentRaw().DecodeDeep()
 }
