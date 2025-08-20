@@ -25,9 +25,10 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// Extract returns rows of routines and parameters for given schemas.
-// Returned routines are sorted by schema name, their name and its parameter position.
-func Extract(ctx context.Context, uri string, schemas []string) ([]map[string]any, error) {
+// Extract returns routines and parameters for given schemas.
+// Keys are specific routines name (specific_schema.specific_name).
+// Values are sorted by parameter position.
+func Extract(ctx context.Context, uri string, schemas []string) (map[string][]map[string]any, error) {
 	conn, err := pgx.Connect(ctx, uri)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -76,5 +77,30 @@ func Extract(ctx context.Context, uri string, schemas []string) ([]map[string]an
 		return nil, lazyerrors.Error(err)
 	}
 
-	return pgx.CollectRows(rows, pgx.RowToMap)
+	rowsMap, err := pgx.CollectRows(rows, pgx.RowToMap)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res := map[string][]map[string]any{}
+	var name string
+	var params []map[string]any
+
+	for _, r := range rowsMap {
+		n := fmt.Sprintf("%s.%s", r["specific_schema"], r["specific_name"])
+		if n != name {
+			if name != "" {
+				res[name] = params
+			}
+
+			name = n
+			params = nil
+		}
+
+		params = append(params, r)
+	}
+
+	res[name] = params
+
+	return res, nil
 }
