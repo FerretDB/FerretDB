@@ -164,7 +164,7 @@ func (m *Middleware) dispatch(ctx context.Context, req *Request) (docdb, proxy *
 			//exhaustruct:enforce
 			d := &dispatcher{
 				h:         m.opts.DocDB,
-				l:         logging.WithName(m.opts.L, "middleware.documentdb"),
+				l:         m.opts.L.With("handler", "documentdb"),
 				responses: m.opts.Metrics.responses,
 			}
 			docdb = d.Dispatch(dCtx, req)
@@ -182,7 +182,7 @@ func (m *Middleware) dispatch(ctx context.Context, req *Request) (docdb, proxy *
 			//exhaustruct:enforce
 			d := &dispatcher{
 				h:         m.opts.Proxy,
-				l:         logging.WithName(m.opts.L, "middleware.proxy"),
+				l:         m.opts.L.With("handler", "proxy"),
 				responses: m.opts.Metrics.responses,
 			}
 			proxy = d.Dispatch(dCtx, req)
