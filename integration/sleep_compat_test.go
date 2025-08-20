@@ -70,8 +70,6 @@ func testSleepCompat(t *testing.T, testCases map[string]sleepCompatTestCase) {
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
 
-			t.Parallel()
-
 			var targetRes, compatRes bson.D
 
 			timeBefore := time.Now()
