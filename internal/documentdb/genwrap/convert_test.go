@@ -15,6 +15,8 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -217,22 +219,22 @@ func TestConvert(t *testing.T) {
 		"documentdb_api": {
 			"binary_extended_version": {
 				FuncName:    "BinaryExtendedVersion",
-				SQLFuncName: "documentdb_api.binary_extended_version",
+				SQLName:     "documentdb_api.binary_extended_version",
 				SQLArgs:     "",
 				SQLReturns:  "binary_extended_version",
 				Comment:     `documentdb_api.binary_extended_version(OUT binary_extended_version text)`,
-				Returns:     "outBinaryExtendedVersion string",
+				FuncReturns: "outBinaryExtendedVersion string",
 				ScanArgs:    "&outBinaryExtendedVersion",
 			},
 			"count_query": {
-				FuncName:    "CountQuery",
-				SQLFuncName: "documentdb_api.count_query",
-				SQLArgs:     "$1, $2::bytea",
-				SQLReturns:  "document::bytea",
+				FuncName:   "CountQuery",
+				SQLName:    "documentdb_api.count_query",
+				SQLArgs:    "$1, $2::bytea",
+				SQLReturns: "document::bytea",
 				Comment: `documentdb_api.count_query(database text, countspec documentdb_core.bson, ` +
 					`OUT document documentdb_core.bson)`,
-				Params:       "database string, countSpec wirebson.RawDocument",
-				Returns:      "outDocument wirebson.RawDocument",
+				FuncParams:   "database string, countSpec wirebson.RawDocument",
+				FuncReturns:  "outDocument wirebson.RawDocument",
 				QueryRowArgs: "database, countSpec",
 				ScanArgs:     "&outDocument",
 			},
@@ -240,27 +242,27 @@ func TestConvert(t *testing.T) {
 		"documentdb_core": {
 			"bsonquery_compare": {
 				FuncName:    "BsonqueryCompare",
-				SQLFuncName: "documentdb_core.bsonquery_compare",
+				SQLName:     "documentdb_core.bsonquery_compare",
 				IsProcedure: false,
 				SQLArgs:     "$1, $2",
 				SQLReturns:  "bsonquery_compare",
 				Comment: `documentdb_core.bsonquery_compare(anonymous documentdb_core.bsonquery, ` +
 					`anonymous1 documentdb_core.bsonquery, OUT bsonquery_compare integer)`,
-				Params:       "anonymous struct{}, anonymous1 struct{}",
-				Returns:      "outBsonqueryCompare int32",
+				FuncParams:   "anonymous struct{}, anonymous1 struct{}",
+				FuncReturns:  "outBsonqueryCompare int32",
 				ScanArgs:     "&outBsonqueryCompare",
 				QueryRowArgs: "anonymous, anonymous1",
 			},
 			"bsonquery_compare1": {
 				FuncName:    "BsonqueryCompare1",
-				SQLFuncName: "documentdb_core.bsonquery_compare",
+				SQLName:     "documentdb_core.bsonquery_compare",
 				IsProcedure: false,
 				SQLArgs:     "$1::bytea, $2",
 				SQLReturns:  "bsonquery_compare",
 				Comment: `documentdb_core.bsonquery_compare(anonymous documentdb_core.bson, ` +
 					`anonymous1 documentdb_core.bsonquery, OUT bsonquery_compare integer)`,
-				Params:       "anonymous wirebson.RawDocument, anonymous1 struct{}",
-				Returns:      "outBsonqueryCompare int32",
+				FuncParams:   "anonymous wirebson.RawDocument, anonymous1 struct{}",
+				FuncReturns:  "outBsonqueryCompare int32",
 				ScanArgs:     "&outBsonqueryCompare",
 				QueryRowArgs: "anonymous, anonymous1",
 			},
@@ -269,4 +271,61 @@ func TestConvert(t *testing.T) {
 
 	res := Convert(rows, l)
 	require.Equal(t, expected, res)
+}
+
+func TestGenerateGoFunction(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]struct { //nolint:vet // use only for testing
+		data templateData
+
+		res string
+	}{
+		"DropIndexes": {
+			data: templateData{
+				FuncName:    "DropIndexes",
+				SQLName:     "documentdb_api.drop_indexes",
+				IsProcedure: true,
+				Comment: `documentdb_api.drop_indexes(p_database_name text, p_arg documentdb_core.bson, ` +
+					`INOUT retval documentdb_core.bson DEFAULT NULL)`,
+				SQLArgs:      "$1, $2::bytea, $3::bytea",
+				SQLReturns:   "retval::bytea",
+				FuncParams:   "databaseName string, arg wirebson.RawDocument, retValue wirebson.RawDocument",
+				FuncReturns:  "outRetValue wirebson.RawDocument",
+				QueryRowArgs: "databaseName, arg, retValue",
+				ScanArgs:     "&outRetValue",
+			},
+			//nolint:lll // generated function is too long
+			res: `
+// DropIndexes is a wrapper for
+//
+//	documentdb_api.drop_indexes(p_database_name text, p_arg documentdb_core.bson, INOUT retval documentdb_core.bson DEFAULT NULL).
+func DropIndexes(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, arg wirebson.RawDocument, retValue wirebson.RawDocument) (outRetValue wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.drop_indexes", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "CALL documentdb_api.drop_indexes($1, $2::bytea, $3::bytea)", databaseName, arg, retValue)
+	if err = row.Scan(&outRetValue); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api.drop_indexes", l)
+	}
+	return
+}
+`,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var b bytes.Buffer
+			w := bufio.NewWriter(&b)
+			err := generateGoFunction(w, &tc.data)
+			require.NoError(t, err)
+
+			err = w.Flush()
+			require.NoError(t, err)
+			require.Equal(t, tc.res, b.String())
+		})
+	}
 }
