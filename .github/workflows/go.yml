@@ -186,6 +186,20 @@ jobs:
           flag-name: unit
           parallel: true
 
+      - name: Convert test results to JUnit XML format
+        if: always()
+        run: >
+          ./bin/go-junit-report
+          -in ./unit.txt
+          -out ./unit.xml
+
+      - name: Upload test results to Codecov
+        if: always()
+        uses: codecov/test-results-action@v1
+        with:
+          flags: unit
+          file: ./unit.xml
+
       # we don't want them on CI
       - name: Clean test and fuzz caches
         if: always()
@@ -213,17 +227,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task: [postgresql]
+        task: [postgresql, yugabytedb]
         shard_index: [1, 2, 3, 4, 5]
         shard_total: [5]
         include:
           - { task: "mongodb", shard_index: 1, shard_total: 1 }
+          - { task: "yugabytedb", skip_flaky_check: true } # Too many failures for now
 
     uses: ./.github/workflows/_integration.yml
     with:
       task: ${{ matrix.task }}
       shard_index: ${{ matrix.shard_index }}
       shard_total: ${{ matrix.shard_total }}
+      skip_flaky_check: ${{ matrix.skip_flaky_check || false }}
 
   integration-no-xfail:
     name: postgresql no-xfail

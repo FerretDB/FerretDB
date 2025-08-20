@@ -23,72 +23,71 @@ import (
 	"net/http"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
-// Handler represents MCP handler.
-type Handler struct {
-	opts    *ListenOpts
-	lis     net.Listener
-	handler http.Handler
+// Listener represents MCP listener.
+type Listener struct {
+	opts *ListenOpts
+	lis  net.Listener
+	h    *ToolHandler
 }
 
 // ListenOpts represents [Listen] options.
 type ListenOpts struct { //nolint:vet // for readability
-	Handler     *handler.Handler
-	ToolHandler *ToolHandler
-	TCPAddr     string
-
-	L *slog.Logger
+	L       *slog.Logger
+	M       *middleware.Middleware
+	TCPAddr string
+	Auth    bool
 }
 
 // Listen creates a new MCP handler and starts listener on the given TCP address.
-func Listen(opts *ListenOpts) (*Handler, error) {
-	s := mcp.NewServer(&mcp.Implementation{Name: "FerretDB", Version: version.Get().Version}, nil)
-	opts.ToolHandler.initTools(s)
-
-	mcpHandler := mcp.NewStreamableHTTPHandler(func(req *http.Request) *mcp.Server { return s }, nil)
-
-	mux := http.NewServeMux()
-	mux.Handle("/mcp", connInfoMiddleware(mcpHandler))
-
+// [Listener.Run] must be called on the returned value.
+func Listen(opts *ListenOpts) (*Listener, error) {
 	lis, err := net.Listen("tcp", opts.TCPAddr)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &Handler{
-		opts:    opts,
-		lis:     lis,
-		handler: mux,
+	return &Listener{
+		opts: opts,
+		lis:  lis,
+		h:    NewToolHandler(opts.M),
 	}, nil
 }
 
-// Serve runs MCP handler until ctx is canceled.
+// Run runs MCP handler until ctx is canceled.
 //
-// It exits when the handler is stopped and the listener is closed.
-func (h *Handler) Serve(ctx context.Context) {
-	l := h.opts.L
+// It exits when handler is stopped and listener closed.
+func (lis *Listener) Run(ctx context.Context) {
+	s := mcp.NewServer(&mcp.Implementation{Name: "FerretDB", Version: version.Get().Version}, nil)
+	lis.h.initTools(s)
 
-	s := &http.Server{
-		Handler:  h.handler,
-		ErrorLog: slog.NewLogLogger(l.Handler(), slog.LevelError),
+	mcpHandler := mcp.NewStreamableHTTPHandler(func(req *http.Request) *mcp.Server { return s }, nil)
+	srvHandler := http.NewServeMux()
+
+	srvHandler.Handle("/mcp", connInfoMiddleware(mcpHandler))
+
+	srv := &http.Server{
+		Handler:  srvHandler,
+		ErrorLog: slog.NewLogLogger(lis.opts.L.Handler(), slog.LevelError),
 		BaseContext: func(net.Listener) context.Context {
 			return ctx
 		},
 	}
 
-	l.InfoContext(ctx, fmt.Sprintf("Starting MCP server on http://%s/", h.lis.Addr()))
+	lis.opts.L.InfoContext(ctx, fmt.Sprintf("Starting MCP server on http://%s/", lis.lis.Addr()))
 
 	go func() {
-		if err := s.Serve(h.lis); !errors.Is(err, http.ErrServerClosed) {
-			l.LogAttrs(ctx, logging.LevelDPanic, "Serve exited with unexpected error", logging.Error(err))
+		if err := srv.Serve(lis.lis); !errors.Is(err, http.ErrServerClosed) {
+			lis.opts.L.LogAttrs(ctx, logging.LevelDPanic, "Serve exited with unexpected error", logging.Error(err))
 		}
 	}()
 
@@ -98,15 +97,15 @@ func (h *Handler) Serve(ctx context.Context) {
 	shutdownCtx, shutdownCancel := ctxutil.WithDelay(ctx)
 	defer shutdownCancel(nil)
 
-	if err := s.Shutdown(shutdownCtx); err != nil {
-		l.LogAttrs(ctx, logging.LevelDPanic, "Shutdown exited with unexpected error", logging.Error(err))
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		lis.opts.L.LogAttrs(ctx, logging.LevelDPanic, "Shutdown exited with unexpected error", logging.Error(err))
 	}
 
-	if err := s.Close(); err != nil {
-		l.LogAttrs(ctx, logging.LevelDPanic, "Close exited with unexpected error", logging.Error(err))
+	if err := srv.Close(); err != nil {
+		lis.opts.L.LogAttrs(ctx, logging.LevelDPanic, "Close exited with unexpected error", logging.Error(err))
 	}
 
-	l.InfoContext(ctx, "MCP server stopped")
+	lis.opts.L.InfoContext(ctx, "MCP server stopped")
 }
 
 // connInfoMiddleware returns a handler function that creates a new [*conninfo.ConnInfo],
@@ -117,4 +116,18 @@ func connInfoMiddleware(next http.Handler) http.Handler {
 		defer connInfo.Close()
 		next.ServeHTTP(w, r.WithContext(conninfo.Ctx(r.Context(), connInfo)))
 	})
+}
+
+// Addr returns TCP listener's address.
+// It can be used to determine an actually used port, if it was zero.
+func (lis *Listener) Addr() net.Addr {
+	return lis.lis.Addr()
+}
+
+// Describe implements [prometheus.Collector].
+func (lis *Listener) Describe(ch chan<- *prometheus.Desc) {
+}
+
+// Collect implements [prometheus.Collector].
+func (lis *Listener) Collect(ch chan<- prometheus.Metric) {
 }

@@ -20,19 +20,18 @@ import (
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 )
 
 // ToolHandler handles MCP request.
 type ToolHandler struct {
-	h *handler.Handler
+	m *middleware.Middleware
 }
 
 // NewToolHandler creates a new handler with the given parameters.
-func NewToolHandler(h *handler.Handler) *ToolHandler {
+func NewToolHandler(m *middleware.Middleware) *ToolHandler {
 	return &ToolHandler{
-		h: h,
+		m: m,
 	}
 }
 
@@ -47,15 +46,10 @@ func (h *ToolHandler) initTools(s *mcp.Server) {
 
 // request sends a request document to the handler and returns decoded response document.
 func (h *ToolHandler) request(ctx context.Context, reqDoc *wirebson.Document) (*wirebson.Document, error) {
-	res, err := h.h.Handle(ctx, middleware.RequestDoc(reqDoc))
+	req, err := middleware.RequestDoc(reqDoc)
 	if err != nil {
 		return nil, err
 	}
 
-	resDoc, err := res.OpMsg.DocumentDeep()
-	if err != nil {
-		return nil, err
-	}
-
-	return resDoc, nil
+	return h.m.Handle(ctx, req).Document(), nil
 }

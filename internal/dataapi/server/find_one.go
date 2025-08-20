@@ -53,14 +53,18 @@ func (s *Server) FindOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resMsg, err := s.handler.Handle(ctx, msg)
-	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+	resp := s.m.Handle(ctx, msg)
+	if resp == nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	resRaw := must.NotFail(resMsg.OpMsg.DocumentRaw())
-	cursor := must.NotFail(resRaw.Decode()).Get("cursor").(wirebson.AnyDocument)
+	if !resp.OK() {
+		s.writeJSONError(ctx, w, resp)
+		return
+	}
+
+	cursor := resp.Document().Get("cursor").(wirebson.AnyDocument)
 	firstBatch := must.NotFail(cursor.Decode()).Get("firstBatch").(wirebson.AnyArray)
 
 	var doc wirebson.RawDocument

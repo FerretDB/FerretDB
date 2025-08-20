@@ -2,7 +2,7 @@ module github.com/FerretDB/FerretDB/v2/tools
 
 go 1.24.1
 
-toolchain go1.24.5
+toolchain go1.24.6
 
 // replace github.com/FerretDB/wire => ../../wire
 
@@ -15,6 +15,7 @@ tool (
 	github.com/OpenDocDB/cts/opendocdb-cts
 	github.com/go-task/task/v3/cmd/task
 	github.com/goreleaser/nfpm/v2/cmd/nfpm
+	github.com/jstemmer/go-junit-report/v2
 	github.com/kisielk/godepgraph
 	github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen
 	github.com/quasilyte/go-consistent
@@ -98,6 +99,7 @@ require (
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
+	github.com/jstemmer/go-junit-report/v2 v2.1.0 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/kisielk/godepgraph v0.0.0-20240411160502-0f324ca7e282 // indirect
 	github.com/kisielk/gotool v1.0.0 // indirect

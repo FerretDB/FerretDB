@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package mcp
+package mcp_test
 
 import (
 	"context"
@@ -22,14 +22,13 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
-	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
+	"github.com/FerretDB/FerretDB/v2/internal/util/setup"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
@@ -94,49 +93,57 @@ func askMCPHost(tb testing.TB, ctx context.Context, jsonConfig, prompt string) s
 // setupListener sets up a new MCP listener.
 func setupListener(tb testing.TB, ctx context.Context) net.Addr {
 	uri := testutil.PostgreSQLURL(tb)
-	l := testutil.Logger(tb)
+
 	sp, err := state.NewProvider("")
 	require.NoError(tb, err)
 
-	p, err := documentdb.NewPool(uri, l, sp)
-	require.NoError(tb, err)
+	l := testutil.Logger(tb)
 
-	h, err := handler.New(&handler.NewOpts{
-		Pool:          p,
-		L:             l,
+	//exhaustruct:enforce
+	res := setup.Setup(tb.Context(), &setup.SetupOpts{
+		Logger:        l,
 		StateProvider: sp,
+		Metrics:       middleware.NewMetrics(),
+
+		PostgreSQLURL:          uri,
+		Auth:                   false,
+		ReplSetName:            "",
+		SessionCleanupInterval: 0,
+
+		ProxyAddr:        "",
+		ProxyTLSCertFile: "",
+		ProxyTLSKeyFile:  "",
+		ProxyTLSCAFile:   "",
+
+		TCPAddr:        "127.0.0.1:0",
+		UnixAddr:       "",
+		TLSAddr:        "",
+		TLSCertFile:    "",
+		TLSKeyFile:     "",
+		TLSCAFile:      "",
+		Mode:           middleware.NormalMode,
+		TestRecordsDir: "",
+
+		DataAPIAddr: "",
+
+		MCPAddr: "127.0.0.1:0",
 	})
-	require.NoError(tb, err)
+	require.NotNil(tb, res)
 
-	cancelCtx, cancel := context.WithCancel(ctx)
-	var wg sync.WaitGroup
+	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
 
+	runDone := make(chan struct{})
+
+	go func() {
+		defer close(runDone)
+		res.Run(ctx)
+	}()
+
+	// ensure that all listener's and handler's logs are written before test ends
 	tb.Cleanup(func() {
 		cancel()
-		wg.Wait()
+		<-runDone
 	})
 
-	wg.Add(1)
-
-	go func() {
-		h.Run(cancelCtx)
-		wg.Done()
-	}()
-
-	mcpHandler, err := Listen(&ListenOpts{
-		L:           l,
-		Handler:     h,
-		ToolHandler: NewToolHandler(h),
-		TCPAddr:     "127.0.0.1:0",
-	})
-	require.NoError(tb, err)
-
-	wg.Add(1)
-
-	go func() {
-		mcpHandler.Serve(cancelCtx)
-		wg.Done()
-	}()
-
-	return mcpHandler.lis.Addr()
+	return res.MCPListener.Addr()
 }

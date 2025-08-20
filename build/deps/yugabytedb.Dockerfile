@@ -1,1 +1,1 @@
-FROM yugabytedb/yugabyte:2.25.2.0-b359
+FROM yugabytedb/yugabyte:2025.1.0.1-b3
