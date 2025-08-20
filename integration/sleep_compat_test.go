@@ -30,8 +30,6 @@ type sleepCompatTestCase struct {
 }
 
 func TestSleepCompat(t *testing.T) {
-	t.Parallel()
-
 	testCases := map[string]sleepCompatTestCase{
 		"Millis": {
 			request: bson.D{

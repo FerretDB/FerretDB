@@ -65,7 +65,9 @@ func TestSleepParallelWrite(t *testing.T) {
 	wg.Wait()
 }
 
-func TestSleepParallelRead(t *testing.T) {
+func TestSleepParallelRead(tt *testing.T) {
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/5399")
+
 	ctx, coll := setup.Setup(t)
 	adminDB := coll.Database().Client().Database("admin")
 
