@@ -1,60 +1,62 @@
 ---
 sidebar_position: 4
+description: Learn how to create, deploy, and manage FerretDB instances using FerretDB Cloud.
 ---
 
 # FerretDB Cloud
 
 FerretDB Cloud is a managed service that lets you create, deploy, and manage FerretDB instances in the cloud.
 
-## Prerequisites
+## Create an account
 
-Before you begin, ensure you have the following:
+1. Visit [FerretDB Cloud](https://cloud.ferretdb.com/) to create an account.
 
-- A [FerretDB Cloud account](https://cloud.ferretdb.com/).
-- MongoDB-compatible client installed (e.g., MongoDB Compass, mongosh).
+2. Fill in the required information, including your name, email address, company name, company URL, and preferred password.
 
-## Creating a FerretDB Instance
+3. Submit the form to create your account.
+   You will receive a verification email; click the link in the email to activate your account.
+   Once activated, sign in to your FerretDB Cloud account.
 
-1. Log in to your FerretDB Cloud account.
+## Create a FerretDB Cloud instance
 
-2. Navigate to the "Deployments" section to create a new FerretDB instance.
+Ensure that you are logged in to your FerretDB Cloud account.
 
-3. Click on the "Create" button to create a new instance and you will be prompted to choose a plan.
+1. Navigate to the "Deployments" section and click "Create".
+   You will be prompted to choose a subscription plan.
+   To select a plan, click its "Subscribe" button.
+   You will be notified by email upon approval.
 
-   - Select the subscription plan that best suits your needs.
-
-        :::note
-        FerretDB Cloud offers four different plans:
-        - Free Tier: Ideal for developers, students, and small projects getting started with FerretDB.
-        - Pro Tier: Designed for professional teams and growing businesses requiring predictable pricing and enterprise-grade features.
-        - Enterprise Tier: Ideal for enterprises requiring dedicated support and premium service levels.
-        - Bring Your Own Account - Enterprise Tier: Perfect for large enterprises requiring maximum flexibility and control
-        :::
-
-   - Select the cloud provider and region where you want to deploy your instance.
-   - Configure the instance settings, such as instance name, storage size, and other options if applicable.
-
-4. Review your configuration and click "Create" to deploy your FerretDB instance.
-   The deployment process may take a few minutes.
-5. Once the instance is created, you will see it listed in your instance dashboard with its connection details.
-
-## Connecting to FerretDB Instance
-
-1. Open your MongoDB-compatible client (e.g., MongoDB Compass, mongosh).
-2. Use the connection details from your FerretDB instance dashboard to connect to the database.
-   The connection string will typically look like this:
-
-     ```text
-     mongodb://<username>:<password>@<endpoint>
-     ```
-
-     :::tip
-     You can find the <endpoint> under "Connectivity" in your FerretDB instance dashboard.
+   :::note
+   FerretDB Cloud offers four different subscription plans:
+   - Free Tier: Ideal for developers, students, and small projects getting started with FerretDB.
+   - Pro Tier: Designed for professional teams and growing businesses requiring predictable pricing and enterprise-grade features.
+   - Enterprise Tier: Ideal for enterprises requiring dedicated support and premium service levels.
+   - Bring Your Own Account - Enterprise Tier: Perfect for large enterprises requiring maximum flexibility and control
      :::
 
-    Replace `<username>`, `<password>`, and `<endpoint>` with the actual values provided in your FerretDB instance dashboard.
+2. Configure your instance by selecting the cloud provider, region, network type, compute size, among other settings.
 
-3. Use the connection string to connect to your FerretDB instance.
+3. Review your configuration and click "Create" to deploy your FerretDB Cloud instance.
+   The deployment process may take a few minutes.
+
+4. Once the instance is created, you will see it listed in your instance dashboard with its connection details.
+
+## Connect to deployed instance
+
+1. Open your MongoDB-compatible client (e.g., MongoDB Compass, `mongosh`).
+2. Use the connection string provided in your FerretDB Cloud instance dashboard.
+   The connection string will typically look like this:
+
+   ```text
+   mongodb://<username>:<password>@<endpoint>
+   ```
+
+   :::tip
+   You can find the `<endpoint>` under the "Connectivity" tab in your FerretDB instance dashboard.
+   :::
+
+3. Replace `<username>`, `<password>`, and `<endpoint>` with the actual values provided in your FerretDB instance dashboard.
+   Use the connection string to connect to your FerretDB instance.
    For example, if you are using `mongosh`, you can run:
 
    ```sh
