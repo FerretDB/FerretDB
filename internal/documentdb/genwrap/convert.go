@@ -234,12 +234,12 @@ func (c *converter) parameterType(typ string) string {
 }
 
 // parameterCast adds a type cast (::type) to a parameter if needed.
-func (c *converter) parameterCast(name string, typ string) string {
-	switch typ {
+func (c *converter) parameterCast(sqlName string, sqlType string) string {
+	switch sqlType {
 	case "documentdb_core.bson", "documentdb_core.bsonsequence":
-		return name + "::bytea"
+		return sqlName + "::bytea"
 	default:
-		return name
+		return sqlName
 	}
 }
 

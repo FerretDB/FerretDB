@@ -55,17 +55,17 @@ func Extract(ctx context.Context, uri string, schemas []string) (map[string][]ma
 		specific_name,
 		routine_name,
 		routine_type,
-		r.data_type AS routine_data_type,
-		r.type_udt_schema AS routine_udt_schema,
-		r.type_udt_name AS routine_udt_name,
+		routines.data_type AS routine_data_type,
+		routines.type_udt_schema AS routine_udt_schema,
+		routines.type_udt_name AS routine_udt_name,
 		parameter_name,
 		parameter_mode,
 		parameter_default,
-		p.data_type,
-		p.udt_schema,
-		p.udt_name
-	FROM information_schema.routines AS r
-		LEFT JOIN information_schema.parameters AS p USING (specific_schema, specific_name)
+		parameters.data_type,
+		parameters.udt_schema,
+		parameters.udt_name
+	FROM information_schema.routines
+		LEFT JOIN information_schema.parameters USING (specific_schema, specific_name)
 	WHERE specific_schema IN (%s)
 	ORDER BY specific_schema, specific_name, ordinal_position
 	`,
