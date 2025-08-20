@@ -236,7 +236,7 @@ func (p *Pool) ListIndexes(ctx context.Context, db string, spec wirebson.RawDocu
 
 // shouldPersistConn returns true if the connection should be persisted.
 // The zero cursor ID or empty continuation should not persist the connection.
-// It logs where persist is true but continuation is empty or cursorID is zero.
+// It logs where persist is true but cursorID is zero or continuation is empty.
 // TODO https://github.com/FerretDB/FerretDB/issues/5445
 func (p *Pool) shouldPersistConn(persist bool, cursorID int64, continuation wirebson.RawDocument) bool {
 	if !persist {
@@ -267,35 +267,37 @@ func (p *Pool) shouldPersistConn(persist bool, cursorID int64, continuation wire
 // checkCursorID checks if the cursor ID matches the one in the page for development builds.
 // TODO https://github.com/FerretDB/FerretDB/issues/5445
 func (p *Pool) checkCursorID(ctx context.Context, cursorID int64, page wirebson.RawDocument) {
-	if devbuild.Enabled {
-		doc := must.NotFail(page.Decode())
+	if !devbuild.Enabled {
+		return
+	}
 
-		cursor, ok := doc.Get("cursor").(wirebson.RawDocument)
-		if !ok {
-			if cursorID != 0 {
-				p.l.LogAttrs(ctx, logging.LevelDPanic, "cursorID is not zero but cursor is missing",
-					slog.Int64("cursor_id", cursorID), slog.Any("page", doc),
-				)
-			}
+	doc := must.NotFail(page.Decode())
 
-			return
-		}
-
-		id, ok := must.NotFail(cursor.Decode()).Get("id").(int64)
-		if !ok {
-			if id != 0 {
-				p.l.LogAttrs(ctx, logging.LevelDPanic, "cursorID is not zero but cursor.id is missing",
-					slog.Int64("cursor_id", cursorID), slog.Any("page", doc),
-				)
-			}
-
-			return
-		}
-
-		if id != cursorID {
-			p.l.LogAttrs(ctx, logging.LevelDPanic, "cursorID does not match cursor.id",
+	cursor, ok := doc.Get("cursor").(wirebson.RawDocument)
+	if !ok {
+		if cursorID != 0 {
+			p.l.LogAttrs(ctx, logging.LevelDPanic, "cursorID is not zero but cursor is missing",
 				slog.Int64("cursor_id", cursorID), slog.Any("page", doc),
 			)
 		}
+
+		return
+	}
+
+	id, ok := must.NotFail(cursor.Decode()).Get("id").(int64)
+	if !ok {
+		if id != 0 {
+			p.l.LogAttrs(ctx, logging.LevelDPanic, "cursorID is not zero but cursor.id is missing",
+				slog.Int64("cursor_id", cursorID), slog.Any("page", doc),
+			)
+		}
+
+		return
+	}
+
+	if id != cursorID {
+		p.l.LogAttrs(ctx, logging.LevelDPanic, "cursorID does not match cursor.id",
+			slog.Int64("cursor_id", cursorID), slog.Any("page", doc),
+		)
 	}
 }
