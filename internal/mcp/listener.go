@@ -37,7 +37,7 @@ import (
 type Listener struct {
 	opts *ListenOpts
 	lis  net.Listener
-	h    *ToolHandler
+	srv  *server
 }
 
 // ListenOpts represents [Listen] options.
@@ -59,7 +59,7 @@ func Listen(opts *ListenOpts) (*Listener, error) {
 	return &Listener{
 		opts: opts,
 		lis:  lis,
-		h:    NewToolHandler(opts.M),
+		srv:  newServer(opts.M),
 	}, nil
 }
 
@@ -68,7 +68,7 @@ func Listen(opts *ListenOpts) (*Listener, error) {
 // It exits when handler is stopped and listener closed.
 func (lis *Listener) Run(ctx context.Context) {
 	s := mcp.NewServer(&mcp.Implementation{Name: "FerretDB", Version: version.Get().Version}, nil)
-	lis.h.initTools(s)
+	lis.srv.initTools(s)
 
 	mcpHandler := mcp.NewStreamableHTTPHandler(func(req *http.Request) *mcp.Server { return s }, nil)
 	srvHandler := http.NewServeMux()

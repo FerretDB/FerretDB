@@ -23,33 +23,33 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 )
 
-// ToolHandler handles MCP request.
-type ToolHandler struct {
+// server handles MCP request.
+type server struct {
 	m *middleware.Middleware
 }
 
-// NewToolHandler creates a new handler with the given parameters.
-func NewToolHandler(m *middleware.Middleware) *ToolHandler {
-	return &ToolHandler{
+// newServer creates a new server with the given parameter.
+func newServer(m *middleware.Middleware) *server {
+	return &server{
 		m: m,
 	}
 }
 
-// initTools initializes available MCP tools.
-func (h *ToolHandler) initTools(s *mcp.Server) {
+// initTools initializes available MCP tools for the given mcp server.
+func (srv *server) initTools(s *mcp.Server) {
 	listDatabasesTool := &mcp.Tool{
 		Name:        "listDatabases",
 		Description: "Returns a summary of all databases.",
 	}
-	mcp.AddTool(s, listDatabasesTool, h.listDatabases)
+	mcp.AddTool(s, listDatabasesTool, srv.listDatabases)
 }
 
 // request sends a request document to the handler and returns decoded response document.
-func (h *ToolHandler) request(ctx context.Context, reqDoc *wirebson.Document) (*wirebson.Document, error) {
+func (srv *server) request(ctx context.Context, reqDoc *wirebson.Document) (*wirebson.Document, error) {
 	req, err := middleware.RequestDoc(reqDoc)
 	if err != nil {
 		return nil, err
 	}
 
-	return h.m.Handle(ctx, req).Document(), nil
+	return srv.m.Handle(ctx, req).Document(), nil
 }
