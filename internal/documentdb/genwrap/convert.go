@@ -44,18 +44,38 @@ func Convert(routineParams map[string][]map[string]any, l *slog.Logger) map[stri
 		var placeholderCounter int
 
 		for _, row := range params {
-			c.convertParam(
+			pn, gp, gr, sp, sr, cm, qra, sa, pc := c.convertParam(
 				row,
-				&paramNames,
-				&goParams,
-				&goReturns,
-				&sqlParams,
-				&sqlReturns,
-				&comment,
-				&queryRowArgs,
-				&scanArgs,
-				&placeholderCounter,
+				paramNames,
+				placeholderCounter,
 			)
+			if pn == "" && gp == "" && gr == "" && sp == "" && sr == "" && cm == "" && qra == "" && sa == "" {
+				// skip row
+				continue
+			}
+			paramNames = append(paramNames, pn)
+			if gp != "" {
+				goParams = append(goParams, gp)
+			}
+			if gr != "" {
+				goReturns = append(goReturns, gr)
+			}
+			if sp != "" {
+				sqlParams = append(sqlParams, sp)
+			}
+			if sr != "" {
+				sqlReturns = append(sqlReturns, sr)
+			}
+			if cm != "" {
+				comment = append(comment, cm)
+			}
+			if qra != "" {
+				queryRowArgs = append(queryRowArgs, qra)
+			}
+			if sa != "" {
+				scanArgs = append(scanArgs, sa)
+			}
+			placeholderCounter = pc
 		}
 
 		routineName := params[0]["routine_name"].(string)
@@ -115,15 +135,18 @@ type converter struct {
 // convertParam processes a single parameter row and updates the provided slices accordingly.
 func (c *converter) convertParam(
 	row map[string]any,
-	paramNames *[]string,
-	goParams *[]string,
-	goReturns *[]string,
-	sqlParams *[]string,
-	sqlReturns *[]string,
-	comment *[]string,
-	queryRowArgs *[]string,
-	scanArgs *[]string,
-	placeholderCounter *int,
+	paramNames []string,
+	placeholderCounter int,
+) (
+	string, // paramName
+	string, // goParam
+	string, // goReturn
+	string, // sqlParam
+	string, // sqlReturn
+	string, // comment
+	string, // queryRowArg
+	string, // scanArg
+	int, // placeholderCounter
 ) {
 	name := "anonymous"
 
@@ -132,41 +155,40 @@ func (c *converter) convertParam(
 	}
 
 	if row["parameter_mode"] == "IN" {
-		name = c.uniqueName(*paramNames, name)
+		name = c.uniqueName(paramNames, name)
 	}
 
-	*paramNames = append(*paramNames, name)
-
 	if row["parameter_name"] == "p_transaction_id" {
-		// skip p_transaction_id, transaction is not supported yet
-		// TODO https://github.com/FerretDB/FerretDB/issues/8
-		return
+		return "", "", "", "", "", "", "", "", placeholderCounter
 	}
 
 	if row["parameter_mode"] == nil {
-		// skip a row if the row does not contain a parameter such as BinaryExtendedVersion()
-		return
+		return "", "", "", "", "", "", "", "", placeholderCounter
 	}
 
-	*comment = append(*comment, c.toParamComment(name, row))
+	comment := c.toParamComment(name, row)
 	dataType := row["data_type"].(string)
 
+	var goParam, goReturn, sqlParam, sqlReturn, queryRowArg, scanArg string
+
 	if row["parameter_mode"] == "IN" || row["parameter_mode"] == "INOUT" {
-		placeholder := fmt.Sprintf("$%d", *placeholderCounter+1)
-		*placeholderCounter++
+		placeholder := fmt.Sprintf("$%d", placeholderCounter+1)
+		placeholderCounter++
 
 		goName := c.parameterName(name)
-		*sqlParams = append(*sqlParams, c.parameterCast(placeholder, dataType))
-		*goParams = append(*goParams, fmt.Sprintf("%s %s", goName, c.parameterType(dataType)))
-		*queryRowArgs = append(*queryRowArgs, goName)
+		sqlParam = c.parameterCast(placeholder, dataType)
+		goParam = fmt.Sprintf("%s %s", goName, c.parameterType(dataType))
+		queryRowArg = goName
 	}
 
 	if row["parameter_mode"] == "OUT" || row["parameter_mode"] == "INOUT" {
 		goName := "out" + c.pascalCase(c.parameterName(name))
-		*sqlReturns = append(*sqlReturns, c.parameterCast(name, dataType))
-		*goReturns = append(*goReturns, fmt.Sprintf("%s %s", goName, c.parameterType(dataType)))
-		*scanArgs = append(*scanArgs, fmt.Sprintf("&%s", goName))
+		sqlReturn = c.parameterCast(name, dataType)
+		goReturn = fmt.Sprintf("%s %s", goName, c.parameterType(dataType))
+		scanArg = fmt.Sprintf("&%s", goName)
 	}
+
+	return name, goParam, goReturn, sqlParam, sqlReturn, comment, queryRowArg, scanArg, placeholderCounter
 }
 
 // camelCase converts snake_case to to camelCase.
