@@ -59,11 +59,8 @@ func newCursor(continuation wirebson.RawDocument, conn *pgx.Conn) *cursor {
 // The underlying net.Conn.close() will always be called regardless of any other errors.
 //
 // It is safe to call this method multiple times, but not concurrently.
-// It returns true if the connection was closed and false for already closed connection.
-func (c *cursor) close(ctx context.Context) bool {
-	wasOpen := c.conn != nil
-
-	if wasOpen {
+func (c *cursor) close(ctx context.Context) {
+	if c.conn != nil {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, 3*time.Second)
 		defer cancel()
@@ -73,6 +70,4 @@ func (c *cursor) close(ctx context.Context) bool {
 	}
 
 	resource.Untrack(c, c.token)
-
-	return wasOpen
 }

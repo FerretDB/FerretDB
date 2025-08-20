@@ -45,9 +45,8 @@ type Registry struct {
 	l     *slog.Logger
 	token *resource.Token
 
-	created   *prometheus.CounterVec
-	duration  *prometheus.HistogramVec
-	persisted *prometheus.CounterVec
+	created  *prometheus.CounterVec
+	duration *prometheus.HistogramVec
 }
 
 // NewRegistry creates a new cursor registry.
@@ -89,15 +88,6 @@ func NewRegistry(l *slog.Logger) *Registry {
 			},
 			[]string{"user", "type"},
 		),
-		persisted: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Namespace: namespace,
-				Subsystem: subsystem,
-				Name:      "persisted_total",
-				Help:      "Unstable: The cumulative count of connections persisted from the pool and closed.",
-			},
-			[]string{"user"},
-		),
 	}
 
 	// That probably should be the user from the PostgreSQL URI?
@@ -111,9 +101,6 @@ func NewRegistry(l *slog.Logger) *Registry {
 	res.duration.With(prometheus.Labels{
 		"user": user,
 		"type": "normal",
-	})
-	res.persisted.With(prometheus.Labels{
-		"user": user,
 	})
 
 	resource.Track(res, res.token)
@@ -157,9 +144,6 @@ func (r *Registry) NewCursor(id int64, continuation wirebson.RawDocument, conn *
 			)
 
 			_ = conn.Close(context.TODO())
-
-			user := "unknown" // TODO https://github.com/FerretDB/FerretDB/issues/3974
-			r.persisted.WithLabelValues(user).Inc()
 		}
 
 		if id != 0 {
@@ -275,13 +259,7 @@ func (r *Registry) closeCursor(ctx context.Context, id int64) bool {
 		ctx, "Closing and removing cursor",
 		slog.Int64("id", id), slog.Bool("persist", persist), slog.Duration("duration", dur),
 	)
-
-	user := "unknown" // TODO https://github.com/FerretDB/FerretDB/issues/3974
-
-	if wasOpen := c.close(ctx); wasOpen {
-		r.persisted.WithLabelValues(user).Inc()
-	}
-
+	c.close(ctx)
 	delete(r.cursors, id)
 
 	t := "normal"
@@ -289,6 +267,7 @@ func (r *Registry) closeCursor(ctx context.Context, id int64) bool {
 		t = "persist"
 	}
 
+	user := "unknown" // TODO https://github.com/FerretDB/FerretDB/issues/3974
 	r.duration.With(prometheus.Labels{"user": user, "type": t}).Observe(dur.Seconds())
 
 	return true
@@ -298,14 +277,12 @@ func (r *Registry) closeCursor(ctx context.Context, id int64) bool {
 func (r *Registry) Describe(ch chan<- *prometheus.Desc) {
 	r.created.Describe(ch)
 	r.duration.Describe(ch)
-	r.persisted.Describe(ch)
 }
 
 // Collect implements [prometheus.Collector].
 func (r *Registry) Collect(ch chan<- prometheus.Metric) {
 	r.created.Collect(ch)
 	r.duration.Collect(ch)
-	r.persisted.Collect(ch)
 }
 
 // check interfaces
