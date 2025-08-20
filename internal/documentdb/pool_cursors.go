@@ -284,11 +284,13 @@ func (p *Pool) checkCursorID(ctx context.Context, cursorID int64, page wirebson.
 		return
 	}
 
-	id, ok := must.NotFail(cursor.Decode()).Get("id").(int64)
+	cursorDoc := must.NotFail(cursor.Decode())
+
+	id, ok := cursorDoc.Get("id").(int64)
 	if !ok {
-		if id != 0 {
+		if cursorID != 0 {
 			p.l.LogAttrs(ctx, logging.LevelDPanic, "cursorID is not zero but cursor.id is missing",
-				slog.Int64("cursor_id", cursorID), slog.Any("page", doc),
+				slog.Int64("cursor_id", cursorID), slog.Any("cursor", cursorDoc),
 			)
 		}
 
@@ -297,7 +299,7 @@ func (p *Pool) checkCursorID(ctx context.Context, cursorID int64, page wirebson.
 
 	if id != cursorID {
 		p.l.LogAttrs(ctx, logging.LevelDPanic, "cursorID does not match cursor.id",
-			slog.Int64("cursor_id", cursorID), slog.Any("page", doc),
+			slog.Int64("cursor_id", cursorID), slog.Any("cursor", cursorDoc),
 		)
 	}
 }
