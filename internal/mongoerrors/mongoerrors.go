@@ -122,7 +122,7 @@ func Make(ctx context.Context, err error, arg string, l *slog.Logger) *Error {
 	case pgerrcode.QueryCanceled:
 		code = ErrMaxTimeMSExpired
 
-	case pgerrcode.ConnectionFailure:
+	case pgerrcode.ConnectionFailure, pgerrcode.TooManyConnections:
 		// mainly for tests
 		l.ErrorContext(ctx, "Connection failure", slog.String("arg", arg), slog.String("error", goString(err)))
 		code = ErrInternalError

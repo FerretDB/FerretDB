@@ -27,16 +27,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/util/debug"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/observability"
 
 	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
-
-// listenerMetrics are shared between tests.
-var listenerMetrics = connmetrics.NewListenerMetrics()
 
 // shutdown cancels context passed to startup components.
 var shutdown context.CancelFunc
@@ -62,8 +58,6 @@ func Startup() {
 		l.InfoContext(ctx, "Enabling setup debug logging on GitHub Actions")
 		*debugSetupF = true
 	}
-
-	prometheus.DefaultRegisterer.MustRegister(listenerMetrics)
 
 	ctx, shutdown = context.WithCancel(ctx)
 
