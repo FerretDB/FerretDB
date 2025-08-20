@@ -128,33 +128,10 @@ func (r *Registry) Close(ctx context.Context) {
 // That simplifies the typical usage.
 func (r *Registry) NewCursor(id int64, continuation wirebson.RawDocument, conn *pgx.Conn) {
 	// to have better logging for now
-	var cont *wirebson.Document
-	if len(continuation) > 0 {
-		cont = must.NotFail(continuation.Decode())
-	}
+	must.NotBeZero(len(continuation))
+	cont := must.NotFail(continuation.Decode())
 
 	persist := conn != nil
-
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/270
-	if len(continuation) == 0 {
-		if persist {
-			r.l.Debug(
-				"Not persisting connection with empty continuation",
-				slog.Int64("id", id), slog.Any("continuation", cont), slog.Bool("persist", persist),
-			)
-
-			_ = conn.Close(context.TODO())
-		}
-
-		if id != 0 {
-			r.l.Debug(
-				"Not storing cursor with empty continuation",
-				slog.Int64("id", id), slog.Any("continuation", cont), slog.Bool("persist", persist),
-			)
-		}
-
-		return
-	}
 
 	must.NotBeZero(id)
 
