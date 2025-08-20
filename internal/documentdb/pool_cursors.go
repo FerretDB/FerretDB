@@ -24,7 +24,10 @@ import (
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // GetMore returns the next page of the cursor.
@@ -106,6 +109,8 @@ func (p *Pool) ListCollections(ctx context.Context, db string, spec wirebson.Raw
 		slog.Bool("persist", persist), slog.Int64("cursor", cursorID),
 	)
 
+	p.checkCursorID(ctx, cursorID, page)
+
 	if persistConn := p.persistConn(persist, cursorID, continuation); persistConn {
 		conn = poolConn.hijack()
 	} else {
@@ -140,6 +145,8 @@ func (p *Pool) Find(ctx context.Context, db string, spec wirebson.RawDocument) (
 		slog.Any("page", page), slog.Any("continuation", continuation),
 		slog.Bool("persist", persist), slog.Int64("cursor", cursorID),
 	)
+
+	p.checkCursorID(ctx, cursorID, page)
 
 	if persistConn := p.persistConn(persist, cursorID, continuation); persistConn {
 		conn = poolConn.hijack()
@@ -176,6 +183,8 @@ func (p *Pool) Aggregate(ctx context.Context, db string, spec wirebson.RawDocume
 		slog.Bool("persist", persist), slog.Int64("cursor", cursorID),
 	)
 
+	p.checkCursorID(ctx, cursorID, page)
+
 	if persistConn := p.persistConn(persist, cursorID, continuation); persistConn {
 		conn = poolConn.hijack()
 	} else {
@@ -211,6 +220,8 @@ func (p *Pool) ListIndexes(ctx context.Context, db string, spec wirebson.RawDocu
 		slog.Any("page", page), slog.Any("continuation", continuation),
 		slog.Bool("persist", persist), slog.Int64("cursor", cursorID),
 	)
+
+	p.checkCursorID(ctx, cursorID, page)
 
 	if persistConn := p.persistConn(persist, cursorID, continuation); persistConn {
 		conn = poolConn.hijack()
@@ -250,4 +261,39 @@ func (p *Pool) persistConn(persist bool, cursorID int64, continuation wirebson.R
 	}
 
 	return true
+}
+
+// checkCursorID checks if the cursor ID matches the one in the page for development builds.
+func (p *Pool) checkCursorID(ctx context.Context, cursorID int64, page wirebson.RawDocument) {
+	if devbuild.Enabled {
+		doc := must.NotFail(page.Decode())
+
+		cursor, ok := doc.Get("cursor").(wirebson.RawDocument)
+		if !ok {
+			if cursorID != 0 {
+				p.l.LogAttrs(ctx, logging.LevelDPanic, "cursorID is not zero but cursor is missing",
+					slog.Int64("cursor_id", cursorID), slog.Any("page", doc),
+				)
+			}
+
+			return
+		}
+
+		id, ok := must.NotFail(cursor.Decode()).Get("id").(int64)
+		if !ok {
+			if id != 0 {
+				p.l.LogAttrs(ctx, logging.LevelDPanic, "cursorID is not zero but cursor.id is missing",
+					slog.Int64("cursor_id", cursorID), slog.Any("page", doc),
+				)
+			}
+
+			return
+		}
+
+		if id != cursorID {
+			p.l.LogAttrs(ctx, logging.LevelDPanic, "cursorID does not match cursor.id",
+				slog.Int64("cursor_id", cursorID), slog.Any("page", doc),
+			)
+		}
+	}
 }
