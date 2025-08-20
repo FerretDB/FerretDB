@@ -130,7 +130,7 @@ func (r *Registry) Close(ctx context.Context) {
 func (r *Registry) NewCursor(id int64, continuation wirebson.RawDocument, conn *pgx.Conn) {
 	// to have better logging for now
 	var cont *wirebson.Document
-	if len(continuation) > 0 {
+	if devbuild.Enabled && len(continuation) > 0 {
 		cont = must.NotFail(continuation.Decode())
 	}
 
@@ -138,9 +138,7 @@ func (r *Registry) NewCursor(id int64, continuation wirebson.RawDocument, conn *
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/5445
 	if len(continuation) == 0 {
-		if devbuild.Enabled {
-			must.BeZero(conn)
-		}
+		must.BeZero(conn)
 
 		if id != 0 {
 			r.l.Debug(
