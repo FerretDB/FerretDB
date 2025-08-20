@@ -179,7 +179,7 @@ linters-settings:
         alias: otelsdkresource
       - pkg: go.opentelemetry.io/otel/sdk/trace
         alias: otelsdktrace
-      - pkg: go.opentelemetry.io/otel/semconv/v1.21.0
+      - pkg: go.opentelemetry.io/otel/semconv/v1.34.0
         alias: otelsemconv
   # ineffassign
   lll:
