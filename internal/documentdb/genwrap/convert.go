@@ -44,48 +44,18 @@ func Convert(routineParams map[string][]map[string]any, l *slog.Logger) map[stri
 		var placeholderCounter int
 
 		for _, row := range params {
-			name := "anonymous"
-
-			if row["parameter_name"] != nil {
-				name = row["parameter_name"].(string)
-			}
-
-			if row["parameter_mode"] == "IN" {
-				name = c.uniqueName(paramNames, name)
-			}
-
-			paramNames = append(paramNames, name)
-
-			if row["parameter_name"] == "p_transaction_id" {
-				// skip p_transaction_id, transaction is not supported yet
-				// TODO https://github.com/FerretDB/FerretDB/issues/8
-				continue
-			}
-
-			if row["parameter_mode"] == nil {
-				// skip a row if the row does not contain a parameter such as BinaryExtendedVersion()
-				continue
-			}
-
-			comment = append(comment, c.toParamComment(name, row))
-			dataType := row["data_type"].(string)
-
-			if row["parameter_mode"] == "IN" || row["parameter_mode"] == "INOUT" {
-				placeholder := fmt.Sprintf("$%d", placeholderCounter+1)
-				placeholderCounter++
-
-				goName := c.parameterName(name)
-				sqlParams = append(sqlParams, c.parameterCast(placeholder, dataType))
-				goParams = append(goParams, fmt.Sprintf("%s %s", goName, c.parameterType(dataType)))
-				queryRowArgs = append(queryRowArgs, goName)
-			}
-
-			if row["parameter_mode"] == "OUT" || row["parameter_mode"] == "INOUT" {
-				goName := "out" + c.pascalCase(c.parameterName(name))
-				sqlReturns = append(sqlReturns, c.parameterCast(name, dataType))
-				goReturns = append(goReturns, fmt.Sprintf("%s %s", goName, c.parameterType(dataType)))
-				scanArgs = append(scanArgs, fmt.Sprintf("&%s", goName))
-			}
+			c.convertParam(
+				row,
+				&paramNames,
+				&goParams,
+				&goReturns,
+				&sqlParams,
+				&sqlReturns,
+				&comment,
+				&queryRowArgs,
+				&scanArgs,
+				&placeholderCounter,
+			)
 		}
 
 		routineName := params[0]["routine_name"].(string)
@@ -140,6 +110,63 @@ func Convert(routineParams map[string][]map[string]any, l *slog.Logger) map[stri
 // converter is used to group methods used by [Convert].
 type converter struct {
 	l *slog.Logger
+}
+
+// convertParam processes a single parameter row and updates the provided slices accordingly.
+func (c *converter) convertParam(
+	row map[string]any,
+	paramNames *[]string,
+	goParams *[]string,
+	goReturns *[]string,
+	sqlParams *[]string,
+	sqlReturns *[]string,
+	comment *[]string,
+	queryRowArgs *[]string,
+	scanArgs *[]string,
+	placeholderCounter *int,
+) {
+	name := "anonymous"
+
+	if row["parameter_name"] != nil {
+		name = row["parameter_name"].(string)
+	}
+
+	if row["parameter_mode"] == "IN" {
+		name = c.uniqueName(*paramNames, name)
+	}
+
+	*paramNames = append(*paramNames, name)
+
+	if row["parameter_name"] == "p_transaction_id" {
+		// skip p_transaction_id, transaction is not supported yet
+		// TODO https://github.com/FerretDB/FerretDB/issues/8
+		return
+	}
+
+	if row["parameter_mode"] == nil {
+		// skip a row if the row does not contain a parameter such as BinaryExtendedVersion()
+		return
+	}
+
+	*comment = append(*comment, c.toParamComment(name, row))
+	dataType := row["data_type"].(string)
+
+	if row["parameter_mode"] == "IN" || row["parameter_mode"] == "INOUT" {
+		placeholder := fmt.Sprintf("$%d", *placeholderCounter+1)
+		*placeholderCounter++
+
+		goName := c.parameterName(name)
+		*sqlParams = append(*sqlParams, c.parameterCast(placeholder, dataType))
+		*goParams = append(*goParams, fmt.Sprintf("%s %s", goName, c.parameterType(dataType)))
+		*queryRowArgs = append(*queryRowArgs, goName)
+	}
+
+	if row["parameter_mode"] == "OUT" || row["parameter_mode"] == "INOUT" {
+		goName := "out" + c.pascalCase(c.parameterName(name))
+		*sqlReturns = append(*sqlReturns, c.parameterCast(name, dataType))
+		*goReturns = append(*goReturns, fmt.Sprintf("%s %s", goName, c.parameterType(dataType)))
+		*scanArgs = append(*scanArgs, fmt.Sprintf("&%s", goName))
+	}
 }
 
 // camelCase converts snake_case to to camelCase.
