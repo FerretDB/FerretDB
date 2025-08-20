@@ -25,7 +25,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func TestSleepParallel(t *testing.T) {
+func TestSleepParallelWrite(t *testing.T) {
 	t.Parallel()
 
 	ctx, coll := setup.Setup(t)
@@ -62,6 +62,50 @@ func TestSleepParallel(t *testing.T) {
 	dur := time.Since(timeBefore)
 
 	assert.InDelta(t, 2000, dur.Milliseconds(), 100)
+	require.NoError(t, err)
+
+	wg.Wait()
+}
+
+func TestSleepParallelRead(t *testing.T) {
+	t.Parallel()
+
+	ctx, coll := setup.Setup(t)
+	adminDB := coll.Database().Client().Database("admin")
+
+	var wg sync.WaitGroup
+
+	start := make(chan struct{})
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		var res bson.D
+
+		timeBefore := time.Now()
+		close(start)
+		err := adminDB.RunCommand(ctx, bson.D{
+			{"sleep", int32(1)},
+			{"millis", int32(2000)},
+		}).Decode(&res)
+
+		dur := time.Since(timeBefore)
+		AssertEqualDocuments(t, bson.D{{"ok", float64(1.0)}}, res)
+
+		assert.InDelta(t, 2000, dur.Milliseconds(), 100)
+		require.NoError(t, err)
+	}()
+
+	<-start
+	timeBefore := time.Now()
+
+	_, err := coll.Find(ctx, bson.D{})
+	require.NoError(t, err)
+
+	dur := time.Since(timeBefore)
+
+	assert.InDelta(t, 0, dur.Milliseconds(), 100)
 	require.NoError(t, err)
 
 	wg.Wait()
