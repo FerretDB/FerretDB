@@ -71,7 +71,9 @@ func (h *Handler) msgSleep(connCtx context.Context, req *middleware.Request) (*m
 		}
 	}
 
+	h.runM.Lock()
 	ctxutil.Sleep(connCtx, sleepDur)
+	h.runM.Unlock()
 
 	return middleware.ResponseDoc(req, wirebson.MustDocument("ok", float64(1)))
 }
