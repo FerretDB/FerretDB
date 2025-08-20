@@ -113,6 +113,7 @@ func (p *Pool) ListCollections(ctx context.Context, db string, spec wirebson.Raw
 	}
 
 	p.r.NewCursor(cursorID, continuation, conn)
+
 	return page, cursorID, nil
 }
 
@@ -147,6 +148,7 @@ func (p *Pool) Find(ctx context.Context, db string, spec wirebson.RawDocument) (
 	}
 
 	p.r.NewCursor(cursorID, continuation, conn)
+
 	return page, cursorID, nil
 }
 
