@@ -832,7 +832,7 @@ func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 func TestGetMoreCommandExhausted(tt *testing.T) {
 	s := setup.SetupWithOpts(tt, nil)
 
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/270")
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/5445")
 
 	collection := s.Collection
 	db, ctx := collection.Database(), s.Ctx
@@ -1135,7 +1135,7 @@ func TestFindCommandFirstBatchMaxTimeMS(t *testing.T) {
 	}
 
 	t.Run("GetMore", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/270")
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/5445")
 
 		for i := 0; i < 2; i++ {
 			time.Sleep(100 * time.Millisecond)
@@ -1158,7 +1158,7 @@ func TestFindCommandFirstBatchMaxTimeMS(t *testing.T) {
 	})
 
 	t.Run("GetMoreEmpty", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/270")
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/5445")
 
 		time.Sleep(100 * time.Millisecond)
 		var res bson.D
@@ -1230,7 +1230,7 @@ func TestGetMoreCommandAfterInsertion(t *testing.T) {
 	}
 
 	t.Run("GetMore", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/270")
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/5445")
 
 		for i := 0; i < 2; i++ {
 			var res bson.D
@@ -1252,7 +1252,7 @@ func TestGetMoreCommandAfterInsertion(t *testing.T) {
 	})
 
 	t.Run("GetMoreEmpty", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/270")
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/5445")
 
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)

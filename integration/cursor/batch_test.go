@@ -249,7 +249,7 @@ func TestFindCommandSingleBatch(t *testing.T) {
 func TestFindCommandExhausted(tt *testing.T) {
 	tt.Parallel()
 
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/270")
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/5445")
 
 	s := setup.SetupWithOpts(tt, &setup.SetupOpts{PoolSize: 1})
 

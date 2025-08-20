@@ -135,7 +135,7 @@ func (r *Registry) NewCursor(id int64, continuation wirebson.RawDocument, conn *
 
 	persist := conn != nil
 
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/270
+	// TODO https://github.com/FerretDB/FerretDB/issues/5445
 	if len(continuation) == 0 {
 		must.BeZero(conn)
 
@@ -205,7 +205,7 @@ func (r *Registry) UpdateCursor(id int64, continuation wirebson.RawDocument) {
 
 	persist := c.conn != nil
 
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/270
+	// TODO https://github.com/FerretDB/FerretDB/issues/5445
 	if len(continuation) == 0 {
 		r.l.Debug(
 			"Closing instead of updating cursor with empty continuation",
