@@ -16,6 +16,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
@@ -69,6 +70,15 @@ func (h *Handler) msgSleep(connCtx context.Context, req *middleware.Request) (*m
 		} else {
 			sleepDur = time.Duration(max(sleepDur, time.Duration(secs)*time.Second))
 		}
+	}
+
+	lock, err := getOptionalParam(doc, "lock", "w")
+	if err != nil {
+		return nil, err
+	}
+
+	if lock != "w" {
+		return nil, lazyerrors.Error(mongoerrors.New(mongoerrors.ErrBadValue, fmt.Sprintf("parameter lock %s value is not supported", lock)))
 	}
 
 	h.runM.Lock()

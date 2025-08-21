@@ -44,6 +44,7 @@ func TestSleepParallelWrite(t *testing.T) {
 		err := adminDB.RunCommand(ctx, bson.D{
 			{"sleep", int32(1)},
 			{"millis", int32(2000)},
+			{"lock", "w"},
 		}).Decode(&res)
 
 		dur := time.Since(timeBefore)
@@ -65,9 +66,7 @@ func TestSleepParallelWrite(t *testing.T) {
 	wg.Wait()
 }
 
-func TestSleepParallelRead(tt *testing.T) {
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/5399")
-
+func TestSleepParallelRead(t *testing.T) {
 	ctx, coll := setup.Setup(t)
 	adminDB := coll.Database().Client().Database("admin")
 
@@ -86,6 +85,7 @@ func TestSleepParallelRead(tt *testing.T) {
 		err := adminDB.RunCommand(ctx, bson.D{
 			{"sleep", int32(1)},
 			{"millis", int32(2000)},
+			{"lock", "w"},
 		}).Decode(&res)
 
 		dur := time.Since(timeBefore)
@@ -103,7 +103,7 @@ func TestSleepParallelRead(tt *testing.T) {
 
 	dur := time.Since(timeBefore)
 
-	assert.InDelta(t, 0, dur.Milliseconds(), 100)
+	assert.InDelta(t, 2000, dur.Milliseconds(), 100)
 	require.NoError(t, err)
 
 	wg.Wait()
