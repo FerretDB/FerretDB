@@ -73,6 +73,7 @@ func (lis *Listener) Run(ctx context.Context) {
 	mcpHandler := mcp.NewStreamableHTTPHandler(func(req *http.Request) *mcp.Server { return s }, nil)
 	srvHandler := http.NewServeMux()
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/5309
 	srvHandler.Handle("/mcp", connInfoMiddleware(mcpHandler))
 
 	srv := &http.Server{

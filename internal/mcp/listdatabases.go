@@ -23,8 +23,11 @@ import (
 
 // listDatabases returns a list of databases.
 func (s *server) listDatabases(ctx context.Context, _ *mcp.ServerSession, _ *mcp.CallToolParamsFor[any]) (*mcp.CallToolResult, error) { //nolint:lll // for readability
+	// log MCP tool request for debug level
+	// TODO https://github.com/FerretDB/FerretDB/issues/5277
 	req := wirebson.MustDocument(
 		"listDatabases", int32(1),
+		"$db", "admin",
 	)
 
 	return s.handle(ctx, req)

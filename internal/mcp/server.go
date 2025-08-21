@@ -46,6 +46,9 @@ func (s *server) addTools(srv *mcp.Server) {
 }
 
 // handle sends the request document to the middleware and returns result used by MCP tool.
+//
+// Log MCP tool result for debug level.
+// TODO https://github.com/FerretDB/FerretDB/issues/5277
 func (s *server) handle(ctx context.Context, reqDoc *wirebson.Document) (*mcp.CallToolResult, error) {
 	req, err := middleware.RequestDoc(reqDoc)
 	if err != nil {
