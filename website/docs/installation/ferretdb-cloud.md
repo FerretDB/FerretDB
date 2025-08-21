@@ -48,25 +48,22 @@ Ensure that you are logged in to your FerretDB Cloud account.
    The connection string will typically look like this:
 
    ```text
-   mongodb://<username>:<password>@<endpoint>
+   mongodb://<username>:<password>@<endpoint>/?tls=true
    ```
 
    Replace `<username>`, `<password>`, and `<endpoint>` with the actual values provided in your FerretDB instance dashboard.
    You can find the `<endpoint>` under the "Connectivity" tab in your FerretDB instance dashboard.
 
    :::note
-   For Pro tier, you need to enable TLS/SSL connections by adding `?tls=true` to the connection string.
-   For example:
+   Paid tiers (Pro, Enterprise, and Bring Your Own Account - Enterprise) require TLS/SSL connections to be enabled by adding (`?tls=true`) to the connection string.
 
-   ```text
-   mongodb://<username>:<password>@<endpoint>?tls=true
-   ```
-
+   Free Tier does not require TLS/SSL connections - you can connect without adding (`?tls=true`).
+   Keep in mind Free Tier instances are temporary and may be stopped or deleted if inactive.
    :::
 
 3. Use the connection string to connect to your FerretDB instance.
    For example, if you are using `mongosh`, you can run:
 
    ```sh
-   mongosh mongodb://<username>:<password>@<endpoint>
+   mongosh mongodb://<username>:<password>@<endpoint>/?tls=true
    ```
