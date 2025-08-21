@@ -41,7 +41,7 @@ Ensure that you are logged in to your FerretDB Cloud account.
 
 4. Once the instance is created, you will see it listed in your instance dashboard with its connection details.
 
-## Connect to deployed instance
+## Connect to a deployed instance
 
 1. Open your MongoDB-compatible client (e.g., MongoDB Compass, `mongosh`).
 2. Use the connection string provided in your FerretDB Cloud instance dashboard.
