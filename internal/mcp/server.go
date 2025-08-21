@@ -69,6 +69,6 @@ func (s *server) handle(ctx context.Context, reqDoc *wirebson.Document) (*mcp.Ca
 
 	return &mcp.CallToolResultFor[any]{
 		Content: []mcp.Content{&mcp.TextContent{Text: string(json)}},
-		IsError: resp.OK(),
+		IsError: !resp.OK(),
 	}, nil
 }

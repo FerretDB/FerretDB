@@ -21,7 +21,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// listDatabases returns a list of databases in a string containing Extended JSON v2 format.
+// listDatabases returns a list of databases.
 func (s *server) listDatabases(ctx context.Context, _ *mcp.ServerSession, _ *mcp.CallToolParamsFor[any]) (*mcp.CallToolResult, error) { //nolint:lll // for readability
 	req := wirebson.MustDocument(
 		"listDatabases", int32(1),
