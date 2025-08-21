@@ -38,7 +38,7 @@ type cursor struct {
 
 // newCursor creates a new cursor for the given continuation and connection (if any).
 func newCursor(continuation wirebson.RawDocument, conn *pgx.Conn) *cursor {
-	must.NotBeZero(len(continuation))
+	must.BeTrue(len(continuation) > 0)
 
 	res := &cursor{
 		continuation: continuation,
