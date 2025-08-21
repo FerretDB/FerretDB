@@ -17,6 +17,7 @@ package mcp
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -26,12 +27,14 @@ import (
 
 // server handles MCP request.
 type server struct {
+	l *slog.Logger
 	m *middleware.Middleware
 }
 
 // newServer creates a new server with the given parameter.
-func newServer(m *middleware.Middleware) *server {
+func newServer(l *slog.Logger, m *middleware.Middleware) *server {
 	return &server{
+		l: l,
 		m: m,
 	}
 }
@@ -65,13 +68,19 @@ func (s *server) handle(ctx context.Context, reqDoc *wirebson.Document) (*mcp.Ca
 		return nil, err
 	}
 
-	json, err := doc.MarshalJSON()
+	b, err := doc.MarshalJSON()
 	if err != nil {
 		return nil, err
 	}
 
-	return &mcp.CallToolResultFor[any]{
-		Content: []mcp.Content{&mcp.TextContent{Text: string(json)}},
+	res := &mcp.CallToolResultFor[any]{
+		Content: []mcp.Content{&mcp.TextContent{Text: string(b)}},
 		IsError: !resp.OK(),
-	}, nil
+	}
+
+	if s.l.Enabled(ctx, slog.LevelDebug) {
+		s.l.DebugContext(ctx, "MCP tool response", slog.Any("response", res))
+	}
+
+	return res, nil
 }

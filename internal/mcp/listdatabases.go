@@ -16,13 +16,18 @@ package mcp
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 // listDatabases returns a list of databases.
-func (s *server) listDatabases(ctx context.Context, _ *mcp.ServerSession, _ *mcp.CallToolParamsFor[any]) (*mcp.CallToolResult, error) { //nolint:lll // for readability
+func (s *server) listDatabases(ctx context.Context, _ *mcp.ServerSession, params *mcp.CallToolParamsFor[any]) (*mcp.CallToolResult, error) { //nolint:lll // for readability
+	if s.l.Enabled(ctx, slog.LevelDebug) {
+		s.l.DebugContext(ctx, "MCP tool request", slog.Any("request", params))
+	}
+
 	// log MCP tool request for debug level
 	// TODO https://github.com/FerretDB/FerretDB/issues/5277
 	req := wirebson.MustDocument(
