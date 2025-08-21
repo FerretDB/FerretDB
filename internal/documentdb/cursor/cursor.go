@@ -17,14 +17,27 @@ package cursor
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/resource"
 )
+
+// contAttr returns a [slog.Attr] for cursor contAttr.
+// Non-empty contAttr is decoded in development builds.
+func contAttr(cont wirebson.RawDocument) slog.Attr {
+	var c wirebson.AnyDocument = cont
+	if devbuild.Enabled && len(cont) > 0 {
+		c = must.NotFail(cont.Decode())
+	}
+
+	return slog.Any("continuation", c)
+}
 
 // cursor stores DocumentDB's cursor state.
 type cursor struct {
@@ -52,6 +65,23 @@ func newCursor(continuation wirebson.RawDocument, conn *pgx.Conn) *cursor {
 	return res
 }
 
+// Type returns cursor type for logging and Prometheus label value.
+func (c *cursor) Type() string {
+	if c.conn != nil {
+		return "persistent"
+	}
+
+	return "normal"
+}
+
+// LogValue implements [slog.LogValuer] interface.
+func (c *cursor) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("type", c.Type()),
+		contAttr(c.continuation),
+	)
+}
+
 // close closes the underlying connection, if any.
 //
 // It attempts a clean close by sending the exit message to PostgreSQL.
@@ -71,3 +101,8 @@ func (c *cursor) close(ctx context.Context) {
 
 	resource.Untrack(c, c.token)
 }
+
+// check interfaces
+var (
+	_ slog.LogValuer = (*cursor)(nil)
+)
