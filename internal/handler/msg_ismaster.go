@@ -50,15 +50,15 @@ func checkClientMetadata(ctx context.Context, doc *wirebson.Document) error {
 		return nil
 	}
 
-	connInfo := conninfo.Get(ctx)
-	if connInfo.MetadataRecv() {
+	ci := conninfo.Get(ctx)
+	if ci.MetadataRecv() {
 		return mongoerrors.New(
 			mongoerrors.ErrClientMetadataCannotBeMutated,
 			"The client metadata document may only be sent in the first hello",
 		)
 	}
 
-	connInfo.SetMetadataRecv()
+	ci.SetMetadataRecv()
 
 	return nil
 }

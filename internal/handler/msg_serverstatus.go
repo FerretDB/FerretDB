@@ -52,7 +52,7 @@ func (h *Handler) msgServerStatus(connCtx context.Context, req *middleware.Reque
 
 	metricsDoc := wirebson.MustDocument()
 
-	metrics := h.ConnMetrics.GetResponses()
+	metrics := h.Metrics.GetResponses()
 	for _, commands := range metrics {
 		for command, arguments := range commands {
 			var total, failed int
