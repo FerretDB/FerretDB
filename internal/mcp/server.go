@@ -36,26 +36,39 @@ func newServer(m *middleware.Middleware) *server {
 	}
 }
 
-// initTools initializes available MCP tools for the given mcp server.
-func (srv *server) initTools(s *mcp.Server) {
+// addTools adds available MCP tools for the given mcp server.
+func (s *server) addTools(srv *mcp.Server) {
 	listDatabasesTool := &mcp.Tool{
 		Name:        "listDatabases",
 		Description: "Returns a summary of all databases.",
 	}
-	mcp.AddTool(s, listDatabasesTool, srv.listDatabases)
+	mcp.AddTool(srv, listDatabasesTool, s.listDatabases)
 }
 
-// request sends a request document to the middleware and returns decoded response document.
-func (srv *server) request(ctx context.Context, reqDoc *wirebson.Document) (*wirebson.Document, error) {
+// handle sends the request document to the middleware and returns result used by MCP tool.
+func (s *server) handle(ctx context.Context, reqDoc *wirebson.Document) (*mcp.CallToolResult, error) {
 	req, err := middleware.RequestDoc(reqDoc)
 	if err != nil {
 		return nil, err
 	}
 
-	resp := srv.m.Handle(ctx, req)
+	resp := s.m.Handle(ctx, req)
 	if resp == nil {
 		return nil, errors.New("internal error")
 	}
 
-	return resp.DocumentRaw().DecodeDeep()
+	doc, err := resp.DocumentRaw().DecodeDeep()
+	if doc == nil {
+		return nil, err
+	}
+
+	json, err := doc.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	return &mcp.CallToolResultFor[any]{
+		Content: []mcp.Content{&mcp.TextContent{Text: string(json)}},
+		IsError: resp.OK(),
+	}, nil
 }

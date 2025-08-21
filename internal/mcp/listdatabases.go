@@ -22,22 +22,10 @@ import (
 )
 
 // listDatabases returns a list of databases in a string containing Extended JSON v2 format.
-func (srv *server) listDatabases(ctx context.Context, _ *mcp.ServerSession, _ *mcp.CallToolParamsFor[any]) (*mcp.CallToolResultFor[any], error) { //nolint:lll // for readability
+func (s *server) listDatabases(ctx context.Context, _ *mcp.ServerSession, _ *mcp.CallToolParamsFor[any]) (*mcp.CallToolResult, error) { //nolint:lll // for readability
 	req := wirebson.MustDocument(
 		"listDatabases", int32(1),
 	)
 
-	res, err := srv.request(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	resJson, err := res.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-
-	return &mcp.CallToolResultFor[any]{
-		Content: []mcp.Content{&mcp.TextContent{Text: string(resJson)}},
-	}, nil
+	return s.handle(ctx, req)
 }

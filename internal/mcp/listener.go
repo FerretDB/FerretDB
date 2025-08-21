@@ -68,7 +68,7 @@ func Listen(opts *ListenOpts) (*Listener, error) {
 // It exits when handler is stopped and listener closed.
 func (lis *Listener) Run(ctx context.Context) {
 	s := mcp.NewServer(&mcp.Implementation{Name: "FerretDB", Version: version.Get().Version}, nil)
-	lis.srv.initTools(s)
+	lis.srv.addTools(s)
 
 	mcpHandler := mcp.NewStreamableHTTPHandler(func(req *http.Request) *mcp.Server { return s }, nil)
 	srvHandler := http.NewServeMux()
@@ -83,7 +83,7 @@ func (lis *Listener) Run(ctx context.Context) {
 		},
 	}
 
-	lis.opts.L.InfoContext(ctx, fmt.Sprintf("Starting MCP server on http://%s/", lis.lis.Addr()))
+	lis.opts.L.InfoContext(ctx, fmt.Sprintf("Starting MCP server on http://%s/mcp", lis.lis.Addr()))
 
 	go func() {
 		if err := srv.Serve(lis.lis); !errors.Is(err, http.ErrServerClosed) {
