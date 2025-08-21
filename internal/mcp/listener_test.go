@@ -16,6 +16,7 @@ package mcp_test
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"os/exec"
@@ -154,6 +155,21 @@ func setupMCP(tb testing.TB, ctx context.Context, auth bool) string {
 	}`,
 		res.MCPListener.Addr(),
 	)
+
+	if auth {
+		config = fmt.Sprintf(`{
+	"mcpServers": {
+	  "FerretDB": {
+	    "type": "remote",
+	    "url": "http://%s/mcp",
+	    "headers": ["Authorization: Basic %s"]
+	    }
+	  }
+	}`,
+			res.MCPListener.Addr(),
+			base64.StdEncoding.EncodeToString([]byte("username:password")),
+		)
+	}
 
 	configF := filepath.Join(tb.TempDir(), "mcphost.json")
 	err = os.WriteFile(configF, []byte(config), 0o666)

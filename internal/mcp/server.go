@@ -17,11 +17,15 @@ package mcp
 import (
 	"context"
 	"errors"
+	"net/http"
 
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/xdg-go/scram"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // server handles MCP request.
@@ -74,4 +78,104 @@ func (s *server) handle(ctx context.Context, reqDoc *wirebson.Document) (*mcp.Ca
 		Content: []mcp.Content{&mcp.TextContent{Text: string(json)}},
 		IsError: !resp.OK(),
 	}, nil
+}
+
+// authMiddleware handles SCRAM authentication based on the username and password specified in request.
+// After a successful handshake it calls the next handler.
+func (s *server) authMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		username, password, ok := r.BasicAuth()
+
+		if !ok {
+			http.Error(w, "no authentication specified", http.StatusBadRequest)
+			return
+		}
+
+		if password == "" || username == "" {
+			http.Error(w, "missing username or password", http.StatusBadRequest)
+			return
+		}
+
+		client, err := scram.SHA256.NewClient(username, password, "")
+		if err != nil {
+			http.Error(w, lazyerrors.Error(err).Error(), http.StatusBadRequest)
+			return
+		}
+
+		conv := client.NewConversation()
+
+		payload, err := conv.Step("")
+		if err != nil {
+			http.Error(w, lazyerrors.Error(err).Error(), http.StatusBadRequest)
+			return
+		}
+
+		msg, err := middleware.RequestDoc(wirebson.MustDocument(
+			"saslStart", int32(1),
+			"mechanism", "SCRAM-SHA-256",
+			"payload", wirebson.Binary{B: []byte(payload)},
+			// use skipEmptyExchange to complete the handshake with one `saslStart` and one `saslContinue`
+			"options", wirebson.MustDocument("skipEmptyExchange", true),
+			"$db", "admin",
+		))
+		if err != nil {
+			http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+			return
+		}
+
+		res := s.m.Handle(ctx, msg)
+		if res == nil {
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+
+		resDoc := must.NotFail(res.DocumentRaw().Decode())
+		convID := resDoc.Get("conversationId").(int32)
+
+		payloadBytes := resDoc.Get("payload").(wirebson.Binary).B
+
+		payload, err = conv.Step(string(payloadBytes))
+		if err != nil {
+			http.Error(w, lazyerrors.Error(err).Error(), http.StatusUnauthorized)
+			return
+		}
+
+		msg, err = middleware.RequestDoc(wirebson.MustDocument(
+			"saslContinue", int32(1),
+			"conversationId", convID,
+			"payload", wirebson.Binary{B: []byte(payload)},
+			"$db", "admin",
+		))
+		if err != nil {
+			http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+			return
+		}
+
+		res = s.m.Handle(ctx, msg)
+		if res == nil {
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+
+		resDoc = must.NotFail(res.DocumentRaw().Decode())
+		if !resDoc.Get("done").(bool) {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		payloadBytes = resDoc.Get("payload").(wirebson.Binary).B
+
+		if _, err = conv.Step(string(payloadBytes)); err != nil {
+			http.Error(w, lazyerrors.Error(err).Error(), http.StatusUnauthorized)
+			return
+		}
+
+		if !conv.Valid() {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }

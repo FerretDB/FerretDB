@@ -70,10 +70,13 @@ func (lis *Listener) Run(ctx context.Context) {
 	s := mcp.NewServer(&mcp.Implementation{Name: "FerretDB", Version: version.Get().Version}, nil)
 	lis.srv.addTools(s)
 
-	mcpHandler := mcp.NewStreamableHTTPHandler(func(req *http.Request) *mcp.Server { return s }, nil)
+	var mcpHandler http.Handler = mcp.NewStreamableHTTPHandler(func(req *http.Request) *mcp.Server { return s }, nil)
 	srvHandler := http.NewServeMux()
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/5309
+	if lis.opts.Auth {
+		mcpHandler = lis.srv.authMiddleware(mcpHandler)
+	}
+
 	srvHandler.Handle("/mcp", connInfoMiddleware(mcpHandler))
 
 	srv := &http.Server{
