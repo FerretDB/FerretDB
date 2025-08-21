@@ -833,16 +833,15 @@ func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 
 func TestGetMoreCommandExhausted(tt *testing.T) {
 	s := setup.SetupWithOpts(tt, nil)
-
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/5445")
-
 	collection := s.Collection
 	db, ctx := collection.Database(), s.Ctx
 
 	arr := integration.GenerateDocuments(0, 10)
 
 	_, err := collection.InsertMany(ctx, arr)
-	require.NoError(t, err)
+	require.NoError(tt, err)
+
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/5445")
 
 	var res bson.D
 	err = db.RunCommand(ctx, bson.D{
