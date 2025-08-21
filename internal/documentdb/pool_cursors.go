@@ -117,7 +117,7 @@ func (p *Pool) ListCollections(ctx context.Context, db string, spec wirebson.Raw
 		conn = nil
 	}
 
-	p.r.NewCursor(cursorID, continuation, conn)
+	p.r.NewCursor(ctx, cursorID, continuation, conn)
 
 	return page, cursorID, nil
 }
@@ -154,7 +154,7 @@ func (p *Pool) Find(ctx context.Context, db string, spec wirebson.RawDocument) (
 		conn = nil
 	}
 
-	p.r.NewCursor(cursorID, continuation, conn)
+	p.r.NewCursor(ctx, cursorID, continuation, conn)
 
 	return page, cursorID, nil
 }
@@ -191,7 +191,7 @@ func (p *Pool) Aggregate(ctx context.Context, db string, spec wirebson.RawDocume
 		conn = nil
 	}
 
-	p.r.NewCursor(cursorID, continuation, conn)
+	p.r.NewCursor(ctx, cursorID, continuation, conn)
 
 	return page, cursorID, nil
 }
@@ -229,7 +229,7 @@ func (p *Pool) ListIndexes(ctx context.Context, db string, spec wirebson.RawDocu
 		conn = nil
 	}
 
-	p.r.NewCursor(cursorID, continuation, conn)
+	p.r.NewCursor(ctx, cursorID, continuation, conn)
 
 	return page, cursorID, nil
 }

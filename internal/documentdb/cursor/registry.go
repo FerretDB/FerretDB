@@ -127,24 +127,26 @@ func (r *Registry) Close(ctx context.Context) {
 //
 // As a special case, if continuation is empty, this method does nothing.
 // That simplifies the typical usage.
-func (r *Registry) NewCursor(id int64, continuation wirebson.RawDocument, conn *pgx.Conn) {
-	// to have better logging for now
-	var cont *wirebson.Document
-	if devbuild.Enabled && len(continuation) > 0 {
-		cont = must.NotFail(continuation.Decode())
+func (r *Registry) NewCursor(ctx context.Context, id int64, continuation wirebson.RawDocument, conn *pgx.Conn) {
+	persist := conn != nil
+
+	attrs := []slog.Attr{
+		slog.Int64("id", id),
+		slog.Bool("persist", persist),
 	}
 
-	persist := conn != nil
+	if devbuild.Enabled && len(continuation) > 0 {
+		// to have better logging for devbuild
+		cont := must.NotFail(continuation.Decode())
+		attrs = append(attrs, slog.Any("continuation", cont))
+	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/5445
 	if len(continuation) == 0 {
 		must.BeZero(conn)
 
 		if id != 0 {
-			r.l.Debug(
-				"Not storing cursor with empty continuation",
-				slog.Int64("id", id), slog.Any("continuation", cont), slog.Bool("persist", persist),
-			)
+			r.l.LogAttrs(ctx, slog.LevelDebug, "Not storing cursor with empty continuation", attrs...)
 		}
 
 		return
@@ -156,13 +158,11 @@ func (r *Registry) NewCursor(id int64, continuation wirebson.RawDocument, conn *
 	defer r.rw.Unlock()
 
 	if _, ok := r.cursors[id]; ok {
-		r.l.Error("Replacing existing cursor", slog.Int64("id", id))
+		r.l.ErrorContext(ctx, "Replacing existing cursor", slog.Int64("id", id))
 		r.closeCursor(context.TODO(), id)
 	}
 
-	r.l.Debug("Creating new cursor",
-		slog.Int64("id", id), slog.Any("continuation", cont), slog.Bool("persist", persist),
-	)
+	r.l.LogAttrs(ctx, slog.LevelDebug, "Creating new cursor", attrs...)
 
 	r.cursors[id] = newCursor(continuation, conn)
 
