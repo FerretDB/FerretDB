@@ -39,19 +39,35 @@ func newServer(l *slog.Logger, m *middleware.Middleware) *server {
 	}
 }
 
+// tools contains MCP tools that are available in the server.
+type tool struct {
+	handler mcp.ToolHandlerFor[any, any]
+	tool    *mcp.Tool
+}
+
 // addTools adds available MCP tools for the given mcp server.
 func (s *server) addTools(srv *mcp.Server) {
-	listDatabasesTool := &mcp.Tool{
-		Name:        "listDatabases",
-		Description: "Returns a summary of all databases.",
+	for _, t := range []tool{
+		{
+			handler: s.insert,
+			tool: &mcp.Tool{
+				Name:        "insert",
+				Description: "Inserts documents into a collection.",
+			},
+		},
+		{
+			handler: s.listDatabases,
+			tool: &mcp.Tool{
+				Name:        "listDatabases",
+				Description: "Returns a summary of all databases.",
+			},
+		},
+	} {
+		mcp.AddTool(srv, t.tool, t.handler)
 	}
-	mcp.AddTool(srv, listDatabasesTool, s.listDatabases)
 }
 
 // handle sends the request document to the middleware and returns result used by MCP tool.
-//
-// Log MCP tool result for debug level.
-// TODO https://github.com/FerretDB/FerretDB/issues/5277
 func (s *server) handle(ctx context.Context, reqDoc *wirebson.Document) (*mcp.CallToolResult, error) {
 	req, err := middleware.RequestDoc(reqDoc)
 	if err != nil {
@@ -79,7 +95,7 @@ func (s *server) handle(ctx context.Context, reqDoc *wirebson.Document) (*mcp.Ca
 	}
 
 	if s.l.Enabled(ctx, slog.LevelDebug) {
-		s.l.DebugContext(ctx, "MCP tool response", slog.Any("response", res))
+		s.l.DebugContext(ctx, "MCP tool result", slog.Any("result", res))
 	}
 
 	return res, nil

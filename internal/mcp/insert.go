@@ -22,15 +22,16 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// listDatabases returns a list of databases.
-func (s *server) listDatabases(ctx context.Context, _ *mcp.ServerSession, params *mcp.CallToolParamsFor[any]) (*mcp.CallToolResult, error) { //nolint:lll // for readability
+// insert inserts documents to a collection.
+func (s *server) insert(ctx context.Context, _ *mcp.ServerSession, params *mcp.CallToolParamsFor[any]) (*mcp.CallToolResult, error) { //nolint:lll // for readability
 	if s.l.Enabled(ctx, slog.LevelDebug) {
 		s.l.DebugContext(ctx, "MCP tool params", slog.Any("params", params))
 	}
 
 	req := wirebson.MustDocument(
-		"listDatabases", int32(1),
-		"$db", "admin",
+		"insert", "TODO",
+		"$db", "TODO",
+		"documents", "TODO",
 	)
 
 	return s.handle(ctx, req)
