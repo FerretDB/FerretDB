@@ -12,7 +12,8 @@ ARG LABEL_COMMIT
 
 # prepare stage
 
-FROM --platform=$BUILDPLATFORM golang:1.24.6 AS production-prepare
+# https://github.com/docker-library/golang/issues/570
+FROM --platform=$BUILDPLATFORM golang:1.24.6-bookworm AS production-prepare
 
 # use a single directory for all Go caches to simplify RUN --mount commands below
 ENV GOPATH=/cache/gopath
@@ -36,7 +37,8 @@ EOF
 
 # build stage
 
-FROM golang:1.24.6 AS production-build
+# https://github.com/docker-library/golang/issues/570
+FROM golang:1.24.6-bookworm AS production-build
 
 ARG TARGETARCH
 
