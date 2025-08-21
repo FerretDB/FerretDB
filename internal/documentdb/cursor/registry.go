@@ -130,15 +130,15 @@ func (r *Registry) Close(ctx context.Context) {
 func (r *Registry) NewCursor(ctx context.Context, id int64, continuation wirebson.RawDocument, conn *pgx.Conn) {
 	persist := conn != nil
 
+	var continuationV wirebson.AnyDocument = continuation
+	if devbuild.Enabled && len(continuation) > 0 {
+		continuationV = must.NotFail(continuation.Decode())
+	}
+
 	attrs := []slog.Attr{
 		slog.Int64("id", id),
 		slog.Bool("persist", persist),
-	}
-
-	if devbuild.Enabled && len(continuation) > 0 {
-		// to have better logging for devbuild
-		cont := must.NotFail(continuation.Decode())
-		attrs = append(attrs, slog.Any("continuation", cont))
+		slog.Any("continuation", continuationV),
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/5445

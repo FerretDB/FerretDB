@@ -28,6 +28,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
+
 	"github.com/FerretDB/FerretDB/v2/integration"
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
 	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
@@ -1138,7 +1140,8 @@ func TestFindCommandFirstBatchMaxTimeMS(t *testing.T) {
 		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/5445")
 
 		for i := 0; i < 2; i++ {
-			time.Sleep(100 * time.Millisecond)
+			ctxutil.Sleep(ctx, 100*time.Millisecond)
+
 			var res bson.D
 			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 			require.NoError(t, err)
@@ -1160,7 +1163,8 @@ func TestFindCommandFirstBatchMaxTimeMS(t *testing.T) {
 	t.Run("GetMoreEmpty", func(tt *testing.T) {
 		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/5445")
 
-		time.Sleep(100 * time.Millisecond)
+		ctxutil.Sleep(ctx, 100*time.Millisecond)
+
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 		require.NoError(t, err)
