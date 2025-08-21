@@ -21,23 +21,14 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// listDatabases returns a list of databases in a string containing Extended JSON v2 format.
-func (h *ToolHandler) listDatabases(ctx context.Context, _ *mcp.ServerSession, _ *mcp.CallToolParamsFor[any]) (*mcp.CallToolResultFor[any], error) { //nolint:lll // for readability
+// listDatabases returns a list of databases.
+func (s *server) listDatabases(ctx context.Context, _ *mcp.ServerSession, _ *mcp.CallToolParamsFor[any]) (*mcp.CallToolResult, error) { //nolint:lll // for readability
+	// log MCP tool request for debug level
+	// TODO https://github.com/FerretDB/FerretDB/issues/5277
 	req := wirebson.MustDocument(
 		"listDatabases", int32(1),
+		"$db", "admin",
 	)
 
-	res, err := h.request(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	resJson, err := res.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-
-	return &mcp.CallToolResultFor[any]{
-		Content: []mcp.Content{&mcp.TextContent{Text: string(resJson)}},
-	}, nil
+	return s.handle(ctx, req)
 }

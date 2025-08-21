@@ -12,26 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package mcp
+package mcp_test
 
 import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
-	"github.com/FerretDB/FerretDB/v2/internal/handler"
-	"github.com/FerretDB/FerretDB/v2/internal/util/httpmiddleware"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
+	"github.com/FerretDB/FerretDB/v2/internal/util/setup"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
@@ -40,81 +37,48 @@ func TestListenerNoAuth(t *testing.T) {
 	t.Parallel()
 
 	ctx := t.Context()
-	addr := setupListener(t, ctx, false)
+	configF := setupMCP(t, ctx, false)
 
-	jsonConfig := fmt.Sprintf(`{
-	"mcpServers": {
-	  "FerretDB": {
-	    "type": "remote",
-	    "url": "http://%s/mcp"
-	    }
-	  }
-	}`,
-		addr.String(),
-	)
-
-	res := askMCPHost(t, ctx, jsonConfig, "list databases")
+	res := askMCPHost(t, ctx, configF, "list databases")
 	t.Log(res)
 	//          [  ferretdb__listDatabases
 	//          ]  List
 	//          {"databases":[],"totalSize":{"$numberInt":"19967123"},"ok":{"$numberDouble":"1
 	//          .0"}}
-	require.Contains(t, res, "ferretdb__listDatabases")
-
 	res = strings.ReplaceAll(res, "\n", "")
-	res = strings.ReplaceAll(res, " ", "")
-	require.Contains(t, res, `{"databases":`)
-	require.Contains(t, res, `"totalSize":`)
-	require.Contains(t, res, `"ok":{"$numberDouble":"1.0"}`)
+	require.Contains(t, res, "ferretdb__listDatabases")
+	require.Contains(t, res, `{"databases":[`)
+	require.Contains(t, res, `],"totalSize":{`)
+	require.Contains(t, res, `},"ok":{"$numberDouble":"1.0"}`)
 }
 
 func TestListenerBasicAuth(t *testing.T) {
 	t.Parallel()
 
 	ctx := t.Context()
-	addr := setupListener(t, ctx, true)
+	configF := setupMCP(t, ctx, true)
 
-	jsonConfig := fmt.Sprintf(`{
-	"mcpServers": {
-	  "FerretDB": {
-	    "type": "remote",
-	    "url": "http://%s/mcp",
-	    "headers": ["Authorization: Basic %s"]
-	    }
-	  }
-	}`,
-		addr.String(),
-		base64.StdEncoding.EncodeToString([]byte("username:password")),
-	)
-
-	res := askMCPHost(t, ctx, jsonConfig, "list databases")
+	res := askMCPHost(t, ctx, configF, "list databases")
 	t.Log(res)
 	//          [  ferretdb__listDatabases
 	//          ]  List
 	//          {"databases":[],"totalSize":{"$numberInt":"19967123"},"ok":{"$numberDouble":"1
 	//          .0"}}
-	require.Contains(t, res, "ferretdb__listDatabases")
-
 	res = strings.ReplaceAll(res, "\n", "")
-	res = strings.ReplaceAll(res, " ", "")
-	require.Contains(t, res, `{"databases":`)
-	require.Contains(t, res, `"totalSize":`)
-	require.Contains(t, res, `"ok":{"$numberDouble":"1.0"}`)
+	require.Contains(t, res, "ferretdb__listDatabases")
+	require.Contains(t, res, `{"databases":[`)
+	require.Contains(t, res, `],"totalSize":{`)
+	require.Contains(t, res, `},"ok":{"$numberDouble":"1.0"}`)
 }
 
-// askMCPHost runs MCP host in non-interactive mode with the given config and prompt and returns the output.
+// askMCPHost sends query to MCP host in non-interactive mode with
+// the given config file and prompt and returns the output.
 // Non-interactive mode without streaming is used for the ease of testing.
-func askMCPHost(tb testing.TB, ctx context.Context, jsonConfig, prompt string) string {
+func askMCPHost(tb testing.TB, ctx context.Context, configF, prompt string) string {
 	tb.Helper()
 
-	bin := filepath.Join(testutil.BinDir, "mcphost")
-
-	configF := filepath.Join(tb.TempDir(), "mcphost.json")
-	err := os.WriteFile(configF, []byte(jsonConfig), 0o666)
-	require.NoError(tb, err)
-
 	cmd := exec.CommandContext(ctx,
-		bin,
+		filepath.Join(testutil.BinDir, "mcphost"),
 		"--config", configF,
 		"--model", "ollama:qwen3:0.6b",
 		"--prompt", prompt,
@@ -127,54 +91,74 @@ func askMCPHost(tb testing.TB, ctx context.Context, jsonConfig, prompt string) s
 	return string(res)
 }
 
-// setupListener sets up a new MCP listener.
-func setupListener(tb testing.TB, ctx context.Context, auth bool) net.Addr {
-	uri := testutil.PostgreSQLURL(tb)
-	l := testutil.Logger(tb)
+// setupMCP sets up a new MCP listener and returns config file path
+// that mcp host can use.
+func setupMCP(tb testing.TB, ctx context.Context, auth bool) string {
+	tb.Helper()
+
 	sp, err := state.NewProvider("")
 	require.NoError(tb, err)
 
-	p, err := documentdb.NewPool(uri, l, sp)
-	require.NoError(tb, err)
-
-	h, err := handler.New(&handler.NewOpts{
-		Pool:          p,
-		L:             l,
+	//exhaustruct:enforce
+	res := setup.Setup(tb.Context(), &setup.SetupOpts{
+		Logger:        testutil.Logger(tb),
 		StateProvider: sp,
-		Auth:          auth,
+		Metrics:       middleware.NewMetrics(),
+
+		PostgreSQLURL:          testutil.PostgreSQLURL(tb),
+		Auth:                   auth,
+		ReplSetName:            "",
+		SessionCleanupInterval: 0,
+
+		ProxyAddr:        "",
+		ProxyTLSCertFile: "",
+		ProxyTLSKeyFile:  "",
+		ProxyTLSCAFile:   "",
+
+		TCPAddr:        "127.0.0.1:0",
+		UnixAddr:       "",
+		TLSAddr:        "",
+		TLSCertFile:    "",
+		TLSKeyFile:     "",
+		TLSCAFile:      "",
+		Mode:           middleware.NormalMode,
+		TestRecordsDir: "",
+
+		DataAPIAddr: "",
+
+		MCPAddr: "127.0.0.1:0",
 	})
-	require.NoError(tb, err)
+	require.NotNil(tb, res)
 
-	cancelCtx, cancel := context.WithCancel(ctx)
-	var wg sync.WaitGroup
+	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
 
+	runDone := make(chan struct{})
+
+	go func() {
+		defer close(runDone)
+		res.Run(ctx)
+	}()
+
+	// ensure that all listener's and handler's logs are written before test ends
 	tb.Cleanup(func() {
 		cancel()
-		wg.Wait()
+		<-runDone
 	})
 
-	wg.Add(1)
+	config := fmt.Sprintf(`{
+	"mcpServers": {
+	  "FerretDB": {
+	    "type": "remote",
+	    "url": "http://%s/mcp"
+	    }
+	  }
+	}`,
+		res.MCPListener.Addr(),
+	)
 
-	go func() {
-		h.Run(cancelCtx)
-		wg.Done()
-	}()
-
-	mcpHandler, err := Listen(&ListenOpts{
-		Handler:        h,
-		ToolHandler:    NewToolHandler(h),
-		HttpMiddleware: httpmiddleware.NewHttpMiddleware(h, l),
-		TCPAddr:        "127.0.0.1:0",
-		L:              l,
-	})
+	configF := filepath.Join(tb.TempDir(), "mcphost.json")
+	err = os.WriteFile(configF, []byte(config), 0o666)
 	require.NoError(tb, err)
 
-	wg.Add(1)
-
-	go func() {
-		mcpHandler.Serve(cancelCtx)
-		wg.Done()
-	}()
-
-	return mcpHandler.lis.Addr()
+	return configF
 }

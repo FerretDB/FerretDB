@@ -448,6 +448,20 @@ func BsonDollarGte(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymou
 	return
 }
 
+// BsonDollarIndexHint is a wrapper for
+//
+//	documentdb_api_internal.bson_dollar_index_hint(document documentdb_core.bson, index_name text, key_document documentdb_core.bson, is_sparse boolean, OUT bson_dollar_index_hint boolean).
+func BsonDollarIndexHint(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, indexName string, keyDocument wirebson.RawDocument, isSparse bool) (outBsonDollarIndexHint bool, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_dollar_index_hint", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_dollar_index_hint FROM documentdb_api_internal.bson_dollar_index_hint($1::bytea, $2, $3::bytea, $4)", document, indexName, keyDocument, isSparse)
+	if err = row.Scan(&outBsonDollarIndexHint); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_dollar_index_hint", l)
+	}
+	return
+}
+
 // BsonDollarInverseMatch is a wrapper for
 //
 //	documentdb_api_internal.bson_dollar_inverse_match(document documentdb_core.bson, spec documentdb_core.bson, OUT bson_dollar_inverse_match boolean).
@@ -1078,6 +1092,20 @@ func BsonFirstTransitionOnSorted(ctx context.Context, conn *pgx.Conn, l *slog.Lo
 	return
 }
 
+// BsonFirstnFinal is a wrapper for
+//
+//	documentdb_api_internal.bson_firstn_final(anonymous bytea, OUT bson_firstn_final documentdb_core.bson).
+func BsonFirstnFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonFirstnFinal wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_firstn_final", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_firstn_final::bytea FROM documentdb_api_internal.bson_firstn_final($1)", anonymous)
+	if err = row.Scan(&outBsonFirstnFinal); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_firstn_final", l)
+	}
+	return
+}
+
 // BsonFirstnTransition is a wrapper for
 //
 //	documentdb_api_internal.bson_firstn_transition(anonymous bytea, anonymous1 documentdb_core.bson, anonymous12 bigint, anonymous123 ARRAY, anonymous1234 documentdb_core.bson DEFAULT NULL, OUT bson_firstn_transition bytea).
@@ -1116,6 +1144,20 @@ func BsonGeonearWithinRange(ctx context.Context, conn *pgx.Conn, l *slog.Logger,
 	row := conn.QueryRow(ctx, "SELECT bson_geonear_within_range FROM documentdb_api_internal.bson_geonear_within_range($1::bytea, $2::bytea)", anonymous, anonymous1)
 	if err = row.Scan(&outBsonGeonearWithinRange); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_geonear_within_range", l)
+	}
+	return
+}
+
+// BsonIndexTransform is a wrapper for
+//
+//	documentdb_api_internal.bson_index_transform(anonymous bytea, anonymous1 bytea, anonymous12 smallint, anonymous123 internal, OUT bson_index_transform bytea).
+func BsonIndexTransform(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}, anonymous12 struct{}, anonymous123 struct{}) (outBsonIndexTransform struct{}, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_index_transform", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_index_transform FROM documentdb_api_internal.bson_index_transform($1, $2, $3, $4)", anonymous, anonymous1, anonymous12, anonymous123)
+	if err = row.Scan(&outBsonIndexTransform); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_index_transform", l)
 	}
 	return
 }
@@ -1172,6 +1214,20 @@ func BsonLastTransitionOnSorted(ctx context.Context, conn *pgx.Conn, l *slog.Log
 	row := conn.QueryRow(ctx, "SELECT bson_last_transition_on_sorted FROM documentdb_api_internal.bson_last_transition_on_sorted($1, $2::bytea, $3::bytea)", anonymous, anonymous1, anonymous12)
 	if err = row.Scan(&outBsonLastTransitionOnSorted); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_last_transition_on_sorted", l)
+	}
+	return
+}
+
+// BsonLastnFinal is a wrapper for
+//
+//	documentdb_api_internal.bson_lastn_final(anonymous bytea, OUT bson_lastn_final documentdb_core.bson).
+func BsonLastnFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonLastnFinal wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_lastn_final", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_lastn_final::bytea FROM documentdb_api_internal.bson_lastn_final($1)", anonymous)
+	if err = row.Scan(&outBsonLastnFinal); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_lastn_final", l)
 	}
 	return
 }
@@ -1386,6 +1442,20 @@ func BsonOrderbyCompare(ctx context.Context, conn *pgx.Conn, l *slog.Logger, ano
 	return
 }
 
+// BsonOrderbyCompareSortSupport is a wrapper for
+//
+//	documentdb_api_internal.bson_orderby_compare_sort_support(anonymous internal).
+func BsonOrderbyCompareSortSupport(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_orderby_compare_sort_support", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_internal.bson_orderby_compare_sort_support($1)", anonymous)
+	if err = row.Scan(); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_orderby_compare_sort_support", l)
+	}
+	return
+}
+
 // BsonOrderbyEq is a wrapper for
 //
 //	documentdb_api_internal.bson_orderby_eq(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, OUT bson_orderby_eq boolean).
@@ -1456,6 +1526,20 @@ func BsonOrderbyPartition1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, 
 	return
 }
 
+// BsonOrderbyReverse is a wrapper for
+//
+//	documentdb_api_internal.bson_orderby_reverse(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, OUT bson_orderby_reverse documentdb_core.bson).
+func BsonOrderbyReverse(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonOrderbyReverse wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_orderby_reverse", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_orderby_reverse::bytea FROM documentdb_api_internal.bson_orderby_reverse($1::bytea, $2::bytea)", anonymous, anonymous1)
+	if err = row.Scan(&outBsonOrderbyReverse); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_orderby_reverse", l)
+	}
+	return
+}
+
 // BsonQueryMatch is a wrapper for
 //
 //	documentdb_api_internal.bson_query_match(document documentdb_core.bson, query documentdb_core.bson, variablespec documentdb_core.bson, collationstring text, OUT bson_query_match boolean).
@@ -1494,6 +1578,20 @@ func BsonRank(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (err error) {
 	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_internal.bson_rank()")
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_rank", l)
+	}
+	return
+}
+
+// BsonRumCompositeOrdering is a wrapper for
+//
+//	documentdb_api_internal.bson_rum_composite_ordering(anonymous bytea, anonymous1 documentdb_core.bson, anonymous12 smallint, anonymous123 internal, OUT bson_rum_composite_ordering documentdb_core.bson).
+func BsonRumCompositeOrdering(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument, anonymous12 struct{}, anonymous123 struct{}) (outBsonRumCompositeOrdering wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_rum_composite_ordering", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_rum_composite_ordering::bytea FROM documentdb_api_internal.bson_rum_composite_ordering($1, $2::bytea, $3, $4)", anonymous, anonymous1, anonymous12, anonymous123)
+	if err = row.Scan(&outBsonRumCompositeOrdering); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_rum_composite_ordering", l)
 	}
 	return
 }
@@ -1710,12 +1808,12 @@ func BsonUniqueShardPathEqual(ctx context.Context, conn *pgx.Conn, l *slog.Logge
 
 // BsonUpdateDocument is a wrapper for
 //
-//	documentdb_api_internal.bson_update_document(document documentdb_core.bson, updatespec documentdb_core.bson, queryspec documentdb_core.bson, arrayfilters documentdb_core.bson DEFAULT NULL, buildupdatedesc boolean DEFAULT false, OUT newdocument documentdb_core.bson, OUT updatedesc documentdb_core.bson).
-func BsonUpdateDocument(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, updateSpec wirebson.RawDocument, querySpec wirebson.RawDocument, arrayfilters wirebson.RawDocument, buildupdatedesc bool) (outNewdocument wirebson.RawDocument, outUpdatedesc wirebson.RawDocument, err error) {
+//	documentdb_api_internal.bson_update_document(document documentdb_core.bson, updatespec documentdb_core.bson, queryspec documentdb_core.bson, arrayfilters documentdb_core.bson DEFAULT NULL, buildupdatedesc boolean DEFAULT false, variablespec documentdb_core.bson DEFAULT NULL, OUT newdocument documentdb_core.bson, OUT updatedesc documentdb_core.bson).
+func BsonUpdateDocument(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, updateSpec wirebson.RawDocument, querySpec wirebson.RawDocument, arrayfilters wirebson.RawDocument, buildupdatedesc bool, variableSpec wirebson.RawDocument) (outNewdocument wirebson.RawDocument, outUpdatedesc wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_update_document", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT newdocument::bytea, updatedesc::bytea FROM documentdb_api_internal.bson_update_document($1::bytea, $2::bytea, $3::bytea, $4::bytea, $5)", document, updateSpec, querySpec, arrayfilters, buildupdatedesc)
+	row := conn.QueryRow(ctx, "SELECT newdocument::bytea, updatedesc::bytea FROM documentdb_api_internal.bson_update_document($1::bytea, $2::bytea, $3::bytea, $4::bytea, $5, $6::bytea)", document, updateSpec, querySpec, arrayfilters, buildupdatedesc, variableSpec)
 	if err = row.Scan(&outNewdocument, &outUpdatedesc); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_update_document", l)
 	}
@@ -2676,13 +2774,13 @@ func DocumentdbGetNextCollectionIndexId(ctx context.Context, conn *pgx.Conn, l *
 
 // EmptyDataTable is a wrapper for
 //
-//	documentdb_api_internal.empty_data_table(OUT shard_key_value bigint, OUT object_id documentdb_core.bson, OUT document documentdb_core.bson, OUT creation_time timestamp with time zone).
-func EmptyDataTable(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outShardKeyValue int64, outObjectID wirebson.RawDocument, outDocument wirebson.RawDocument, outCreationTime struct{}, err error) {
+//	documentdb_api_internal.empty_data_table(OUT shard_key_value bigint, OUT object_id documentdb_core.bson, OUT document documentdb_core.bson).
+func EmptyDataTable(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outShardKeyValue int64, outObjectID wirebson.RawDocument, outDocument wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.empty_data_table", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT shard_key_value, object_id::bytea, document::bytea, creation_time FROM documentdb_api_internal.empty_data_table()")
-	if err = row.Scan(&outShardKeyValue, &outObjectID, &outDocument, &outCreationTime); err != nil {
+	row := conn.QueryRow(ctx, "SELECT shard_key_value, object_id::bytea, document::bytea FROM documentdb_api_internal.empty_data_table()")
+	if err = row.Scan(&outShardKeyValue, &outObjectID, &outDocument); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.empty_data_table", l)
 	}
 	return
@@ -3292,12 +3390,12 @@ func TriggerValidateDbname(ctx context.Context, conn *pgx.Conn, l *slog.Logger) 
 
 // UpdateBsonDocument is a wrapper for
 //
-//	documentdb_api_internal.update_bson_document(document documentdb_core.bson, updatespec documentdb_core.bson, queryspec documentdb_core.bson, arrayfilters documentdb_core.bson DEFAULT NULL, OUT newdocument documentdb_core.bson).
-func UpdateBsonDocument(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, updateSpec wirebson.RawDocument, querySpec wirebson.RawDocument, arrayfilters wirebson.RawDocument) (outNewdocument wirebson.RawDocument, err error) {
+//	documentdb_api_internal.update_bson_document(document documentdb_core.bson, updatespec documentdb_core.bson, queryspec documentdb_core.bson, arrayfilters documentdb_core.bson DEFAULT NULL, variablespec documentdb_core.bson DEFAULT NULL, OUT newdocument documentdb_core.bson).
+func UpdateBsonDocument(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, updateSpec wirebson.RawDocument, querySpec wirebson.RawDocument, arrayfilters wirebson.RawDocument, variableSpec wirebson.RawDocument) (outNewdocument wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.update_bson_document", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT newdocument::bytea FROM documentdb_api_internal.update_bson_document($1::bytea, $2::bytea, $3::bytea, $4::bytea)", document, updateSpec, querySpec, arrayfilters)
+	row := conn.QueryRow(ctx, "SELECT newdocument::bytea FROM documentdb_api_internal.update_bson_document($1::bytea, $2::bytea, $3::bytea, $4::bytea, $5::bytea)", document, updateSpec, querySpec, arrayfilters, variableSpec)
 	if err = row.Scan(&outNewdocument); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.update_bson_document", l)
 	}

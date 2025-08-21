@@ -42,7 +42,7 @@ func (h *Handler) msgDBStats(connCtx context.Context, req *middleware.Request) (
 
 	var res wirebson.RawDocument
 
-	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
+	err = h.p.WithConn(func(conn *pgx.Conn) error {
 		res, err = documentdb_api.DbStats(connCtx, conn, h.L, dbName, 1, true)
 		return err
 	})
