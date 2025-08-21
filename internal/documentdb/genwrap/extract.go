@@ -25,9 +25,11 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// Extract returns rows of routines and parameters for given schemas.
-// Returned routines are sorted by schema name, their name and its parameter position.
-func Extract(ctx context.Context, uri string, schemas []string) ([]map[string]any, error) {
+// Extract returns routines and parameters for given schemas.
+// Keys are specific routines name (specific_schema.specific_name).
+// Values are sorted by parameter position.
+// USER-DEFINED types are placed by proper type names.
+func Extract(ctx context.Context, uri string, schemas []string) (map[string][]map[string]any, error) {
 	conn, err := pgx.Connect(ctx, uri)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -54,17 +56,17 @@ func Extract(ctx context.Context, uri string, schemas []string) ([]map[string]an
 		specific_name,
 		routine_name,
 		routine_type,
-		r.data_type AS routine_data_type,
-		r.type_udt_schema AS routine_udt_schema,
-		r.type_udt_name AS routine_udt_name,
+		routines.data_type AS routine_data_type,
+		routines.type_udt_schema AS routine_udt_schema,
+		routines.type_udt_name AS routine_udt_name,
 		parameter_name,
 		parameter_mode,
 		parameter_default,
-		p.data_type,
-		p.udt_schema,
-		p.udt_name
-	FROM information_schema.routines AS r
-		LEFT JOIN information_schema.parameters AS p USING (specific_schema, specific_name)
+		parameters.data_type,
+		parameters.udt_schema,
+		parameters.udt_name
+	FROM information_schema.routines
+		LEFT JOIN information_schema.parameters USING (specific_schema, specific_name)
 	WHERE specific_schema IN (%s)
 	ORDER BY specific_schema, specific_name, ordinal_position
 	`,
@@ -76,5 +78,43 @@ func Extract(ctx context.Context, uri string, schemas []string) ([]map[string]an
 		return nil, lazyerrors.Error(err)
 	}
 
-	return pgx.CollectRows(rows, pgx.RowToMap)
+	rowsMap, err := pgx.CollectRows(rows, pgx.RowToMap)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res := map[string][]map[string]any{}
+	var name string
+	var params []map[string]any
+
+	for _, r := range rowsMap {
+		n := fmt.Sprintf("%s.%s", r["specific_schema"], r["specific_name"])
+		if n != name {
+			if name != "" {
+				res[name] = params
+			}
+
+			name = n
+			params = nil
+		}
+
+		if r["routine_data_type"] == "USER-DEFINED" {
+			r["routine_data_type"] = fmt.Sprintf("%s.%s", r["routine_udt_schema"], r["routine_udt_name"])
+		}
+
+		if r["data_type"] == "USER-DEFINED" {
+			r["data_type"] = fmt.Sprintf("%s.%s", r["udt_schema"], r["udt_name"])
+		}
+
+		delete(r, "routine_udt_schema")
+		delete(r, "routine_udt_name")
+		delete(r, "udt_schema")
+		delete(r, "udt_name")
+
+		params = append(params, r)
+	}
+
+	res[name] = params
+
+	return res, nil
 }

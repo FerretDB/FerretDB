@@ -16,6 +16,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log/slog"
 	"maps"
 	"slices"
@@ -29,12 +30,11 @@ import (
 //
 // For an anonymous SQL parameter, it assigns a unique name.
 // It also produces SQL query placeholders and return parameters in strings.
-func Convert(rows []map[string]any, l *slog.Logger) map[string]map[string]templateData {
+func Convert(routineParams map[string][]map[string]any, l *slog.Logger) map[string]map[string]templateData {
 	c := &converter{
 		l: l,
 	}
 
-	routineParams := c.groupBySpecificName(rows)
 	schemas := map[string]map[string]templateData{}
 
 	for _, specificName := range slices.Sorted(maps.Keys(routineParams)) {
@@ -44,48 +44,38 @@ func Convert(rows []map[string]any, l *slog.Logger) map[string]map[string]templa
 		var placeholderCounter int
 
 		for _, row := range params {
-			name := "anonymous"
-
-			if row["parameter_name"] != nil {
-				name = row["parameter_name"].(string)
-			}
-
-			if row["parameter_mode"] == "IN" {
-				name = c.uniqueName(paramNames, name)
-			}
-
-			paramNames = append(paramNames, name)
-
-			if row["parameter_name"] == "p_transaction_id" {
-				// skip p_transaction_id, transaction is not supported yet
-				// TODO https://github.com/FerretDB/FerretDB/issues/8
+			pn, gp, gr, sp, sr, cm, qra, sa, pc := c.convertParam(
+				row,
+				paramNames,
+				placeholderCounter,
+			)
+			if pn == "" && gp == "" && gr == "" && sp == "" && sr == "" && cm == "" && qra == "" && sa == "" {
+				// skip row
 				continue
 			}
-
-			if row["parameter_mode"] == nil {
-				// skip a row if the row does not contain a parameter such as BinaryExtendedVersion()
-				continue
+			paramNames = append(paramNames, pn)
+			if gp != "" {
+				goParams = append(goParams, gp)
 			}
-
-			comment = append(comment, c.toParamComment(name, row))
-			dataType := c.dataType(row)
-
-			if row["parameter_mode"] == "IN" || row["parameter_mode"] == "INOUT" {
-				placeholder := fmt.Sprintf("$%d", placeholderCounter+1)
-				placeholderCounter++
-
-				goName := c.parameterName(name)
-				sqlParams = append(sqlParams, c.parameterCast(placeholder, dataType))
-				goParams = append(goParams, fmt.Sprintf("%s %s", goName, c.parameterType(dataType)))
-				queryRowArgs = append(queryRowArgs, goName)
+			if gr != "" {
+				goReturns = append(goReturns, gr)
 			}
-
-			if row["parameter_mode"] == "OUT" || row["parameter_mode"] == "INOUT" {
-				goName := "out" + c.pascalCase(c.parameterName(name))
-				sqlReturns = append(sqlReturns, c.parameterCast(name, dataType))
-				goReturns = append(goReturns, fmt.Sprintf("%s %s", goName, c.parameterType(dataType)))
-				scanArgs = append(scanArgs, fmt.Sprintf("&%s", goName))
+			if sp != "" {
+				sqlParams = append(sqlParams, sp)
 			}
+			if sr != "" {
+				sqlReturns = append(sqlReturns, sr)
+			}
+			if cm != "" {
+				comment = append(comment, cm)
+			}
+			if qra != "" {
+				queryRowArgs = append(queryRowArgs, qra)
+			}
+			if sa != "" {
+				scanArgs = append(scanArgs, sa)
+			}
+			placeholderCounter = pc
 		}
 
 		routineName := params[0]["routine_name"].(string)
@@ -95,7 +85,7 @@ func Convert(rows []map[string]any, l *slog.Logger) map[string]map[string]templa
 			// parameter data type, but it has routine data type for the return variable,
 			// except void data type which does not return anything.
 			goName := "out" + c.pascalCase(c.parameterName(routineName))
-			dataType := c.routineDataType(params[0])
+			dataType := params[0]["routine_data_type"].(string)
 			sqlReturns = append(sqlReturns, c.parameterCast(routineName, dataType))
 			goReturns = append(goReturns, fmt.Sprintf("%s %s", goName, c.parameterType(dataType)))
 			scanArgs = append(scanArgs, fmt.Sprintf("&%s", goName))
@@ -113,20 +103,20 @@ func Convert(rows []map[string]any, l *slog.Logger) map[string]map[string]templa
 
 		r := templateData{
 			FuncName:     c.pascalCase(uniqueFunctionName),
-			SQLFuncName:  fmt.Sprintf("%s.%s", schema, routineName),
+			SQLName:      fmt.Sprintf("%s.%s", schema, routineName),
 			Comment:      fmt.Sprintf("%s.%s(%s)", schema, routineName, strings.Join(comment, ", ")),
 			IsProcedure:  params[0]["routine_type"] == "PROCEDURE",
 			SQLArgs:      strings.Join(sqlParams, ", "),
 			SQLReturns:   strings.Join(sqlReturns, ", "),
-			Params:       strings.Join(goParams, ", "),
-			Returns:      strings.Join(goReturns, ", "),
+			FuncParams:   strings.Join(goParams, ", "),
+			FuncReturns:  strings.Join(goReturns, ", "),
 			QueryRowArgs: strings.Join(queryRowArgs, ", "),
 			ScanArgs:     strings.Join(scanArgs, ", "),
 		}
 
 		// TODO https://github.com/microsoft/documentdb/issues/49
 		if r.IsProcedure {
-			l.Warn("Procedure skipped due to unable to decode output", slog.String("function", r.SQLFuncName))
+			l.Warn("Procedure skipped due to unable to decode output", slog.String("function", r.SQLName))
 
 			continue
 		}
@@ -140,6 +130,65 @@ func Convert(rows []map[string]any, l *slog.Logger) map[string]map[string]templa
 // converter is used to group methods used by [Convert].
 type converter struct {
 	l *slog.Logger
+}
+
+// convertParam processes a single parameter row and updates the provided slices accordingly.
+func (c *converter) convertParam(
+	row map[string]any,
+	paramNames []string,
+	placeholderCounter int,
+) (
+	string, // paramName
+	string, // goParam
+	string, // goReturn
+	string, // sqlParam
+	string, // sqlReturn
+	string, // comment
+	string, // queryRowArg
+	string, // scanArg
+	int, // placeholderCounter
+) {
+	name := "anonymous"
+
+	if row["parameter_name"] != nil {
+		name = row["parameter_name"].(string)
+	}
+
+	if row["parameter_mode"] == "IN" {
+		name = c.uniqueName(paramNames, name)
+	}
+
+	if row["parameter_name"] == "p_transaction_id" {
+		return "", "", "", "", "", "", "", "", placeholderCounter
+	}
+
+	if row["parameter_mode"] == nil {
+		return "", "", "", "", "", "", "", "", placeholderCounter
+	}
+
+	comment := c.toParamComment(name, row)
+	dataType := row["data_type"].(string)
+
+	var goParam, goReturn, sqlParam, sqlReturn, queryRowArg, scanArg string
+
+	if row["parameter_mode"] == "IN" || row["parameter_mode"] == "INOUT" {
+		placeholder := fmt.Sprintf("$%d", placeholderCounter+1)
+		placeholderCounter++
+
+		goName := c.parameterName(name)
+		sqlParam = c.parameterCast(placeholder, dataType)
+		goParam = fmt.Sprintf("%s %s", goName, c.parameterType(dataType))
+		queryRowArg = goName
+	}
+
+	if row["parameter_mode"] == "OUT" || row["parameter_mode"] == "INOUT" {
+		goName := "out" + c.pascalCase(c.parameterName(name))
+		sqlReturn = c.parameterCast(name, dataType)
+		goReturn = fmt.Sprintf("%s %s", goName, c.parameterType(dataType))
+		scanArg = fmt.Sprintf("&%s", goName)
+	}
+
+	return name, goParam, goReturn, sqlParam, sqlReturn, comment, queryRowArg, scanArg, placeholderCounter
 }
 
 // camelCase converts snake_case to to camelCase.
@@ -234,62 +283,20 @@ func (c *converter) parameterType(typ string) string {
 }
 
 // parameterCast adds a type cast (::type) to a parameter if needed.
-func (c *converter) parameterCast(name string, typ string) string {
-	switch typ {
+func (c *converter) parameterCast(sqlName string, sqlType string) string {
+	switch sqlType {
 	case "documentdb_core.bson", "documentdb_core.bsonsequence":
-		return name + "::bytea"
+		return sqlName + "::bytea"
 	default:
-		return name
+		return sqlName
 	}
-}
-
-// groupBySpecificName groups rows by specific_name.
-func (c *converter) groupBySpecificName(rows []map[string]any) map[string][]map[string]any {
-	var specificName any
-
-	routines := map[string][]map[string]any{}
-	var groupedParams []map[string]any
-
-	for _, row := range rows {
-		if specificName != row["specific_name"] && specificName != nil {
-			routines[specificName.(string)] = groupedParams
-			groupedParams = []map[string]any{}
-		}
-
-		groupedParams = append(groupedParams, row)
-		specificName = row["specific_name"]
-	}
-
-	routines[specificName.(string)] = groupedParams
-
-	return routines
-}
-
-// dataType returns SQL datatype of a parameter. If the data type is USER-DEFINED,
-// it returns schema and name concatenated by dot.
-func (c *converter) dataType(row map[string]any) string {
-	if row["data_type"] == "USER-DEFINED" {
-		return row["udt_schema"].(string) + "." + row["udt_name"].(string)
-	}
-
-	return row["data_type"].(string)
-}
-
-// routineDataType returns SQL datatype of a routine. If the data type is USER-DEFINED,
-// it returns schema and name concatenated by dot.
-func (c *converter) routineDataType(row map[string]any) string {
-	if row["routine_data_type"] == "USER-DEFINED" {
-		return row["routine_udt_schema"].(string) + "." + row["routine_udt_name"].(string)
-	}
-
-	return row["routine_data_type"].(string)
 }
 
 // toParamComment returns concatenated string of parameter name, data type
 // and default value to use for the parameter description of a function.
 // If the parameter is not an input, prefix OUT/INOUT is added to the comment.
 func (c *converter) toParamComment(paramName string, row map[string]any) string {
-	comment := paramName + " " + c.dataType(row)
+	comment := paramName + " " + row["data_type"].(string)
 	if row["parameter_mode"] != "IN" {
 		comment = row["parameter_mode"].(string) + " " + comment
 	}
@@ -311,4 +318,49 @@ func (c *converter) uniqueName(names []string, name string) string {
 	}
 
 	return name
+}
+
+// generateSQL builds SQL query and arguments for the given function definition.
+func generateSQL(f *templateData) string {
+	if f.IsProcedure {
+		return fmt.Sprintf("CALL %s(%s)", f.SQLName, f.SQLArgs)
+	}
+
+	if f.SQLReturns == "" {
+		return fmt.Sprintf("SELECT FROM %s(%s)", f.SQLName, f.SQLArgs)
+	}
+
+	return fmt.Sprintf(
+		"SELECT %s FROM %s(%s)",
+		f.SQLReturns,
+		f.SQLName,
+		f.SQLArgs,
+	)
+}
+
+// generateGoFunction uses template data to produce go function for querying DocumentDB API.
+//
+// The function is generated by using template and written to the writer.
+func generateGoFunction(writer io.Writer, data *templateData) error {
+	q := generateSQL(data)
+
+	queryRowArgs := fmt.Sprintf(`ctx, "%s"`, q)
+	if data.QueryRowArgs != "" {
+		queryRowArgs = fmt.Sprintf("%s, %s", queryRowArgs, data.QueryRowArgs)
+	}
+	data.QueryRowArgs = queryRowArgs
+
+	params := "ctx context.Context, conn *pgx.Conn, l *slog.Logger"
+	if data.FuncParams != "" {
+		params = fmt.Sprintf("%s, %s", params, data.FuncParams)
+	}
+	data.FuncParams = params
+
+	returns := "err error"
+	if data.FuncReturns != "" {
+		returns = fmt.Sprintf("%s, %s", data.FuncReturns, returns)
+	}
+	data.FuncReturns = returns
+
+	return funcTemplate.Execute(writer, &data)
 }
