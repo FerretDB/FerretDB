@@ -153,7 +153,7 @@ func setupUser(ctx context.Context, uri string, l *slog.Logger) error {
 // setup runs all setup commands.
 func setup(ctx context.Context, logger *slog.Logger) error {
 	h, err := debug.Listen(&debug.ListenOpts{
-		TCPAddr: "127.0.0.1:8081",
+		TCPAddr: "127.0.0.1:8089",
 		L:       logging.WithName(logger, "debug"),
 		R:       prometheus.DefaultRegisterer,
 	})
