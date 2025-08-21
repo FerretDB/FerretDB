@@ -16,7 +16,6 @@ package mcp_test
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"os"
 	"os/exec"

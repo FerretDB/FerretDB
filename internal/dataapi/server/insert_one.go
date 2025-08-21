@@ -62,15 +62,20 @@ func (s *Server) InsertOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = s.handler.Handle(ctx, msg)
-	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+	resp := s.m.Handle(ctx, msg)
+	if resp == nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	res := must.NotFail(wirebson.NewDocument(
+	if !resp.OK() {
+		s.writeJSONError(ctx, w, resp)
+		return
+	}
+
+	res := wirebson.MustDocument(
 		"n", float64(1),
-	))
+	)
 
 	s.writeJSONResponse(ctx, w, res)
 }

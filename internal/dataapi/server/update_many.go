@@ -62,20 +62,23 @@ func (s *Server) UpdateMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resMsg, err := s.handler.Handle(ctx, msg)
-	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+	resp := s.m.Handle(ctx, msg)
+	if resp == nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	resDoc := must.NotFail(must.NotFail(resMsg.OpMsg.DocumentRaw()).Decode())
+	if !resp.OK() {
+		s.writeJSONError(ctx, w, resp)
+		return
+	}
 
-	res := must.NotFail(wirebson.NewDocument(
-		"matchedCount", resDoc.Get("n"),
-		"modifiedCount", resDoc.Get("nModified"),
-	))
+	res := wirebson.MustDocument(
+		"matchedCount", resp.Document().Get("n"),
+		"modifiedCount", resp.Document().Get("nModified"),
+	)
 
-	if upsertedRaw := resDoc.Get("upserted"); upsertedRaw != nil {
+	if upsertedRaw := resp.Document().Get("upserted"); upsertedRaw != nil {
 		upserted := must.NotFail(upsertedRaw.(wirebson.AnyArray).Decode())
 
 		if upserted.Len() > 0 {
