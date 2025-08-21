@@ -45,7 +45,8 @@ type ListenOpts struct { //nolint:vet // for readability
 	L       *slog.Logger
 	M       *middleware.Middleware
 	TCPAddr string
-	Auth    bool
+	// TODO https://github.com/FerretDB/FerretDB/issues/5309
+	// Auth    bool
 }
 
 // Listen creates a new MCP handler and starts listener on the given TCP address.

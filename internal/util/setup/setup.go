@@ -209,7 +209,6 @@ func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 			L:       logging.WithName(opts.Logger, "mcp"),
 			M:       res.m,
 			TCPAddr: opts.MCPAddr,
-			Auth:    opts.Auth,
 		})
 		if err != nil {
 			opts.Logger.LogAttrs(ctx, logging.LevelDPanic, "Failed to construct MCP listener", logging.Error(err))
