@@ -39,8 +39,8 @@ func (h *Handler) msgSleep(connCtx context.Context, req *middleware.Request) (*m
 		return nil, err
 	}
 
-	// TODO error
 	if dbName != "admin" {
+		return nil, mongoerrors.New(mongoerrors.ErrUnauthorized, "sleep may only be run against the admin database.")
 	}
 
 	useDefault := true
@@ -49,7 +49,7 @@ func (h *Handler) msgSleep(connCtx context.Context, req *middleware.Request) (*m
 	if v := doc.Get("millis"); v != nil {
 		useDefault = false
 		millis, ok := v.(int32)
-		// TODO error
+
 		if !ok {
 			return nil, lazyerrors.Error(mongoerrors.New(mongoerrors.ErrBadValue, "parameter millis has invalid type"))
 		}
@@ -59,7 +59,6 @@ func (h *Handler) msgSleep(connCtx context.Context, req *middleware.Request) (*m
 
 	if v := doc.Get("secs"); v != nil {
 		secs, ok := v.(int32)
-		// TODO error
 		if !ok {
 			return nil, lazyerrors.Error(mongoerrors.New(mongoerrors.ErrBadValue, "parameter secs has invalid type"))
 		}
@@ -79,7 +78,9 @@ func (h *Handler) msgSleep(connCtx context.Context, req *middleware.Request) (*m
 	}
 
 	if lock != "w" {
-		return nil, lazyerrors.Error(mongoerrors.New(mongoerrors.ErrBadValue, fmt.Sprintf("parameter lock %s value is not supported", lock)))
+		return nil, lazyerrors.Error(
+			mongoerrors.New(mongoerrors.ErrBadValue, fmt.Sprintf("parameter lock %s value is not supported", lock)),
+		)
 	}
 
 	h.runM.Lock()

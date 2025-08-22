@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
 )
@@ -108,4 +109,22 @@ func TestSleepParallelRead(t *testing.T) {
 	require.NoError(t, err)
 
 	wg.Wait()
+}
+
+func TestSleepNonAdmin(t *testing.T) {
+	ctx, coll := setup.Setup(t)
+	adminDB := coll.Database()
+
+	var res bson.D
+	err := adminDB.RunCommand(ctx, bson.D{
+		{"sleep", int32(1)},
+		{"millis", int32(2000)},
+		{"lock", "w"},
+	}).Decode(&res)
+
+	AssertEqualCommandError(t, mongo.CommandError{
+		Code:    13,
+		Name:    "Unauthorized",
+		Message: "sleep may only be run against the admin database.",
+	}, err)
 }
