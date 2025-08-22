@@ -39,32 +39,16 @@ func newServer(l *slog.Logger, m *middleware.Middleware) *server {
 	}
 }
 
-// tools contains MCP tools that are available in the server.
-type tool struct {
-	handler mcp.ToolHandlerFor[any, any]
-	tool    *mcp.Tool
-}
-
 // addTools adds available MCP tools for the given mcp server.
 func (s *server) addTools(srv *mcp.Server) {
-	for _, t := range []tool{
-		{
-			handler: s.insert,
-			tool: &mcp.Tool{
-				Name:        "insert",
-				Description: "Inserts documents into a collection.",
-			},
-		},
-		{
-			handler: s.listDatabases,
-			tool: &mcp.Tool{
-				Name:        "listDatabases",
-				Description: "Returns a summary of all databases.",
-			},
-		},
-	} {
-		mcp.AddTool(srv, t.tool, t.handler)
-	}
+	mcp.AddTool(srv, &mcp.Tool{
+		Name:        "insert",
+		Description: "Inserts documents into a collection.",
+	}, s.insert)
+	mcp.AddTool(srv, &mcp.Tool{
+		Name:        "listDatabases",
+		Description: "Returns a summary of all databases.",
+	}, s.listDatabases)
 }
 
 // handle sends the request document to the middleware and returns result used by MCP tool.

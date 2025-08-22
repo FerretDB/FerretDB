@@ -32,23 +32,47 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
 
-func TestListener(t *testing.T) {
+func TestBasic(t *testing.T) {
 	t.Parallel()
 
 	ctx := t.Context()
 	configF := setupMCP(t, ctx)
 
-	res := askMCPHost(t, ctx, configF, "list databases")
-	t.Log(res)
-	//          [  ferretdb__listDatabases
-	//          ]  List
-	//          {"databases":[],"totalSize":{"$numberInt":"19967123"},"ok":{"$numberDouble":"1
-	//          .0"}}
-	res = strings.ReplaceAll(res, "\n", "")
-	require.Contains(t, res, "ferretdb__listDatabases")
-	require.Contains(t, res, `{"databases":[`)
-	require.Contains(t, res, `],"totalSize":{`)
-	require.Contains(t, res, `},"ok":{"$numberDouble":"1.0"}`)
+	t.Run("Insert", func(t *testing.T) {
+		prompt := "insert documents to a database named books and a collection named authors. " +
+			"The first document should contain author name Jane Austen with nationality British " +
+			"and the second document should contain author name Herman Melville with nationality American."
+		res := askMCPHost(t, ctx, configF, prompt)
+		t.Log(res)
+		//          [  ferretdb__insert authors,database:books,documents:[{author:Jane Au...
+		//          ]  Result {"n":{"$numberInt":"2"},"ok":{"$numberDouble":"1.0"}}
+		res = strings.ReplaceAll(res, " ", "")
+		res = strings.ReplaceAll(res, "\n", "")
+		require.Contains(t, res, "ferretdb__insert")
+		require.Contains(t, res, `{"n":{"$numberInt":"2"},"ok":{"$numberDouble":"1.0"}}`)
+	})
+}
+
+func TestAdmin(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	configF := setupMCP(t, ctx)
+
+	t.Run("ListDatabases", func(t *testing.T) {
+		res := askMCPHost(t, ctx, configF, "list databases")
+		t.Log(res)
+		//          [  ferretdb__listDatabases
+		//          ]  List
+		//          {"databases":[],"totalSize":{"$numberInt":"19967123"},"ok":{"$numberDouble":"1
+		//          .0"}}
+		res = strings.ReplaceAll(res, " ", "")
+		res = strings.ReplaceAll(res, "\n", "")
+		require.Contains(t, res, "ferretdb__listDatabases")
+		require.Contains(t, res, `{"databases":[`)
+		require.Contains(t, res, `],"totalSize":{`)
+		require.Contains(t, res, `},"ok":{"$numberDouble":"1.0"}`)
+	})
 }
 
 // askMCPHost sends query to MCP host in non-interactive mode with
