@@ -91,8 +91,10 @@ func testSleepCompat(t *testing.T, testCases map[string]sleepCompatTestCase) {
 				targetErr = UnsetRaw(t, targetErr)
 				compatErr = UnsetRaw(t, compatErr)
 				assert.Equal(t, compatErr, targetErr)
+
 				return
 			}
+
 			require.NoError(t, compatErr, "compat error; target returned no error")
 
 			t.Logf("Compat (expected) result: %v", compatRes)

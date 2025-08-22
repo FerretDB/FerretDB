@@ -36,12 +36,14 @@ func TestSleepParallelWrite(t *testing.T) {
 	start := make(chan struct{})
 
 	wg.Add(1)
+
 	go func() {
 		defer wg.Done()
 
 		var res bson.D
 
 		timeBefore := time.Now()
+
 		close(start)
 		err := adminDB.RunCommand(ctx, bson.D{
 			{"sleep", int32(1)},
@@ -50,6 +52,7 @@ func TestSleepParallelWrite(t *testing.T) {
 		}).Decode(&res)
 
 		dur := time.Since(timeBefore)
+
 		AssertEqualDocuments(t, bson.D{{"ok", float64(1.0)}}, res)
 
 		assert.InDelta(t, 2000, dur.Milliseconds(), 100)
@@ -77,12 +80,14 @@ func TestSleepParallelRead(t *testing.T) {
 	start := make(chan struct{})
 
 	wg.Add(1)
+
 	go func() {
 		defer wg.Done()
 
 		var res bson.D
 
 		timeBefore := time.Now()
+
 		close(start)
 		err := adminDB.RunCommand(ctx, bson.D{
 			{"sleep", int32(1)},
@@ -91,6 +96,7 @@ func TestSleepParallelRead(t *testing.T) {
 		}).Decode(&res)
 
 		dur := time.Since(timeBefore)
+
 		AssertEqualDocuments(t, bson.D{{"ok", float64(1.0)}}, res)
 
 		assert.InDelta(t, 2000, dur.Milliseconds(), 100)
@@ -122,9 +128,11 @@ func TestSleepNonAdmin(t *testing.T) {
 		{"lock", "w"},
 	}).Decode(&res)
 
-	AssertEqualCommandError(t, mongo.CommandError{
+	expectedErr := mongo.CommandError{
 		Code:    13,
 		Name:    "Unauthorized",
 		Message: "sleep may only be run against the admin database.",
-	}, err)
+	}
+
+	AssertEqualCommandError(t, expectedErr, err)
 }
