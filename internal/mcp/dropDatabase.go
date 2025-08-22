@@ -16,34 +16,25 @@ package mcp
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
 
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// insertArgs represents the arguments for the insert tool.
-type insertArgs struct {
-	Collection string          `json:"collection"`
-	Database   string          `json:"database"`
-	Documents  json.RawMessage `json:"documents"`
+// dropDatabaseArgs represents the arguments for the dropDatabase tool.
+type dropDatabaseArgs struct {
+	Database string `json:"database"`
 }
 
-// insert inserts documents to a collection.
-func (s *server) insert(ctx context.Context, _ *mcp.ServerSession, params *mcp.CallToolParamsFor[insertArgs]) (*mcp.CallToolResult, error) { //nolint:lll // for readability
+// dropDatabase deletes the database.
+func (s *server) dropDatabase(ctx context.Context, _ *mcp.ServerSession, params *mcp.CallToolParamsFor[dropDatabaseArgs]) (*mcp.CallToolResult, error) { //nolint:lll // for readability
 	if s.l.Enabled(ctx, slog.LevelDebug) {
 		s.l.DebugContext(ctx, "MCP tool params", slog.Any("params", params))
 	}
 
-	documents, err := toWireBSON(params.Arguments.Documents)
-	if err != nil {
-		return nil, err
-	}
-
 	req := wirebson.MustDocument(
-		"insert", params.Arguments.Collection,
-		"documents", documents,
+		"dropDatabase", int32(1),
 		"$db", params.Arguments.Database,
 	)
 

@@ -37,11 +37,27 @@ func TestBasic(t *testing.T) {
 
 	ctx := t.Context()
 	configF := setupMCP(t, ctx)
+	db := t.Name()
+
+	t.Run("DropDatabase", func(t *testing.T) {
+		prompt := fmt.Sprintf("Delete database named %s.", db)
+		res := askMCPHost(t, ctx, configF, prompt)
+		t.Log(res)
+		//          [  ferretdb__insert authors,database:books,documents:[{author:Jane Au...
+		//          ]  Result {"n":{"$numberInt":"2"},"ok":{"$numberDouble":"1.0"}}
+		res = strings.ReplaceAll(res, " ", "")
+		res = strings.ReplaceAll(res, "\n", "")
+		require.Contains(t, res, "ferretdb__dropDatabase")
+		require.Contains(t, res, `{"ok":{"$numberDouble":"1.0"}}`)
+	})
 
 	t.Run("Insert", func(t *testing.T) {
-		prompt := "insert documents to a database named books and a collection named authors. " +
-			"The first document should contain author name Jane Austen with nationality British " +
-			"and the second document should contain author name Herman Melville with nationality American."
+		prompt := fmt.Sprintf("Use database named %s. "+
+			"Insert two documents to a collection named authors. "+
+			"The first document should contain author name Jane Austen with nationality British "+
+			"and the second document should contain author name Herman Melville with nationality American.",
+			db,
+		)
 		res := askMCPHost(t, ctx, configF, prompt)
 		t.Log(res)
 		//          [  ferretdb__insert authors,database:books,documents:[{author:Jane Au...
@@ -50,6 +66,25 @@ func TestBasic(t *testing.T) {
 		res = strings.ReplaceAll(res, "\n", "")
 		require.Contains(t, res, "ferretdb__insert")
 		require.Contains(t, res, `{"n":{"$numberInt":"2"},"ok":{"$numberDouble":"1.0"}}`)
+	})
+
+	t.Run("Find", func(t *testing.T) {
+		prompt := fmt.Sprintf("Find a British author from %s database.", db)
+		res := askMCPHost(t, ctx, configF, prompt)
+		t.Log(res)
+		res = strings.ReplaceAll(res, " ", "")
+		res = strings.ReplaceAll(res, "\n", "")
+		require.Contains(t, res, "ferretdb__find")
+	})
+
+	t.Run("ListCollections", func(t *testing.T) {
+		prompt := fmt.Sprintf("List all collections in %s database.", db)
+		res := askMCPHost(t, ctx, configF, prompt)
+		t.Log(res)
+		res = strings.ReplaceAll(res, " ", "")
+		res = strings.ReplaceAll(res, "\n", "")
+		require.Contains(t, res, "ferretdb__listCollections")
+		require.Contains(t, res, `},"ok":{"$numberDouble":"1.0"}`)
 	})
 }
 

@@ -41,10 +41,23 @@ func newServer(l *slog.Logger, m *middleware.Middleware) *server {
 
 // addTools adds available MCP tools for the given mcp server.
 func (s *server) addTools(srv *mcp.Server) {
+	// sorted alphabetically
+	mcp.AddTool(srv, &mcp.Tool{
+		Name:        "dropDatabase",
+		Description: "Deletes the database.",
+	}, s.dropDatabase)
+	mcp.AddTool(srv, &mcp.Tool{
+		Name:        "find",
+		Description: "Search documents from a collection.",
+	}, s.find)
 	mcp.AddTool(srv, &mcp.Tool{
 		Name:        "insert",
-		Description: "Inserts documents into a collection.",
+		Description: "Inserts multiple documents into a collection.",
 	}, s.insert)
+	mcp.AddTool(srv, &mcp.Tool{
+		Name:        "listCollections",
+		Description: "Returns a summary of all collections in a database.",
+	}, s.listCollections)
 	mcp.AddTool(srv, &mcp.Tool{
 		Name:        "listDatabases",
 		Description: "Returns a summary of all databases.",
