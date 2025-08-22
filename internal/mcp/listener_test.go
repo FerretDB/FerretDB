@@ -23,7 +23,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
@@ -107,8 +106,9 @@ func askMCPHost(tb testing.TB, ctx context.Context, configF, prompt string) stri
 		"--stream=false",
 		"--compact",
 	)
+
 	output, err := cmd.CombinedOutput()
-	assert.NoError(tb, err)
+	require.NoError(tb, err)
 
 	res := string(output)
 	tb.Log(res)

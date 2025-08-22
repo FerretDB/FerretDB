@@ -253,6 +253,7 @@ func checkFlags(logger *slog.Logger) {
 		&cli.Listen.Unix,
 		&cli.Listen.TLS,
 		&cli.Listen.DataAPIAddr,
+		&cli.Listen.MCPAddr,
 		&cli.DebugAddr,
 		&cli.OTel.Traces.URL,
 	} {
@@ -273,6 +274,10 @@ func checkFlags(logger *slog.Logger) {
 
 	if !cli.Auth {
 		logger.WarnContext(ctx, "Authentication is disabled; the server will accept any connection")
+	}
+
+	if cli.Auth && cli.Listen.MCPAddr != "" {
+		logger.WarnContext(ctx, "MCP server is enabled; MCP server does not support authentication; it will accept any request")
 	}
 }
 
