@@ -4,7 +4,8 @@ sidebar_position: 8
 
 # Data API
 
-The FerretDB Data API is an open-source alternative to the MongoDB Atlas Data API.
+The FerretDB Data API is an open-source alternative to
+the [deprecated MongoDB Atlas Data API](https://www.mongodb.com/docs/atlas/app-services/data-api/).
 It lets you perform MongoDB-compatible operations via HTTP requests, without needing a MongoDB driver.
 The Data API is integrated directly into FerretDB – it's not a standalone service.
 

@@ -1,10 +1,8 @@
 ---
-sidebar_position: 7
+sidebar_position: 9
 ---
 
-# Go
-
-See https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/ferretdb.
+# MCP server
 
 _This section is not currently available.
 You can help FerretDB by contributing to this section.
