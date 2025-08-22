@@ -69,22 +69,21 @@ func TestBasic(t *testing.T) {
 	})
 
 	t.Run("Find", func(t *testing.T) {
-		prompt := fmt.Sprintf("Find a British author from %s database.", db)
+		prompt := fmt.Sprintf("Find a British author from %s database authors collection.", db)
 		res := askMCPHost(t, ctx, configF, prompt)
 		t.Log(res)
-		res = strings.ReplaceAll(res, " ", "")
-		res = strings.ReplaceAll(res, "\n", "")
+
 		require.Contains(t, res, "ferretdb__find")
+		require.Contains(t, res, "Jane Austen")
 	})
 
 	t.Run("ListCollections", func(t *testing.T) {
 		prompt := fmt.Sprintf("List all collections in %s database.", db)
 		res := askMCPHost(t, ctx, configF, prompt)
 		t.Log(res)
-		res = strings.ReplaceAll(res, " ", "")
-		res = strings.ReplaceAll(res, "\n", "")
+
 		require.Contains(t, res, "ferretdb__listCollections")
-		require.Contains(t, res, `},"ok":{"$numberDouble":"1.0"}`)
+		require.Contains(t, res, `authors`)
 	})
 }
 

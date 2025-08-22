@@ -27,13 +27,11 @@ import (
 
 // findArgs represents the arguments for the find tool.
 type findArgs struct {
-	Collection string          `json:"collection"`
-	Database   string          `json:"database"`
-	Filter     json.RawMessage `json:"filter"`
-	Limit      int64           `json:"limit"`
-	Projection json.RawMessage `json:"projection"`
-	Skip       int64           `json:"skip"`
-	Sort       json.RawMessage `json:"sort"`
+	Collection string `json:"collection"`
+	Database   string `json:"database"`
+	Limit      int64  `json:"limit"`
+	// filter is hard, the tool does not know how to construct a bson filter,
+	// also missing projection, skip and sort
 }
 
 // find returns documents from the collection.
@@ -42,28 +40,9 @@ func (s *server) find(ctx context.Context, _ *mcp.ServerSession, params *mcp.Cal
 		s.l.DebugContext(ctx, "MCP tool params", slog.Any("params", params))
 	}
 
-	filter, err := toWireBSON(params.Arguments.Filter)
-	if err != nil {
-		return nil, err
-	}
-
-	projection, err := toWireBSON(params.Arguments.Projection)
-	if err != nil {
-		return nil, err
-	}
-
-	sort, err := toWireBSON(params.Arguments.Sort)
-	if err != nil {
-		return nil, err
-	}
-
 	req := wirebson.MustDocument(
 		"find", params.Arguments.Collection,
-		"filter", filter,
 		"limit", params.Arguments.Limit,
-		"projection", projection,
-		"skip", params.Arguments.Skip,
-		"sort", sort,
 		"$db", params.Arguments.Database,
 	)
 
