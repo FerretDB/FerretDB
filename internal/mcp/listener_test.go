@@ -32,19 +32,15 @@ import (
 )
 
 func TestBasic(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
 	t.Parallel()
 
 	ctx := t.Context()
 	configF := setupMCP(t, ctx)
 	db := t.Name()
-
-	t.Run("DropDatabase", func(t *testing.T) {
-		prompt := fmt.Sprintf("Delete database named %s.", db)
-		res := askMCPHost(t, ctx, configF, prompt)
-
-		require.Contains(t, res, "ferretdb__dropDatabase")
-		require.Contains(t, res, `{"ok":{"$numberDouble":"1.0"}}`)
-	})
 
 	t.Run("Insert", func(t *testing.T) {
 		prompt := fmt.Sprintf("Use database named %s. "+
@@ -74,9 +70,21 @@ func TestBasic(t *testing.T) {
 		require.Contains(t, res, "ferretdb__listCollections")
 		require.Contains(t, res, `authors`)
 	})
+
+	t.Run("DropDatabase", func(t *testing.T) {
+		prompt := fmt.Sprintf("Delete database named %s.", db)
+		res := askMCPHost(t, ctx, configF, prompt)
+
+		require.Contains(t, res, "ferretdb__dropDatabase")
+		require.Contains(t, res, `{"ok":{"$numberDouble":"1.0"}}`)
+	})
 }
 
 func TestAdmin(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
 	t.Parallel()
 
 	ctx := t.Context()
@@ -104,6 +112,7 @@ func askMCPHost(tb testing.TB, ctx context.Context, configF, prompt string) stri
 		"--model", "ollama:qwen3:0.6b",
 		"--prompt", prompt,
 		"--stream=false",
+		"--temperature=0.0",
 		"--compact",
 	)
 
@@ -117,7 +126,7 @@ func askMCPHost(tb testing.TB, ctx context.Context, configF, prompt string) stri
 	//          {"databases":[],"totalSize":{"$numberInt":"19967123"},"ok":{"$numberDouble":"1
 	//          .0"}}
 	//
-	// replace tabs and newlines to avoid split
+	// remove tabs and newlines to avoid split
 	res = strings.ReplaceAll(res, "\t", "")
 	res = strings.ReplaceAll(res, "\n", "")
 
