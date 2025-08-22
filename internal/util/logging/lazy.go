@@ -20,6 +20,8 @@ import (
 	"github.com/FerretDB/wire/wirebson"
 )
 
+// lazyDecoder is a lazily evaluated [slog.LogValuer] for [wirebson.RawDocument]
+// that tries to decode the document.
 type lazyDecoder struct {
 	raw  wirebson.RawDocument
 	deep bool
@@ -27,16 +29,18 @@ type lazyDecoder struct {
 
 // LogValue implements [slog.LogValuer].
 func (ld lazyDecoder) LogValue() slog.Value {
-	if len(ld.raw) == 0 {
+	raw := wirebson.RawDocument(ld.raw)
+	if len(raw) == 0 {
 		return slog.Value{}
 	}
 
 	var d *wirebson.Document
 	if ld.deep {
-		d, _ = wirebson.RawDocument(ld.raw).DecodeDeep()
+		d, _ = raw.DecodeDeep()
 	} else {
-		d, _ = wirebson.RawDocument(ld.raw).Decode()
+		d, _ = raw.Decode()
 	}
+
 	if d == nil {
 		return ld.raw.LogValue()
 	}
@@ -45,13 +49,13 @@ func (ld lazyDecoder) LogValue() slog.Value {
 }
 
 // LazyDecoder is a lazily evaluated [slog.LogValuer] for [wirebson.RawDocument]
-// that decodes the document.
+// that tries to decode the document.
 func LazyDecoder(raw wirebson.RawDocument) slog.LogValuer {
 	return lazyDecoder{raw: raw, deep: false}
 }
 
 // LazyDeepDecoder is a lazily evaluated [slog.LogValuer] for [wirebson.RawDocument]
-// that deeply decodes the document.
+// that tries to deeply decode the document.
 func LazyDeepDecoder(raw wirebson.RawDocument) slog.LogValuer {
 	return lazyDecoder{raw: raw, deep: true}
 }
