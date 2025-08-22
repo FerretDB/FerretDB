@@ -24,7 +24,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/resource"
 )
@@ -113,66 +113,48 @@ func NewRegistry(l *slog.Logger) *Registry {
 func (r *Registry) Close(ctx context.Context) {
 	r.rw.Lock()
 	defer r.rw.Unlock()
-
 	for id := range r.cursors {
-		r.closeCursor(ctx, id)
+		c := r.removeCursor(ctx, id)
+		must.NotBeZero(c)
+		c.close(ctx)
 	}
-
 	r.cursors = nil
-
 	resource.Untrack(r, r.token)
 }
 
 // NewCursor stores a cursor with given continuation and connection (if any).
 //
-// As a special case, if continuation is empty, this method does nothing.
-// That simplifies the typical usage.
+// Passed context is used for logging/tracing, and for closing existing cursor, if any.
+// See [Registry.CloseCursor].
 func (r *Registry) NewCursor(ctx context.Context, id int64, continuation wirebson.RawDocument, conn *pgx.Conn) {
-	persist := conn != nil
-
-	var continuationV wirebson.AnyDocument = continuation
-	if devbuild.Enabled && len(continuation) > 0 {
-		continuationV = must.NotFail(continuation.Decode())
-	}
-
-	attrs := []slog.Attr{
-		slog.Int64("id", id),
-		slog.Bool("persist", persist),
-		slog.Any("continuation", continuationV),
-	}
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/5445
-	if len(continuation) == 0 {
-		must.BeZero(conn)
-
-		if id != 0 {
-			r.l.LogAttrs(ctx, slog.LevelDebug, "Not storing cursor with empty continuation", attrs...)
-		}
-
-		return
-	}
-
 	must.NotBeZero(id)
+	must.BeTrue(len(continuation) > 0)
 
 	r.rw.Lock()
-	defer r.rw.Unlock()
 
-	if _, ok := r.cursors[id]; ok {
-		r.l.ErrorContext(ctx, "Replacing existing cursor", slog.Int64("id", id))
-		r.closeCursor(context.TODO(), id)
+	c := newCursor(continuation, conn)
+
+	existing := r.cursors[id]
+	if existing != nil {
+		r.l.WarnContext(
+			ctx, "Replacing existing cursor",
+			slog.Int64("id", id), slog.Any("existing", existing), slog.Any("cursor", c),
+		)
+		r.removeCursor(ctx, id)
 	}
 
-	r.l.LogAttrs(ctx, slog.LevelDebug, "Creating new cursor", attrs...)
-
-	r.cursors[id] = newCursor(continuation, conn)
-
-	t := "normal"
-	if persist {
-		t = "persist"
-	}
+	r.l.DebugContext(ctx, "Storing new cursor", slog.Int64("id", id), slog.Any("cursor", c))
 
 	user := "unknown" // TODO https://github.com/FerretDB/FerretDB/issues/3974
-	r.created.With(prometheus.Labels{"user": user, "type": t}).Inc()
+	r.created.With(prometheus.Labels{"user": user, "type": c.Type()}).Inc()
+
+	r.cursors[id] = c
+
+	r.rw.Unlock()
+
+	if existing != nil {
+		existing.close(ctx)
+	}
 }
 
 // GetCursor returns the continuation and the connection for the given cursor id.
@@ -187,44 +169,46 @@ func (r *Registry) GetCursor(id int64) (wirebson.RawDocument, *pgx.Conn) {
 	return nil, nil
 }
 
-// UpdateCursor updates existing cursor with given continuation.
-func (r *Registry) UpdateCursor(id int64, continuation wirebson.RawDocument) {
-	// to have better logging for now
-	var cont *wirebson.Document
-	if len(continuation) > 0 {
-		cont = must.NotFail(continuation.Decode())
-	}
-
+// UpdateCursor updates existing cursor with given continuation,
+// or closes it if continuation is empty.
+//
+// Passed context is used for logging/tracing,
+// and for closing the cursor (see [Registry.CloseCursor]).
+func (r *Registry) UpdateCursor(ctx context.Context, id int64, continuation wirebson.RawDocument) {
 	r.rw.Lock()
-	defer r.rw.Unlock()
 
 	c := r.cursors[id]
 	if c == nil {
-		r.l.Warn("Cursor not found", slog.Int64("id", id))
+		r.rw.Unlock()
+
+		r.l.WarnContext(ctx, "Cursor not found", slog.Int64("id", id))
 		return
 	}
-
-	persist := c.conn != nil
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/5445
 	if len(continuation) == 0 {
-		r.l.Debug(
-			"Closing instead of updating cursor with empty continuation",
-			slog.Int64("id", id), slog.Any("continuation", cont), slog.Bool("persist", persist),
+		r.l.DebugContext(
+			ctx, "Closing instead of updating cursor with empty continuation",
+			slog.Int64("id", id), slog.Any("cursor", c),
 		)
+		r.removeCursor(ctx, id)
 
-		r.closeCursor(context.TODO(), id)
+		r.rw.Unlock()
+
+		c.close(ctx)
 		return
 	}
 
-	r.l.Debug(
-		"Updating cursor",
-		slog.Int64("id", id), slog.Any("continuation", cont), slog.Bool("persist", persist),
+	r.l.DebugContext(
+		ctx, "Updating cursor",
+		slog.Int64("id", id), slog.Any("cursor", c), slog.Any("continuation", logging.LazyDeepDecoder(continuation)),
 	)
 	c.continuation = continuation
+
+	r.rw.Unlock()
 }
 
-// CloseCursor closes the cursor with the given id and removes it from the registry.
+// CloseCursor removes the cursor with the given id from the registry and closes it, if any.
 // It returns true if the cursor was found and removed.
 //
 // It attempts a clean close by sending the exit message to PostgreSQL.
@@ -232,39 +216,43 @@ func (r *Registry) UpdateCursor(id int64, continuation wirebson.RawDocument) {
 // The underlying connection will always be called regardless of any other errors.
 func (r *Registry) CloseCursor(ctx context.Context, id int64) bool {
 	r.rw.Lock()
-	defer r.rw.Unlock()
 
-	return r.closeCursor(ctx, id)
-}
+	c := r.removeCursor(ctx, id)
 
-// closeCursor is a private function that is wrapped by CloseCursor.
-// It doesn't block RWMutex, hence it should be used only if necessary.
-func (r *Registry) closeCursor(ctx context.Context, id int64) bool {
-	c := r.cursors[id]
+	r.rw.Unlock()
+
 	if c == nil {
-		r.l.WarnContext(ctx, "Cursor not found", slog.Int64("id", id))
 		return false
 	}
 
-	dur := time.Since(c.created)
-	persist := c.conn != nil
-
-	r.l.DebugContext(
-		ctx, "Closing and removing cursor",
-		slog.Int64("id", id), slog.Bool("persist", persist), slog.Duration("duration", dur),
-	)
 	c.close(ctx)
-	delete(r.cursors, id)
-
-	t := "normal"
-	if persist {
-		t = "persist"
-	}
-
-	user := "unknown" // TODO https://github.com/FerretDB/FerretDB/issues/3974
-	r.duration.With(prometheus.Labels{"user": user, "type": t}).Observe(dur.Seconds())
 
 	return true
+}
+
+// removeCursor removes the cursor with the given id from the registry and returns it, if any.
+// The caller is responsible for closing it.
+// Registry's rw also should be held by the caller.
+func (r *Registry) removeCursor(ctx context.Context, id int64) *cursor {
+	c := r.cursors[id]
+	if c == nil {
+		r.l.WarnContext(ctx, "Cursor not found", slog.Int64("id", id))
+		return nil
+	}
+
+	dur := time.Since(c.created)
+
+	r.l.DebugContext(
+		ctx, "Removing cursor",
+		slog.Int64("id", id), slog.Any("cursor", c), slog.Duration("duration", dur),
+	)
+
+	user := "unknown" // TODO https://github.com/FerretDB/FerretDB/issues/3974
+	r.duration.With(prometheus.Labels{"user": user, "type": c.Type()}).Observe(dur.Seconds())
+
+	delete(r.cursors, id)
+
+	return c
 }
 
 // Describe implements [prometheus.Collector].

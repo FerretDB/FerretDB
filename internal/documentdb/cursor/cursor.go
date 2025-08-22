@@ -23,21 +23,10 @@ import (
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/resource"
 )
-
-// contAttr returns a [slog.Attr] for cursor contAttr.
-// Non-empty contAttr is decoded in development builds.
-func contAttr(cont wirebson.RawDocument) slog.Attr {
-	var c wirebson.AnyDocument = cont
-	if devbuild.Enabled && len(cont) > 0 {
-		c = must.NotFail(cont.Decode())
-	}
-
-	return slog.Any("continuation", c)
-}
 
 // cursor stores DocumentDB's cursor state.
 type cursor struct {
@@ -78,7 +67,7 @@ func (c *cursor) Type() string {
 func (c *cursor) LogValue() slog.Value {
 	return slog.GroupValue(
 		slog.String("type", c.Type()),
-		contAttr(c.continuation),
+		slog.Any("continuation", logging.LazyDeepDecoder(c.continuation)),
 	)
 }
 
