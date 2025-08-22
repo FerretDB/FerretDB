@@ -16,13 +16,10 @@ package mcp
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"log/slog"
 
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 // findArgs represents the arguments for the find tool.

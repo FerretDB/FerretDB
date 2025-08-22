@@ -36,7 +36,7 @@ func (s *server) insert(ctx context.Context, _ *mcp.ServerSession, params *mcp.C
 		s.l.DebugContext(ctx, "MCP tool params", slog.Any("params", params))
 	}
 
-	documents, err := toWireBSON(params.Arguments.Documents)
+	documents, err := fromExtendedJSON(params.Arguments.Documents)
 	if err != nil {
 		return nil, err
 	}

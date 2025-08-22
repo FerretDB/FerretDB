@@ -16,11 +16,13 @@ package mcp
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log/slog"
 
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"go.mongodb.org/mongo-driver/v2/bson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 )
@@ -96,4 +98,48 @@ func (s *server) handle(ctx context.Context, reqDoc *wirebson.Document) (*mcp.Ca
 	}
 
 	return res, nil
+}
+
+// fromExtendedJSON converts raw encoded extended JSON v2 to a wirebson.RawDocument or wirebson.RawArray.
+func fromExtendedJSON(b json.RawMessage) (any, error) {
+	var raw any
+
+	err := bson.UnmarshalExtJSON(b, false, &raw)
+	if err != nil {
+		return nil, err
+	}
+
+	bsonType, b, err := bson.MarshalValue(raw)
+	if err != nil {
+		return nil, err
+	}
+
+	switch bsonType {
+	case bson.TypeArray:
+		return wirebson.RawArray(b), nil
+	case bson.TypeEmbeddedDocument:
+		return wirebson.RawDocument(b), nil
+	case bson.TypeDouble,
+		bson.TypeString,
+		bson.TypeBinary,
+		bson.TypeUndefined,
+		bson.TypeObjectID,
+		bson.TypeBoolean,
+		bson.TypeDateTime,
+		bson.TypeNull,
+		bson.TypeRegex,
+		bson.TypeDBPointer,
+		bson.TypeJavaScript,
+		bson.TypeSymbol,
+		bson.TypeCodeWithScope,
+		bson.TypeInt32,
+		bson.TypeTimestamp,
+		bson.TypeInt64,
+		bson.TypeDecimal128,
+		bson.TypeMinKey,
+		bson.TypeMaxKey:
+		fallthrough
+	default:
+		return nil, errors.New("unsupported type")
+	}
 }
