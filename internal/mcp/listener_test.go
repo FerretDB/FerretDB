@@ -45,7 +45,7 @@ func TestBasic(t *testing.T) {
 		t.Log(res)
 		//          [  ferretdb__insert authors,database:books,documents:[{author:Jane Au...
 		//          ]  Result {"n":{"$numberInt":"2"},"ok":{"$numberDouble":"1.0"}}
-		res = strings.ReplaceAll(res, " ", "")
+		res = strings.ReplaceAll(res, "\t", "")
 		res = strings.ReplaceAll(res, "\n", "")
 		require.Contains(t, res, "ferretdb__dropDatabase")
 		require.Contains(t, res, `{"ok":{"$numberDouble":"1.0"}}`)
@@ -62,7 +62,7 @@ func TestBasic(t *testing.T) {
 		t.Log(res)
 		//          [  ferretdb__insert authors,database:books,documents:[{author:Jane Au...
 		//          ]  Result {"n":{"$numberInt":"2"},"ok":{"$numberDouble":"1.0"}}
-		res = strings.ReplaceAll(res, " ", "")
+		res = strings.ReplaceAll(res, "\t", "")
 		res = strings.ReplaceAll(res, "\n", "")
 		require.Contains(t, res, "ferretdb__insert")
 		require.Contains(t, res, `{"n":{"$numberInt":"2"},"ok":{"$numberDouble":"1.0"}}`)
@@ -73,6 +73,8 @@ func TestBasic(t *testing.T) {
 		res := askMCPHost(t, ctx, configF, prompt)
 		t.Log(res)
 
+		res = strings.ReplaceAll(res, "\t", "")
+		res = strings.ReplaceAll(res, "\n", "")
 		require.Contains(t, res, "ferretdb__find")
 		require.Contains(t, res, "Jane Austen")
 	})
@@ -82,6 +84,8 @@ func TestBasic(t *testing.T) {
 		res := askMCPHost(t, ctx, configF, prompt)
 		t.Log(res)
 
+		res = strings.ReplaceAll(res, "\t", "")
+		res = strings.ReplaceAll(res, "\n", "")
 		require.Contains(t, res, "ferretdb__listCollections")
 		require.Contains(t, res, `authors`)
 	})
@@ -100,7 +104,7 @@ func TestAdmin(t *testing.T) {
 		//          ]  List
 		//          {"databases":[],"totalSize":{"$numberInt":"19967123"},"ok":{"$numberDouble":"1
 		//          .0"}}
-		res = strings.ReplaceAll(res, " ", "")
+		res = strings.ReplaceAll(res, "\t", "")
 		res = strings.ReplaceAll(res, "\n", "")
 		require.Contains(t, res, "ferretdb__listDatabases")
 		require.Contains(t, res, `{"databases":[`)
