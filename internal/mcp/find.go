@@ -48,27 +48,3 @@ func (s *server) find(ctx context.Context, _ *mcp.ServerSession, params *mcp.Cal
 
 	return s.handle(ctx, req)
 }
-
-// toWireBSON converts a JSON raw message to a wirebson.RawDocument or wirebson.RawArray.
-func toWireBSON(b json.RawMessage) (any, error) {
-	var raw any
-
-	err := bson.UnmarshalExtJSON(b, false, &raw)
-	if err != nil {
-		return nil, err
-	}
-
-	bsonType, b, err := bson.MarshalValue(raw)
-	if err != nil {
-		return nil, err
-	}
-
-	switch bsonType {
-	case bson.TypeArray:
-		return wirebson.RawArray(b), nil
-	case bson.TypeEmbeddedDocument:
-		return wirebson.RawDocument(b), nil
-	default:
-		return nil, errors.New("invalid type")
-	}
-}

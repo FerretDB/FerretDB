@@ -42,11 +42,7 @@ func TestBasic(t *testing.T) {
 	t.Run("DropDatabase", func(t *testing.T) {
 		prompt := fmt.Sprintf("Delete database named %s.", db)
 		res := askMCPHost(t, ctx, configF, prompt)
-		t.Log(res)
-		//          [  ferretdb__insert authors,database:books,documents:[{author:Jane Au...
-		//          ]  Result {"n":{"$numberInt":"2"},"ok":{"$numberDouble":"1.0"}}
-		res = strings.ReplaceAll(res, "\t", "")
-		res = strings.ReplaceAll(res, "\n", "")
+
 		require.Contains(t, res, "ferretdb__dropDatabase")
 		require.Contains(t, res, `{"ok":{"$numberDouble":"1.0"}}`)
 	})
@@ -59,11 +55,7 @@ func TestBasic(t *testing.T) {
 			db,
 		)
 		res := askMCPHost(t, ctx, configF, prompt)
-		t.Log(res)
-		//          [  ferretdb__insert authors,database:books,documents:[{author:Jane Au...
-		//          ]  Result {"n":{"$numberInt":"2"},"ok":{"$numberDouble":"1.0"}}
-		res = strings.ReplaceAll(res, "\t", "")
-		res = strings.ReplaceAll(res, "\n", "")
+
 		require.Contains(t, res, "ferretdb__insert")
 		require.Contains(t, res, `{"n":{"$numberInt":"2"},"ok":{"$numberDouble":"1.0"}}`)
 	})
@@ -71,10 +63,7 @@ func TestBasic(t *testing.T) {
 	t.Run("Find", func(t *testing.T) {
 		prompt := fmt.Sprintf("Find a British author from %s database authors collection.", db)
 		res := askMCPHost(t, ctx, configF, prompt)
-		t.Log(res)
 
-		res = strings.ReplaceAll(res, "\t", "")
-		res = strings.ReplaceAll(res, "\n", "")
 		require.Contains(t, res, "ferretdb__find")
 		require.Contains(t, res, "Jane Austen")
 	})
@@ -82,10 +71,7 @@ func TestBasic(t *testing.T) {
 	t.Run("ListCollections", func(t *testing.T) {
 		prompt := fmt.Sprintf("List all collections in %s database.", db)
 		res := askMCPHost(t, ctx, configF, prompt)
-		t.Log(res)
 
-		res = strings.ReplaceAll(res, "\t", "")
-		res = strings.ReplaceAll(res, "\n", "")
 		require.Contains(t, res, "ferretdb__listCollections")
 		require.Contains(t, res, `authors`)
 	})
@@ -99,13 +85,7 @@ func TestAdmin(t *testing.T) {
 
 	t.Run("ListDatabases", func(t *testing.T) {
 		res := askMCPHost(t, ctx, configF, "list databases")
-		t.Log(res)
-		//          [  ferretdb__listDatabases
-		//          ]  List
-		//          {"databases":[],"totalSize":{"$numberInt":"19967123"},"ok":{"$numberDouble":"1
-		//          .0"}}
-		res = strings.ReplaceAll(res, "\t", "")
-		res = strings.ReplaceAll(res, "\n", "")
+
 		require.Contains(t, res, "ferretdb__listDatabases")
 		require.Contains(t, res, `{"databases":[`)
 		require.Contains(t, res, `],"totalSize":{`)
@@ -114,7 +94,7 @@ func TestAdmin(t *testing.T) {
 }
 
 // askMCPHost sends query to MCP host in non-interactive mode with
-// the given config file and prompt and returns the output.
+// the given config file and prompt.
 // Non-interactive mode without streaming is used for the ease of testing.
 func askMCPHost(tb testing.TB, ctx context.Context, configF, prompt string) string {
 	tb.Helper()
@@ -127,10 +107,21 @@ func askMCPHost(tb testing.TB, ctx context.Context, configF, prompt string) stri
 		"--stream=false",
 		"--compact",
 	)
-	res, err := cmd.CombinedOutput()
+	output, err := cmd.CombinedOutput()
 	assert.NoError(tb, err)
 
-	return string(res)
+	res := string(output)
+	tb.Log(res)
+	//          [  ferretdb__listDatabases
+	//          ]  List
+	//          {"databases":[],"totalSize":{"$numberInt":"19967123"},"ok":{"$numberDouble":"1
+	//          .0"}}
+	//
+	// replace tabs and newlines to avoid split
+	res = strings.ReplaceAll(res, "\t", "")
+	res = strings.ReplaceAll(res, "\n", "")
+
+	return res
 }
 
 // setupMCP sets up a new MCP listener and returns config file path
