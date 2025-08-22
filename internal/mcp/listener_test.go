@@ -44,6 +44,7 @@ func TestListener(t *testing.T) {
 	//          ]  List
 	//          {"databases":[],"totalSize":{"$numberInt":"19967123"},"ok":{"$numberDouble":"1
 	//          .0"}}
+	res = strings.ReplaceAll(res, " ", "")
 	res = strings.ReplaceAll(res, "\n", "")
 	require.Contains(t, res, "ferretdb__listDatabases")
 	require.Contains(t, res, `{"databases":[`)
