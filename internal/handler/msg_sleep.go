@@ -19,11 +19,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/FerretDB/wire/wirebson"
+
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
-	"github.com/FerretDB/wire/wirebson"
 )
 
 func (h *Handler) msgSleep(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
@@ -72,7 +73,7 @@ func (h *Handler) msgSleep(connCtx context.Context, req *middleware.Request) (*m
 		}
 	}
 
-	lock, err := getOptionalParam(doc, "lock", "w")
+	lock, err := getRequiredParam[string](doc, "lock")
 	if err != nil {
 		return nil, err
 	}

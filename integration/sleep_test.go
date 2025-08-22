@@ -19,10 +19,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/FerretDB/FerretDB/v2/integration/setup"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/FerretDB/FerretDB/v2/integration/setup"
 )
 
 func TestSleepParallelWrite(t *testing.T) {
