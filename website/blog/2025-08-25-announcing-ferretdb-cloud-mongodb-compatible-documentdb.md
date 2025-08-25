@@ -14,7 +14,10 @@ tags:
 
 We're excited to announce the launch of [FerretDB Cloud](https://cloud.ferretdb.com/), a fully managed,
 MongoDB-compatible database service built on an [open-source DocumentDB](https://documentdb.io).
-The DocumentDB project is backed by the Linux Foundation, as well as AWS, Microsoft,
+The DocumentDB project is
+[backed by the Linux Foundation](https://www.linuxfoundation.org/press/linux-foundation-welcomes-documentdb-to-advance-open-developer-first-nosql-innovation),
+as well as [AWS](https://aws.amazon.com/blogs/opensource/aws-joins-the-documentdb-project-to-build-interoperable-open-source-document-database-technology/),
+[Microsoft](https://opensource.microsoft.com/blog/2025/08/25/documentdb-joins-the-linux-foundation/),
 providing a solid foundation for a MongoDB-compatible document database alternative.
 
 If you've ever wanted the convenience of MongoDB Atlas without the vendor lock-in,
