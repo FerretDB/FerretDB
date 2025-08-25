@@ -68,7 +68,7 @@ func (h *Handler) msgSleep(connCtx context.Context, req *middleware.Request) (*m
 		if useDefault {
 			sleepDur = time.Duration(secs) * time.Second
 		} else {
-			sleepDur = time.Duration(max(sleepDur, time.Duration(secs)*time.Second))
+			sleepDur += time.Duration(max(sleepDur, time.Duration(secs)*time.Second))
 		}
 	}
 

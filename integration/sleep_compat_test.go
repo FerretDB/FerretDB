@@ -46,6 +46,14 @@ func TestSleepCompat(t *testing.T) {
 				{"lock", "w"},
 			},
 		},
+		"BothSet": {
+			request: bson.D{
+				{"sleep", int32(1)},
+				{"secs", int32(2)},
+				{"millis", int32(1000)},
+				{"lock", "w"},
+			},
+		},
 		"Default": {
 			request: bson.D{
 				{"sleep", int32(1)},
