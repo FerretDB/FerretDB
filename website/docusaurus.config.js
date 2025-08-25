@@ -104,6 +104,11 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
+      docs: {
+        sidebar: {
+          hideable: true,
+        },
+      },
       image: "img/logo-dark.jpg",
       imageZoom: {
         selector: ".markdown img",

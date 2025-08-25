@@ -1,6 +1,7 @@
 ---
 sidebar_position: 1
 description: Learn about replication and how to configure it in FerretDB using PostgreSQL with DocumentDB extension.
+hide_table_of_contents: true
 ---
 
 # Replication
