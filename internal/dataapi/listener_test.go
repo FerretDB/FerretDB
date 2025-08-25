@@ -56,6 +56,22 @@ func TestSmokeDataAPI(t *testing.T) {
 		assert.JSONEq(t, `{"documents":[]}`, string(body))
 	})
 
+	t.Run("FindOneEmpty", func(t *testing.T) {
+		jsonBody := `{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {}
+		}`
+
+		res, err := postJSON(t, "http://"+addr+"/action/findOne", jsonBody)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"document":null}`, string(body))
+	})
+
 	docs := []string{
 		`{"_id":1,"v":"foo"}`,
 		`{"_id":2,"v":42}`,
