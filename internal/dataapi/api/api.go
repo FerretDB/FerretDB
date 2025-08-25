@@ -17,6 +17,8 @@ package api
 //go:generate ../../../bin/oapi-codegen --config=./oapi-config.yml ./openapi.json
 
 // Response types are used to represent the responses from the API.
+//
+//sumtype:decl
 type Response interface {
 	sealed()
 }
