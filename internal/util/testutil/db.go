@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -29,6 +30,8 @@ var (
 
 	collectionNamesM sync.Mutex
 	collectionNames  = map[string]string{}
+
+	usernameCounter atomic.Int32
 )
 
 // DatabaseName returns a stable FerretDB database name for that test.
@@ -79,6 +82,18 @@ func CollectionName(tb testing.TB) string {
 	}
 
 	collectionNames[name] = tb.Name()
+
+	return name
+}
+
+// UserName returns a unique username.
+func UserName(tb testing.TB) string {
+	tb.Helper()
+
+	name := fmt.Sprintf("%s%d", tb.Name(), usernameCounter.Add(1))
+	name = strings.ReplaceAll(name, "/", "-")
+	name = strings.ReplaceAll(name, " ", "_")
+	name = strings.ReplaceAll(name, "$", "_")
 
 	return name
 }
