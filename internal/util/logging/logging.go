@@ -56,12 +56,6 @@ func Error(err error) slog.Attr {
 	return slog.String("error", err.Error())
 }
 
-// LazyString is a lazily evaluated [slog.LogValuer].
-type LazyString func() string
-
-// LogValue implements [slog.LogValuer].
-func (ls LazyString) LogValue() slog.Value { return slog.StringValue(ls()) }
-
 // Logger creates a new slog handler and logger with the given output, options and UUID.
 func Logger(out io.Writer, opts *NewHandlerOpts, uuid string) *slog.Logger {
 	must.NotBeZero(opts)
@@ -83,8 +77,3 @@ func SetupDefault(opts *NewHandlerOpts, uuid string) {
 	slog.SetDefault(l)
 	slog.SetLogLoggerLevel(slog.LevelInfo + 2)
 }
-
-// check interfaces
-var (
-	_ slog.LogValuer = (LazyString)(nil)
-)
