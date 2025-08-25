@@ -423,9 +423,8 @@ func run() {
 
 			ot, e := observability.NewOTelTraceExporter(&observability.OTelTraceExporterOpts{
 				Logger:  l,
-				Service: "ferretdb",
-				Version: version.Get().Version,
 				URL:     cli.OTel.Traces.URL,
+				Service: "ferretdb",
 			})
 			if e != nil {
 				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create Otel tracer", logging.Error(e))
