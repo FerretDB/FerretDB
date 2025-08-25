@@ -247,6 +247,84 @@ func TestSmokeDataAPI(t *testing.T) {
 			string(body),
 		)
 	})
+
+	t.Run("UpsertOne", func(t *testing.T) {
+		jsonBody := `{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {"v":"non-existent"},
+			"update": {"$set":{"v":"foo"}},
+			"upsert": true
+		}`
+
+		res, err := postJSON(t, "http://"+addr+"/action/updateOne", jsonBody)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+
+		bodyStr := strings.TrimSpace(string(body))
+		assert.Regexp(t,
+			`^{"UpsertedId":"[0-9a-f]{24}"}$`,
+			bodyStr,
+			"expected %q, got %q",
+			`{"UpsertedId":"<ObjectID>"}`,
+			string(body),
+		)
+
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"matchedCount":0,"modifiedCount":1,"upsertedId":"<ObjectID>"}`, string(body))
+	})
+
+	t.Run("UpsertOneStringId", func(t *testing.T) {
+		jsonBody := `{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {"v":"non-existent"},
+			"update": {"$set":{"_id":"string_id","v":"foo"}},
+			"upsert": true
+		}`
+
+		res, err := postJSON(t, "http://"+addr+"/action/updateOne", jsonBody)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"matchedCount":1,"modifiedCount":0,"upsertedId":"string_id"}`, string(body))
+	})
+
+	t.Run("UpsertMany", func(t *testing.T) {
+		jsonBody := `{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {"v":"non-existent"},
+			"update": {"$set":{"v":"foo"}},
+			"upsert": true
+		}`
+
+		res, err := postJSON(t, "http://"+addr+"/action/updateMany", jsonBody)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+
+		bodyStr := strings.TrimSpace(string(body))
+		assert.Regexp(t,
+			`^{"UpsertedId":"[0-9a-f]{24}"}$`,
+			bodyStr,
+			"expected %q, got %q",
+			`{"UpsertedId":"<ObjectID>"}`,
+			string(body),
+		)
+
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"matchedCount":0,"modifiedCount":1,"upsertedId":"<ObjectID>"}`, string(body))
+	})
 }
 
 // postJSON sends POST request with provided JSON to data API under provided uri.
