@@ -113,7 +113,6 @@ func TestSleepParallelRead(t *testing.T) {
 
 	assert.InDelta(t, 2000, dur.Milliseconds(), 100)
 	require.NoError(t, err)
-
 	wg.Wait()
 }
 
