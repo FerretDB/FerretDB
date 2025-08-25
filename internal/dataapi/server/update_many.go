@@ -85,7 +85,13 @@ func (s *Server) UpdateMany(w http.ResponseWriter, r *http.Request) {
 		if upserted.Len() > 0 {
 			item := must.NotFail(upserted.Get(0).(wirebson.AnyDocument).Decode())
 
-			res.UpsertedId = pointer.To(fmt.Sprint(item.Get("_id")))
+			upsertedId, err := wirebson.ToDriver(item.Get("_id"))
+			if err != nil {
+				http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+				return
+			}
+
+			res.UpsertedId = pointer.To(fmt.Sprint(upsertedId))
 		}
 	}
 

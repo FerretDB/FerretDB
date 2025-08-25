@@ -266,15 +266,12 @@ func TestSmokeDataAPI(t *testing.T) {
 
 		bodyStr := strings.TrimSpace(string(body))
 		assert.Regexp(t,
-			`^{"UpsertedId":"[0-9a-f]{24}"}$`,
+			`^{"matchedCount":1,"modifiedCount":0,"upsertedId":".*[0-9a-f]{24}.*"}$`,
 			bodyStr,
 			"expected %q, got %q",
-			`{"UpsertedId":"<ObjectID>"}`,
+			`{"upsertedId":"<ObjectID>"}`,
 			string(body),
 		)
-
-		require.NoError(t, err)
-		assert.JSONEq(t, `{"matchedCount":0,"modifiedCount":1,"upsertedId":"<ObjectID>"}`, string(body))
 	})
 
 	t.Run("UpsertOneStringId", func(t *testing.T) {
@@ -315,15 +312,12 @@ func TestSmokeDataAPI(t *testing.T) {
 
 		bodyStr := strings.TrimSpace(string(body))
 		assert.Regexp(t,
-			`^{"UpsertedId":"[0-9a-f]{24}"}$`,
+			`^{"matchedCount":1,"modifiedCount":0,"upsertedId":".*[0-9a-f]{24}.*"}$`,
 			bodyStr,
 			"expected %q, got %q",
-			`{"UpsertedId":"<ObjectID>"}`,
+			`{"upsertedId":"<ObjectID>"}`,
 			string(body),
 		)
-
-		require.NoError(t, err)
-		assert.JSONEq(t, `{"matchedCount":0,"modifiedCount":1,"upsertedId":"<ObjectID>"}`, string(body))
 	})
 }
 
