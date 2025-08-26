@@ -79,7 +79,7 @@ We are really excited about building the first cross-cloud DocumentDB-based solu
 
 ## Getting Started
 
-You can try FerretDB Cloud today at https://cloud.ferretdb.io/.
+You can try FerretDB Cloud today at https://cloud.ferretdb.com/.
 Sign up, create your first instance, and connect using your existing MongoDB drivers.
 It's a similar developer experience you already know.
 
