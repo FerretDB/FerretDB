@@ -211,7 +211,7 @@ func MapWrappedCode(code int32) Code {
 // The whole function is temporary workaround for:
 // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/895
 func MapWriteErrors(ctx context.Context, res wirebson.AnyDocument) wirebson.AnyDocument {
-	_, span := otel.Tracer("").Start(ctx, "MapWriteErrors")
+	_, span := otel.Tracer("").Start(ctx, "mongoerrors.MapWriteErrors")
 	defer span.End()
 
 	resDoc := must.NotFail(res.Decode())
