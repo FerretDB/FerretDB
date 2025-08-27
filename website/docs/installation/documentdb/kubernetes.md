@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Kubernetes
 
-FerretDB uses PostgreSQL with [DocumentDB extension](https://github.com/microsoft/documentdb) as the database engine.
+FerretDB uses PostgreSQL with [DocumentDB extension](https://github.com/documentdb/documentdb) as the database engine.
 
 Ensure to have a running Kubernetes cluster before proceeding with the installation.
 
