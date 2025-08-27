@@ -57,7 +57,7 @@ func testIncorrectIssueNumber() {
 }
 
 func testDocumentDB() {
-	// TODO https://github.com/microsoft/documentdb/issues/1 // want "invalid TODO: linked issue https://github.com/microsoft/documentdb/issues/1 is closed"
+	// TODO https://github.com/documentdb/documentdb/issues/1 // want "invalid TODO: linked issue https://github.com/documentdb/documentdb/issues/1 is closed"
 }
 
 func testYugabyteDB() {
