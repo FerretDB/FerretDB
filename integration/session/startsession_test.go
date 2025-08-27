@@ -19,6 +19,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"net/url"
 	"testing"
 
 	"github.com/FerretDB/wire"
@@ -53,9 +54,9 @@ func TestSessionConnection(t *testing.T) {
 		require.NoError(t, conn2.Close())
 	})
 
-	if authSource == "" {
-		authSource = "admin"
-	}
+	authSource = "admin"
+
+	creds = url.UserPassword("username", "password")
 
 	err = conn2.Login(ctx, creds, authSource, authMechanism)
 	require.NoError(t, err)
@@ -397,6 +398,8 @@ func TestSessionConnectionDifferentUser(t *testing.T) {
 
 	clearUri, creds, authSource, authMechanism, err := wireclient.Credentials(s.MongoDBURI)
 	require.NoError(t, err)
+
+	creds = url.UserPassword(user, pass)
 
 	userConn, err := wireclient.Connect(ctx, clearUri, testutil.Logger(t))
 	require.NoError(t, err)
