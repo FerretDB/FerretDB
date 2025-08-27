@@ -43,14 +43,17 @@ func TestSessionConnection(t *testing.T) {
 	ctx, collection, db, conn1 := s.Ctx, s.Collection, s.Collection.Database(), s.WireConn
 	cName, dbName := collection.Name(), db.Name()
 
-	conn2, err := wireclient.Connect(ctx, s.MongoDBURI, testutil.Logger(t))
+	clearUri, creds, authSource, authMechanism, err := wireclient.Credentials(s.MongoDBURI)
+	require.NoError(t, err)
+
+	conn2, err := wireclient.Connect(ctx, clearUri, testutil.Logger(t))
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		require.NoError(t, conn2.Close())
 	})
 
-	err = conn2.Login(ctx, "username", "password", "admin")
+	err = conn2.Login(ctx, creds, authSource, authMechanism)
 	require.NoError(t, err)
 
 	_, err = collection.InsertMany(ctx, bson.A{
@@ -122,10 +125,14 @@ func TestSessionConnection(t *testing.T) {
 
 	t.Run("CloseConnection", func(t *testing.T) {
 		var anotherConn *wireclient.Conn
-		anotherConn, err = wireclient.Connect(ctx, s.MongoDBURI, testutil.Logger(t))
+
+		clearUri, creds, authSource, authMechanism, err := wireclient.Credentials(s.MongoDBURI)
 		require.NoError(t, err)
 
-		err = anotherConn.Login(ctx, "username", "password", "admin")
+		anotherConn, err = wireclient.Connect(ctx, clearUri, testutil.Logger(t))
+		require.NoError(t, err)
+
+		err = anotherConn.Login(ctx, creds, authSource, authMechanism)
 		require.NoError(t, err)
 
 		sessionID := startSession(t, ctx, anotherConn)
@@ -380,14 +387,17 @@ func TestSessionConnectionDifferentUser(t *testing.T) {
 	}).Err()
 	require.NoError(t, err)
 
-	userConn, err := wireclient.Connect(ctx, s.MongoDBURI, testutil.Logger(t))
+	clearUri, creds, authSource, authMechanism, err := wireclient.Credentials(s.MongoDBURI)
+	require.NoError(t, err)
+
+	userConn, err := wireclient.Connect(ctx, clearUri, testutil.Logger(t))
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		require.NoError(t, userConn.Close())
 	})
 
-	err = userConn.Login(ctx, user, pass, dbName)
+	err = userConn.Login(ctx, creds, authSource, authMechanism)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
