@@ -8,7 +8,7 @@ toolchain go1.24.6
 
 require (
 	github.com/AlekSi/pointer v1.2.0
-	github.com/FerretDB/wire v0.1.7-0.20250708055527-67b1f7c98628
+	github.com/FerretDB/wire v0.1.7
 	github.com/alecthomas/kong v1.12.1
 	github.com/arl/statsviz v0.7.1
 	github.com/google/uuid v1.6.0
@@ -19,7 +19,7 @@ require (
 	github.com/prometheus/client_golang v1.23.0
 	github.com/prometheus/client_model v0.6.2
 	github.com/prometheus/common v0.65.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	github.com/xdg-go/scram v1.1.2
 	go.mongodb.org/mongo-driver/v2 v2.3.0
 	go.opentelemetry.io/otel v1.37.0
