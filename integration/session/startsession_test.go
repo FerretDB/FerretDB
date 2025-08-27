@@ -46,16 +46,16 @@ func TestSessionConnection(t *testing.T) {
 	clearUri, creds, authSource, authMechanism, err := wireclient.Credentials(s.MongoDBURI)
 	require.NoError(t, err)
 
-	if authSource == "" {
-		authSource = "admin"
-	}
-
 	conn2, err := wireclient.Connect(ctx, clearUri, testutil.Logger(t))
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		require.NoError(t, conn2.Close())
 	})
+
+	if authSource == "" {
+		authSource = "admin"
+	}
 
 	err = conn2.Login(ctx, creds, authSource, authMechanism)
 	require.NoError(t, err)
@@ -133,12 +133,12 @@ func TestSessionConnection(t *testing.T) {
 		clearUri, creds, authSource, authMechanism, err := wireclient.Credentials(s.MongoDBURI)
 		require.NoError(t, err)
 
+		anotherConn, err = wireclient.Connect(ctx, clearUri, testutil.Logger(t))
+		require.NoError(t, err)
+
 		if authSource == "" {
 			authSource = "admin"
 		}
-
-		anotherConn, err = wireclient.Connect(ctx, clearUri, testutil.Logger(t))
-		require.NoError(t, err)
 
 		err = anotherConn.Login(ctx, creds, authSource, authMechanism)
 		require.NoError(t, err)
@@ -398,16 +398,16 @@ func TestSessionConnectionDifferentUser(t *testing.T) {
 	clearUri, creds, authSource, authMechanism, err := wireclient.Credentials(s.MongoDBURI)
 	require.NoError(t, err)
 
-	if authSource == "" {
-		authSource = "admin"
-	}
-
 	userConn, err := wireclient.Connect(ctx, clearUri, testutil.Logger(t))
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		require.NoError(t, userConn.Close())
 	})
+
+	if authSource == "" {
+		authSource = "admin"
+	}
 
 	err = userConn.Login(ctx, creds, authSource, authMechanism)
 	require.NoError(t, err)
