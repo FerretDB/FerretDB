@@ -890,8 +890,12 @@ func createKillSessionUser(t *testing.T, ctx context.Context, db *mongo.Database
 	}).Err()
 	require.NoError(t, err)
 
-	clearUri, creds, _, authMechanism, err := wireclient.Credentials(mongoDBURI)
+	clearUri, creds, authSource, authMechanism, err := wireclient.Credentials(mongoDBURI)
 	require.NoError(t, err)
+
+	//if authSource == "" {
+	//	authSource = db.Name()
+	//}
 
 	conn, err := wireclient.Connect(ctx, clearUri, testutil.Logger(t))
 	require.NoError(t, err)
@@ -900,7 +904,7 @@ func createKillSessionUser(t *testing.T, ctx context.Context, db *mongo.Database
 		require.NoError(t, conn.Close())
 	})
 
-	err = conn.Login(ctx, creds, db.Name(), authMechanism)
+	err = conn.Login(ctx, creds, authSource, authMechanism)
 	require.NoError(t, err)
 
 	return conn

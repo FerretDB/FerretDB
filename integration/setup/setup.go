@@ -207,6 +207,10 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 		clearUri, creds, authSource, authMechanism, err := wireclient.Credentials(uri)
 		require.NoError(tb, err)
 
+		if authSource == "" {
+			authSource = "admin"
+		}
+
 		conn = setupWireConn(tb, setupCtx, clearUri, testutil.Logger(tb))
 
 		if opts.WireConn == WireConnAuth {
