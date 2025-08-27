@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Docker
 
-FerretDB uses PostgreSQL with [DocumentDB extension](https://github.com/microsoft/documentdb) as a database engine.
+FerretDB uses PostgreSQL with [DocumentDB extension](https://github.com/documentdb/documentdb) as a database engine.
 
 We provide two Docker images for setting up PostgreSQL with DocumentDB extension:
 
