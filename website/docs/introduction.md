@@ -2,6 +2,7 @@
 sidebar_position: 1
 slug: /
 description: This is the FerretDB documentation, containing all the details on FerretDB – the open-source MongoDB alternative that translates MongoDB wire protocol queries to SQL, with [PostgreSQL with DocumentDB extension](https://github.com/microsoft/documentdb) as the database engine.
+hide_table_of_contents: true
 ---
 
 # Introduction
