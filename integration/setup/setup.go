@@ -204,7 +204,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	var conn *wireclient.Conn
 
 	if opts.WireConn != WireConnNoConn {
-		clearUri, creds, _, authMechanism, err := wireclient.Credentials(uri)
+		clearUri, creds, authSource, authMechanism, err := wireclient.Credentials(uri)
 		require.NoError(tb, err)
 
 		conn = setupWireConn(tb, setupCtx, clearUri, testutil.Logger(tb))
@@ -219,7 +219,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 			pass, _ := u.User.Password()
 			require.NotEmpty(tb, pass)
 
-			require.NoError(tb, conn.Login(ctx, creds, "admin", authMechanism))
+			require.NoError(tb, conn.Login(ctx, creds, authSource, authMechanism))
 		}
 	}
 
