@@ -29,16 +29,15 @@ type lazyDecoder struct {
 
 // LogValue implements [slog.LogValuer].
 func (ld lazyDecoder) LogValue() slog.Value {
-	raw := wirebson.RawDocument(ld.raw)
-	if len(raw) == 0 {
+	if len(ld.raw) == 0 {
 		return slog.Value{}
 	}
 
 	var d *wirebson.Document
 	if ld.deep {
-		d, _ = raw.DecodeDeep()
+		d, _ = ld.raw.DecodeDeep()
 	} else {
-		d, _ = raw.Decode()
+		d, _ = ld.raw.Decode()
 	}
 
 	if d == nil {
