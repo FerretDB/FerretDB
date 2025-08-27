@@ -893,9 +893,9 @@ func createKillSessionUser(t *testing.T, ctx context.Context, db *mongo.Database
 	clearUri, creds, authSource, authMechanism, err := wireclient.Credentials(mongoDBURI)
 	require.NoError(t, err)
 
-	//if authSource == "" {
-	//	authSource = db.Name()
-	//}
+	if authSource == "" {
+		authSource = db.Name()
+	}
 
 	conn, err := wireclient.Connect(ctx, clearUri, testutil.Logger(t))
 	require.NoError(t, err)
