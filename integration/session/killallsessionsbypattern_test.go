@@ -17,6 +17,7 @@ package session
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"testing"
 
 	"github.com/FerretDB/wire"
@@ -892,6 +893,8 @@ func createKillSessionUser(t *testing.T, ctx context.Context, db *mongo.Database
 
 	clearUri, creds, authSource, authMechanism, err := wireclient.Credentials(mongoDBURI)
 	require.NoError(t, err)
+
+	creds = url.UserPassword(username, password)
 
 	if authSource == "" {
 		authSource = db.Name()
