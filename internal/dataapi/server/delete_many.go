@@ -71,7 +71,9 @@ func (s *Server) DeleteMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.writeJSONResponse(ctx, w, wirebson.MustDocument(
-		"deletedCount", resp.Document().Get("n"),
-	))
+	res := api.DeleteResponseBody{
+		DeletedCount: resp.Document().Get("n"),
+	}
+
+	s.writeJSONResponse(ctx, w, &res)
 }

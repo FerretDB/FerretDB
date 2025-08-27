@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	"github.com/AlekSi/pointer"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
@@ -73,10 +74,10 @@ func (s *Server) UpdateMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res := wirebson.MustDocument(
-		"matchedCount", resp.Document().Get("n"),
-		"modifiedCount", resp.Document().Get("nModified"),
-	)
+	res := api.UpdateResponseBody{
+		MatchedCount:  resp.Document().Get("n").(int32),
+		ModifiedCount: resp.Document().Get("nModified").(int32),
+	}
 
 	if upsertedRaw := resp.Document().Get("upserted"); upsertedRaw != nil {
 		upserted := must.NotFail(upsertedRaw.(wirebson.AnyArray).Decode())
@@ -84,9 +85,17 @@ func (s *Server) UpdateMany(w http.ResponseWriter, r *http.Request) {
 		if upserted.Len() > 0 {
 			item := must.NotFail(upserted.Get(0).(wirebson.AnyDocument).Decode())
 
-			must.NoError(res.Add("upsertedId", item.Get("_id")))
+			var upsertedId any
+
+			upsertedId, err = wirebson.ToDriver(item.Get("_id"))
+			if err != nil {
+				http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+				return
+			}
+
+			res.UpsertedId = pointer.To(fmt.Sprint(upsertedId))
 		}
 	}
 
-	s.writeJSONResponse(ctx, w, res)
+	s.writeJSONResponse(ctx, w, &res)
 }

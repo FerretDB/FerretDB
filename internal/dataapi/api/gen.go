@@ -39,7 +39,7 @@ type AggregateRequestBody struct {
 // AggregateResponseBody defines model for AggregateResponseBody.
 type AggregateResponseBody struct {
 	// Documents An array that contains the result set of the aggregation.
-	Documents []map[string]interface{} `json:"documents"`
+	Documents json.RawMessage `json:"documents"`
 }
 
 // DeleteRequestBody defines model for DeleteRequestBody.
@@ -144,7 +144,7 @@ type FindManyRequestBody struct {
 // FindManyResponseBody The result of a find operation.
 type FindManyResponseBody struct {
 	// Documents A list of documents that match the specified filter.
-	Documents *[]map[string]interface{} `json:"documents,omitempty"`
+	Documents *json.RawMessage `json:"documents,omitempty"`
 }
 
 // FindOneRequestBody defines model for FindOneRequestBody.
@@ -171,7 +171,7 @@ type FindOneRequestBody struct {
 // FindOneResponseBody The result of a findOne operation.
 type FindOneResponseBody struct {
 	// Document A document that matches the specified filter. If no documents match, this is `null`.
-	Document *map[string]interface{} `json:"document"`
+	Document *json.RawMessage `json:"document"`
 }
 
 // InsertManyRequestBody defines model for InsertManyRequestBody.
@@ -195,7 +195,7 @@ type InsertManyRequestBody struct {
 // InsertManyResponseBody The result of an insertMany operation.
 type InsertManyResponseBody struct {
 	// InsertedIds A list of the `_id` values of the inserted documents.
-	InsertedIds *[]string `json:"insertedIds,omitempty"`
+	InsertedIds *[]any `json:"insertedIds,omitempty"`
 }
 
 // InsertOneRequestBody defines model for InsertOneRequestBody.
@@ -219,7 +219,7 @@ type InsertOneRequestBody struct {
 // InsertOneResponseBody The result of an insertOne operation.
 type InsertOneResponseBody struct {
 	// InsertedId The `_id` value of the inserted document.
-	InsertedId interface{} `json:"insertedId,omitempty"`
+	InsertedId *any `json:"insertedId,omitempty"`
 }
 
 // Limit defines model for Limit.
