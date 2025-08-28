@@ -75,7 +75,13 @@ func (r *ReadyZ) Probe(ctx context.Context) bool {
 	for _, u := range urls {
 		r.l.DebugContext(ctx, fmt.Sprintf("Pinging %s", u))
 
-		conn, err := wireclient.Connect(ctx, u, r.l)
+		cleanUri, _, _, _, err := wireclient.Credentials(u)
+		if err != nil {
+			r.l.ErrorContext(ctx, "Getting credentials failed", logging.Error(err))
+			return false
+		}
+
+		conn, err := wireclient.Connect(ctx, cleanUri, r.l)
 		if err != nil {
 			r.l.ErrorContext(ctx, "Connection failed", logging.Error(err))
 			return false
