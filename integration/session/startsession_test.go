@@ -126,8 +126,9 @@ func TestSessionConnection(t *testing.T) {
 
 	t.Run("CloseConnection", func(t *testing.T) {
 		var anotherConn *wireclient.Conn
+		var creds *url.Userinfo
 
-		clearUri, creds, _, authMechanism, err := wireclient.Credentials(s.MongoDBURI)
+		clearUri, creds, _, authMechanism, err = wireclient.Credentials(s.MongoDBURI)
 		require.NoError(t, err)
 
 		anotherConn, err = wireclient.Connect(ctx, clearUri, testutil.Logger(t))
