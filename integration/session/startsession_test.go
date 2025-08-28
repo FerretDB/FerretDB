@@ -44,7 +44,7 @@ func TestSessionConnection(t *testing.T) {
 	ctx, collection, db, conn1 := s.Ctx, s.Collection, s.Collection.Database(), s.WireConn
 	cName, dbName := collection.Name(), db.Name()
 
-	clearUri, creds, authSource, authMechanism, err := wireclient.Credentials(s.MongoDBURI)
+	clearUri, _, _, authMechanism, err := wireclient.Credentials(s.MongoDBURI)
 	require.NoError(t, err)
 
 	conn2, err := wireclient.Connect(ctx, clearUri, testutil.Logger(t))
@@ -54,11 +54,7 @@ func TestSessionConnection(t *testing.T) {
 		require.NoError(t, conn2.Close())
 	})
 
-	authSource = "admin"
-
-	creds = url.UserPassword("username", "password")
-
-	err = conn2.Login(ctx, creds, authSource, authMechanism)
+	err = conn2.Login(ctx, url.UserPassword("username", "password"), "admin", authMechanism)
 	require.NoError(t, err)
 
 	_, err = collection.InsertMany(ctx, bson.A{
@@ -131,17 +127,13 @@ func TestSessionConnection(t *testing.T) {
 	t.Run("CloseConnection", func(t *testing.T) {
 		var anotherConn *wireclient.Conn
 
-		clearUri, creds, authSource, authMechanism, err := wireclient.Credentials(s.MongoDBURI)
+		clearUri, creds, _, authMechanism, err := wireclient.Credentials(s.MongoDBURI)
 		require.NoError(t, err)
 
 		anotherConn, err = wireclient.Connect(ctx, clearUri, testutil.Logger(t))
 		require.NoError(t, err)
 
-		if authSource == "" {
-			authSource = "admin"
-		}
-
-		err = anotherConn.Login(ctx, creds, authSource, authMechanism)
+		err = anotherConn.Login(ctx, creds, "admin", authMechanism)
 		require.NoError(t, err)
 
 		sessionID := startSession(t, ctx, anotherConn)
@@ -396,10 +388,8 @@ func TestSessionConnectionDifferentUser(t *testing.T) {
 	}).Err()
 	require.NoError(t, err)
 
-	clearUri, creds, authSource, authMechanism, err := wireclient.Credentials(s.MongoDBURI)
+	clearUri, _, _, authMechanism, err := wireclient.Credentials(s.MongoDBURI)
 	require.NoError(t, err)
-
-	creds = url.UserPassword(user, pass)
 
 	userConn, err := wireclient.Connect(ctx, clearUri, testutil.Logger(t))
 	require.NoError(t, err)
@@ -408,11 +398,7 @@ func TestSessionConnectionDifferentUser(t *testing.T) {
 		require.NoError(t, userConn.Close())
 	})
 
-	if authSource == "" {
-		authSource = "admin"
-	}
-
-	err = userConn.Login(ctx, creds, authSource, authMechanism)
+	err = userConn.Login(ctx, url.UserPassword(user, pass), "admin", authMechanism)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
