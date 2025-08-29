@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -51,7 +52,7 @@ func TestTTLIndexRemovesExpiredDocs(t *testing.T) {
 
 	for time.Now().Before(deadline) || ctx.Err() != nil {
 		err = collection.FindOne(ctx, bson.D{{Key: "_id", Value: "expired"}}).Err()
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			break
 		}
 
@@ -61,7 +62,7 @@ func TestTTLIndexRemovesExpiredDocs(t *testing.T) {
 
 	err = collection.FindOne(ctx, bson.D{{Key: "_id", Value: "expired"}}).Err()
 	require.Error(t, err)
-	require.Equal(t, mongo.ErrNoDocuments, err)
+	require.ErrorIs(t, err, mongo.ErrNoDocuments)
 
 	err = collection.FindOne(ctx, bson.D{{Key: "_id", Value: "fresh"}}).Err()
 	require.NoError(t, err)
