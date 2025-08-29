@@ -48,11 +48,13 @@ func TestTTLIndexRemovesExpiredDocs(t *testing.T) {
 	require.Equal(t, int64(2), count)
 
 	deadline := time.Now().Add(90 * time.Second)
-	for time.Now().Before(deadline) {
+
+	for time.Now().Before(deadline) || ctx.Err() != nil {
 		err = collection.FindOne(ctx, bson.D{{Key: "_id", Value: "expired"}}).Err()
 		if err == mongo.ErrNoDocuments {
 			break
 		}
+
 		require.NoError(t, err)
 		time.Sleep(2 * time.Second)
 	}
