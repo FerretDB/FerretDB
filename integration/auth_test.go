@@ -1266,7 +1266,10 @@ func TestSASLContinueOpQueryErrors(t *testing.T) {
 			q.FullCollectionName = "admin.$cmd"
 			q.NumberToReturn = -1
 
-			conn, err := wireclient.Connect(ctx, s.MongoDBURI, testutil.Logger(t))
+			cleanUri, _, _, _, err := wireclient.Credentials(s.MongoDBURI)
+			require.NoError(t, err)
+
+			conn, err := wireclient.Connect(ctx, cleanUri, testutil.Logger(t))
 			require.NoError(t, err)
 
 			_, resBody, err := conn.Request(ctx, q)
