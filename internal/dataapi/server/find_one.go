@@ -67,16 +67,23 @@ func (s *Server) FindOne(w http.ResponseWriter, r *http.Request) {
 	cursor := resp.Document().Get("cursor").(wirebson.AnyDocument)
 	firstBatch := must.NotFail(cursor.Decode()).Get("firstBatch").(wirebson.AnyArray)
 
-	var doc wirebson.RawDocument
+	var res api.FindOneResponseBody
 
 	docs := must.NotFail(firstBatch.Decode())
-	if docs.Len() > 0 {
-		doc = must.NotFail(docs.Get(0).(wirebson.AnyDocument).Encode())
+	if docs.Len() == 0 {
+		s.writeJSONResponse(ctx, w, &res)
+		return
 	}
 
-	res := wirebson.MustDocument(
-		"document", doc,
-	)
+	doc := docs.Get(0).(wirebson.AnyDocument)
 
-	s.writeJSONResponse(ctx, w, res)
+	b, err := marshalSingleJSON(doc)
+	if err != nil {
+		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res.Document = &b
+
+	s.writeJSONResponse(ctx, w, &res)
 }

@@ -249,15 +249,14 @@ func TestFindCommandSingleBatch(t *testing.T) {
 func TestFindCommandExhausted(tt *testing.T) {
 	tt.Parallel()
 
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/270")
-
 	s := setup.SetupWithOpts(tt, &setup.SetupOpts{PoolSize: 1})
-
 	collection, ctx := s.Collection, s.Ctx
 
 	arr := integration.GenerateDocuments(1, 3)
 	_, err := collection.InsertMany(ctx, arr)
-	require.NoError(t, err)
+	require.NoError(tt, err)
+
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/5445")
 
 	var res bson.D
 	err = collection.Database().RunCommand(ctx, bson.D{

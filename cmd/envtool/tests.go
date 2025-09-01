@@ -377,7 +377,6 @@ func runGoTest(runCtx context.Context, opts *runGoTestOpts) (resErr error) {
 				key = resultKey(event.Package, parentTest(event.Test))
 				parent := results[key]
 
-				// TODO https://github.com/FerretDB/FerretDB/issues/4465
 				if parent == nil {
 					panic(fmt.Sprintf(
 						"no parent test found: package=%q, test=%q, key=%q", event.Package, event.Test, key,
