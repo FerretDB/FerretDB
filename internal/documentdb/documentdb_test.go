@@ -17,6 +17,8 @@ package documentdb
 import (
 	"context"
 	"fmt"
+	"runtime"
+	runtimedebug "runtime/debug"
 	"testing"
 
 	"github.com/FerretDB/wire/wirebson"
@@ -233,4 +235,31 @@ func TestSeqNoSeq(t *testing.T) {
 		wirebson.MustDocument("_id", int32(4)),
 	)
 	wiretest.AssertEqual(t, expected, res.Get("cursor").(*wirebson.Document).Get("firstBatch"))
+}
+
+func TestWithConn(t *testing.T) {
+	sp, err := state.NewProvider("")
+	require.NoError(t, err)
+
+	l := testutil.Logger(t)
+
+	pool, err := NewPool(testutil.PostgreSQLURL(t), l, sp)
+	require.NoError(t, err)
+
+	defer pool.Close()
+
+	err = pool.WithConn(func(conn *pgx.Conn) error {
+		// TODO
+		if conn == nil {
+			t.Fatalf("nil")
+		}
+
+		runtime.GC()
+		runtimedebug.FreeOSMemory()
+
+		return nil
+	})
+
+	require.NoError(t, err)
+
 }
