@@ -31,7 +31,7 @@ import (
 //
 //	documentdb_api.drop_indexes(p_database_name text, p_arg documentdb_core.bson, INOUT retval documentdb_core.bson DEFAULT NULL).
 //
-// TODO https://github.com/microsoft/documentdb/issues/49
+// TODO https://github.com/documentdb/documentdb/issues/49
 //
 //nolint:lll // copied from generated code
 func DropIndexes(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, arg wirebson.RawDocument, retVal wirebson.RawDocument) (outRetVal wirebson.RawDocument, err error) {
