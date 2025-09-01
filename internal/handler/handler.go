@@ -19,13 +19,13 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/FerretDB/wire"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/session"
@@ -43,7 +43,7 @@ const (
 	maxWireVersion = int32(21)
 
 	// Maximal supported BSON document size (enforced in DocumentDB by BSON_MAX_ALLOWED_SIZE constant).
-	// TODO https://github.com/microsoft/documentdb/issues/67
+	// TODO https://github.com/documentdb/documentdb/issues/67
 	// TODO https://github.com/FerretDB/FerretDB/issues/4930
 	maxBsonObjectSize = int32(16777216)
 
@@ -62,9 +62,14 @@ const (
 // Handler instance is shared between all client connections.
 type Handler struct {
 	*NewOpts
+
 	p        *documentdb.Pool
 	commands map[string]*command
 	s        *session.Registry
+
+	runM   sync.Mutex
+	runCtx context.Context
+	runWG  sync.WaitGroup
 }
 
 // NewOpts represents handler configuration.
@@ -77,7 +82,7 @@ type NewOpts struct {
 	ReplSetName   string
 
 	L             *slog.Logger
-	ConnMetrics   *connmetrics.ConnMetrics
+	Metrics       *middleware.Metrics
 	StateProvider *state.Provider
 
 	SessionCleanupInterval time.Duration
@@ -108,14 +113,20 @@ func New(opts *NewOpts) (*Handler, error) {
 	return h, nil
 }
 
-// Run runs the handler until ctx is canceled.
+// Run implements [middleware.Handler].
 //
 // When this method returns, handler is stopped and pool is closed.
 func (h *Handler) Run(ctx context.Context) {
+	h.runM.Lock()
+	h.runCtx = ctx
+	h.runM.Unlock()
+
 	defer func() {
+		h.runWG.Wait()
+
 		h.s.Stop()
 		h.p.Close()
-		h.L.InfoContext(ctx, "Handler stopped")
+		h.L.InfoContext(ctx, "Stopped")
 	}()
 
 	sessionCleanupInterval := h.SessionCleanupInterval
@@ -130,7 +141,7 @@ func (h *Handler) Run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			h.L.InfoContext(ctx, "Expired session deletion stopped")
+			h.L.InfoContext(ctx, "Stopping")
 			return
 
 		case <-ticker.C:
@@ -143,8 +154,25 @@ func (h *Handler) Run(ctx context.Context) {
 	}
 }
 
-// Handle processes a request.
+// Handle implements [middleware.Handler].
 func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	if ctx.Err() != nil {
+		return nil, lazyerrors.Error(ctx.Err())
+	}
+
+	h.runM.Lock()
+
+	if rc := h.runCtx; rc != nil && rc.Err() != nil {
+		h.runM.Unlock()
+		return nil, lazyerrors.Error(rc.Err())
+	}
+
+	// we need to use Add under a lock to avoid a race with Wait in Run
+	h.runWG.Add(1)
+	h.runM.Unlock()
+
+	defer h.runWG.Done()
+
 	switch req.WireBody().(type) {
 	case *wire.OpMsg:
 		msgCmd := req.Document().Command()

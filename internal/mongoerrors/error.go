@@ -17,11 +17,7 @@ package mongoerrors
 import (
 	"fmt"
 
-	"github.com/FerretDB/wire"
-	"github.com/FerretDB/wire/wirebson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
-
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // Error represents MongoDB command error.
@@ -89,25 +85,5 @@ func (e *Error) GoString() string {
 	return fmt.Sprintf(
 		`&mongoerrors.Error{Code: %d, Name: %#q, Message: %#q, Argument: %#q, Wrapped: %s}`,
 		e.Code, e.Name, e.Message, e.Argument, goString(e.Wrapped),
-	)
-}
-
-// Msg returns this error as a OP_MSG message.
-func (e *Error) Msg() *wire.OpMsg {
-	return must.NotFail(wire.NewOpMsg(e.Doc()))
-}
-
-// Reply returns this error as a OP_REPLY message.
-func (e *Error) Reply() *wire.OpReply {
-	return must.NotFail(wire.NewOpReply(e.Doc()))
-}
-
-// Doc returns this error as document.
-func (e *Error) Doc() *wirebson.Document {
-	return wirebson.MustDocument(
-		"ok", float64(0),
-		"errmsg", e.Message,
-		"code", e.Code,
-		"codeName", e.Name,
 	)
 }

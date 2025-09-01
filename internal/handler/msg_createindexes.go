@@ -69,7 +69,7 @@ func (h *Handler) msgCreateIndexes(connCtx context.Context, req *middleware.Requ
 // createIndexes calls DocumentDB API to create indexes, decodes and maps embedded error to command error if any.
 // It returns a document for createIndexes response.
 func (h *Handler) createIndexes(connCtx context.Context, conn *pgx.Conn, command, dbName string, spec wirebson.RawDocument) (wirebson.AnyDocument, error) { //nolint:lll // for readability
-	// TODO https://github.com/microsoft/documentdb/issues/25
+	// TODO https://github.com/documentdb/documentdb/issues/25
 	// resRaw, _, _, err := documentdb_api.CreateIndexesBackground(connCtx, conn.Conn(), h.L, dbName, spec)
 	resRaw, err := documentdb_api_internal.CreateIndexesNonConcurrently(connCtx, conn, h.L, dbName, spec, true)
 	if err != nil {

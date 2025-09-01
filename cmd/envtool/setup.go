@@ -21,7 +21,6 @@ import (
 	"log/slog"
 	"net"
 	"net/url"
-	"runtime"
 	"time"
 
 	"github.com/FerretDB/wire/wirebson"
@@ -178,12 +177,9 @@ func setup(ctx context.Context, logger *slog.Logger) error {
 		return lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/5369
-	if runtime.GOARCH != "arm64" {
-		uri = "postgres://pg-user:pg-pass@127.0.0.1:5433/yugabyte"
-		if err = setupUser(ctx, uri, logging.WithName(logger, "yugabytedb")); err != nil {
-			return lazyerrors.Error(err)
-		}
+	uri = "postgres://pg-user:pg-pass@127.0.0.1:5433/yugabyte"
+	if err = setupUser(ctx, uri, logging.WithName(logger, "yugabytedb")); err != nil {
+		return lazyerrors.Error(err)
 	}
 
 	logger.InfoContext(ctx, "Done")

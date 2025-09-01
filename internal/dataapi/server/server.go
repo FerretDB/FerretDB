@@ -37,17 +37,17 @@ import (
 )
 
 // New creates a new Server.
-func New(l *slog.Logger, handler middleware.Handler) *Server {
+func New(l *slog.Logger, handler *middleware.Middleware) *Server {
 	return &Server{
-		l:       l,
-		handler: handler,
+		l: l,
+		m: handler,
 	}
 }
 
 // Server implements services described by OpenAPI description file.
 type Server struct {
-	l       *slog.Logger
-	handler middleware.Handler
+	l *slog.Logger
+	m *middleware.Middleware
 }
 
 // AuthMiddleware handles SCRAM authentication based on the username and password specified in request.
@@ -90,9 +90,9 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			"$db", "admin",
 		))
 
-		resp, err := s.handler.Handle(ctx, msg)
-		if err != nil {
-			http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		resp := s.m.Handle(ctx, msg)
+		if resp == nil {
+			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
 		}
 
@@ -117,9 +117,9 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 			"$db", "admin",
 		))
 
-		resp, err = s.handler.Handle(ctx, msg)
-		if err != nil {
-			http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		resp = s.m.Handle(ctx, msg)
+		if resp == nil {
+			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
 		}
 
@@ -153,23 +153,17 @@ func (s *Server) AuthMiddleware(next http.Handler) http.Handler {
 // calls the next handler, and closes the connection info after the request is done.
 func (s *Server) ConnInfoMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		connInfo := conninfo.New()
+		ci := conninfo.New()
 
-		defer connInfo.Close()
+		defer ci.Close()
 
-		next.ServeHTTP(w, r.WithContext(conninfo.Ctx(r.Context(), connInfo)))
+		next.ServeHTTP(w, r.WithContext(conninfo.Ctx(r.Context(), ci)))
 	})
 }
 
 // writeJSONResponse marshals provided res document into extended JSON and
 // writes it to provided [http.ResponseWriter].
-func (s *Server) writeJSONResponse(ctx context.Context, w http.ResponseWriter, res wirebson.AnyDocument) {
-	resRaw, err := res.Encode()
-	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
-		return
-	}
-
+func (s *Server) writeJSONResponse(ctx context.Context, w http.ResponseWriter, res api.Response) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var resWriter io.Writer = w
@@ -185,7 +179,8 @@ func (s *Server) writeJSONResponse(ctx context.Context, w http.ResponseWriter, r
 		}()
 	}
 
-	if err = marshalJSON(resRaw, resWriter); err != nil {
+	err := json.NewEncoder(resWriter).Encode(res)
+	if err != nil {
 		s.l.ErrorContext(ctx, "marshalJSON failed", logging.Error(err))
 	}
 }
@@ -197,10 +192,11 @@ func (s *Server) writeJSONError(ctx context.Context, w http.ResponseWriter, resp
 	codeName := doc.Get("codeName").(string)
 
 	w.WriteHeader(http.StatusInternalServerError)
-	s.writeJSONResponse(ctx, w, wirebson.MustDocument(
-		"error", errmsg,
-		"error_code", codeName,
-	))
+
+	s.writeJSONResponse(ctx, w, &api.Error{
+		Error:     errmsg,
+		ErrorCode: codeName,
+	})
 }
 
 // prepareDocument creates a new bson document from the given pairs of
