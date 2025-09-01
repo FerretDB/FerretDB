@@ -43,11 +43,9 @@ func (h *Handler) msgSleep(connCtx context.Context, req *middleware.Request) (*m
 		return nil, mongoerrors.New(mongoerrors.ErrUnauthorized, "sleep may only be run against the admin database.")
 	}
 
-	useDefault := true
 	sleepDur := 10000 * time.Millisecond
 
 	if v := doc.Get("millis"); v != nil {
-		useDefault = false
 		millis, ok := v.(int32)
 
 		if !ok {
@@ -55,21 +53,6 @@ func (h *Handler) msgSleep(connCtx context.Context, req *middleware.Request) (*m
 		}
 
 		sleepDur = time.Duration(max(millis, 0)) * time.Millisecond
-	}
-
-	if v := doc.Get("secs"); v != nil {
-		secs, ok := v.(int32)
-		if !ok {
-			return nil, lazyerrors.Error(mongoerrors.New(mongoerrors.ErrBadValue, "parameter secs has invalid type"))
-		}
-
-		secs = max(secs, 0)
-
-		if useDefault {
-			sleepDur = time.Duration(secs) * time.Second
-		} else {
-			sleepDur += time.Duration(max(sleepDur, time.Duration(secs)*time.Second))
-		}
 	}
 
 	lock, err := getRequiredParam[string](doc, "lock")
