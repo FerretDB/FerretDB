@@ -56,6 +56,22 @@ func TestSmokeDataAPI(t *testing.T) {
 		assert.JSONEq(t, `{"documents":[]}`, string(body))
 	})
 
+	t.Run("FindOneEmpty", func(t *testing.T) {
+		jsonBody := `{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {}
+		}`
+
+		res, err := postJSON(t, "http://"+addr+"/action/findOne", jsonBody)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"document":null}`, string(body))
+	})
+
 	docs := []string{
 		`{"_id":1,"v":"foo"}`,
 		`{"_id":2,"v":42}`,
@@ -75,7 +91,7 @@ func TestSmokeDataAPI(t *testing.T) {
 
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
-		assert.JSONEq(t, `{"n":1}`, string(body))
+		assert.JSONEq(t, `{"insertedId":1}`, string(body))
 	})
 
 	t.Run("InsertMany", func(t *testing.T) {
@@ -91,7 +107,7 @@ func TestSmokeDataAPI(t *testing.T) {
 
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
-		assert.JSONEq(t, `{"n":1}`, string(body))
+		assert.JSONEq(t, `{"insertedIds": [2, 3]}`, string(body))
 	})
 
 	t.Run("UpdateOne", func(t *testing.T) {
@@ -206,6 +222,102 @@ func TestSmokeDataAPI(t *testing.T) {
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
 		assert.JSONEq(t, `{"documents":[`+docs[2]+`]}`, string(body))
+	})
+
+	t.Run("InsertOneEmptyId", func(t *testing.T) {
+		jsonBody := `{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"document": ` + `{"v":"foo"}` + `
+		}`
+
+		res, err := postJSON(t, "http://"+addr+"/action/insertOne", jsonBody)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+
+		bodyStr := strings.TrimSpace(string(body))
+		assert.Regexp(t,
+			`^{"insertedId":"[0-9a-f]{24}"}$`,
+			bodyStr,
+			"expected %q, got %q",
+			`{"insertedId":"<ObjectID>"}`,
+			string(body),
+		)
+	})
+
+	t.Run("UpsertOne", func(t *testing.T) {
+		jsonBody := `{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {"v":"non-existent"},
+			"update": {"$set":{"v":"foo"}},
+			"upsert": true
+		}`
+
+		res, err := postJSON(t, "http://"+addr+"/action/updateOne", jsonBody)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+
+		bodyStr := strings.TrimSpace(string(body))
+		assert.Regexp(t,
+			`^{"matchedCount":1,"modifiedCount":0,"upsertedId":".*[0-9a-f]{24}.*"}$`,
+			bodyStr,
+			"expected %q, got %q",
+			`{"upsertedId":"<ObjectID>"}`,
+			string(body),
+		)
+	})
+
+	t.Run("UpsertOneStringId", func(t *testing.T) {
+		jsonBody := `{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {"v":"non-existent"},
+			"update": {"$set":{"_id":"string_id","v":"foo"}},
+			"upsert": true
+		}`
+
+		res, err := postJSON(t, "http://"+addr+"/action/updateOne", jsonBody)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"matchedCount":1,"modifiedCount":0,"upsertedId":"string_id"}`, string(body))
+	})
+
+	t.Run("UpsertMany", func(t *testing.T) {
+		jsonBody := `{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {"v":"non-existent"},
+			"update": {"$set":{"v":"foo"}},
+			"upsert": true
+		}`
+
+		res, err := postJSON(t, "http://"+addr+"/action/updateMany", jsonBody)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+
+		bodyStr := strings.TrimSpace(string(body))
+		assert.Regexp(t,
+			`^{"matchedCount":1,"modifiedCount":0,"upsertedId":".*[0-9a-f]{24}.*"}$`,
+			bodyStr,
+			"expected %q, got %q",
+			`{"upsertedId":"<ObjectID>"}`,
+			string(body),
+		)
 	})
 }
 
