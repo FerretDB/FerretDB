@@ -914,7 +914,7 @@ func TestCreateIndexesExpireAfterRemovesExpiredDocs(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	expired := bson.D{{Key: "_id", Value: "expired"}, {Key: "expireAt", Value: time.Now().Add(-5 * time.Minute)}}
+	expired := bson.D{{Key: "_id", Value: "expired"}, {Key: "expireAt", Value: time.Now().Add(10 * time.Second)}}
 	fresh := bson.D{{Key: "_id", Value: "fresh"}, {Key: "expireAt", Value: time.Now().Add(10 * time.Minute)}}
 
 	_, err = collection.InsertMany(ctx, []any{expired, fresh})
