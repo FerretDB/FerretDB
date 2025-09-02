@@ -903,6 +903,7 @@ func TestReIndexErrors(t *testing.T) {
 		})
 	}
 }
+
 func TestCreateIndexesExpireAfterRemovesExpiredDocs(t *testing.T) {
 	t.Parallel()
 
