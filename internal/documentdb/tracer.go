@@ -33,7 +33,9 @@ type contextKey struct{}
 // queryKey is used for setting and getting a value with [context.WithValue].
 var queryKey = contextKey{}
 
-// port tracing, tweak logging
+// tracer implements various pgx interfaces to provide Prometheus metrics and
+// OpenTelemetry traces.
+//
 // See:
 //   - https://pkg.go.dev/github.com/jackc/pgx/v5/tracelog
 //   - https://pkg.go.dev/github.com/jackc/pgx/v5/pgxpool#AcquireTracer
@@ -48,6 +50,7 @@ type tracer struct {
 	duration *prometheus.HistogramVec
 }
 
+// newTracer creates a new tracer.
 func newTracer(l *slog.Logger) *tracer {
 	return &tracer{
 		// try to log everything; logger's configuration will skip extra levels if needed
