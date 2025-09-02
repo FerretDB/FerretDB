@@ -31,8 +31,7 @@ import (
 
 // Parts of Prometheus metric names.
 const (
-	// TODO https://github.com/FerretDB/FerretDB/issues/5402
-	namespace = "ferretdb_unstable"
+	namespace = "ferretdb"
 	subsystem = "cursors"
 )
 
@@ -64,7 +63,7 @@ func NewRegistry(l *slog.Logger) *Registry {
 				Name:      "created_total",
 				Help:      "Unstable: Total number of cursors created.",
 			},
-			[]string{"user", "type"},
+			[]string{"type"},
 		),
 		duration: prometheus.NewHistogramVec(
 			prometheus.HistogramOpts{
@@ -87,22 +86,14 @@ func NewRegistry(l *slog.Logger) *Registry {
 					(10000 * time.Millisecond).Seconds(),
 				},
 			},
-			[]string{"user", "type"},
+			[]string{"type"},
 		),
 	}
 
 	// That probably should be the user from the PostgreSQL URI?
-	// TODO https://github.com/FerretDB/FerretDB/issues/3974
-	user := "unknown"
 
-	res.created.With(prometheus.Labels{
-		"user": user,
-		"type": "normal",
-	})
-	res.duration.With(prometheus.Labels{
-		"user": user,
-		"type": "normal",
-	})
+	res.created.With(prometheus.Labels{"type": "normal"})
+	res.duration.With(prometheus.Labels{"type": "normal"})
 
 	resource.Track(res, res.token)
 
@@ -145,8 +136,7 @@ func (r *Registry) NewCursor(ctx context.Context, id int64, continuation wirebso
 
 	r.l.DebugContext(ctx, "Storing new cursor", slog.Int64("id", id), slog.Any("cursor", c))
 
-	user := "unknown" // TODO https://github.com/FerretDB/FerretDB/issues/3974
-	r.created.With(prometheus.Labels{"user": user, "type": c.Type()}).Inc()
+	r.created.With(prometheus.Labels{"type": c.Type()}).Inc()
 
 	r.cursors[id] = c
 
@@ -247,8 +237,7 @@ func (r *Registry) removeCursor(ctx context.Context, id int64) *cursor {
 		slog.Int64("id", id), slog.Any("cursor", c), slog.Duration("duration", dur),
 	)
 
-	user := "unknown" // TODO https://github.com/FerretDB/FerretDB/issues/3974
-	r.duration.With(prometheus.Labels{"user": user, "type": c.Type()}).Observe(dur.Seconds())
+	r.duration.With(prometheus.Labels{"type": c.Type()}).Observe(dur.Seconds())
 
 	delete(r.cursors, id)
 
