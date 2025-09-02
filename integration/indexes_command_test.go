@@ -27,9 +27,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
+
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
 	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
-	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 )
 
 // TestListIndexesCommandNonExistentNS tests that the listIndexes command returns a particular error
