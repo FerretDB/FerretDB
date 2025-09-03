@@ -57,7 +57,7 @@ func TestCreateUserCommand(t *testing.T) {
 				Name:    "BadValue",
 				Message: "User document needs 'user' field to be non-empty",
 			},
-			altMessage: "createUser cannot be empty",
+			altMessage: "'createUser' is a required field.",
 		},
 		"EmptyPassword": {
 			payload: bson.D{
@@ -157,7 +157,7 @@ func TestCreateUserCommand(t *testing.T) {
 				Name:    "BadValue",
 				Message: "Must provide a 'pwd' field for all user documents, except those with '$external' as the user's source db",
 			},
-			altMessage: "createUser, pwd and roles are required fields",
+			altMessage: "'createUser', 'roles' and 'pwd' are required fields.",
 		},
 		"Success": {
 			payload: bson.D{
@@ -178,7 +178,7 @@ func TestCreateUserCommand(t *testing.T) {
 					{Key: "serverKey"},
 				}},
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/939",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5313",
 		},
 		"SuccessWithSCRAMSHA256": {
 			payload: bson.D{
@@ -200,7 +200,7 @@ func TestCreateUserCommand(t *testing.T) {
 					{Key: "serverKey"},
 				}},
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/939",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5313",
 		},
 		"WithComment": {
 			payload: bson.D{
@@ -222,7 +222,7 @@ func TestCreateUserCommand(t *testing.T) {
 					{Key: "serverKey"},
 				}},
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/939",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5313",
 		},
 		"MissingRoles": {
 			payload: bson.D{

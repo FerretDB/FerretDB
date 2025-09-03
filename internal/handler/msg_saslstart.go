@@ -19,12 +19,12 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api_internal"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
@@ -32,22 +32,14 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/scram"
 )
 
-// MsgSASLStart implements `saslStart` command.
+// msgSASLStart implements `saslStart` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgSASLStart(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+func (h *Handler) msgSASLStart(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	doc := req.Document()
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
-	}
-
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
 	}
 
 	res, err := h.saslStart(connCtx, doc)
@@ -57,7 +49,7 @@ func (h *Handler) MsgSASLStart(connCtx context.Context, msg *wire.OpMsg) (*wire.
 
 	must.NoError(res.Add("ok", float64(1)))
 
-	return wire.NewOpMsg(res)
+	return middleware.ResponseDoc(req, res)
 }
 
 // saslStart starts SCRAM conversation.
@@ -137,7 +129,7 @@ func (h *Handler) saslStart(ctx context.Context, doc *wirebson.Document) (*wireb
 
 	var res wirebson.RawDocument
 
-	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
+	err = h.p.WithConn(func(conn *pgx.Conn) error {
 		res, err = documentdb_api_internal.ScramSha256GetSaltAndIterations(ctx, conn, h.L, username)
 		return err
 	})

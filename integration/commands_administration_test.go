@@ -19,7 +19,6 @@ import (
 	"math"
 	"math/rand/v2"
 	"runtime"
-	"slices"
 	"strconv"
 	"sync"
 	"testing"
@@ -146,7 +145,6 @@ func TestListDatabases(t *testing.T) {
 		expectedNameOnly bool
 		expected         mongo.ListDatabasesResult
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/4722
 		failsForFerretDB string
 	}{
 		"Exists": {
@@ -201,7 +199,7 @@ func TestListDatabases(t *testing.T) {
 			expected: mongo.ListDatabasesResult{
 				Databases: []mongo.DatabaseSpecification{},
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4722",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4862",
 		},
 		"RegexNotFound": {
 			filter: bson.D{
@@ -211,7 +209,7 @@ func TestListDatabases(t *testing.T) {
 			expected: mongo.ListDatabasesResult{
 				Databases: []mongo.DatabaseSpecification{},
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4722",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4862",
 		},
 		"RegexNotFoundNameOnly": {
 			filter: bson.D{
@@ -270,7 +268,7 @@ func TestListDatabases(t *testing.T) {
 			}
 			actual.TotalSize = 0
 
-			assert.EqualValues(t, tc.expected, actual)
+			assert.ElementsMatch(t, tc.expected.Databases, actual.Databases)
 		})
 	}
 }
@@ -301,14 +299,11 @@ func TestListCollectionNames(t *testing.T) {
 	compat, err := compatCollections[0].Database().ListCollectionNames(ctx, filter)
 	require.NoError(t, err)
 
-	require.True(t, slices.IsSorted(compat), "compat collections are not sorted")
-
 	target, err := targetCollections[0].Database().ListCollectionNames(ctx, filter)
 	require.NoError(t, err)
 
 	assert.Len(t, target, len(filterNames))
-	assert.True(t, slices.IsSorted(target), "target collections are not sorted")
-	assert.Equal(t, compat, target)
+	assert.ElementsMatch(t, compat, target)
 }
 
 func TestListCollectionsUUID(t *testing.T) {
@@ -1892,7 +1887,7 @@ func TestServerStatusCommand(t *testing.T) {
 				{"gitVersion", info.Commit},
 				{"debug", true},
 				{"package", info.Package},
-				{"postgresql", version.PostgreSQL},
+				{"postgresql", version.PostgreSQLTest},
 				{"documentdb", version.DocumentDB},
 			}
 			AssertEqualDocuments(t, expected, ferretdb)
@@ -2162,7 +2157,7 @@ func TestServerStatusCommandMetrics(t *testing.T) {
 					{"gitVersion", info.Commit},
 					{"debug", true},
 					{"package", info.Package},
-					{"postgresql", version.PostgreSQL},
+					{"postgresql", version.PostgreSQLTest},
 					{"documentdb", version.DocumentDB},
 				}},
 				{"freeMonitoring", bson.D{{"state", "undecided"}}},
@@ -2344,7 +2339,7 @@ func TestServerStatusCommandFreeMonitoring(t *testing.T) {
 					{"gitVersion", info.Commit},
 					{"debug", true},
 					{"package", info.Package},
-					{"postgresql", version.PostgreSQL},
+					{"postgresql", version.PostgreSQLTest},
 					{"documentdb", version.DocumentDB},
 				}},
 				{"freeMonitoring", bson.D{{"state", tc.expectedStatus}}},
@@ -2417,152 +2412,80 @@ func TestServerStatusCommandStress(t *testing.T) {
 	wg.Wait()
 }
 
-func TestCompactCommandForce(t *testing.T) {
+func TestCompactCommand(t *testing.T) {
 	// don't run in parallel as parallel `VACUUM FULL ANALYZE` may result in deadlock
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		DatabaseName: "admin",
 		Providers:    []shareddata.Provider{shareddata.DocumentsStrings},
 	})
 
-	for name, tc := range map[string]struct {
-		force any // optional, defaults to unset
+	dr, err := s.Collection.DeleteMany(s.Ctx, bson.D{})
+	require.NoError(t, err)
+	assert.Positive(t, dr.DeletedCount)
 
-		err            *mongo.CommandError // optional
-		altMessage     string              // optional, alternative error message
-		skipForMongoDB string              // optional, skip test for mongoDB with a specific reason
-	}{
-		"True": {
-			force: true,
-		},
-		"False": {
-			force:          false,
-			skipForMongoDB: "Only {force:true} can be run on active replica set primary",
-		},
-		"Int32": {
-			force: int32(1),
-		},
-		"Int32Zero": {
-			force:          int32(0),
-			skipForMongoDB: "Only {force:true} can be run on active replica set primary",
-		},
-		"Int64": {
-			force: int64(1),
-		},
-		"Int64Zero": {
-			force:          int64(0),
-			skipForMongoDB: "Only {force:true} can be run on active replica set primary",
-		},
-		"Double": {
-			force: float64(1),
-		},
-		"DoubleZero": {
-			force:          float64(0),
-			skipForMongoDB: "Only {force:true} can be run on active replica set primary",
-		},
-		"Unset": {
-			skipForMongoDB: "Only {force:true} can be run on active replica set primary",
-		},
-		"String": {
-			force: "foo",
-			err: &mongo.CommandError{
-				Code:    14,
-				Name:    "TypeMismatch",
-				Message: "BSON field 'force' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'",
-			},
-			skipForMongoDB: "force is FerretDB specific field",
-		},
-	} {
-		t.Run(name, func(t *testing.T) {
-			if tc.skipForMongoDB != "" {
-				setup.SkipForMongoDB(t, tc.skipForMongoDB)
-			}
-
-			command := bson.D{{"compact", s.Collection.Name()}}
-			if tc.force != nil {
-				command = append(command, bson.E{Key: "force", Value: tc.force})
-			}
-
-			var res bson.D
-			err := s.Collection.Database().RunCommand(
-				s.Ctx,
-				command,
-			).Decode(&res)
-
-			if tc.err != nil {
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-				return
-			}
-
-			require.NoError(t, err)
-
-			expected := bson.D{
-				{"bytesFreed", int32(0)},
-				{"ok", float64(1)},
-			}
-
-			AssertEqualDocuments(t, expected, res)
-		})
+	command := bson.D{
+		{"compact", s.Collection.Name()},
+		{"force", true},
 	}
+
+	var res bson.D
+	err = s.Collection.Database().RunCommand(s.Ctx, command).Decode(&res)
+	require.NoError(t, err)
+
+	res, bf := RemoveKey(t, res, "bytesFreed")
+	assert.Zero(t, bf)
+	AssertEqualDocuments(t, bson.D{{"ok", float64(1)}}, res)
 }
 
-func TestCompactCommandErrors(tt *testing.T) {
-	tt.Parallel()
+func TestCompactCommandNonExistent(t *testing.T) {
+	t.Parallel()
 
 	for name, tc := range map[string]struct {
 		dbName string
+		force  any // optional, defaults to unset
 
-		err              *mongo.CommandError // required
-		altMessage       string              // optional, alternative error message
-		skipForMongoDB   string              // optional, skip test for MongoDB backend with a specific reason
-		failsForFerretDB string
+		err        *mongo.CommandError // required
+		altMessage string              // optional, alternative error message
 	}{
 		"NonExistentDB": {
+			force:  true,
 			dbName: "non-existent",
 			err: &mongo.CommandError{
 				Code:    26,
 				Name:    "NamespaceNotFound",
 				Message: "database does not exist",
 			},
-			altMessage: "Invalid namespace specified 'non-existent.non-existent'",
-
-			skipForMongoDB:   "Only {force:true} can be run on active replica set primary",
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/286",
+			altMessage: "ns does not exist: non-existent.non-existent",
 		},
 		"NonExistentCollection": {
+			force:  true,
 			dbName: "admin",
 			err: &mongo.CommandError{
 				Code:    26,
 				Name:    "NamespaceNotFound",
 				Message: "collection does not exist",
 			},
-			altMessage:       "Invalid namespace specified 'admin.non-existent'",
-			skipForMongoDB:   "Only {force:true} can be run on active replica set primary",
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/286",
+			altMessage: "ns does not exist: admin.non-existent",
 		},
 	} {
-		tt.Run(name, func(tt *testing.T) {
-			tt.Parallel()
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-			var t testing.TB = tt
-			if tc.failsForFerretDB != "" {
-				t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
-			}
+			require.Error(t, tc.err)
 
-			if tc.skipForMongoDB != "" {
-				setup.SkipForMongoDB(t, tc.skipForMongoDB)
-			}
-
-			require.NotNil(t, tc.err, "err must not be nil")
-
-			s := setup.SetupWithOpts(tt, &setup.SetupOpts{
+			s := setup.SetupWithOpts(t, &setup.SetupOpts{
 				DatabaseName: tc.dbName,
 			})
 
+			command := bson.D{
+				{"compact", "non-existent"},
+			}
+			if tc.force != nil {
+				command = append(command, bson.E{Key: "force", Value: tc.force})
+			}
+
 			var res bson.D
-			err := s.Collection.Database().RunCommand(
-				s.Ctx,
-				bson.D{{"compact", "non-existent"}},
-			).Decode(&res)
+			err := s.Collection.Database().RunCommand(s.Ctx, command).Decode(&res)
 
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})

@@ -26,7 +26,7 @@ on:
     tags:
       - "*"
   schedule:
-    - cron: "10 1 * * 1" # after cleanup
+    - cron: "10 1 * * 1" # after cleanup and DocumentDB
 
 # Do not run this workflow in parallel for any PR change or branch/tag push
 # to prevent concurrent pushes for the same Docker image tag
@@ -64,7 +64,7 @@ jobs:
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
         if: github.event_name != 'pull_request_target'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
@@ -72,7 +72,7 @@ jobs:
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout pull request code
         if: github.event_name == 'pull_request_target'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
@@ -136,9 +136,13 @@ jobs:
           username: ferretdbbot
           password: ${{ secrets.QUAY_TOKEN }}
 
-      - name: Build and push evaluation Docker images ${{ steps.tag.outputs.evaluation_images }}
-        if: steps.tag.outputs.evaluation_images != ''
-        run: bin/task docker-evaluation-push DOCKER_IMAGES=${{ steps.tag.outputs.evaluation_images }}
+      - name: Build and push evaluation development Docker images ${{ steps.tag.outputs.eval_dev_images }}
+        if: steps.tag.outputs.eval_dev_images != ''
+        run: bin/task docker-eval-dev-push DOCKER_IMAGES=${{ steps.tag.outputs.eval_dev_images }}
+
+      - name: Build and push evaluation Docker images ${{ steps.tag.outputs.eval_images }}
+        if: steps.tag.outputs.eval_images != ''
+        run: bin/task docker-eval-push DOCKER_IMAGES=${{ steps.tag.outputs.eval_images }}
 
       - name: Build and push development Docker images ${{ steps.tag.outputs.development_images }}
         if: steps.tag.outputs.development_images != ''

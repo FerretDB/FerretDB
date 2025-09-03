@@ -40,7 +40,7 @@ type updateCompatTestCase struct {
 	filter      bson.D                   // defaults to bson.D{{"_id", id}}
 	updateOpts  *options.UpdateOptions   // defaults to nil
 	replaceOpts *options.ReplaceOptions  // defaults to nil
-	resultType  compatTestCaseResultType // defaults to nonEmptyResult
+	resultType  CompatTestCaseResultType // defaults to NonEmptyResult
 	providers   []shareddata.Provider    // defaults to shareddata.AllProviders()
 
 	skip             string // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1086
@@ -109,8 +109,7 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 					allDocs := FindAll(t, ctx, targetCollection)
 
 					for _, doc := range allDocs {
-						id, ok := doc.Map()["_id"]
-						require.True(t, ok)
+						id := GetKey(t, doc, "_id")
 
 						t.Run(fmt.Sprint(id), func(tt *testing.T) {
 							tt.Helper()
@@ -173,13 +172,13 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 			}
 
 			switch tc.resultType {
-			case nonEmptyResult:
+			case NonEmptyResult:
 				if tc.failsForFerretDB != "" {
 					return
 				}
 
 				assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
-			case emptyResult:
+			case EmptyResult:
 				if tc.failsForFerretDB != "" {
 					return
 				}
@@ -197,7 +196,7 @@ type testUpdateManyCompatTestCase struct { //nolint:vet // used for testing only
 	update     bson.D                   // required if replace is nil
 	filter     bson.D                   // defaults to bson.D{}
 	updateOpts *options.UpdateOptions   // defaults to nil
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	resultType CompatTestCaseResultType // defaults to NonEmptyResult
 	providers  []shareddata.Provider    // defaults to shareddata.AllProviders()
 
 	skip string // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1086
@@ -290,9 +289,9 @@ func testUpdateManyCompat(t *testing.T, testCases map[string]testUpdateManyCompa
 			}
 
 			switch tc.resultType {
-			case nonEmptyResult:
+			case NonEmptyResult:
 				assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
-			case emptyResult:
+			case EmptyResult:
 				assert.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
@@ -307,7 +306,7 @@ type updateCommandCompatTestCase struct {
 	upsert     bool                     // defaults to false
 	update     bson.D                   // required
 	filter     bson.D                   // defaults to bson.D{{"_id", id}}
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	resultType CompatTestCaseResultType // defaults to NonEmptyResult
 
 	failsForFerretDB string
 	failsIDs         []struct {
@@ -463,13 +462,13 @@ func testUpdateCommandCompat(tt *testing.T, testCases map[string]updateCommandCo
 			}
 
 			switch tc.resultType {
-			case nonEmptyResult:
+			case NonEmptyResult:
 				if tc.failsForFerretDB != "" {
 					return
 				}
 
 				assert.True(tt, nonEmptyResults, "expected non-empty results (some documents should be modified)")
-			case emptyResult:
+			case EmptyResult:
 				assert.False(tt, nonEmptyResults, "expected empty results (no documents should be modified)")
 			default:
 				tt.Fatalf("unknown result type %v", tc.resultType)
@@ -483,7 +482,7 @@ type updateCurrentDateCompatTestCase struct {
 	keys       []string                 // keys to check after the update that we expect being updated by the operation
 	update     bson.D                   // required
 	filter     bson.D                   // defaults to bson.D{{"_id", id}}
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	resultType CompatTestCaseResultType // defaults to NonEmptyResult
 
 	failsForFerretDB   string
 	failsProvidersDocs []struct {
@@ -621,13 +620,13 @@ func testUpdateCurrentDateCompat(tt *testing.T, testCases map[string]updateCurre
 			}
 
 			switch tc.resultType {
-			case nonEmptyResult:
+			case NonEmptyResult:
 				if tc.failsForFerretDB != "" {
 					return
 				}
 
 				assert.True(tt, nonEmptyResults, "expected non-empty results (some documents should be modified)")
-			case emptyResult:
+			case EmptyResult:
 				assert.False(tt, nonEmptyResults, "expected empty results (no documents should be modified)")
 			default:
 				tt.Fatalf("unknown result type %v", tc.resultType)
@@ -700,7 +699,7 @@ func TestUpdateCompat(t *testing.T) {
 	testCases := map[string]updateCompatTestCase{
 		"UpdateEmptyDocument": {
 			update:     bson.D{},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ReplaceSimple": {
 			replace:          bson.D{{"v", "foo"}},
@@ -875,18 +874,18 @@ func TestUpdateCompatMultiFlagCommand(t *testing.T) {
 			filter:     bson.D{{"v", int32(42)}},
 			update:     bson.D{{"$set", bson.D{{"v", int32(43)}}}},
 			multi:      "false",
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Int": {
 			filter:     bson.D{{"v", int32(42)}},
 			update:     bson.D{{"$set", bson.D{{"v", int32(43)}}}},
 			multi:      int32(0),
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"TrueEmptyDocument": {
 			update:     bson.D{},
 			multi:      true,
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"FalseEmptyDocument": {
 			update: bson.D{},
@@ -1027,7 +1026,7 @@ func TestUpdateCompatReplacementDoc(t *testing.T) {
 		},
 		"WithUpdateOp": {
 			update:     bson.D{{"v", int32(43)}, {"$set", bson.D{{"test", int32(0)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"SameId": {
 			filter: bson.D{{"_id", "int32"}},

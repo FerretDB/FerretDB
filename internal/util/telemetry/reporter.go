@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
@@ -61,7 +61,7 @@ type report struct {
 	// opcode (e.g. "OP_MSG", "OP_QUERY") ->
 	// command (e.g. "find", "aggregate") ->
 	// argument that caused an error (e.g. "sort", "$count (stage)"; or "unknown") ->
-	// result (e.g. "NotImplemented", "InternalError"; or "ok") ->
+	// result (e.g. "NotImplemented", "panic", or "ok") ->
 	// count.
 	CommandMetrics map[string]map[string]map[string]map[string]int `json:"command_metrics"`
 }
@@ -89,7 +89,7 @@ type NewReporterOpts struct {
 	DNT            string
 	ExecName       string
 	P              *state.Provider
-	ConnMetrics    *connmetrics.ConnMetrics
+	Metrics        *middleware.Metrics
 	L              *slog.Logger
 	UndecidedDelay time.Duration
 	ReportInterval time.Duration
@@ -135,7 +135,7 @@ func (r *Reporter) Run(ctx context.Context) {
 	}
 
 	for context.Cause(ctx) == nil {
-		report := r.makeReport()
+		report := r.makeReport(r.Metrics.GetResponses())
 
 		if s := r.P.Get(); s.Telemetry == nil || *s.Telemetry {
 			r.sendReport(ctx, report)
@@ -146,11 +146,15 @@ func (r *Reporter) Run(ctx context.Context) {
 		ctxutil.Sleep(ctx, r.ReportInterval)
 	}
 
-	report := r.makeReport()
+	report := r.makeReport(r.Metrics.GetResponses())
 
 	// send one last time before exiting only if explicitly enabled (not undecided)
 	if s := r.P.Get(); s.Telemetry != nil && *s.Telemetry {
-		r.sendReport(ctx, report)
+		// ctx is already canceled, but we want to inherit its values
+		lastCtx, lastCancel := ctxutil.WithDelay(ctx)
+		defer lastCancel(nil)
+
+		r.sendReport(lastCtx, report)
 	}
 
 	r.writeReport(report)
@@ -184,10 +188,10 @@ func (r *Reporter) firstReportDelay(ctx context.Context) {
 }
 
 // makeReport converts runtime state, metrics, and build information to telemetry data.
-func (r *Reporter) makeReport() *report {
+func (r *Reporter) makeReport(m map[string]map[string]map[string]middleware.CommandMetrics) *report {
 	commandMetrics := map[string]map[string]map[string]map[string]int{}
 
-	for opcode, commands := range r.ConnMetrics.GetResponses() {
+	for opcode, commands := range m {
 		for command, arguments := range commands {
 			for argument, m := range arguments {
 				if _, ok := commandMetrics[opcode]; !ok {
@@ -212,7 +216,9 @@ func (r *Reporter) makeReport() *report {
 					failures += c
 				}
 
-				commandMetrics[opcode][command][argument]["ok"] = m.Total - failures
+				if ok := m.Total - failures; ok != 0 {
+					commandMetrics[opcode][command][argument]["ok"] = ok
+				}
 			}
 		}
 	}
@@ -266,44 +272,44 @@ func (r *Reporter) sendReport(ctx context.Context, report *report) {
 
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 
-	res, err := r.c.Do(req)
+	resp, err := r.c.Do(req)
 	if err != nil {
 		r.L.DebugContext(ctx, "Failed to send telemetry report", logging.Error(err))
 		return
 	}
-	defer res.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // safe to ignore
 
-	if res.StatusCode != http.StatusCreated {
-		r.L.DebugContext(ctx, "Failed to send telemetry report", slog.Int("status", res.StatusCode))
+	if resp.StatusCode != http.StatusCreated {
+		r.L.DebugContext(ctx, "Failed to send telemetry report", slog.Int("status", resp.StatusCode))
 		return
 	}
 
-	var response response
-	if err = json.NewDecoder(res.Body).Decode(&response); err != nil {
+	var res response
+	if err = json.NewDecoder(resp.Body).Decode(&res); err != nil {
 		r.L.DebugContext(ctx, "Failed to read telemetry response", logging.Error(err))
 		return
 	}
 
-	r.L.DebugContext(ctx, "Read telemetry response", slog.Any("response", response))
+	r.L.DebugContext(ctx, "Read telemetry response", slog.Any("response", res))
 
-	if response.UpdateInfo != "" || response.UpdateAvailable {
-		msg := response.UpdateInfo
+	if res.UpdateInfo != "" || res.UpdateAvailable {
+		msg := res.UpdateInfo
 		if msg == "" {
-			msg = "A new version available!"
+			msg = "A new version is available"
 		}
 
 		r.L.InfoContext(
 			ctx,
 			msg,
 			slog.String("current_version", report.Version),
-			slog.String("latest_version", response.LatestVersion),
+			slog.String("latest_version", res.LatestVersion),
 		)
 	}
 
 	if err = r.P.Update(func(s *state.State) {
-		s.LatestVersion = response.LatestVersion
-		s.UpdateInfo = response.UpdateInfo
-		s.UpdateAvailable = response.UpdateAvailable
+		s.LatestVersion = res.LatestVersion
+		s.UpdateInfo = res.UpdateInfo
+		s.UpdateAvailable = res.UpdateAvailable
 	}); err != nil {
 		r.L.ErrorContext(ctx, "Failed to update state with latest version", logging.Error(err))
 	}

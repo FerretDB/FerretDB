@@ -168,7 +168,7 @@ func TestUsersInfoCommand(t *testing.T) {
 				Message: "UserName must be either a string or an object",
 				Name:    "BadValue",
 			},
-			altMessage: "Unusupported value for usersInfo",
+			altMessage: "Unsupported value specified for 'usersInfo'.",
 		},
 		"UnknownField": {
 			dbName: dbNames.A,
@@ -205,7 +205,7 @@ func TestUsersInfoCommand(t *testing.T) {
 			// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/864
 			// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/961
 			// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/962
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/939",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5313",
 		},
 		"WithSCRAMSHA256": {
 			dbName: dbNames.E,
@@ -234,7 +234,7 @@ func TestUsersInfoCommand(t *testing.T) {
 				}},
 				{"ok", float64(1)},
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/939",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5313",
 		},
 		"FromSameDatabase": {
 			dbName: dbNames.B,
@@ -329,7 +329,7 @@ func TestUsersInfoCommand(t *testing.T) {
 				Message: "UserName must be either a string or an object",
 				Name:    "BadValue",
 			},
-			altMessage: "Unusupported value for usersInfo",
+			altMessage: "Unsupported value specified for 'usersInfo'.",
 		},
 		"BadTypeUsername": {
 			dbName: dbNames.D,
@@ -344,7 +344,7 @@ func TestUsersInfoCommand(t *testing.T) {
 				Message: "UserName must contain a string field named: user. But, has type int",
 				Name:    "BadValue",
 			},
-			altMessage: fmt.Sprintf("Unsupported value specified for db : %s", dbNames.B),
+			altMessage: "Unsupported value specified for 'db' field. Only 'admin' is allowed.",
 		},
 		"BadTypeDB": {
 			dbName: dbNames.D,
@@ -467,7 +467,7 @@ func TestUsersInfoCommand(t *testing.T) {
 				}},
 				{"ok", float64(1)},
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/939",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5313",
 		},
 		"SingleDatabaseLong": {
 			dbName: "no_users",
@@ -532,7 +532,7 @@ func TestUsersInfoCommand(t *testing.T) {
 				Message: "$and/$or/$nor must be a nonempty array",
 				Name:    "BadValue",
 			},
-			altMessage: "Unusupported value for usersInfo",
+			altMessage: "Unsupported value specified for 'usersInfo'.",
 		},
 		"MissingDBFieldName": {
 			dbName: dbNames.B,

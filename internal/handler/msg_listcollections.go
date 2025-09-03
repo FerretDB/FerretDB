@@ -16,72 +16,33 @@ package handler
 
 import (
 	"context"
-	"sort"
 
-	"github.com/FerretDB/wire"
-	"github.com/FerretDB/wire/wirebson"
-
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgListCollections implements `listCollections` command.
+// msgListCollections implements `listCollections` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgListCollections(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+func (h *Handler) msgListCollections(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	doc := req.Document()
 
 	dbName, err := getRequiredParam[string](doc, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	userID, sessionID, err := h.s.CreateOrUpdateByLSID(connCtx, spec)
+	userID, sessionID, err := h.s.CreateOrUpdateByLSID(connCtx, doc)
 	if err != nil {
 		return nil, err
 	}
 
-	page, cursorID, err := h.Pool.ListCollections(connCtx, dbName, spec)
+	page, cursorID, err := h.p.ListCollections(connCtx, dbName, req.DocumentRaw())
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	h.s.AddCursor(connCtx, userID, sessionID, cursorID)
 
-	// Sort the first page as a partial workaround for
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/822
-
-	resp, err := page.DecodeDeep()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	cursor := resp.Get("cursor").(*wirebson.Document)
-	firstBatch := cursor.Get("firstBatch").(*wirebson.Array)
-
-	sort.Sort(firstBatch.SortInterface(func(a, b any) bool {
-		an := a.(*wirebson.Document).Get("name").(string)
-		bn := b.(*wirebson.Document).Get("name").(string)
-
-		return an < bn
-	}))
-
-	page, err = resp.Encode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if msg, err = wire.NewOpMsg(page); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return msg, nil
+	return middleware.ResponseDoc(req, page)
 }

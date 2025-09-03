@@ -16,7 +16,9 @@ vars:
   RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
   BUILD_TAGS: ferretdb_dev
   MODE: diff-normal
-  SERVICES: postgres mongodb mongodb-secure jaeger
+  SERVICES: jaeger mongodb mongodb-secure postgres yugabytedb
+  LLM: qwen3:0.6b
+  LLM_CONTEXT: 40960 # https://ollama.com/library/qwen3:0.6b
 
 tasks:
   # invoked when `task` is run without arguments
@@ -47,6 +49,13 @@ tasks:
       - go mod verify
       - go generate -x
 
+  init-tools-mcphost:
+    dir: tools/mcphost
+    cmds:
+      - go mod tidy
+      - go mod verify
+      - go generate -x
+
   init-integration:
     dir: integration
     cmds:
@@ -55,7 +64,7 @@ tasks:
 
   init:
     desc: "Install development tools"
-    deps: [init-tools, init-tools-golangci, init-integration]
+    deps: [init-tools, init-tools-golangci, init-tools-mcphost, init-integration]
     cmds:
       - go mod tidy
       - go mod verify
@@ -106,9 +115,13 @@ tasks:
       - docker compose logs --follow
 
   env-logs-collect:
+    desc: "Collect logs from Docker and save them to tmp/logs"
     cmds:
-      - docker compose ps --all
-      - docker compose logs
+      - bin/envtool{{exeExt}} shell mkdir tmp/logs
+      - docker compose ps --all > tmp/logs/compose-ps.txt
+      - docker compose logs > tmp/logs/compose-logs.txt
+      - docker compose exec yugabytedb sh -c "bin/yugabyted collect_logs --stdout | gunzip | tar -xf - --one-top-level=/tmp/logs"
+      - docker compose cp yugabytedb:/tmp/logs tmp/logs/yugabytedb
 
   env-up:
     desc: "Start development environment"
@@ -179,15 +192,22 @@ tasks:
   test-unit-short:
     desc: "Run short unit tests (with caching)"
     cmds:
+      - go test -c -o /dev/null ./...
       - go test -short -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverprofile=cover.txt ./...
       - bin/task{{exeExt}} -d tools tools-test-short
 
   test-unit:
     desc: "Run all unit tests"
     cmds:
-      - go test -count=1 -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverprofile=cover.txt ./...
+      - go test -c -o /dev/null ./...
+      - go test -v -count=1 -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverprofile=cover.txt ./... | tee unit.txt
       - go test -count=1 -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -bench=. -benchtime=1x ./...
       - bin/task{{exeExt}} -d tools tools-test
+
+  test-integration-build:
+    run: once
+    dir: integration
+    cmd: go test -c -o /dev/null ./...
 
   test-integration:
     desc: "Run integration tests in parallel"
@@ -195,7 +215,7 @@ tasks:
 
   test-integration-postgresql:
     desc: "Run integration tests for PostgreSQL/DocumentDB"
-    deps: [gen-version]
+    deps: [gen-version, test-integration-build]
     dir: integration
     cmds:
       - >
@@ -221,7 +241,7 @@ tasks:
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
-    deps: [gen-version]
+    deps: [gen-version, test-integration-build]
     dir: integration
     cmds:
       - >
@@ -242,6 +262,47 @@ tasks:
         ./...
         -target-url='mongodb://username:password@127.0.0.1:47017/?replicaSet=rs0'
         -target-backend=mongodb
+        -no-xfail={{.NO_XFAIL}}
+
+  test-integration-yugabytedb:
+    desc: "Run integration tests for FerretDB with YugabyteDB sequentially"
+    vars:
+      # DPanic on InternalError stops execution of remaining tests,
+      # ensure to complete all tests by not setting development build tag and without race detector.
+      # TODO https://github.com/FerretDB/FerretDB/issues/5397
+      BUILD_TAGS: ""
+      RACE_FLAG: -race=false
+    deps:
+      - task: gen-version
+        vars:
+          BUILD_TAGS:
+            ref: .BUILD_TAGS
+          RACE_FLAG:
+            ref: .RACE_FLAG
+      - task: test-integration-build
+    dir: integration
+    cmds:
+      - >
+        ../bin/envtool{{exeExt}} tests run
+        --shard-index={{.SHARD_INDEX}}
+        --shard-total={{.SHARD_TOTAL}}
+        --run='{{.TEST_RUN}}'
+        --skip='{{.TEST_SKIP}}'
+        --raw-prefix=yugabytedb-{{.SHARD_INDEX}}-{{.SHARD_TOTAL}}
+        --
+        -count=1
+        -parallel=1
+        -p=1
+        -timeout={{.TEST_TIMEOUT}}
+        {{.RACE_FLAG}}
+        -tags={{.BUILD_TAGS}}
+        -shuffle=on
+        -coverpkg=../...
+        -coverprofile=integration-yugabytedb.txt
+        ./...
+        -target-backend=ferretdb-yugabytedb
+        -postgresql-url='postgres://pg-user:pg-pass@127.0.0.1:5433/yugabyte'
+        -compat-url='mongodb://username:password@127.0.0.1:47017/?replicaSet=rs0'
         -no-xfail={{.NO_XFAIL}}
 
   bench-unit:
@@ -281,6 +342,36 @@ tasks:
         --dev-repl-set-name=rs0
         --dev-records-dir=tmp/records
 
+  run-yugabytedb:
+    desc: "Run FerretDB with YugabyteDB without auth"
+    deps: [build-host]
+    cmds:
+      - >
+        bin/ferretdb{{exeExt}}
+        --mode={{.MODE}}
+        --no-auth
+        --listen-addr=:27017
+        --listen-data-api-addr=127.0.0.1:8899
+        --proxy-addr=127.0.0.1:37017
+        --postgresql-url='postgres://username:password@127.0.0.1:5433/yugabyte'
+        --otel-traces-url=http://127.0.0.1:4318/v1/traces
+        --dev-records-dir=tmp/records
+
+  run-yugabytedb-secure:
+    desc: "Run FerretDB with YugabyteDB with auth"
+    deps: [build-host]
+    cmds:
+      - >
+        bin/ferretdb{{exeExt}}
+        --mode={{.MODE}}
+        --listen-addr=:27017
+        --listen-data-api-addr=127.0.0.1:8899
+        --proxy-addr=127.0.0.1:47017
+        --postgresql-url='postgres://username:password@127.0.0.1:5433/yugabyte'
+        --otel-traces-url=http://127.0.0.1:4318/v1/traces
+        --dev-repl-set-name=rs0
+        --dev-records-dir=tmp/records
+
   # invoked by FerretDB/github-actions/linters action
   lint:
     desc: "Run linters"
@@ -310,17 +401,36 @@ tasks:
 
   security-trivy:
     cmds:
-      - docker compose run --rm trivy --config=./build/trivy.yml filesystem .
+      - docker compose run --rm trivy --config=./build/trivy.yml filesystem --ignorefile=./build/.trivyignore .
 
   godocs:
     desc: "Serve Go code documentation"
     cmds:
       - bin/pkgsite{{exeExt}} -http=127.0.0.1:6060 -open
 
+  ollama:
+    desc: "Run Ollama server"
+    cmds:
+      - ollama serve
+    env:
+      OLLAMA_CONTEXT_LENGTH: "{{.LLM_CONTEXT}}"
+      OLLAMA_DEBUG: 2
+
+  mcphost:
+    desc: "Run MCPHost for local Ollama server"
+    cmds:
+      # TODO https://github.com/FerretDB/FerretDB/issues/5277
+      # - bin/mcphost --config build/mcphost.json --model ollama:{{.LLM}}
+
   psql:
     desc: "Run psql"
     cmds:
       - docker compose exec postgres psql -p 5432 -U username -d postgres
+
+  ysqlsh:
+    desc: "Run YugabyteDB SQL shell"
+    cmds:
+      - docker compose exec yugabytedb ./bin/ysqlsh postgres://username:password@host.docker.internal:5433/yugabyte
 
   mongosh:
     desc: "Run MongoDB shell (`mongosh`)"
@@ -433,9 +543,10 @@ tasks:
       - for: [amd64, arm64]
         task: build-move-check
         vars:
+          # TODO https://github.com/FerretDB/FerretDB/issues/5019
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          BIN_FILE: 'ferretdb-dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          BIN_FILE: 'ferretdb-dev-{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
           BIN_DIR: bin-dev
 
   build-production:
@@ -453,9 +564,10 @@ tasks:
       - for: [amd64, arm64]
         task: build-move-check
         vars:
+          # TODO https://github.com/FerretDB/FerretDB/issues/5019
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          BIN_FILE: 'ferretdb-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          BIN_FILE: 'ferretdb-{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
           BIN_DIR: bin
 
   docker-local:
@@ -472,14 +584,27 @@ tasks:
       vars: [FILE]
 
   # TODO https://github.com/FerretDB/FerretDB/issues/2212
-  docker-evaluation-push:
+  docker-eval-dev-push:
     cmds:
-      - echo 'docker-evaluation' > build/version/package.txt
+      - echo 'docker-eval-dev' > build/version/package.txt
       - task: docker-build
         vars:
-          FILE: ferretdb/evaluation
-          TARGET: evaluation
-          PLATFORM: linux/amd64 # no DocumentDB for linux/arm64 yet
+          FILE: ferretdb/eval-dev
+          TARGET: eval-dev
+          PLATFORM: linux/amd64,linux/arm64
+          OUTPUT: type=image,push=true
+    requires:
+      vars: [DOCKER_IMAGES]
+
+  # TODO https://github.com/FerretDB/FerretDB/issues/2212
+  docker-eval-push:
+    cmds:
+      - echo 'docker-eval' > build/version/package.txt
+      - task: docker-build
+        vars:
+          FILE: ferretdb/eval
+          TARGET: eval
+          PLATFORM: linux/amd64,linux/arm64
           OUTPUT: type=image,push=true
     requires:
       vars: [DOCKER_IMAGES]
@@ -527,6 +652,7 @@ tasks:
         --packager={{.PACKAGER}}
         --target=tmp/{{.PACKAGER}}s/ferretdb-{{.FILE_SUFFIX}}.{{.PACKAGER}}
     env:
+      # TODO https://github.com/FerretDB/FerretDB/issues/5019
       PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
       PACKAGE_ARCH: "{{.PACKAGE_ARCH}}"
       DIR_ARCH: "{{.DIR_ARCH}}"
@@ -559,16 +685,17 @@ tasks:
       - for: [amd64, arm64]
         task: packages-build
         vars:
+          # TODO https://github.com/FerretDB/FerretDB/issues/5019
           PACKAGER: deb
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          FILE_SUFFIX: 'dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
       - for: [amd64, arm64]
         task: packages-deb-check
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
-          FILE_SUFFIX: 'dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
     vars:
       PACKAGE_VERSION:
         sh: bin/envtool{{exeExt}} package-version
@@ -587,16 +714,17 @@ tasks:
       - for: [amd64, arm64]
         task: packages-build
         vars:
+          # TODO https://github.com/FerretDB/FerretDB/issues/5019
           PACKAGER: deb
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          FILE_SUFFIX: 'linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: '{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
       - for: [amd64, arm64]
         task: packages-deb-check
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
-          FILE_SUFFIX: 'linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: '{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
     vars:
       PACKAGE_VERSION:
         sh: bin/envtool{{exeExt}} package-version
@@ -627,16 +755,17 @@ tasks:
       - for: [amd64, arm64]
         task: packages-build
         vars:
+          # TODO https://github.com/FerretDB/FerretDB/issues/5019
           PACKAGER: rpm
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          FILE_SUFFIX: 'dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
       - for: [amd64, arm64]
         task: packages-rpm-check
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
-          FILE_SUFFIX: 'dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
     vars:
       PACKAGE_VERSION:
         sh: bin/envtool{{exeExt}} package-version
@@ -655,16 +784,17 @@ tasks:
       - for: [amd64, arm64]
         task: packages-build
         vars:
+          # TODO https://github.com/FerretDB/FerretDB/issues/5019
           PACKAGER: rpm
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          FILE_SUFFIX: 'linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: '{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
       - for: [amd64, arm64]
         task: packages-rpm-check
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
-          FILE_SUFFIX: 'linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: '{{replace "/" "" .ITEM}}-linux' # arm/v7 -> armv7
     vars:
       PACKAGE_VERSION:
         sh: bin/envtool{{exeExt}} package-version
@@ -711,7 +841,7 @@ tasks:
       # TODO --print-width 120 (https://github.com/FerretDB/FerretDB/issues/4636)
       - >
         docker compose run --rm prettier --write --single-quote --trailing-comma none --no-semi
-        --parser markdown "**/*.md" "**/*.mdx"
+        "**/*.md" "**/*.mdx"
 
       - >
         docker compose run --rm markdownlint --config "build/.markdownlint.yml"
@@ -723,9 +853,21 @@ tasks:
   docs-fmt:
     deps: [fmt-docs]
 
+  docs-gen:
+    desc: "Generate documentation examples using CTS tool"
+    cmds:
+      - bin/opendocdb-cts fmt --dir=website/docs/guides
+      - bin/opendocdb-cts convert --dir=website/docs/guides website/docs/guides --db=db
+      - task: fmt-docs
+
+  cts:
+    desc: "Run CTS tests against FerretDB"
+    cmds:
+      - bin/opendocdb-cts run --dir=website/docs/guides --uri=mongodb://127.0.0.1:27017/cts
+
   docs:
     desc: "Format, lint and build documentation"
-    deps: [fmt-docs]
+    deps: [docs-gen]
     cmds:
       - docker compose run --rm docusaurus-docs build
 
@@ -737,17 +879,17 @@ tasks:
 
   pngcrush:
     cmds:
-      - pngcrush -ow -brute {{.FILE}}
+      - pngcrush -ow -brute -rem text {{.FILE}}
     requires:
       vars: [FILE]
 
   pngcrush-new:
     cmds:
-      - git diff --name-only upstream/main '*.png' | parallel "pngcrush -ow -brute {} {.}.temp"
+      - git diff --name-only upstream/main '*.png' | parallel "pngcrush -ow -brute -rem text {} {.}.temp"
 
   pngcrush-all:
     cmds:
-      - find . -type f -name '*.png' | parallel "pngcrush -ow -brute {} {.}.temp"
+      - find . -type f -name '*.png' | parallel "pngcrush -ow -brute -rem text {} {.}.temp"
 
   docs-dev:
     desc: "Start documentation development server"
@@ -785,8 +927,8 @@ tasks:
       - docker compose run --rm --service-ports wrangler pages deployment create --project-name=blog website/build
 
   changelog:
-    desc: "Generate changelogs locally for a given milestone"
+    desc: "Generate changelog"
     cmds:
-      - bin/generatechangelog -milestone={{.MILESTONE_TITLE}} -previous={{.PREVIOUS_MILESTONE_TITLE}}
+      - bin/generatechangelog -prev={{.PREV}} -next={{.NEXT}}
     requires:
-      vars: [MILESTONE_TITLE, PREVIOUS_MILESTONE_TITLE]
+      vars: [PREV, NEXT]

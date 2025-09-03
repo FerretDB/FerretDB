@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	"github.com/AlekSi/pointer"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
@@ -36,7 +37,7 @@ func (s *Server) UpdateMany(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req api.UpdateRequestBody
-	if err := decodeJsonRequest(r, &req); err != nil {
+	if err := decodeJSONRequest(r, &req); err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
@@ -52,7 +53,7 @@ func (s *Server) UpdateMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	msg, err := prepareOpMsg(
+	msg, err := prepareRequest(
 		"update", req.Collection,
 		"$db", req.Database,
 		"updates", wirebson.MustArray(updateDoc),
@@ -62,28 +63,39 @@ func (s *Server) UpdateMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resMsg, err := s.handler.Commands()["update"].Handler(ctx, msg)
-	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+	resp := s.m.Handle(ctx, msg)
+	if resp == nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	resDoc := must.NotFail(must.NotFail(resMsg.RawDocument()).Decode())
+	if !resp.OK() {
+		s.writeJSONError(ctx, w, resp)
+		return
+	}
 
-	res := must.NotFail(wirebson.NewDocument(
-		"matchedCount", resDoc.Get("n"),
-		"modifiedCount", resDoc.Get("nModified"),
-	))
+	res := api.UpdateResponseBody{
+		MatchedCount:  resp.Document().Get("n").(int32),
+		ModifiedCount: resp.Document().Get("nModified").(int32),
+	}
 
-	if upsertedRaw := resDoc.Get("upserted"); upsertedRaw != nil {
+	if upsertedRaw := resp.Document().Get("upserted"); upsertedRaw != nil {
 		upserted := must.NotFail(upsertedRaw.(wirebson.AnyArray).Decode())
 
 		if upserted.Len() > 0 {
 			item := must.NotFail(upserted.Get(0).(wirebson.AnyDocument).Decode())
 
-			must.NoError(res.Add("upsertedId", item.Get("_id")))
+			var upsertedId any
+
+			upsertedId, err = wirebson.ToDriver(item.Get("_id"))
+			if err != nil {
+				http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+				return
+			}
+
+			res.UpsertedId = pointer.To(fmt.Sprint(upsertedId))
 		}
 	}
 
-	s.writeJsonResponse(ctx, w, res)
+	s.writeJSONResponse(ctx, w, &res)
 }

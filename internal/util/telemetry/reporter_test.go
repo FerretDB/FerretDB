@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
@@ -37,26 +37,26 @@ func TestReporterLocked(t *testing.T) {
 		locked   bool
 	}{
 		"NoSet": {
-			f: new(Flag),
+			f: NewFlag(nil),
 		},
 		"FlagEnable": {
-			f:      &Flag{v: pointer.ToBool(true)},
+			f:      NewFlag(pointer.ToBool(true)),
 			t:      pointer.ToBool(true),
 			locked: true,
 		},
 		"FlagDisable": {
-			f:      &Flag{v: pointer.ToBool(false)},
+			f:      NewFlag(pointer.ToBool(false)),
 			t:      pointer.ToBool(false),
 			locked: true,
 		},
 		"DoNotTrack": {
-			f:      new(Flag),
+			f:      NewFlag(nil),
 			dnt:    "enable",
 			t:      pointer.ToBool(false),
 			locked: true,
 		},
 		"ExecName": {
-			f:        new(Flag),
+			f:        NewFlag(nil),
 			execName: "exec_donottrack",
 			t:        pointer.ToBool(false),
 			locked:   true,
@@ -69,14 +69,14 @@ func TestReporterLocked(t *testing.T) {
 			require.NoError(t, err)
 
 			_, err = NewReporter(&NewReporterOpts{
-				URL:         "http://127.0.0.1:1/",
-				Dir:         t.TempDir(),
-				F:           tc.f,
-				DNT:         tc.dnt,
-				ExecName:    tc.execName,
-				ConnMetrics: connmetrics.NewListenerMetrics().ConnMetrics,
-				P:           sp,
-				L:           testutil.Logger(t),
+				URL:      "http://127.0.0.1:1/",
+				Dir:      t.TempDir(),
+				F:        tc.f,
+				DNT:      tc.dnt,
+				ExecName: tc.execName,
+				Metrics:  middleware.NewMetrics(),
+				P:        sp,
+				L:        testutil.Logger(t),
 			})
 			assert.NoError(t, err)
 
@@ -85,4 +85,70 @@ func TestReporterLocked(t *testing.T) {
 			assert.Equal(t, tc.locked, s.TelemetryLocked)
 		})
 	}
+}
+
+func TestMakeReport(t *testing.T) {
+	t.Parallel()
+
+	m := map[string]map[string]map[string]middleware.CommandMetrics{
+		"OP_MSG": {
+			"update": {
+				"$set": middleware.CommandMetrics{
+					Failures: map[string]int{
+						"NotImplemented": 1,
+						"panic":          1,
+					},
+					Total: 3,
+				},
+			},
+			"find": {
+				"unknown": middleware.CommandMetrics{
+					Total: 1,
+				},
+			},
+			"atlasVersion": {
+				"unknown": middleware.CommandMetrics{
+					Failures: map[string]int{
+						"CommandNotFound": 1,
+					},
+					Total: 1,
+				},
+			},
+		},
+	}
+
+	sp, err := state.NewProvider("")
+	require.NoError(t, err)
+
+	tr, err := NewReporter(&NewReporterOpts{
+		URL: "http://127.0.0.1:1/",
+		Dir: t.TempDir(),
+		F:   NewFlag(pointer.ToBool(false)),
+		P:   sp,
+		L:   testutil.Logger(t),
+	})
+	assert.NoError(t, err)
+
+	expected := map[string]map[string]map[string]map[string]int{
+		"OP_MSG": {
+			"update": {
+				"$set": map[string]int{
+					"NotImplemented": 1,
+					"panic":          1,
+					"ok":             1,
+				},
+			},
+			"find": {
+				"unknown": {
+					"ok": 1,
+				},
+			},
+			"atlasVersion": {
+				"unknown": {
+					"CommandNotFound": 1,
+				},
+			},
+		},
+	}
+	assert.Equal(t, expected, tr.makeReport(m).CommandMetrics)
 }

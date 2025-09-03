@@ -19,24 +19,32 @@ import (
 	"fmt"
 	"reflect"
 	"runtime"
-	"runtime/debug"
+	runtimedebug "runtime/debug"
 	"runtime/pprof"
 	"sync"
+	"sync/atomic"
 	"unsafe"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
 )
 
-// Token should be a field of a tracked object.
-//
-// The underlying type is not struct{} because (from the Go spec)
-// "Two distinct zero-size variables may have the same address in memory",
-// and they do.
-type Token byte
+// Token is a field of a tracked object, holding the cleanup handle and a cleanup function with message.
+type Token struct {
+	h       atomic.Pointer[runtime.Cleanup]
+	cleanup func(*Token)
+	msg     string
+}
+
+// cleanup panics with the token's message.
+func cleanup(t *Token) {
+	panic(t.msg)
+}
 
 // NewToken returns a new Token.
 func NewToken() *Token {
-	return new(Token)
+	return &Token{
+		cleanup: cleanup,
+	}
 }
 
 // profilesM protects access to profiles.
@@ -49,8 +57,8 @@ func profileName(obj any) string {
 
 // Track tracks the lifetime of an object until Untrack is called on it.
 //
-// Obj should a pointer to a struct with a field "token" of type *Token.
-func Track(obj any, token *Token) {
+// Obj should be a pointer to a struct with a field "token" of type *Token.
+func Track[T any](obj *T, token *Token) {
 	checkArgs(obj, token)
 
 	name := profileName(obj)
@@ -73,31 +81,22 @@ func Track(obj any, token *Token) {
 	}
 
 	// use token instead of obj itself,
-	// because otherwise profile will hold a reference to obj and finalizer will never run
+	// because otherwise profile will hold a reference to obj and cleanup will never run
 	p.Add(token, 1)
 
-	var stack string
+	token.msg = fmt.Sprintf("%T has not been finalized", obj)
 	if devbuild.Enabled {
-		stack = string(debug.Stack())
+		token.msg += "\nObject created by " + string(runtimedebug.Stack())
 	}
 
-	// set finalizer on obj, not token
-	runtime.SetFinalizer(obj, func(obj any) {
-		// this closure has to use only obj argument and captured "stack" variable
-
-		msg := fmt.Sprintf("%T has not been finalized", obj)
-		if stack != "" {
-			msg += "\nObject created by " + stack
-		}
-
-		panic(msg)
-	})
+	h := runtime.AddCleanup(obj, token.cleanup, token)
+	token.h.Store(&h)
 }
 
 // Untrack stops tracking the lifetime of an object.
 //
-// It is safe to call this function multiple times.
-func Untrack(obj any, token *Token) {
+// It is safe to call this function multiple times concurrently.
+func Untrack[T any](obj *T, token *Token) {
 	checkArgs(obj, token)
 
 	p := pprof.Lookup(profileName(obj))
@@ -107,7 +106,9 @@ func Untrack(obj any, token *Token) {
 
 	p.Remove(token)
 
-	runtime.SetFinalizer(obj, nil)
+	if h := token.h.Swap(nil); h != nil {
+		h.Stop()
+	}
 }
 
 // checkArgs checks Track and Untrack arguments.

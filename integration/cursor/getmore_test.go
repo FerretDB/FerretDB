@@ -28,6 +28,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
+
 	"github.com/FerretDB/FerretDB/v2/integration"
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
 	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
@@ -36,7 +38,7 @@ import (
 func TestGetMoreCommand(t *testing.T) {
 	// do not run tests in parallel to avoid using too many backend connections
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{SingleConn: true})
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{PoolSize: 1})
 
 	ctx, collection := s.Ctx, s.Collection
 
@@ -310,8 +312,8 @@ func TestGetMoreCommand(t *testing.T) {
 
 			// Do not run subtests in t.Parallel() to eliminate the occurrence
 			// of session error.
-			// Supporting session would help us understand fix it
-			// https://github.com/FerretDB/FerretDB/issues/153.
+			// Supporting session would help us understand fix it.
+			// TODO https://github.com/FerretDB/FerretDB/issues/153
 			//
 			// > Location50738
 			// > Cannot run getMore on cursor 2053655655200551971,
@@ -467,6 +469,11 @@ func TestGetMoreCommandBatchSize(t *testing.T) {
 				require.Equal(t, i-1, cursor.RemainingBatchLength())
 			}
 
+			if setup.IsYugabyteDB(t) {
+				// TODO https://github.com/yugabyte/yugabyte-db/issues/27989
+				t.Skip("https://github.com/yugabyte/yugabyte-db/issues/27989")
+			}
+
 			// get rest of documents from the cursor to ensure cursor is exhausted
 			var res bson.D
 			err = cursor.All(ctx, &res)
@@ -549,7 +556,7 @@ func TestGetMoreCommandBatchSize(t *testing.T) {
 func TestGetMoreCommandConnection(t *testing.T) {
 	// do not run tests in parallel to avoid using too many backend connections
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{SingleConn: true})
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{PoolSize: 1})
 
 	ctx := s.Ctx
 	collection1 := s.Collection
@@ -563,8 +570,8 @@ func TestGetMoreCommandConnection(t *testing.T) {
 	t.Run("SameClient", func(t *testing.T) {
 		// Do not run subtests in t.Parallel() to eliminate the occurrence
 		// of session error.
-		// Supporting session would help us understand fix it
-		// https://github.com/FerretDB/FerretDB/issues/153.
+		// Supporting session would help us understand fix it.
+		// TODO https://github.com/FerretDB/FerretDB/issues/153
 		//
 		// > Location50738
 		// > Cannot run getMore on cursor 2053655655200551971,
@@ -627,7 +634,8 @@ func TestGetMoreCommandConnection(t *testing.T) {
 }
 
 func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
-	// do not run tests in parallel to avoid using too many backend connections
+	t.Parallel()
+
 	ctx, collection := setup.Setup(t)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
@@ -825,16 +833,15 @@ func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 
 func TestGetMoreCommandExhausted(tt *testing.T) {
 	s := setup.SetupWithOpts(tt, nil)
-
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/270")
-
 	collection := s.Collection
 	db, ctx := collection.Database(), s.Ctx
 
 	arr := integration.GenerateDocuments(0, 10)
 
 	_, err := collection.InsertMany(ctx, arr)
-	require.NoError(t, err)
+	require.NoError(tt, err)
+
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/5445")
 
 	var res bson.D
 	err = db.RunCommand(ctx, bson.D{
@@ -915,11 +922,11 @@ func TestGetMoreCommandExhausted(tt *testing.T) {
 }
 
 func TestGetMoreCommandMaxTimeMS(t *testing.T) {
-	// do not run tests in parallel to avoid using too many backend connections
+	t.Parallel()
 
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
-		Providers:  []shareddata.Provider{shareddata.Composites},
-		SingleConn: true,
+		Providers: []shareddata.Provider{shareddata.Composites},
+		PoolSize:  1,
 	})
 
 	ctx, collection := s.Ctx, s.Collection
@@ -930,8 +937,8 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 	_, err := collection.InsertMany(ctx, arr)
 	require.NoError(t, err)
 
-	t.Run("FindExpire", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/344")
+	t.Run("FindExpire", func(t *testing.T) {
+		t.Parallel()
 
 		opts := options.Find().
 			// set batchSize big enough to hit maxTimeMS
@@ -946,8 +953,8 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 		integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, err)
 	})
 
-	t.Run("AggregateExpire", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/344")
+	t.Run("AggregateExpire", func(t *testing.T) {
+		t.Parallel()
 
 		opts := options.Aggregate().
 			// set batchSize big enough to hit maxTimeMS
@@ -965,7 +972,7 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 func TestFindGetMoreCommandRemoveDocument(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{SingleConn: true})
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{PoolSize: 1})
 
 	collection, ctx := s.Collection, s.Ctx
 
@@ -1129,10 +1136,11 @@ func TestFindCommandFirstBatchMaxTimeMS(t *testing.T) {
 	}
 
 	t.Run("GetMore", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/270")
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/5445")
 
 		for i := 0; i < 2; i++ {
-			time.Sleep(100 * time.Millisecond)
+			ctxutil.Sleep(ctx, 100*time.Millisecond)
+
 			var res bson.D
 			err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 			require.NoError(t, err)
@@ -1152,9 +1160,10 @@ func TestFindCommandFirstBatchMaxTimeMS(t *testing.T) {
 	})
 
 	t.Run("GetMoreEmpty", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/270")
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/5445")
 
-		time.Sleep(100 * time.Millisecond)
+		ctxutil.Sleep(ctx, 100*time.Millisecond)
+
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)
 		require.NoError(t, err)
@@ -1224,7 +1233,7 @@ func TestGetMoreCommandAfterInsertion(t *testing.T) {
 	}
 
 	t.Run("GetMore", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/270")
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/5445")
 
 		for i := 0; i < 2; i++ {
 			var res bson.D
@@ -1246,7 +1255,7 @@ func TestGetMoreCommandAfterInsertion(t *testing.T) {
 	})
 
 	t.Run("GetMoreEmpty", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/270")
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/5445")
 
 		var res bson.D
 		err = collection.Database().RunCommand(ctx, getMoreCmd).Decode(&res)

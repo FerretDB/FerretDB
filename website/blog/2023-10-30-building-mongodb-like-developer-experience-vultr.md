@@ -1,14 +1,7 @@
 ---
 slug: building-mongodb-like-developer-experience-vultr
 title: 'Building the MongoDB-like developer experience on Vultr'
-authors:
-  - name: Marcin Gwóźdź
-    title: Director of Strategic Alliances at FerretDB
-    url: https://www.linkedin.com/in/marcin-gwóźdź-277abaa9
-    image_url: /img/blog/marcin-gwozdz.jpeg
-  - name: Mike Biondi
-    title: Engineering Manager of Cloud Native at Vultr
-    image_url: /img/blog/mike-biondi.jpeg
+authors: [marcin, mike]
 description: >
   We enjoyed talking with Mike Biondi from Vultr about why they decided to build a MongoDB-compatible service using FerretDB.
 image: /img/blog/ferretdb-vultr.jpg

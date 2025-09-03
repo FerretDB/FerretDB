@@ -21,33 +21,24 @@ import (
 	"strings"
 	"time"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgGetLog implements `getLog` command.
+// msgGetLog implements `getLog` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+func (h *Handler) msgGetLog(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	doc := req.Document()
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
-	}
-
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
 	}
 
 	command := doc.Command()
@@ -74,24 +65,23 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 	switch getLog {
 	case "*":
-		res = must.NotFail(wirebson.NewDocument(
-			"names", must.NotFail(wirebson.NewArray("global", "startupWarnings")),
+		res = wirebson.MustDocument(
+			"names", wirebson.MustArray("global", "startupWarnings"),
 			"ok", float64(1),
-		))
+		)
 
 	case "global":
-		var log *wirebson.Array
-
 		// TODO https://github.com/FerretDB/FerretDB/issues/4750
-		if log, err = h.L.Handler().(*logging.Handler).RecentEntries(); err != nil {
+		log, err := h.L.Handler().(*logging.Handler).RecentEntries()
+		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		res = must.NotFail(wirebson.NewDocument(
+		res = wirebson.MustDocument(
 			"log", log,
 			"totalLinesWritten", int32(log.Len()),
 			"ok", float64(1),
-		))
+		)
 
 	case "startupWarnings":
 		state := h.StateProvider.Get()
@@ -113,15 +103,17 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 		startupWarnings := []string{
 			poweredBy,
-			"Please star us on GitHub: https://github.com/FerretDB/FerretDB and https://github.com/microsoft/documentdb.",
+			"Please star 🌟 us on GitHub: https://github.com/FerretDB/FerretDB.",
 		}
 
 		if state.DocumentDBVersion != "" && state.DocumentDBVersion != version.DocumentDB {
 			startupWarnings = append(
 				startupWarnings,
-				"This version of FerretDB requires DocumentDB '"+version.DocumentDB+
-					"'. The currently installed version is '"+state.DocumentDBVersion+
-					"'. Some functions may not behave correctly.",
+				fmt.Sprintf(
+					"This version of FerretDB requires DocumentDB %q (%s). The currently installed version is %q. "+
+						"Some functions may not behave correctly.",
+					version.DocumentDB, version.DocumentDBURL, state.DocumentDBVersion,
+				),
 			)
 		}
 
@@ -137,7 +129,7 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 			msg := state.UpdateInfo
 			if msg == "" {
 				msg = fmt.Sprintf(
-					"A new version available! The latest version: %s. The current version: %s.",
+					"A new version is available! The latest version: %s. The current version: %s.",
 					state.LatestVersion, info.Version,
 				)
 			}
@@ -174,7 +166,7 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 			var b []byte
 
-			b, err = ml.Marshal()
+			b, err := ml.Marshal()
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
@@ -183,11 +175,11 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 				return nil, lazyerrors.Error(err)
 			}
 		}
-		res = must.NotFail(wirebson.NewDocument(
+		res = wirebson.MustDocument(
 			"log", log,
 			"totalLinesWritten", int32(log.Len()),
 			"ok", float64(1),
-		))
+		)
 
 	default:
 		return nil, mongoerrors.New(
@@ -196,5 +188,5 @@ func (h *Handler) MsgGetLog(connCtx context.Context, msg *wire.OpMsg) (*wire.OpM
 		)
 	}
 
-	return wire.NewOpMsg(res)
+	return middleware.ResponseDoc(req, res)
 }

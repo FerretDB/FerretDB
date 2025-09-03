@@ -19,7 +19,7 @@
 
 FerretDB is an open-source alternative to MongoDB.
 It is a proxy that converts MongoDB 5.0+ wire protocol queries to SQL
-and uses PostgreSQL with [DocumentDB extension](https://github.com/microsoft/documentdb) as a database engine.
+and uses PostgreSQL with [DocumentDB extension](https://github.com/documentdb/documentdb) as a database engine.
 
 ```mermaid
 flowchart LR
@@ -51,15 +51,18 @@ Features are constantly being added to further increase compatibility and perfor
 
 We welcome all contributors.
 See our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1),
-a list of [known differences with MongoDB](https://docs.ferretdb.io/diff/),
+lists of [known differences and supported commands](https://docs.ferretdb.io/migration/compatibility/),
 and [contributing guidelines](CONTRIBUTING.md).
 
 ## Quickstart
 
-Run this command to start FerretDB with PostgreSQL:
+Run this command to start FerretDB with PostgreSQL, make sure to update `<username>` and `<password>`:
 
 ```sh
-docker run -d --rm --name ferretdb -p 27017:27017 --platform linux/amd64 ghcr.io/ferretdb/ferretdb-eval:2
+docker run -d --rm --name ferretdb -p 27017:27017 \
+  -e POSTGRES_USER=<username> \
+  -e POSTGRES_PASSWORD=<password> \
+  ghcr.io/ferretdb/ferretdb-eval:2
 ```
 
 This command will start a container with FerretDB, pre-packaged PostgreSQL with DocumentDB extension, and MongoDB Shell for quick testing and experiments.
@@ -69,10 +72,10 @@ that don't have those problems.
 
 With that container running, you can:
 
-- Connect to it with any MongoDB client application using MongoDB URI `mongodb://username:password@127.0.0.1:27017/`.
-- Connect to it using MongoDB Shell by just running `mongosh`.
+- Connect to it with any MongoDB client application using the MongoDB URI `mongodb://<username>:<password>@127.0.0.1:27017/`.
+- Connect to it using the MongoDB Shell by just running `mongosh`.
   If you don't have it installed locally, you can run `docker exec -it ferretdb mongosh`.
-- For PostgreSQL, connect to it by running `docker exec -it ferretdb psql -U username postgres`.
+- For PostgreSQL, connect to it by running `docker exec -it ferretdb psql -U <username> postgres`.
 
 You can stop the container with `docker stop ferretdb`.
 

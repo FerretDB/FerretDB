@@ -19,43 +19,37 @@ import (
 	"maps"
 	"slices"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgListCommands implements `listCommands` command.
+// msgListCommands implements `listCommands` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgListCommands(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+func (h *Handler) msgListCommands(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	doc := req.Document()
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
-	cmdList := must.NotFail(wirebson.NewDocument())
+	cmdList := wirebson.MustDocument()
 
-	for _, name := range slices.Sorted(maps.Keys(h.Commands())) {
-		cmd := h.Commands()[name]
-		if cmd.Help == "" {
+	for _, name := range slices.Sorted(maps.Keys(h.commands)) {
+		help := h.commands[name].Help
+		if help == "" {
 			continue
 		}
 
-		must.NoError(cmdList.Add(name, must.NotFail(wirebson.NewDocument(
-			"help", cmd.Help,
-		))))
+		must.NoError(cmdList.Add(name, wirebson.MustDocument(
+			"help", help,
+		)))
 	}
 
-	res := must.NotFail(wirebson.NewDocument(
+	return middleware.ResponseDoc(req, wirebson.MustDocument(
 		"commands", cmdList,
 		"ok", float64(1),
 	))
-
-	return wire.NewOpMsg(res)
 }

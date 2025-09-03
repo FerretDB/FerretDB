@@ -1,11 +1,7 @@
 ---
 slug: guide-disaster-recovery-ferretdb-elotl-nova-kubernetes
 title: 'A Guide to Disaster Recovery for FerretDB with Elotl Nova on Kubernetes'
-authors:
-  - name: Maciek Urbanski
-    title: Senior Platform Engineer at Elotl
-    url: https://www.linkedin.com/in/maciekurbanski/
-    image_url: /img/blog/maciek-urbanski.jpg
+authors: [maciek]
 description: >
   In this blog post, we'll show you how to automate disaster recovery for FerretDB with Percona PostgreSQL and Nova on Kubernetes.
 image: /img/blog/ferretdb-elotl-nova.jpg
@@ -231,7 +227,7 @@ spec:
        override:
          fieldPath: "data"
          value:
-           raw: {"haproxy.cfg": "defaults\n    mode tcp\n    timeout connect 5000ms\n    timeout client 50000ms\n    timeout server 50000ms\n\nfrontend fe_main\n    bind *:5432\n    default_backend be_db_2\n\nbackend be_db_2\n    server db2 {{ .Values.Cluster2IP }}:27017 check"}
+           raw: {"haproxy.cfg": "defaults\n    mode tcp\n    timeout connect 5000ms\n    timeout client 50000ms\n    timeout server 50000ms\n\nfrontend fe_main\n    bind *:5432\n    default_backend be_db_2\n\nbackend be_db_2\n    server db2 {{.Values.Cluster2IP}}:27017 check"}
        patchType: "application/merge-patch+json"
 ```
 

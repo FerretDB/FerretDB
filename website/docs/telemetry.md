@@ -1,5 +1,5 @@
 ---
-sidebar_position: 7
+sidebar_position: 8
 slug: /telemetry/ # referenced in many places
 ---
 
@@ -26,10 +26,10 @@ The following data is collected:
 - Build configuration (Go version, build flags and tags)
 - Uptime
 - Command statistics:
-  - protocol operation codes (e.g. `OP_MSG`, `OP_QUERY`);
+  - protocol operation names (e.g. `OP_MSG`, `OP_QUERY`);
   - command names (e.g., `find`, `aggregate`);
   - arguments (e.g., `sort`, `$count`);
-  - error codes (e.g., `NotImplemented`, `InternalError`; or `ok`).
+  - error names (e.g., `NotImplemented`, `InternalError`; or `ok`).
 
 :::info
 Argument values, data field names, successful responses, or error messages are never collected.
@@ -37,6 +37,81 @@ Argument values, data field names, successful responses, or error messages are n
 
 The same information is always saved in a `telemetry.json` file
 in the [state directory](configuration/flags.md#miscellaneous), making it easy to inspect.
+For example, this is the content of this file as recorded by the Beacon service
+(which, of course, uses FerretDB to store data):
+
+```json
+{
+  "_comment": "Sent to https://beacon.ferretdb.com/ at 2025-03-06 13:28:57Z.",
+  "version": "v2.0.0",
+  "commit": "2214721e51d64be04ad016f401d0abf8a335993e",
+  "branch": "unknown",
+  "dirty": true,
+  "package": "docker",
+  "debug": false,
+  "build_environment": {
+    "-buildmode": "exe",
+    "-compiler": "gc",
+    "-trimpath": "true",
+    "CGO_ENABLED": "0",
+    "GOAMD64": "v1",
+    "GOARCH": "amd64",
+    "GOOS": "linux",
+    "go.version": "go1.24.1",
+    "vcs": "git",
+    "vcs.modified": "true",
+    "vcs.revision": "2214721e51d64be04ad016f401d0abf8a335993e",
+    "vcs.time": "2025-03-05T12:26:16Z"
+  },
+  "os": "linux",
+  "arch": "amd64",
+  "postgresql_version": "PostgreSQL 16.8 (Debian 16.8-1.pgdg120+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit",
+  "documentdb_version": "0.102.0 gitref: HEAD sha:f7c318c buildId:0",
+  "uuid": "<redacted>",
+  "uptime": 86400099948209,
+  "command_metrics": {
+    "OP_MSG": {
+      "count": {
+        "unknown": {
+          "ok": 1440
+        }
+      },
+      "find": {
+        "unknown": {
+          "ok": 1440
+        }
+      },
+      "getMore": {
+        "unknown": {
+          "ok": 4320
+        }
+      },
+      "hello": {
+        "unknown": {
+          "ok": 8639
+        }
+      },
+      "ping": {
+        "unknown": {
+          "ok": 1437
+        }
+      },
+      "update": {
+        "unknown": {
+          "ok": 1520
+        }
+      }
+    },
+    "OP_REPLY": {
+      "unknown": {
+        "unknown": {
+          "ok": 3
+        }
+      }
+    }
+  }
+}
+```
 
 ## Version notifications
 
@@ -44,7 +119,7 @@ When a FerretDB update is available,
 the telemetry service responds with information about the latest FerretDB version.
 This information is logged in server logs and available via the `getLog` command with the `startupWarnings` argument, making it visible when connecting with various tools such as `mongosh`.
 
-While you may not upgrade to the latest release immediately,
+While you may not update to the latest release immediately,
 ensure you update early to take advantage of recent bug fixes, new features, and performance improvements.
 
 ## Configuration
@@ -61,11 +136,6 @@ The latter acts as if it is `enabled` with two differences:
 :::info
 `undecided` state does not automatically change into `enabled` or `disabled`.
 Explicit user action is required (see below) to change an `undecided` state to `enabled` or `disabled`.
-:::
-
-:::caution
-Telemetry reporting is `undecided` and can't be configured for [embeddable FerretDB](installation/ferretdb/go.md) yet.
-We intend to add [this feature](https://github.com/FerretDB/FerretDB/issues/4750) in the future.
 :::
 
 ### Disable telemetry

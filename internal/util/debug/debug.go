@@ -35,6 +35,7 @@ import (
 	"github.com/arl/statsviz"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	_ "golang.org/x/net/trace"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
@@ -44,6 +45,7 @@ import (
 
 // Parts of Prometheus metric names.
 const (
+	// TODO https://github.com/FerretDB/FerretDB/issues/3420
 	namespace = "ferretdb"
 	subsystem = "debug"
 )
@@ -115,6 +117,7 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 	))
 
 	http.HandleFunc("/debug/archive", archiveHandler(l))
+	http.Handle("/debug/archive.zip", http.RedirectHandler("/debug/archive", 303))
 
 	svOpts := []statsviz.Option{
 		statsviz.Root("/debug/graphs"),
@@ -124,8 +127,8 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 
 	http.Handle("/debug/livez", promhttp.InstrumentHandlerDuration(
 		probeDurations.MustCurryWith(prometheus.Labels{"probe": "livez"}),
-		http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			ctx, cancel := context.WithTimeout(req.Context(), 5*time.Second)
+		http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 			defer cancel()
 
 			if !opts.Livez(ctx) {
@@ -142,8 +145,8 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 
 	http.Handle("/debug/readyz", promhttp.InstrumentHandlerDuration(
 		probeDurations.MustCurryWith(prometheus.Labels{"probe": "readyz"}),
-		http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			ctx, cancel := context.WithTimeout(req.Context(), 5*time.Second)
+		http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 			defer cancel()
 
 			if !opts.Livez(ctx) {
@@ -174,8 +177,10 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 		"/debug/readyz":  "Readiness probe",
 
 		// stdlib handlers
-		"/debug/vars":  "Expvar package metrics",
-		"/debug/pprof": "Runtime profiling data for pprof",
+		"/debug/vars":     "Expvar package metrics",
+		"/debug/pprof":    "Runtime profiling data for pprof",
+		"/debug/requests": "/x/net/trace requests",
+		"/debug/events":   "/x/net/trace events",
 	}
 
 	var page bytes.Buffer
@@ -195,8 +200,8 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 		rw.Write(page.Bytes())
 	})
 
-	http.HandleFunc("/", func(rw http.ResponseWriter, req *http.Request) {
-		http.Redirect(rw, req, "/debug", http.StatusSeeOther)
+	http.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
+		http.Redirect(rw, r, "/debug", http.StatusSeeOther)
 	})
 
 	lis, err := net.Listen("tcp", opts.TCPAddr)

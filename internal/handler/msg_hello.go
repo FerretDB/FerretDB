@@ -23,6 +23,7 @@ import (
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/session"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
@@ -30,22 +31,14 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgHello implements `hello` command.
+// msgHello implements `hello` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgHello(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+func (h *Handler) msgHello(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	doc := req.Document()
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
-	}
-
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
 	}
 
 	res, err := h.hello(connCtx, doc, h.TCPHost, h.ReplSetName)
@@ -53,22 +46,17 @@ func (h *Handler) MsgHello(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	return wire.NewOpMsg(res)
+	return middleware.ResponseDoc(req, res)
 }
 
 // hello checks client metadata and returns hello's document fields.
 // It also returns response for deprecated `isMaster` and `ismaster` commands.
-func (h *Handler) hello(ctx context.Context, spec wirebson.AnyDocument, tcpHost, name string) (*wirebson.Document, error) {
-	doc, err := spec.Decode()
-	if err != nil {
+func (h *Handler) hello(ctx context.Context, doc *wirebson.Document, tcpHost, name string) (*wirebson.Document, error) {
+	if err := checkClientMetadata(ctx, doc); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err = checkClientMetadata(ctx, doc); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	res := must.NotFail(wirebson.NewDocument())
+	res := wirebson.MustDocument()
 
 	switch doc.Command() {
 	case "hello":
@@ -94,7 +82,7 @@ func (h *Handler) hello(ctx context.Context, spec wirebson.AnyDocument, tcpHost,
 		}
 
 		must.NoError(res.Add("setName", name))
-		must.NoError(res.Add("hosts", must.NotFail(wirebson.NewArray(tcpHost))))
+		must.NoError(res.Add("hosts", wirebson.MustArray(tcpHost)))
 	}
 
 	must.NoError(res.Add("maxBsonObjectSize", maxBsonObjectSize))

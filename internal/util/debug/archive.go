@@ -25,20 +25,26 @@ import (
 	"maps"
 	"net"
 	"net/http"
+	runtimedebug "runtime/debug"
 	"slices"
 	"time"
 
+	"github.com/FerretDB/FerretDB/v2/build/version"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
-// addToZip adds a new file to the zip archive.
+// addToZip adds a new file to the zip archive, adding encountered errors to errs.
 //
 // Passed [io.ReadCloser] is always closed.
-func addToZip(w *zip.Writer, name string, r io.ReadCloser) (err error) {
+func addToZip(w *zip.Writer, name string, r io.ReadCloser, errs map[string]error) {
+	var err error
+
 	defer func() {
 		if e := r.Close(); e != nil && err == nil {
 			err = e
 		}
+
+		errs[name] = err
 	}()
 
 	f, err := w.CreateHeader(&zip.FileHeader{
@@ -50,8 +56,6 @@ func addToZip(w *zip.Writer, name string, r io.ReadCloser) (err error) {
 	}
 
 	_, err = io.Copy(f, r)
-
-	return
 }
 
 // filterExpvar filters out sensitive information from /debug/vars output.
@@ -80,27 +84,25 @@ func filterExpvar(ctx context.Context, r io.ReadCloser, l *slog.Logger) io.ReadC
 
 // archiveHandler returns a handler that creates a zip archive with various debug information.
 func archiveHandler(l *slog.Logger) http.HandlerFunc {
-	return func(rw http.ResponseWriter, req *http.Request) {
+	return func(rw http.ResponseWriter, r *http.Request) {
 		name := fmt.Sprintf("ferretdb-%s.zip", time.Now().Format("2006-01-02-15-04-05"))
 
 		rw.Header().Set("Content-Type", "application/zip")
 		rw.Header().Set("Content-Disposition", "attachment; filename="+name)
 
-		ctx := req.Context()
+		ctx := r.Context()
 		zipWriter := zip.NewWriter(rw)
 		errs := map[string]error{}
 
 		defer func() {
 			files := slices.Sorted(maps.Keys(errs))
 
-			var b bytes.Buffer
+			var buf bytes.Buffer
 			for _, f := range files {
-				b.WriteString(fmt.Sprintf("%s: %v\n", f, errs[f]))
+				buf.WriteString(fmt.Sprintf("%s: %v\n", f, errs[f]))
 			}
 
-			if err := addToZip(zipWriter, "errors.txt", io.NopCloser(&b)); err != nil {
-				l.ErrorContext(ctx, "Failed to add errors.txt to archive", logging.Error(err))
-			}
+			addToZip(zipWriter, "errors.txt", io.NopCloser(&buf), errs)
 
 			if err := zipWriter.Close(); err != nil {
 				l.ErrorContext(ctx, "Failed to close archive", logging.Error(err))
@@ -108,6 +110,13 @@ func archiveHandler(l *slog.Logger) http.HandlerFunc {
 
 			l.InfoContext(ctx, "Debug archive created", slog.String("name", name))
 		}()
+
+		b, _ := json.MarshalIndent(version.Get(), "", "  ")
+		addToZip(zipWriter, "version.json", io.NopCloser(bytes.NewReader(b)), errs)
+
+		info, _ := runtimedebug.ReadBuildInfo()
+		b, _ = json.MarshalIndent(info, "", "  ")
+		addToZip(zipWriter, "buildinfo.json", io.NopCloser(bytes.NewReader(b)), errs)
 
 		host := ctx.Value(http.LocalAddrContextKey).(net.Addr)
 
@@ -135,16 +144,17 @@ func archiveHandler(l *slog.Logger) http.HandlerFunc {
 			)
 
 			resp, err := http.DefaultClient.Do(fReq)
-			if err == nil {
-				r := resp.Body
-				if f.path == "/debug/vars" {
-					r = filterExpvar(ctx, r, l)
-				}
-
-				err = addToZip(zipWriter, f.file, r)
+			if err != nil {
+				errs[f.file] = err
+				continue
 			}
 
-			errs[f.file] = err
+			r := resp.Body
+			if f.path == "/debug/vars" {
+				r = filterExpvar(ctx, r, l)
+			}
+
+			addToZip(zipWriter, f.file, r, errs)
 		}
 	}
 }

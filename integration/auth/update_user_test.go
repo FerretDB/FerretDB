@@ -56,7 +56,7 @@ func TestUpdateUserCommand(t *testing.T) {
 				Name:    "BadValue",
 				Message: "Must specify at least one field to update in updateUser",
 			},
-			altMessage: "updateUser and pwd are required fields",
+			altMessage: "Password cannot be empty.",
 		},
 		"UserNotFound": {
 			username: "do_not_use",
@@ -146,7 +146,7 @@ func TestUpdateUserCommand(t *testing.T) {
 				}}},
 				{"ok", float64(1)},
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/939",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5313",
 		},
 		"PasswordChange": {
 			username: "a_user",
@@ -165,7 +165,7 @@ func TestUpdateUserCommand(t *testing.T) {
 				}}},
 				{"ok", float64(1)},
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/939",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5313",
 		},
 		"PasswordChangeWithSCRAMMechanism": {
 			username:   "a_user_with_scram_mechanism",
@@ -241,7 +241,7 @@ func TestUpdateUserCommand(t *testing.T) {
 				}}},
 				{"ok", float64(1)},
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/939",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5313",
 		},
 		"InvalidRoles": {
 			username: "invalid_roles",

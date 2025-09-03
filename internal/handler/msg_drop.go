@@ -19,39 +19,34 @@ import (
 	"fmt"
 	"unicode/utf8"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgDrop implements `drop` command.
+// msgDrop implements `drop` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgDrop(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+func (h *Handler) msgDrop(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	doc := req.Document()
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	command := doc.Command()
 
 	dbName, err := getRequiredParam[string](doc, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	collectionName, err := getRequiredParam[string](doc, "drop")
+	collectionName, err := getRequiredParam[string](doc, command)
 	if err != nil {
 		return nil, err
 	}
@@ -59,25 +54,23 @@ func (h *Handler) MsgDrop(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	if !collectionNameRe.MatchString(collectionName) ||
 		!utf8.ValidString(collectionName) {
 		msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collectionName)
-		return nil, mongoerrors.NewWithArgument(mongoerrors.ErrInvalidNamespace, msg, "drop")
+		return nil, mongoerrors.NewWithArgument(mongoerrors.ErrInvalidNamespace, msg, command)
 	}
 
 	// Should we manually close all cursors for the collection?
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/17
 
-	conn, err := h.Pool.Acquire()
+	var dropped bool
+
+	err = h.p.WithConn(func(conn *pgx.Conn) error {
+		dropped, err = documentdb_api.DropCollection(connCtx, conn, h.L, dbName, collectionName, nil, nil, false)
+		return err
+	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	defer conn.Release()
-
-	dropped, err := documentdb_api.DropCollection(connCtx, conn.Conn(), h.L, dbName, collectionName, nil, nil, false)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	res := must.NotFail(wirebson.NewDocument())
+	res := wirebson.MakeDocument(3)
 	if dropped {
 		must.NoError(res.Add("nIndexesWas", int32(1))) // TODO https://github.com/FerretDB/FerretDB/issues/2337
 		must.NoError(res.Add("ns", dbName+"."+collectionName))
@@ -85,5 +78,5 @@ func (h *Handler) MsgDrop(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 
 	must.NoError(res.Add("ok", float64(1)))
 
-	return wire.NewOpMsg(res)
+	return middleware.ResponseDoc(req, res)
 }

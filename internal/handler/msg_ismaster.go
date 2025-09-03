@@ -17,30 +17,22 @@ package handler
 import (
 	"context"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgIsMaster implements `isMaster` command.
+// msgIsMaster implements `isMaster` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgIsMaster(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+func (h *Handler) msgIsMaster(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	doc := req.Document()
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
-	}
-
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
 	}
 
 	res, err := h.hello(connCtx, doc, h.TCPHost, h.ReplSetName)
@@ -48,7 +40,7 @@ func (h *Handler) MsgIsMaster(connCtx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, lazyerrors.Error(err)
 	}
 
-	return wire.NewOpMsg(res)
+	return middleware.ResponseDoc(req, res)
 }
 
 // checkClientMetadata checks if the message does not contain client metadata after it was received already.
@@ -58,15 +50,15 @@ func checkClientMetadata(ctx context.Context, doc *wirebson.Document) error {
 		return nil
 	}
 
-	connInfo := conninfo.Get(ctx)
-	if connInfo.MetadataRecv() {
+	ci := conninfo.Get(ctx)
+	if ci.MetadataRecv() {
 		return mongoerrors.New(
 			mongoerrors.ErrClientMetadataCannotBeMutated,
 			"The client metadata document may only be sent in the first hello",
 		)
 	}
 
-	connInfo.SetMetadataRecv()
+	ci.SetMetadataRecv()
 
 	return nil
 }
