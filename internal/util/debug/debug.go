@@ -46,7 +46,7 @@ import (
 // Parts of Prometheus metric names.
 const (
 	// TODO https://github.com/FerretDB/FerretDB/issues/3420
-	namespace = "ferretdb_unstable"
+	namespace = "ferretdb"
 	subsystem = "debug"
 )
 
@@ -99,7 +99,7 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 			Namespace: namespace,
 			Subsystem: subsystem,
 			Name:      "probe_response_seconds",
-			Help:      "Unstable: Probe response time seconds.",
+			Help:      "Probe response time seconds.",
 			Buckets:   []float64{0.1, 0.5, 1, 5},
 		},
 		[]string{"probe", "code"},
