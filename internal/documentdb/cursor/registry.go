@@ -90,8 +90,6 @@ func NewRegistry(l *slog.Logger) *Registry {
 		),
 	}
 
-	// That probably should be the user from the PostgreSQL URI?
-
 	res.created.With(prometheus.Labels{"type": "normal"})
 	res.duration.With(prometheus.Labels{"type": "normal"})
 
@@ -104,11 +102,13 @@ func NewRegistry(l *slog.Logger) *Registry {
 func (r *Registry) Close(ctx context.Context) {
 	r.rw.Lock()
 	defer r.rw.Unlock()
+
 	for id := range r.cursors {
 		c := r.removeCursor(ctx, id)
 		must.NotBeZero(c)
 		c.close(ctx)
 	}
+
 	r.cursors = nil
 	resource.Untrack(r, r.token)
 }
