@@ -65,7 +65,16 @@ func (s *Server) Aggregate(w http.ResponseWriter, r *http.Request) {
 
 	cursor := resp.Document().Get("cursor").(wirebson.AnyDocument)
 	firstBatch := must.NotFail(cursor.Decode()).Get("firstBatch").(wirebson.AnyArray)
-	s.writeJSONResponse(ctx, w, wirebson.MustDocument(
-		"documents", firstBatch,
-	))
+
+	b, err := marshalSingleJSON(firstBatch)
+	if err != nil {
+		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		return
+	}
+
+	res := api.AggregateResponseBody{
+		Documents: b,
+	}
+
+	s.writeJSONResponse(ctx, w, &res)
 }
