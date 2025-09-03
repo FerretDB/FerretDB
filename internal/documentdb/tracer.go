@@ -151,7 +151,7 @@ func (t *tracer) TracePrepareEnd(ctx context.Context, conn *pgx.Conn, data pgx.T
 func (t *tracer) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
 	ctx = context.WithValue(ctx, queryKey, time.Now())
 
-	t.requests.WithLabelValues().Inc()
+	t.requests.With(prometheus.Labels{}).Inc()
 
 	return t.tl.TraceQueryStart(ctx, conn, data)
 }
@@ -160,7 +160,7 @@ func (t *tracer) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data pgx.T
 func (t *tracer) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryEndData) {
 	duration := time.Since(ctx.Value(queryKey).(time.Time))
 
-	t.duration.WithLabelValues().Observe(duration.Seconds())
+	t.duration.With(prometheus.Labels{}).Observe(duration.Seconds())
 
 	t.tl.TraceQueryEnd(ctx, conn, data)
 }
