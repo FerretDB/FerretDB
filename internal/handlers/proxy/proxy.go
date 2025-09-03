@@ -31,7 +31,7 @@ import (
 // Parts of Prometheus metric names.
 // TODO https://github.com/FerretDB/FerretDB/issues/4965
 const (
-	namespace = "ferretdb_unstable"
+	namespace = "ferretdb"
 	subsystem = "proxy"
 )
 
@@ -198,7 +198,7 @@ func (h *Handler) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "conns"),
-			"Unstable: The current number of connections.",
+			"The current number of connections.",
 			nil, nil,
 		),
 		prometheus.GaugeValue,
