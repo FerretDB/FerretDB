@@ -16,219 +16,136 @@ package middleware
 
 import (
 	"fmt"
-	"sync"
+	"sync/atomic"
 
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// Request represents incoming command from the client.
+// lastRequestID stores last generated request ID.
+var lastRequestID atomic.Int32
+
+// Request represents an incoming command from the client.
 //
-// It may be constructed from [*wire.MsgHeader] and [wire.MsgBody] (for the wire protocol listener)
+// It may be constructed from [*wire.MsgHeader]/[wire.MsgBody] (for the wire protocol listener)
 // or from [*wirebson.Document] (for data API and MCP listeners).
+// The other value is extracted/generated and cached during Request creation, because we need both:
+//   - raw documents carried by [wire.MsgBody] are used by both DocumentDB and proxy handlers;
+//   - (non-deeply) decoded documents are used by routing, metrics, etc.
 type Request struct {
-	rw     sync.RWMutex
 	header *wire.MsgHeader
 	body   wire.MsgBody
-	doc    *wirebson.Document
-	raw    wirebson.RawDocument
+	doc    *wirebson.Document // only section 0 for OpMsg
 }
 
 // RequestWire creates a new request from the given wire protocol header and body.
-func RequestWire(header *wire.MsgHeader, body wire.MsgBody) *Request {
+// Error is returned if the body cannot be decoded.
+func RequestWire(header *wire.MsgHeader, body wire.MsgBody) (*Request, error) {
 	must.NotBeZero(header)
 	must.NotBeZero(body)
 
 	req := &Request{
 		header: header,
+		body:   body,
 	}
 
 	switch body := body.(type) {
 	case *wire.OpMsg:
-		must.BeTrue(header.OpCode == wire.OpCodeMsg)
-		req.body = body
+		if header.OpCode != wire.OpCodeMsg {
+			return nil, lazyerrors.Errorf("expected OpCodeMsg, got %s", header.OpCode)
+		}
+
+		var err error
+		if req.doc, err = body.Section0(); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
 	case *wire.OpQuery:
-		must.BeTrue(header.OpCode == wire.OpCodeQuery)
-		req.body = body
+		if header.OpCode != wire.OpCodeQuery {
+			return nil, lazyerrors.Errorf("expected OpCodeQuery, got %s", header.OpCode)
+		}
+
+		var err error
+		if req.doc, err = body.Query(); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
 	default:
-		panic(fmt.Sprintf("unsupported body type %T", body))
+		return nil, lazyerrors.Errorf("unsupported body type %T", body)
 	}
 
-	return req
+	req.doc.Freeze()
+
+	return req, nil
 }
 
 // RequestDoc creates a new request from the given document.
+// Error is returned if it cannot be decoded.
+//
 // If it is [*wirebson.Document], it freezes it.
-func RequestDoc(doc wirebson.AnyDocument) *Request {
+func RequestDoc(doc wirebson.AnyDocument) (*Request, error) {
 	must.NotBeZero(doc)
 
-	switch d := doc.(type) {
-	case *wirebson.Document:
-		d.Freeze()
-
-		return &Request{
-			doc: d,
-		}
-	case wirebson.RawDocument:
-		return &Request{
-			raw: d,
-		}
-	default:
-		panic("not reached")
-	}
-}
-
-// setHeaderBody ensures that header and body are set.
-func (req *Request) setHeaderBody() {
-	if req.header != nil && req.body != nil {
-		return
+	body, err := wire.NewOpMsg(doc)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	// wire.OpMsg always uses the raw document under the hood,
-	// so store it to avoid encoding it again
-	if req.raw == nil {
-		must.NotBeZero(req.doc)
-		req.raw = must.NotFail(req.doc.Encode())
-	}
-
-	req.body = must.NotFail(wire.NewOpMsg(req.raw))
-
-	// TODO https://github.com/FerretDB/wire/issues/139
-	b := must.NotFail(req.body.MarshalBinary())
-
-	req.header = &wire.MsgHeader{
-		MessageLength: int32(wire.MsgHeaderLen + len(b)),
+	header := &wire.MsgHeader{
+		MessageLength: int32(wire.MsgHeaderLen + body.Size()),
 		RequestID:     lastRequestID.Add(1),
 		OpCode:        wire.OpCodeMsg,
 	}
+
+	d, err := doc.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	d.Freeze()
+
+	return &Request{
+		header: header,
+		body:   body,
+		doc:    d,
+	}, nil
 }
 
 // WireHeader returns the request header for the wire protocol.
-//
-// It Request was constructed with one, it is returned unmodified.
-// Otherwise, a new header is created, cached, and returned.
-// It panics if request body can't be marshaled.
 func (req *Request) WireHeader() *wire.MsgHeader {
-	req.rw.RLock()
-
-	if req.header != nil {
-		req.rw.RUnlock()
-		return req.header
-	}
-
-	req.rw.RUnlock()
-	req.rw.Lock()
-	defer req.rw.Unlock()
-
-	// a concurrent call might have set it already; check again
-	if req.header != nil {
-		return req.header
-	}
-
-	req.setHeaderBody()
-
 	return req.header
 }
 
 // WireBody returns the request body for the wire protocol.
-//
-// If Request was constructed with one, it is returned unmodified.
-// Otherwise, a new [*wire.OpMsg] is created, cached, and returned.
 func (req *Request) WireBody() wire.MsgBody {
-	req.rw.RLock()
-
-	if req.body != nil {
-		req.rw.RUnlock()
-		return req.body
-	}
-
-	req.rw.RUnlock()
-	req.rw.Lock()
-	defer req.rw.Unlock()
-
-	// a concurrent call might have set it already; check again
-	if req.body != nil {
-		return req.body
-	}
-
-	req.setHeaderBody()
-
 	return req.body
 }
 
-// setRaw ensures that raw is set.
-func (req *Request) setRaw() {
-	if req.raw != nil {
-		return
-	}
-
+// DocumentRaw returns the raw request document
+// (only section 0 for OpMsg).
+func (req *Request) DocumentRaw() wirebson.RawDocument {
 	switch body := req.body.(type) {
 	case *wire.OpMsg:
-		req.raw = body.Section0Raw()
+		return body.Section0Raw()
 	case *wire.OpQuery:
-		req.raw = body.QueryRaw()
+		return body.QueryRaw()
 	default:
-		must.NotBeZero(req.doc)
-		req.raw = must.NotFail(req.doc.Encode())
+		panic(fmt.Sprintf("unexpected body type %T", body))
 	}
 }
 
-// Document returns the request document.
-//
-// It Request was constructed with one, it is returned unmodified.
-// Otherwise, a new [*wirebson.Document] is created from the request body (section 0 only for [wire.OpMsg]),
-// frozen, cached, and returned.
+// Document returns the request document
+// (only section 0 for OpMsg).
 func (req *Request) Document() *wirebson.Document {
-	req.rw.RLock()
-
-	if req.doc != nil {
-		req.rw.RUnlock()
-		return req.doc
-	}
-
-	req.rw.RUnlock()
-	req.rw.Lock()
-	defer req.rw.Unlock()
-
-	// a concurrent call might have set it already; check again
-	if req.doc != nil {
-		return req.doc
-	}
-
-	if req.raw == nil {
-		req.setRaw()
-	}
-
-	req.doc = must.NotFail(req.raw.Decode())
-	req.doc.Freeze()
 	return req.doc
 }
 
-// DocumentRaw returns the raw request document.
-//
-// It Request was constructed with one, it is returned unmodified.
-// Otherwise, a new [wirebson.RawDocument] is created from the request body (section 0 only for [wire.OpMsg]),
-// cached, and returned.
-func (req *Request) DocumentRaw() wirebson.RawDocument {
-	req.rw.RLock()
-
-	if req.raw != nil {
-		req.rw.RUnlock()
-		return req.raw
-	}
-
-	req.rw.RUnlock()
-	req.rw.Lock()
-	defer req.rw.Unlock()
-
-	// a concurrent call might have set it already; check again
-	if req.raw != nil {
-		return req.raw
-	}
-
-	req.setRaw()
-
-	return req.raw
+// DocumentDeep returns the deeply decoded request document.
+// Callers should use it instead of `resp.DocumentRaw().DecodeDeep()`.
+func (req *Request) DocumentDeep() (*wirebson.Document, error) {
+	// we might want to cache it in the future if there are many callers
+	return req.DocumentRaw().DecodeDeep()
 }

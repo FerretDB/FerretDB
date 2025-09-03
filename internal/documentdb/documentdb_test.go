@@ -38,7 +38,8 @@ import (
 func testPool(t testing.TB, ctx context.Context, uri string, sp *state.Provider) (error, error) {
 	t.Helper()
 
-	pool, err := newPgxPool(uri, testutil.Logger(t), sp)
+	l := testutil.Logger(t)
+	pool, err := newPgxPool(uri, l, newTracer(l), sp)
 	if err != nil {
 		return err, nil
 	}
@@ -133,7 +134,7 @@ func TestError(t *testing.T) {
 		`Severity:"ERROR", SeverityUnlocalized:"ERROR", Code:"M0003", ` +
 		`Message:"The limit field in delete objects must be 0 or 1. Got -1", Detail:"", Hint:"", ` +
 		`Position:0, InternalPosition:0, InternalQuery:"", Where:"", SchemaName:"", TableName:"", ColumnName:"", ` +
-		`DataTypeName:"", ConstraintName:"", File:"delete.c", Line:515, Routine:"BuildDeletionSpec"}}`
+		`DataTypeName:"", ConstraintName:"", File:"delete.c", Line:527, Routine:"BuildDeletionSpec"}}`
 	assert.Equal(t, expected, fmt.Sprintf("%#v", err))
 }
 

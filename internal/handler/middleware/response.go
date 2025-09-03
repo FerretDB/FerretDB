@@ -20,43 +20,96 @@ import (
 	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// Response represents outgoing result to the client.
+// Response is a normal or error response produced by the handler.
 //
-// It may be constructed from [wirebson.AnyDocument] (for the DocumentDB handler),
-// or from [*wire.MsgHeader] and [wire.MsgBody] (for the proxy handler).
+// It may be constructed from [*wire.MsgHeader]/[wire.MsgBody] (for the proxy handler),
+// from [wirebson.AnyDocument] (for the DocumentDB handler),
+// or from [*mongoerrors.Error] (for both).
 type Response struct {
-	header *wire.MsgHeader
-	body   wire.MsgBody
+	header     *wire.MsgHeader
+	body       wire.MsgBody
+	doc        *wirebson.Document // only section 0 for OpMsg
+	mongoError *mongoerrors.Error // may be nil
+}
 
-	// Remove, replace with body.
-	// TODO https://github.com/FerretDB/FerretDB/issues/4965
-	OpMsg *wire.OpMsg
+// ResponseWire creates a new response from the given wire protocol header and body.
+// Error is returned if the body cannot be decoded.
+func ResponseWire(header *wire.MsgHeader, body wire.MsgBody) (*Response, error) {
+	must.NotBeZero(header)
+	must.NotBeZero(body)
+
+	resp := &Response{
+		header: header,
+		body:   body,
+	}
+
+	switch body := body.(type) {
+	case *wire.OpMsg:
+		if header.OpCode != wire.OpCodeMsg {
+			return nil, lazyerrors.Errorf("expected OpCodeMsg, got %s", header.OpCode)
+		}
+
+		var err error
+		if resp.doc, err = body.Section0(); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+	case *wire.OpReply:
+		if header.OpCode != wire.OpCodeReply {
+			return nil, lazyerrors.Errorf("expected OpCodeReply, got %s", header.OpCode)
+		}
+
+		var err error
+		if resp.doc, err = body.Document(); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+	default:
+		return nil, lazyerrors.Errorf("unsupported body type %T", body)
+	}
+
+	resp.doc.Freeze()
+
+	return resp, nil
 }
 
 // ResponseDoc creates a new response from the given document.
+// Error is returned if it cannot be decoded.
+//
+// If it is [*wirebson.Document], it freezes it.
 func ResponseDoc(req *Request, doc wirebson.AnyDocument) (*Response, error) {
-	reqHeader := req.WireHeader()
-	res := &Response{
+	must.NotBeZero(req)
+	must.NotBeZero(doc)
+
+	resp := &Response{
 		header: &wire.MsgHeader{
 			RequestID:  lastRequestID.Add(1),
-			ResponseTo: reqHeader.ResponseTo,
+			ResponseTo: req.header.RequestID,
 		},
 	}
 
-	var err error
-
-	switch reqHeader.OpCode {
+	switch req.header.OpCode {
 	case wire.OpCodeMsg:
-		res.header.OpCode = wire.OpCodeMsg
-		res.OpMsg, err = wire.NewOpMsg(doc)
-		res.body = res.OpMsg
+		resp.header.OpCode = wire.OpCodeMsg
+
+		var err error
+		if resp.body, err = wire.NewOpMsg(doc); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
 	case wire.OpCodeQuery:
-		res.header.OpCode = wire.OpCodeReply
-		res.body, err = wire.NewOpReply(doc)
+		resp.header.OpCode = wire.OpCodeReply
+
+		var err error
+		if resp.body, err = wire.NewOpReply(doc); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
 	case wire.OpCodeReply:
 		fallthrough
 	case wire.OpCodeUpdate:
@@ -74,53 +127,121 @@ func ResponseDoc(req *Request, doc wirebson.AnyDocument) (*Response, error) {
 	case wire.OpCodeCompressed:
 		fallthrough
 	default:
-		return nil, lazyerrors.Errorf("unexpected request header %s", reqHeader)
+		return nil, lazyerrors.Errorf("unexpected request header %s", req.header)
 	}
-	if err != nil {
+
+	resp.header.MessageLength = int32(wire.MsgHeaderLen + resp.body.Size())
+
+	var err error
+	if resp.doc, err = doc.Decode(); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/wire/issues/139
-	b, err := res.body.MarshalBinary()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	resp.doc.Freeze()
 
-	res.header.MessageLength = int32(wire.MsgHeaderLen + len(b))
-
-	return res, nil
+	return resp, nil
 }
 
-// ResponseWire creates a new response from the given wire protocol header and body.
-func ResponseWire(header *wire.MsgHeader, body wire.MsgBody) *Response {
-	must.NotBeZero(header)
-	must.NotBeZero(body)
+// ResponseErr creates a new error response from the given [*mongoerrors.Error].
+func ResponseErr(req *Request, err *mongoerrors.Error) *Response {
+	must.NotBeZero(req)
+	must.NotBeZero(err)
 
-	resp := &Response{
-		header: header,
-	}
+	doc := wirebson.MustDocument(
+		"ok", float64(0),
+		"errmsg", err.Message,
+		"code", err.Code,
+		"codeName", err.Name,
+	)
 
-	switch body := body.(type) {
-	case *wire.OpMsg:
-		must.BeTrue(header.OpCode == wire.OpCodeMsg)
-		resp.OpMsg = body
-		resp.body = body
-	case *wire.OpReply:
-		must.BeTrue(header.OpCode == wire.OpCodeReply)
-		resp.body = body
-	default:
-		panic(fmt.Sprintf("unsupported body type %T", body))
-	}
+	resp := must.NotFail(ResponseDoc(req, doc))
+	resp.mongoError = err
 
 	return resp
 }
 
-// WireHeader returns the request header for the wire protocol.
+// WireHeader returns the response header for the wire protocol.
 func (resp *Response) WireHeader() *wire.MsgHeader {
 	return resp.header
 }
 
-// WireBody returns the request body for the wire protocol.
+// WireBody returns the response body for the wire protocol.
 func (resp *Response) WireBody() wire.MsgBody {
 	return resp.body
+}
+
+// DocumentRaw returns the raw response document
+// (only section 0 for OpMsg).
+func (resp *Response) DocumentRaw() wirebson.RawDocument {
+	switch body := resp.body.(type) {
+	case *wire.OpMsg:
+		return body.Section0Raw()
+	case *wire.OpReply:
+		return body.DocumentRaw()
+	default:
+		panic(fmt.Sprintf("unexpected body type %T", body))
+	}
+}
+
+// Document returns the response document
+// (only section 0 for OpMsg).
+func (resp *Response) Document() *wirebson.Document {
+	return resp.doc
+}
+
+// DocumentDeep returns the deeply decoded response document
+// (only section 0 for OpMsg).
+// Callers should use it instead of `resp.DocumentRaw().DecodeDeep()`.
+func (resp *Response) DocumentDeep() (*wirebson.Document, error) {
+	// we might want to cache it in the future if there are many callers
+	return resp.DocumentRaw().DecodeDeep()
+}
+
+// OK returns true if the response document contains the "ok" field with numeric value 1
+// (and, temporarily, boolean value true).
+func (resp *Response) OK() bool {
+	switch v := resp.doc.Get("ok").(type) {
+	case float64:
+		return v == float64(1)
+	case bool:
+		// TODO https://github.com/documentdb/documentdb/issues/49
+		return v
+	case int32:
+		return v == int32(1)
+	case int64:
+		return v == int64(1)
+	default:
+		return false
+	}
+}
+
+// ErrorName returns the error name of the response, if any.
+func (resp *Response) ErrorName() string {
+	if resp.mongoError != nil {
+		return resp.mongoError.Name
+	}
+
+	if resp.OK() {
+		return ""
+	}
+
+	if v := resp.doc.Get("codeName"); v != nil {
+		n, _ := v.(string)
+		return n
+	}
+
+	// legacy reply
+	switch v := resp.doc.Get("code").(type) {
+	case int32:
+		return mongoerrors.Code(v).String()
+	case int64:
+		return mongoerrors.Code(v).String()
+	default:
+		return ""
+	}
+}
+
+// MongoError returns [*mongoerrors.Error], if the response was created with [ResponseErr].
+func (resp *Response) MongoError() *mongoerrors.Error {
+	return resp.mongoError
 }

@@ -36,6 +36,15 @@ func IsMongoDB(tb testing.TB) bool {
 	return *targetBackendF == "mongodb"
 }
 
+// IsYugabyteDB returns true if the current test is running for `ferretdb-yugabytedb` backend.
+//
+// This function should not be used lightly.
+func IsYugabyteDB(tb testing.TB) bool {
+	tb.Helper()
+
+	return *targetBackendF == "ferretdb-yugabytedb"
+}
+
 // ensureIssueURL panics if URL is not a valid FerretDB issue URL.
 func ensureIssueURL(url string) {
 	ferretDB := strings.HasPrefix(url, "https://github.com/FerretDB/FerretDB/issues/")
