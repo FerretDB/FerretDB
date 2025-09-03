@@ -272,19 +272,19 @@ func TestSASLContinueErrors(t *testing.T) {
 		conv := client.NewConversation()
 		payload := must.NotFail(conv.Step(""))
 
-		msg := must.NotFail(wire.NewOpMsg(must.NotFail(must.NotFail(wirebson.NewDocument(
+		msg := wire.MustOpMsg(
 			"saslStart", int32(1),
 			"mechanism", "SCRAM-SHA-256",
 			"payload", wirebson.Binary{B: []byte(payload)},
 			"$db", "admin",
-		)).Encode())))
+		)
 
 		var resBody wire.MsgBody
 		_, resBody, err = conn.Request(ctx, msg)
 		require.NoError(t, err)
 
 		var res *wirebson.Document
-		res, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
+		res, err = resBody.(*wire.OpMsg).Document()
 		require.NoError(t, err)
 
 		p, ok := res.Get("payload").(wirebson.Binary)
@@ -294,118 +294,118 @@ func TestSASLContinueErrors(t *testing.T) {
 		err = res.Replace("payload", wirebson.Binary{})
 		require.NoError(t, err)
 
-		fixCluster(t, res)
+		FixCluster(t, res)
 
-		expected := must.NotFail(wirebson.NewDocument(
+		expected := wirebson.MustDocument(
 			"conversationId", int32(1),
 			"done", false,
 			"payload", wirebson.Binary{},
 			"ok", float64(1),
-		))
+		)
 
 		testutil.AssertEqual(t, expected, res)
 
 		payload = "invalid"
 
-		msg = must.NotFail(wire.NewOpMsg(must.NotFail(must.NotFail(wirebson.NewDocument(
+		msg = wire.MustOpMsg(
 			"saslContinue", int32(1),
 			"conversationId", int32(1),
 			"payload", wirebson.Binary{B: []byte(payload)},
 			"$db", "admin",
-		)).Encode())))
+		)
 
 		_, resBody, err = conn.Request(ctx, msg)
 		require.NoError(t, err)
 
-		res, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
+		res, err = resBody.(*wire.OpMsg).Document()
 		require.NoError(t, err)
 
-		fixCluster(t, res)
+		FixCluster(t, res)
 
-		expected = must.NotFail(wirebson.NewDocument(
+		expected = wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "Authentication failed.",
 			"code", int32(18),
 			"codeName", "AuthenticationFailed",
-		))
+		)
 
 		testutil.AssertEqual(t, expected, res)
 
-		msg = must.NotFail(wire.NewOpMsg(must.NotFail(must.NotFail(wirebson.NewDocument(
+		msg = wire.MustOpMsg(
 			"saslContinue", int32(1),
 			"conversationId", int32(1),
 			"payload", wirebson.Binary{},
 			"$db", "admin",
-		)).Encode())))
+		)
 
 		_, resBody, err = conn.Request(ctx, msg)
 		require.NoError(t, err)
 
-		res, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+		res, err = resBody.(*wire.OpMsg).Document()
 		require.NoError(t, err)
 
-		fixCluster(t, res)
+		FixCluster(t, res)
 
-		expected = must.NotFail(wirebson.NewDocument(
+		expected = wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "No SASL session state found",
 			"code", int32(17),
 			"codeName", "ProtocolError",
-		))
+		)
 
 		testutil.AssertEqual(t, expected, res)
 	})
 
 	t.Run("NoAuthenticatedUser", func(t *testing.T) {
-		msg := must.NotFail(wire.NewOpMsg(must.NotFail(must.NotFail(wirebson.NewDocument(
+		msg := wire.MustOpMsg(
 			"connectionStatus", int64(1),
 			"$db", testutil.DatabaseName(t),
-		)).Encode())))
+		)
 
 		var resBody wire.MsgBody
 		_, resBody, err = conn.Request(ctx, msg)
 		require.NoError(t, err)
 
 		var res *wirebson.Document
-		res, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+		res, err = resBody.(*wire.OpMsg).Document()
 		require.NoError(t, err)
 
-		fixCluster(t, res)
+		FixCluster(t, res)
 
-		expected := must.NotFail(wirebson.NewDocument(
-			"authInfo", must.NotFail(wirebson.NewDocument(
-				"authenticatedUsers", wirebson.MakeArray(0),
-				"authenticatedUserRoles", wirebson.MakeArray(0),
-			)),
+		expected := wirebson.MustDocument(
+			"authInfo", wirebson.MustDocument(
+				"authenticatedUsers", wirebson.MustArray(),
+				"authenticatedUserRoles", wirebson.MustArray(),
+			),
 			"ok", float64(1),
-		))
+		)
 
 		testutil.AssertEqual(t, expected, res)
 	})
 
 	t.Run("FindFails", func(t *testing.T) {
-		msg := must.NotFail(wire.NewOpMsg(must.NotFail(must.NotFail(wirebson.NewDocument(
+		msg := wire.MustOpMsg(
 			"find", "values",
-			"filter", must.NotFail(wirebson.NewDocument()),
+			"filter", wirebson.MustDocument(),
 			"$db", testutil.DatabaseName(t),
-		)).Encode())))
+		)
 
 		var resBody wire.MsgBody
 		_, resBody, err = conn.Request(ctx, msg)
 		require.NoError(t, err)
 
 		var res *wirebson.Document
-		res, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+		res, err = resBody.(*wire.OpMsg).Document()
 		require.NoError(t, err)
 
-		fixCluster(t, res)
+		FixCluster(t, res)
 
-		expected := must.NotFail(wirebson.NewDocument(
+		expected := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "Command find requires authentication",
 			"code", int32(13),
 			"codeName", "Unauthorized",
-		))
+		)
 
 		testutil.AssertEqual(t, expected, res)
 	})
@@ -420,27 +420,27 @@ func TestSASLContinueNoConversation(t *testing.T) {
 
 	ctx, conn := s.Ctx, s.WireConn
 
-	msg := must.NotFail(wire.NewOpMsg(must.NotFail(must.NotFail(wirebson.NewDocument(
+	msg := wire.MustOpMsg(
 		"saslContinue", int32(1),
 		"conversationId", int32(1),
 		"payload", wirebson.Binary{},
 		"$db", "admin",
-	)).Encode())))
+	)
 
 	_, resBody, err := conn.Request(ctx, msg)
 	require.NoError(t, err)
 
-	res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+	res, err := resBody.(*wire.OpMsg).Document()
 	require.NoError(t, err)
 
-	fixCluster(t, res)
+	FixCluster(t, res)
 
-	expected := must.NotFail(wirebson.NewDocument(
+	expected := wirebson.MustDocument(
 		"ok", float64(0),
 		"errmsg", "No SASL session state found",
 		"code", int32(17),
 		"codeName", "ProtocolError",
-	))
+	)
 
 	testutil.AssertEqual(t, expected, res)
 }
@@ -476,31 +476,31 @@ func TestHelloIsMasterOpQuerySpeculative(t *testing.T) {
 
 			t.Run("SpeculativeAuthenticate", func(t *testing.T) {
 				// as is request sent by C# driver
-				q := must.NotFail(wire.NewOpQuery(must.NotFail(must.NotFail(wirebson.NewDocument(
+				q := wire.MustOpQuery(
 					tc.command, int32(1),
 					"helloOk", true,
-					"client", must.NotFail(wirebson.NewDocument(
-						"driver", must.NotFail(wirebson.NewDocument(
+					"client", wirebson.MustDocument(
+						"driver", wirebson.MustDocument(
 							"name", "mongo-go-driver",
 							"version", "2.28.0",
-						)),
-						"os", must.NotFail(wirebson.NewDocument(
+						),
+						"os", wirebson.MustDocument(
 							"type", "Linux",
 							"name", "Ubuntu 22.04.5 LTS",
 							"architecture", "amd64",
 							"version", "22.04.5",
-						)),
+						),
 						"platform", ".NET 8.0.8",
-					)),
-					"compression", must.NotFail(wirebson.NewArray()),
-					"speculativeAuthenticate", must.NotFail(wirebson.NewDocument(
+					),
+					"compression", wirebson.MustArray(),
+					"speculativeAuthenticate", wirebson.MustDocument(
 						"saslStart", int32(1),
 						"mechanism", "SCRAM-SHA-256",
 						"payload", wirebson.Binary{B: []byte(payload)},
-						"options", must.NotFail(wirebson.NewDocument("skipEmptyExchange", true)),
+						"options", wirebson.MustDocument("skipEmptyExchange", true),
 						"db", "admin",
-					)),
-				)).Encode())))
+					),
+				)
 				q.FullCollectionName = "admin.$cmd"
 				q.NumberToReturn = -1
 
@@ -509,7 +509,7 @@ func TestHelloIsMasterOpQuerySpeculative(t *testing.T) {
 				require.NoError(t, err)
 
 				var res *wirebson.Document
-				res, err = resBody.(*wire.OpReply).RawDocument().Decode()
+				res, err = resBody.(*wire.OpReply).Document()
 				require.NoError(t, err)
 
 				ok := res.Get("ok")
@@ -530,11 +530,11 @@ func TestHelloIsMasterOpQuerySpeculative(t *testing.T) {
 			})
 
 			t.Run("SASLContinue", func(t *testing.T) {
-				q := must.NotFail(wire.NewOpQuery(must.NotFail(must.NotFail(wirebson.NewDocument(
+				q := wire.MustOpQuery(
 					"saslContinue", int32(1),
 					"conversationId", int32(1),
 					"payload", wirebson.Binary{B: []byte(payload)},
-				)).Encode())))
+				)
 				q.FullCollectionName = "admin.$cmd"
 				q.NumberToReturn = -1
 
@@ -543,20 +543,20 @@ func TestHelloIsMasterOpQuerySpeculative(t *testing.T) {
 				require.NoError(t, err)
 
 				var res *wirebson.Document
-				res, err = resBody.(*wire.OpReply).RawDocument().Decode()
+				res, err = resBody.(*wire.OpReply).Document()
 				require.NoError(t, err)
 
 				serverPayload, ok := res.Get("payload").(wirebson.Binary)
 				require.True(t, ok)
 
-				fixCluster(t, res)
+				FixCluster(t, res)
 
-				expectedComparable := must.NotFail(wirebson.NewDocument(
+				expectedComparable := wirebson.MustDocument(
 					"conversationId", int32(1),
 					"done", true,
 					"payload", serverPayload,
 					"ok", float64(1),
-				))
+				)
 
 				testutil.AssertEqual(t, expectedComparable, res)
 
@@ -567,11 +567,11 @@ func TestHelloIsMasterOpQuerySpeculative(t *testing.T) {
 			})
 
 			t.Run("SASLContinueTooMany", func(t *testing.T) {
-				q := must.NotFail(wire.NewOpQuery(must.NotFail(must.NotFail(wirebson.NewDocument(
+				q := wire.MustOpQuery(
 					"saslContinue", int32(1),
 					"payload", wirebson.Binary{},
 					"conversationId", int32(1),
-				)).Encode())))
+				)
 				q.FullCollectionName = "admin.$cmd"
 				q.NumberToReturn = -1
 
@@ -580,17 +580,17 @@ func TestHelloIsMasterOpQuerySpeculative(t *testing.T) {
 				require.NoError(t, err)
 
 				var res *wirebson.Document
-				res, err = resBody.(*wire.OpReply).RawDocument().Decode()
+				res, err = resBody.(*wire.OpReply).Document()
 				require.NoError(t, err)
 
-				fixCluster(t, res)
+				FixCluster(t, res)
 
-				expected := must.NotFail(wirebson.NewDocument(
+				expected := wirebson.MustDocument(
 					"ok", float64(0),
 					"errmsg", "No SASL session state found",
 					"code", int32(17),
 					"codeName", "ProtocolError",
-				))
+				)
 				testutil.AssertEqual(t, expected, res)
 			})
 		})
@@ -606,22 +606,22 @@ func TestHelloIsMasterOpQuerySpeculative(t *testing.T) {
 			conv := client.NewConversation()
 			payload := must.NotFail(conv.Step(""))
 
-			q := must.NotFail(wire.NewOpQuery(must.NotFail(must.NotFail(wirebson.NewDocument(
+			q := wire.MustOpQuery(
 				tc.command, int32(1),
-				"speculativeAuthenticate", must.NotFail(wirebson.NewDocument(
+				"speculativeAuthenticate", wirebson.MustDocument(
 					"saslStart", int32(1),
 					"mechanism", "SCRAM-SHA-256",
 					"payload", wirebson.Binary{B: []byte(payload)},
 					"db", "admin",
-				)),
-			)).Encode())))
+				),
+			)
 			q.FullCollectionName = "admin.$cmd"
 			q.NumberToReturn = -1
 
 			_, resBody, err := conn.Request(ctx, q)
 			require.NoError(t, err)
 
-			res, err := resBody.(*wire.OpReply).RawDocument().Decode()
+			res, err := resBody.(*wire.OpReply).Document()
 			require.NoError(t, err)
 
 			ok := res.Get("ok")
@@ -638,17 +638,17 @@ func TestHelloIsMasterOpQuerySpeculative(t *testing.T) {
 
 			ctx, conn := s.Ctx, s.WireConn
 
-			q := must.NotFail(wire.NewOpQuery(must.NotFail(wirebson.NewDocument(
+			q := wire.MustOpQuery(
 				tc.command, int32(1),
 				"speculativeAuthenticate", int32(1),
-			))))
+			)
 			q.FullCollectionName = "admin.$cmd"
 			q.NumberToReturn = -1
 
 			_, resBody, err := conn.Request(ctx, q)
 			require.NoError(t, err)
 
-			resMsg, err := resBody.(*wire.OpReply).RawDocument().Decode()
+			resMsg, err := resBody.(*wire.OpReply).Document()
 			require.NoError(t, err)
 
 			ok := resMsg.Get("ok")
@@ -680,21 +680,21 @@ func TestHelloIsMasterOpQuerySpeculative(t *testing.T) {
 			conv := client.NewConversation()
 			payload := must.NotFail(conv.Step(""))
 
-			q := must.NotFail(wire.NewOpQuery(must.NotFail(wirebson.NewDocument(
+			q := wire.MustOpQuery(
 				tc.command, int32(1),
-				"speculativeAuthenticate", must.NotFail(wirebson.NewDocument(
+				"speculativeAuthenticate", wirebson.MustDocument(
 					"saslStart", int32(1),
 					"mechanism", mechanism,
 					"payload", wirebson.Binary{B: []byte(payload)},
-				)),
-			))))
+				),
+			)
 			q.FullCollectionName = "admin.$cmd"
 			q.NumberToReturn = -1
 
 			_, resBody, err := conn.Request(ctx, q)
 			require.NoError(t, err)
 
-			res, err := resBody.(*wire.OpReply).RawDocument().Decode()
+			res, err := resBody.(*wire.OpReply).Document()
 			require.NoError(t, err)
 
 			ok := res.Get("ok")
@@ -729,28 +729,28 @@ func TestHelloSpeculative(t *testing.T) {
 		// as is request sent by legacy Mongo shell
 		msg := wire.MustOpMsg(
 			"hello", int32(1),
-			"speculativeAuthenticate", must.NotFail(wirebson.NewDocument(
+			"speculativeAuthenticate", wirebson.MustDocument(
 				"saslStart", int32(1),
 				"mechanism", "SCRAM-SHA-256",
 				"payload", wirebson.Binary{B: []byte(clientPayload)},
 				"db", "admin",
-			)),
+			),
 			"saslSupportedMechs", "admin."+username,
-			"client", must.NotFail(wirebson.NewDocument(
-				"application", must.NotFail(wirebson.NewDocument(
+			"client", wirebson.MustDocument(
+				"application", wirebson.MustDocument(
 					"name", "MongoDB Shell",
-				)),
-				"driver", must.NotFail(wirebson.NewDocument(
+				),
+				"driver", wirebson.MustDocument(
 					"name", "MongoDB Internal Client",
 					"version", "7.0.8",
-				)),
-				"os", must.NotFail(wirebson.NewDocument(
+				),
+				"os", wirebson.MustDocument(
 					"type", "Linux",
 					"name", "Ubuntu",
 					"architecture", "x86_64",
 					"version", "22.04",
-				)),
-			)),
+				),
+			),
 			"$db", "admin",
 		)
 
@@ -759,7 +759,7 @@ func TestHelloSpeculative(t *testing.T) {
 		require.NoError(t, err)
 
 		var res *wirebson.Document
-		res, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
+		res, err = resBody.(*wire.OpMsg).Document()
 		require.NoError(t, err)
 
 		speculativeAuthenticateV, ok := res.Get("speculativeAuthenticate").(wirebson.AnyDocument)
@@ -792,9 +792,9 @@ func TestHelloSpeculative(t *testing.T) {
 		res.Remove("electionId")
 		res.Remove("lastWrite")
 
-		fixCluster(t, res)
+		FixCluster(t, res)
 
-		expectedComparable := must.NotFail(wirebson.NewDocument(
+		expectedComparable := wirebson.MustDocument(
 			"isWritablePrimary", true,
 			"maxBsonObjectSize", int32(16777216),
 			"maxMessageSizeBytes", int32(48000000),
@@ -806,13 +806,13 @@ func TestHelloSpeculative(t *testing.T) {
 			"maxWireVersion", int32(21),
 			"readOnly", false,
 			"saslSupportedMechs", saslSupportedMechs,
-			"speculativeAuthenticate", must.NotFail(wirebson.NewDocument(
+			"speculativeAuthenticate", wirebson.MustDocument(
 				"conversationId", int32(1),
 				"done", false,
 				"payload", serverPayload,
-			)),
+			),
 			"ok", float64(1),
-		))
+		)
 
 		testutil.AssertEqual(t, expectedComparable, res)
 
@@ -833,20 +833,20 @@ func TestHelloSpeculative(t *testing.T) {
 		require.NoError(t, err)
 
 		var res *wirebson.Document
-		res, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
+		res, err = must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).Decode()
 		require.NoError(t, err)
 
 		serverPayload, ok := res.Get("payload").(wirebson.Binary)
 		require.True(t, ok, "got: "+res.LogMessageIndent())
 
-		fixCluster(t, res)
+		FixCluster(t, res)
 
-		expectedComparable := must.NotFail(wirebson.NewDocument(
+		expectedComparable := wirebson.MustDocument(
 			"conversationId", int32(1),
 			"done", false,
 			"payload", serverPayload,
 			"ok", float64(1),
-		))
+		)
 
 		testutil.AssertEqual(t, expectedComparable, res)
 
@@ -869,20 +869,20 @@ func TestHelloSpeculative(t *testing.T) {
 		require.NoError(t, err)
 
 		var res *wirebson.Document
-		res, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
+		res, err = must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).Decode()
 		require.NoError(t, err)
 
 		serverPayload, ok := res.Get("payload").(wirebson.Binary)
 		require.True(t, ok, "got: "+res.LogMessageIndent())
 
-		fixCluster(t, res)
+		FixCluster(t, res)
 
-		expectedComparable := must.NotFail(wirebson.NewDocument(
+		expectedComparable := wirebson.MustDocument(
 			"conversationId", int32(1),
 			"done", true,
 			"payload", serverPayload,
 			"ok", float64(1),
-		))
+		)
 
 		testutil.AssertEqual(t, expectedComparable, res)
 	})
@@ -900,17 +900,17 @@ func TestHelloSpeculative(t *testing.T) {
 		require.NoError(t, err)
 
 		var res *wirebson.Document
-		res, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
+		res, err = must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).Decode()
 		require.NoError(t, err)
 
-		fixCluster(t, res)
+		FixCluster(t, res)
 
-		expected := must.NotFail(wirebson.NewDocument(
+		expected := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "No SASL session state found",
 			"code", int32(17),
 			"codeName", "ProtocolError",
-		))
+		)
 		testutil.AssertEqual(t, expected, res)
 	})
 }
@@ -934,16 +934,16 @@ func TestHelloOpQuerySASLSupportedMechs(t *testing.T) {
 	conv := client.NewConversation()
 	payload := must.NotFail(conv.Step(""))
 
-	q := must.NotFail(wire.NewOpQuery(must.NotFail(must.NotFail(wirebson.NewDocument(
+	q := wire.MustOpQuery(
 		"hello", int32(1),
 		"saslSupportedMechs", "admin.username",
-		"speculativeAuthenticate", must.NotFail(wirebson.NewDocument(
+		"speculativeAuthenticate", wirebson.MustDocument(
 			"saslStart", int32(1),
 			"mechanism", "SCRAM-SHA-256",
 			"payload", wirebson.Binary{B: []byte(payload)},
 			"db", "admin",
-		)),
-	)).Encode())))
+		),
+	)
 	q.FullCollectionName = "admin.$cmd"
 	q.NumberToReturn = -1
 
@@ -952,7 +952,7 @@ func TestHelloOpQuerySASLSupportedMechs(t *testing.T) {
 	require.NoError(t, err)
 
 	var res *wirebson.Document
-	res, err = resBody.(*wire.OpReply).RawDocument().DecodeDeep()
+	res, err = resBody.(*wire.OpReply).DocumentDeep()
 	require.NoError(t, err)
 
 	ok := res.Get("ok")
@@ -998,9 +998,9 @@ func TestHelloOpQuerySASLSupportedMechs(t *testing.T) {
 	res.Remove("electionId")
 	res.Remove("lastWrite")
 
-	fixCluster(t, res)
+	FixCluster(t, res)
 
-	expectedComparable := must.NotFail(wirebson.NewDocument(
+	expectedComparable := wirebson.MustDocument(
 		"isWritablePrimary", true,
 		"maxBsonObjectSize", int32(16777216),
 		"maxMessageSizeBytes", int32(48000000),
@@ -1010,13 +1010,13 @@ func TestHelloOpQuerySASLSupportedMechs(t *testing.T) {
 		"maxWireVersion", int32(21),
 		"readOnly", false,
 		"saslSupportedMechs", saslSupportedMechs,
-		"speculativeAuthenticate", must.NotFail(wirebson.NewDocument(
+		"speculativeAuthenticate", wirebson.MustDocument(
 			"conversationId", int32(1),
 			"done", false,
 			"payload", payloadAny,
-		)),
+		),
 		"ok", float64(1),
-	))
+	)
 
 	testutil.AssertEqual(t, expectedComparable, res)
 }
@@ -1048,62 +1048,62 @@ func TestSASLStartOpQueryErrors(t *testing.T) {
 		failsForFerretDB string
 	}{
 		"WrongAuthDB": {
-			query: must.NotFail(wirebson.NewDocument(
+			query: wirebson.MustDocument(
 				"saslStart", int32(1),
 				"mechanism", "SCRAM-SHA-256",
 				"payload", wirebson.Binary{B: []byte(payload)},
-			)),
+			),
 			fullCollectionName: "wrong-auth-db.$cmd",
-			reply: must.NotFail(wirebson.NewDocument(
+			reply: wirebson.MustDocument(
 				"ok", float64(0),
 				"errmsg", "Authentication failed.",
 				"code", int32(18),
 				"codeName", "AuthenticationFailed",
-			)),
+			),
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/932",
 		},
 		"NotAllowed$db": {
-			query: must.NotFail(wirebson.NewDocument(
+			query: wirebson.MustDocument(
 				"saslStart", int32(1),
 				"mechanism", "SCRAM-SHA-256",
 				"payload", wirebson.Binary{B: []byte(payload)},
 				"$db", "admin",
-			)),
+			),
 			fullCollectionName: "admin.$cmd",
-			reply: must.NotFail(wirebson.NewDocument(
+			reply: wirebson.MustDocument(
 				"ok", float64(0),
 				"errmsg", "$db is not allowed in OP_QUERY requests",
 				"code", int32(40621),
 				"codeName", "Location40621",
-			)),
+			),
 		},
 		"InvalidPayload": {
-			query: must.NotFail(wirebson.NewDocument(
+			query: wirebson.MustDocument(
 				"saslStart", int32(1),
 				"mechanism", "SCRAM-SHA-256",
 				"payload", wirebson.Binary{B: []byte("invalid")},
-			)),
+			),
 			fullCollectionName: "admin.$cmd",
-			reply: must.NotFail(wirebson.NewDocument(
+			reply: wirebson.MustDocument(
 				"ok", float64(0),
 				"errmsg", "Authentication failed.",
 				"code", int32(18),
 				"codeName", "AuthenticationFailed",
-			)),
+			),
 		},
 		"UnsupportedMechanism": {
-			query: must.NotFail(wirebson.NewDocument(
+			query: wirebson.MustDocument(
 				"saslStart", int32(1),
 				"mechanism", "UNKNOWN-MECHANISM",
 				"payload", wirebson.Binary{B: []byte(payload)},
-			)),
+			),
 			fullCollectionName: "admin.$cmd",
-			reply: must.NotFail(wirebson.NewDocument(
+			reply: wirebson.MustDocument(
 				"ok", float64(0),
 				"errmsg", "Received authentication for mechanism UNKNOWN-MECHANISM which is not enabled",
 				"code", int32(334),
 				"codeName", "MechanismUnavailable",
-			)),
+			),
 		},
 	} {
 		t.Run(name, func(tt *testing.T) {
@@ -1112,7 +1112,7 @@ func TestSASLStartOpQueryErrors(t *testing.T) {
 				t = setup.FailsForFerretDB(t, tc.failsForFerretDB)
 			}
 
-			q := must.NotFail(wire.NewOpQuery(must.NotFail(tc.query.Encode())))
+			q := must.NotFail(wire.NewOpQuery(tc.query))
 			q.FullCollectionName = tc.fullCollectionName
 			q.NumberToReturn = -1
 
@@ -1121,10 +1121,10 @@ func TestSASLStartOpQueryErrors(t *testing.T) {
 			require.NoError(t, err)
 
 			var res *wirebson.Document
-			res, err = resBody.(*wire.OpReply).RawDocument().Decode()
+			res, err = resBody.(*wire.OpReply).Document()
 			require.NoError(t, err)
 
-			fixCluster(t, res)
+			FixCluster(t, res)
 
 			testutil.AssertEqual(t, tc.reply, res)
 		})
@@ -1156,48 +1156,48 @@ func TestSASLStartErrors(t *testing.T) {
 		res *wirebson.Document
 	}{
 		"InvalidOptions": {
-			msg: must.NotFail(wirebson.NewDocument(
+			msg: wirebson.MustDocument(
 				"saslStart", int32(1),
 				"mechanism", "SCRAM-SHA-256",
 				"payload", wirebson.Binary{B: []byte(payload)},
 				"options", "invalid",
 				"$db", "admin",
-			)),
-			res: must.NotFail(wirebson.NewDocument(
+			),
+			res: wirebson.MustDocument(
 				"ok", float64(0),
 				"errmsg", "BSON field 'saslStart.options' is the wrong type 'string', expected type 'object'",
 				"code", int32(14),
 				"codeName", "TypeMismatch",
-			)),
+			),
 		},
 		"InvalidOptionsSkipEmptyExchange": {
-			msg: must.NotFail(wirebson.NewDocument(
+			msg: wirebson.MustDocument(
 				"saslStart", int32(1),
 				"mechanism", "SCRAM-SHA-256",
 				"payload", wirebson.Binary{B: []byte(payload)},
 				"options", wirebson.MustDocument("skipEmptyExchange", "invalid"),
 				"$db", "admin",
-			)),
-			res: must.NotFail(wirebson.NewDocument(
+			),
+			res: wirebson.MustDocument(
 				"ok", float64(0),
 				"errmsg", "Authentication failed.",
 				"code", int32(18),
 				"codeName", "AuthenticationFailed",
-			)),
+			),
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			q := must.NotFail(wire.NewOpMsg(must.NotFail(tc.msg.Encode())))
+			q := must.NotFail(wire.NewOpMsg(tc.msg))
 
 			var resBody wire.MsgBody
 			_, resBody, err = conn.Request(ctx, q)
 			require.NoError(t, err)
 
 			var res *wirebson.Document
-			res, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).Decode()
+			res, err = must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).Decode()
 			require.NoError(t, err)
 
-			fixCluster(t, res)
+			FixCluster(t, res)
 
 			testutil.AssertEqual(t, tc.res, res)
 		})
@@ -1218,33 +1218,33 @@ func TestSASLContinueOpQueryErrors(t *testing.T) {
 		reply *wirebson.Document
 	}{
 		"AuthenticationError": {
-			query: must.NotFail(wirebson.NewDocument(
+			query: wirebson.MustDocument(
 				"saslContinue", int32(1),
 				"conversationId", int32(1),
 				"payload", wirebson.Binary{},
-			)),
+			),
 			fullCollectionName: "wrong-auth-db.$cmd",
-			reply: must.NotFail(wirebson.NewDocument(
+			reply: wirebson.MustDocument(
 				"ok", float64(0),
 				"errmsg", "Authentication failed.",
 				"code", int32(18),
 				"codeName", "AuthenticationFailed",
-			)),
+			),
 		},
 		"NotAllowed$db": {
-			query: must.NotFail(wirebson.NewDocument(
+			query: wirebson.MustDocument(
 				"saslContinue", int32(1),
 				"conversationId", int32(1),
 				"payload", wirebson.Binary{},
 				"$db", "admin",
-			)),
+			),
 			fullCollectionName: "admin.$cmd",
-			reply: must.NotFail(wirebson.NewDocument(
+			reply: wirebson.MustDocument(
 				"ok", float64(0),
 				"errmsg", "$db is not allowed in OP_QUERY requests",
 				"code", int32(40621),
 				"codeName", "Location40621",
-			)),
+			),
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -1258,48 +1258,51 @@ func TestSASLContinueOpQueryErrors(t *testing.T) {
 			conv := client.NewConversation()
 			payload := must.NotFail(conv.Step(""))
 
-			q := must.NotFail(wire.NewOpQuery(must.NotFail(must.NotFail(wirebson.NewDocument(
+			q := wire.MustOpQuery(
 				"saslStart", int32(1),
 				"mechanism", "SCRAM-SHA-256",
 				"payload", wirebson.Binary{B: []byte(payload)},
-			)).Encode())))
+			)
 			q.FullCollectionName = "admin.$cmd"
 			q.NumberToReturn = -1
 
-			conn, err := wireclient.Connect(ctx, s.MongoDBURI, testutil.Logger(t))
+			cleanUri, _, _, _, err := wireclient.Credentials(s.MongoDBURI)
+			require.NoError(t, err)
+
+			conn, err := wireclient.Connect(ctx, cleanUri, testutil.Logger(t))
 			require.NoError(t, err)
 
 			_, resBody, err := conn.Request(ctx, q)
 			require.NoError(t, err)
 
-			res, err := resBody.(*wire.OpReply).RawDocument().Decode()
+			res, err := resBody.(*wire.OpReply).Document()
 			require.NoError(t, err)
 
-			fixCluster(t, res)
+			FixCluster(t, res)
 
 			err = res.Replace("payload", wirebson.Binary{})
 			require.NoError(t, err)
 
-			expectedComparable := must.NotFail(wirebson.NewDocument(
+			expectedComparable := wirebson.MustDocument(
 				"conversationId", int32(1),
 				"done", false,
 				"payload", wirebson.Binary{},
 				"ok", float64(1),
-			))
+			)
 
 			testutil.AssertEqual(t, expectedComparable, res)
 
-			q = must.NotFail(wire.NewOpQuery(must.NotFail(tc.query.Encode())))
+			q = must.NotFail(wire.NewOpQuery(tc.query))
 			q.FullCollectionName = tc.fullCollectionName
 			q.NumberToReturn = -1
 
 			_, resBody, err = conn.Request(ctx, q)
 			require.NoError(t, err)
 
-			res, err = resBody.(*wire.OpReply).RawDocument().Decode()
+			res, err = resBody.(*wire.OpReply).Document()
 			require.NoError(t, err)
 
-			fixCluster(t, res)
+			FixCluster(t, res)
 
 			testutil.AssertEqual(t, tc.reply, res)
 		})

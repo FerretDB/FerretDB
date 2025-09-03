@@ -1,7 +1,7 @@
 ---
 slug: ferretdb-fetches-data-query-pushdown
 title: How FerretDB fetches data - about query pushdown
-author: Patryk Kwiatek
+authors: [patryk]
 description: 'Find out how FerretDB uses query pushdown to fetch data from the storage layer (also called as "backend")'
 tags: [product, tutorial]
 image: /img/blog/ferretdb-query-pushdown.jpg
@@ -98,8 +98,8 @@ This is needed for our internal representation of the documents called `pjson`, 
 With these documents, FerretDB can parse the data to internal `pjson` type, and iterate through all of them to apply the filters.
 After this process, as only one document matches the filter, the projection will be applied to it, so only the `active` (and `_id`) fields will be returned:
 
-```json5
-[{ _id: ObjectId("63aa97626786637ef1c4b725"), active: false }]
+```js
+response = [{ _id: ObjectId('63aa97626786637ef1c4b725'), active: false }]
 ```
 
 Cool!

@@ -50,11 +50,24 @@ Examples:
 
 To link to a file in the same directory, use the file name.
 
-- `[file in the same directory](writing-guide.md)`
+```text
+[file in the same directory](writing-guide.md)
+```
 
 To link to file in a different directory, specify the relative file path.
 
-- `[file in a different directory](../basic-operations/read.md)`.
+```text
+[file in a different directory](../basic-operations/read.md)
+```
+
+When referencing files such as configuration files, specs, or internal definitions on GitHub, ensure that the link references a specific release tag, not the `main` branch.
+This is important because the `main` branch may change frequently, and links to it may break.
+
+For example, if you want to link to the FerretDB Data API OpenAPI 3.0 specification, use the following link:
+
+```text
+[FerretDB Data API OpenAPI 3.0 specification](https://raw.githubusercontent.com/FerretDB/FerretDB/refs/tags/v2.6.0/internal/dataapi/api/openapi.json)
+```
 
 ## Images
 
@@ -84,25 +97,52 @@ Rather than use relative paths, we strongly suggest the following approach, sinc
 
 `![FerretDB logo](/img/logo-dark.png)`.
 
+## Lists
+
+Lists should describe a sequence of items, such as a series of steps, features, or group related items.
+They should not be used for highlighting or emphasizing a single item; use code blocks or bold text instead.
+
+Our formatting tool will automatically reformat lists.
+
 ## Code blocks
+
+Code blocks should be used for code snippets, including shell commands, SQL queries, and JSON documents.
+It can also be used to highlight specific texts, including URLs, file names, and other important information.
 
 Always specify the language in Markdown code blocks.
 
-For MongoDB shell commands, use `js` language.
+### MongoDB shell commands and results
+
+#### Documentation
+
+For our documentation, we use the CTS tool to test and validate the code snippets for the MongoDB shell commands and responses.
+Related MongoDB shell commands and responses should reside in the same directory as the documentation file in extended JSON format.
+See this [TTL indexes example](../guides/ttl-indexes.json) for reference.
+The code snippet prefix `1-` (found in `1-<file-name>.json` file) in ascending order is used to enforce the order in the documentation and their execution within the CTS tool.
+
+The CTS tool will be responsible for generating the formatted code snippets which can be imported into MDX files.
+Run `task docs-gen` to generate the formatted code snippets.
+The generated code snippets will be stored in `.js` files under `website/docs/guides/<extended-json-file-name>` directory.
+
+#### Blog posts
+
+For blog posts, please use `js` language for MongoDB shell commands.
+
 Our tooling will automatically reformat those blocks.
 
 ```js
 db.league.find({ club: 'PSG' })
 ```
 
-For MongoDB shell results, use `json5` language and copy&paste the output as-is,
+For MongoDB shell results, use `js` language, assign the `mongosh` output to `response` and copy&paste it as-is,
 with unquoted field names, single quotes for strings, without trailing commas, etc.
 Our tooling will not reformat those blocks.
 
-```json5
-[
+```js
+//Assign the output to response
+response = [
   {
-    _id: ObjectId("63109e9251bcc5e0155db0c2"),
+    _id: ObjectId('63109e9251bcc5e0155db0c2'),
     club: 'PSG',
     points: 30,
     average_age: 30,
@@ -112,12 +152,17 @@ Our tooling will not reformat those blocks.
 ]
 ```
 
+### Other code blocks
+
+The following formatting instructions apply for both documentation and blog posts.
+
 Use `sql` for SQL queries.
-Use `text` for the `psql` output and in other cases.
 
 ```sql
 SELECT _jsonb FROM "test"."_ferretdb_database_metadata" WHERE ((_jsonb->'_id')::jsonb = '"customers"');
 ```
+
+For `psql` output, environment variables, and in all other cases, use `text`.
 
 ```text
  _jsonb ----------------------------------------------------------------------------------------------------------------------------------------------

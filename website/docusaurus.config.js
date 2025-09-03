@@ -17,13 +17,14 @@ const config = {
   onBrokenAnchors: "throw",
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "throw",
+  onDuplicateRoutes: "throw",
 
   i18n: {
     defaultLocale: "en",
     locales: ["en"],
   },
 
-  scripts: [{ src: "https://plausible.io/js/script.js", defer: true, "data-domain": "docs.ferretdb.io" }],
+  scripts: [{ src: "https://plausible.io/js/script.hash.js", defer: true, "data-domain": "docs.ferretdb.io" }],
 
   plugins: [
     [
@@ -32,22 +33,32 @@ const config = {
       require.resolve("@docusaurus/plugin-client-redirects"),
       {
         redirects: [
-          { to: "/migration/diff", from: "/diff" },
-          { to: "/reference", from: ["/reference/supported_commands", "/reference/supported-commands"] },
-          { to: "/installation", from: "/quickstart" },
+          {
+            to: "/migration/compatibility",
+            from: ["/diff", "/reference/supported_commands", "/reference/supported-commands"],
+          },
+          {
+            to: "/installation",
+            from: "/quickstart",
+          },
         ],
 
-        createRedirects(existingPath) {
-          if (existingPath.startsWith("/installation/ferretdb")) {
-            return [
-              // old blog posts
-              // for example: /quickstart-guide/docker/ -> /installation/ferretdb/docker/
-              existingPath.replace("/installation/ferretdb", "/quickstart-guide"),
-              existingPath.replace("/installation/ferretdb", "/quickstart_guide"),
-            ];
+        createRedirects(to) {
+          let res = [];
+
+          if (!(to.startsWith("/v1") || to.startsWith("/v2"))) {
+            // /v2.5/installation/ -> /installation/
+            res.push("/v2.5" + to);
           }
 
-          return undefined;
+          if (to.startsWith("/installation/ferretdb")) {
+            // old blog posts
+            // for example: /quickstart-guide/docker/ -> /installation/ferretdb/docker/
+            res.push(to.replace("/installation/ferretdb", "/quickstart-guide"));
+            res.push(to.replace("/installation/ferretdb", "/quickstart_guide"));
+          }
+
+          return res;
         },
       },
     ],
@@ -76,16 +87,10 @@ const config = {
 
           // https://docusaurus.io/docs/versioning#configuring-versioning-behavior
           // https://docusaurus.io/docs/api/plugins/@docusaurus/plugin-content-docs#configuration
-          lastVersion: "current",
           versions: {
             current: {
-              label: "v2.0 RC",
-              banner: "none",
-            },
-            "v1.24": {
-              label: "v1.24",
-              path: "v1.24",
-              banner: "none",
+              label: "v2.6",
+              path: "v2.6",
             },
           },
         },
@@ -100,6 +105,12 @@ const config = {
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       image: "img/logo-dark.jpg",
+      imageZoom: {
+        selector: ".markdown img",
+        options: {
+          margin: 64,
+        },
+      },
       navbar: {
         logo: {
           alt: "FerretDB Logo",
@@ -151,7 +162,7 @@ const config = {
               },
               {
                 label: "Slack",
-                href: "https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A",
+                href: "https://slack.ferretdb.io/",
               },
               {
                 label: "X (Twitter)",

@@ -21,6 +21,7 @@ import (
 	"log/slog"
 	"net/url"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -40,13 +41,15 @@ import (
 // Flags.
 var (
 	targetURLF     = flag.String("target-url", "", "target system's URL; if empty, in-process FerretDB is used")
-	targetBackendF = flag.String("target-backend", "", "target system's backend: '%s'"+strings.Join(allBackends, "', '"))
+	targetBackendF = flag.String("target-backend", "", "target system's backend: "+strings.Join(allBackends, ", "))
 
 	postgreSQLURLF    = flag.String("postgresql-url", "", "in-process FerretDB: PostgreSQL URL")
 	targetUnixSocketF = flag.Bool("target-unix-socket", false, "in-process FerretDB: use Unix domain socket")
 	targetProxyAddrF  = flag.String("target-proxy-addr", "", "in-process FerretDB: use given proxy")
 
 	compatURLF = flag.String("compat-url", "", "compat system's (MongoDB) URL for compatibility tests; if empty, they are skipped")
+
+	otelTracesURLF = flag.String("otel-traces-url", "http://127.0.0.1:4318/v1/traces", "OpenTelemetry OTLP/HTTP traces endpoint URL")
 
 	noXFailF = flag.Bool("no-xfail", false, "Disallow expected failures")
 
@@ -59,7 +62,7 @@ var (
 
 // Other globals.
 var (
-	allBackends = []string{"ferretdb", "mongodb"}
+	allBackends = []string{"ferretdb", "ferretdb-yugabytedb", "mongodb"}
 )
 
 // WireConn defines if and how wire client connection is established.
@@ -92,8 +95,10 @@ type SetupOpts struct {
 	// Benchmark data provider. If empty, collection is not created.
 	BenchmarkProvider shareddata.BenchmarkProvider
 
-	// SingleConn ensures that MongoDB driver uses only a single connection.
-	SingleConn bool
+	// PoolSize ensures that MongoDB driver uses exactly this number of connections for operations
+	// (not counting extra connections for monitoring that are mostly idle).
+	// Zero value disables explicit pool configuration.
+	PoolSize int
 
 	// DisableOtel disable OpenTelemetry monitoring for MongoDB driver.
 	DisableOtel bool
@@ -107,7 +112,7 @@ type SetupOpts struct {
 	// Note that wire client connection does not support many options
 	// and returns an error if it encounters an unknown one.
 	//
-	// This field is unexported because that general API wasn't actually used (see SingleConn).
+	// This field is unexported because that general API wasn't actually used (see PoolSize).
 	// It might be exported again if needed.
 	extraOptions url.Values
 }
@@ -153,11 +158,10 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 		opts.extraOptions = make(url.Values)
 	}
 
-	if opts.SingleConn {
-		opts.extraOptions.Set("maxConnecting", "1")
-		opts.extraOptions.Set("maxIdleTimeMS", "0")
-		opts.extraOptions.Set("maxPoolSize", "1")
-		opts.extraOptions.Set("minPoolSize", "1")
+	if opts.PoolSize > 0 {
+		opts.extraOptions.Set("maxConnecting", strconv.Itoa(opts.PoolSize))
+		opts.extraOptions.Set("maxPoolSize", strconv.Itoa(opts.PoolSize))
+		opts.extraOptions.Set("minPoolSize", strconv.Itoa(opts.PoolSize))
 	}
 
 	var levelVar slog.LevelVar
@@ -200,7 +204,10 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	var conn *wireclient.Conn
 
 	if opts.WireConn != WireConnNoConn {
-		conn = setupWireConn(tb, setupCtx, uri, testutil.Logger(tb))
+		clearUri, creds, _, authMechanism, err := wireclient.Credentials(uri)
+		require.NoError(tb, err)
+
+		conn = setupWireConn(tb, setupCtx, clearUri, testutil.Logger(tb))
 
 		if opts.WireConn == WireConnAuth {
 			u, err := url.Parse(uri)
@@ -212,7 +219,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 			pass, _ := u.User.Password()
 			require.NotEmpty(tb, pass)
 
-			require.NoError(tb, conn.Login(ctx, user, pass, "admin"))
+			require.NoError(tb, conn.Login(ctx, creds, "admin", authMechanism))
 		}
 	}
 
@@ -257,29 +264,26 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 	collection := database.Collection(collectionName)
 
 	// drop remnants of the previous failed run
-	_ = collection.Drop(ctx)
 	if ownDatabase {
-		_ = database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}})
-		_ = database.Drop(ctx)
+		cleanupDatabase(tb, ctx, database)
+	} else {
+		cleanupCollection(tb, ctx, collection)
 	}
 
 	// drop collection and (possibly) database unless test failed
 	tb.Cleanup(func() {
 		if tb.Failed() {
-			tb.Logf("Keeping %s.%s for debugging.", databaseName, collectionName)
+			tb.Logf("Keeping %s.%s for debugging", databaseName, collectionName)
 			return
 		}
 
-		err := collection.Drop(ctx)
-		require.NoError(tb, err)
-
 		if ownDatabase {
-			err = database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
-			require.NoError(tb, err)
+			cleanupDatabase(tb, ctx, database)
 
-			err = database.Drop(ctx)
-			require.NoError(tb, err)
+			return
 		}
+
+		cleanupCollection(tb, ctx, collection)
 	})
 
 	var inserted bool
@@ -293,7 +297,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 	}
 
 	if len(opts.Providers) == 0 && opts.BenchmarkProvider == nil {
-		tb.Logf("Collection %s.%s wasn't created because no providers were set.", databaseName, collectionName)
+		tb.Logf("Collection %s.%s wasn't created because no providers were set", databaseName, collectionName)
 	} else {
 		require.True(tb, inserted)
 	}
@@ -305,7 +309,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 func InsertProviders(tb testing.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
 	tb.Helper()
 
-	ctx, span := otel.Tracer("").Start(ctx, "insertProviders")
+	ctx, span := otel.Tracer("").Start(ctx, "InsertProviders")
 	defer span.End()
 
 	for _, provider := range providers {
@@ -328,13 +332,8 @@ func InsertProviders(tb testing.TB, ctx context.Context, collection *mongo.Colle
 func insertBenchmarkProvider(tb testing.TB, ctx context.Context, collection *mongo.Collection, provider shareddata.BenchmarkProvider) (inserted bool) {
 	tb.Helper()
 
-	for docs := range xiter.Chunk(provider.NewIter(), 100) {
-		insertDocs := make([]any, len(docs))
-		for i, doc := range docs {
-			insertDocs[i] = doc
-		}
-
-		res, err := collection.InsertMany(ctx, insertDocs)
+	for docs := range xiter.Chunk(provider.Docs(), 100) {
+		res, err := collection.InsertMany(ctx, docs)
 		require.NoError(tb, err)
 		require.Len(tb, res.InsertedIDs, len(docs))
 
@@ -342,4 +341,48 @@ func insertBenchmarkProvider(tb testing.TB, ctx context.Context, collection *mon
 	}
 
 	return
+}
+
+// cleanupCollection deletes all documents in the collection for ferretdb-yugabytedb backend
+// or drops the collection for other backends.
+func cleanupCollection(tb testing.TB, ctx context.Context, collection *mongo.Collection) {
+	tb.Helper()
+
+	if IsYugabyteDB(tb) {
+		// dropping collection or database fails for ferretdb-yugabytedb
+		// TODO https://github.com/yugabyte/yugabyte-db/issues/27698
+		_, err := collection.DeleteMany(ctx, bson.D{})
+		require.NoError(tb, err)
+
+		return
+	}
+
+	err := collection.Drop(ctx)
+	require.NoError(tb, err)
+}
+
+// cleanupDatabase drops all users, then deletes all collections in the database
+// for ferretdb-yugabytedb backend or drops the database for other backends.
+func cleanupDatabase(tb testing.TB, ctx context.Context, database *mongo.Database) {
+	tb.Helper()
+
+	err := database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
+	require.NoError(tb, err)
+
+	if IsYugabyteDB(tb) {
+		// dropping collection or database fails for ferretdb-yugabytedb
+		// TODO https://github.com/yugabyte/yugabyte-db/issues/27698
+		var collections []string
+		collections, err = database.ListCollectionNames(ctx, bson.D{})
+		require.NoError(tb, err)
+
+		for _, collection := range collections {
+			cleanupCollection(tb, ctx, database.Collection(collection))
+		}
+
+		return
+	}
+
+	err = database.Drop(ctx)
+	require.NoError(tb, err)
 }

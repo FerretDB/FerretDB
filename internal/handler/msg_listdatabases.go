@@ -16,51 +16,37 @@ package handler
 
 import (
 	"context"
-	"maps"
-	"slices"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
+	"github.com/jackc/pgx/v5"
 
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgListDatabases implements `listDatabases` command.
+// msgListDatabases implements `listDatabases` command.
 //
 // The passed context is canceled when the client connection is closed.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/4722
-func (h *Handler) MsgListDatabases(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+func (h *Handler) msgListDatabases(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	doc := req.Document()
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
-	list, err := h.Pool.ListDatabases(connCtx)
+	var res wirebson.RawDocument
+
+	var err error
+	err = h.p.WithConn(func(conn *pgx.Conn) error {
+		// TODO https://github.com/FerretDB/FerretDB/issues/4862
+		// TODO https://github.com/documentdb/documentdb/issues/121
+		res, err = documentdb_api.ListDatabases(connCtx, conn, h.L, req.DocumentRaw())
+		return err
+	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	names := slices.Sorted(maps.Keys(list))
-	databases := wirebson.MakeArray(len(names))
-
-	for _, name := range names {
-		d := must.NotFail(wirebson.NewDocument(
-			"name", name,
-		))
-
-		must.NoError(databases.Add(d))
-	}
-
-	res := must.NotFail(wirebson.NewDocument(
-		"databases", databases,
-		"ok", float64(1),
-	))
-
-	return wire.NewOpMsg(must.NotFail(res.Encode()))
+	return middleware.ResponseDoc(req, res)
 }

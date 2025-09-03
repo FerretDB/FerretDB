@@ -8,6 +8,8 @@
 
 <!-- textlint-enable one-sentence-per-line -->
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/FerretDB/FerretDB/v2/ferretdb.svg)](https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/ferretdb)
+
 [![Go](https://github.com/FerretDB/FerretDB/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/go.yml)
 [![codecov](https://codecov.io/gh/FerretDB/FerretDB/branch/main/graph/badge.svg?token=JZ56XFT3DM)](https://codecov.io/gh/FerretDB/FerretDB)
 
@@ -15,19 +17,9 @@
 [![Packages](https://github.com/FerretDB/FerretDB/actions/workflows/packages.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/packages.yml)
 [![Docs](https://github.com/FerretDB/FerretDB/actions/workflows/docs.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/docs.yml)
 
-<!-- markdownlint-disable MD033 -->
-
-<img src="website/static/ferrets-are-working.svg" width="421" height="298" alt="Ferrets are working" title="Ferrets are working">
-
-<!-- markdownlint-enable MD033 -->
-
-_Please pardon the dust as we move FerretDB v2 to this repository._
-
----
-
 FerretDB is an open-source alternative to MongoDB.
 It is a proxy that converts MongoDB 5.0+ wire protocol queries to SQL
-and uses PostgreSQL with [DocumentDB extension](https://github.com/microsoft/documentdb) as a database engine.
+and uses PostgreSQL with [DocumentDB extension](https://github.com/documentdb/documentdb) as a database engine.
 
 ```mermaid
 flowchart LR
@@ -59,15 +51,18 @@ Features are constantly being added to further increase compatibility and perfor
 
 We welcome all contributors.
 See our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1),
-a list of [known differences with MongoDB](https://docs.ferretdb.io/diff/),
+lists of [known differences and supported commands](https://docs.ferretdb.io/migration/compatibility/),
 and [contributing guidelines](CONTRIBUTING.md).
 
 ## Quickstart
 
-Run this command to start FerretDB with PostgreSQL:
+Run this command to start FerretDB with PostgreSQL, make sure to update `<username>` and `<password>`:
 
 ```sh
-docker run -d --rm --name ferretdb -p 27017:27017 --platform linux/amd64 ghcr.io/ferretdb/ferretdb-eval:2
+docker run -d --rm --name ferretdb -p 27017:27017 \
+  -e POSTGRES_USER=<username> \
+  -e POSTGRES_PASSWORD=<password> \
+  ghcr.io/ferretdb/ferretdb-eval:2
 ```
 
 This command will start a container with FerretDB, pre-packaged PostgreSQL with DocumentDB extension, and MongoDB Shell for quick testing and experiments.
@@ -77,14 +72,16 @@ that don't have those problems.
 
 With that container running, you can:
 
-- Connect to it with any MongoDB client application using MongoDB URI `mongodb://username:password@127.0.0.1:27017/`.
-- Connect to it using MongoDB Shell by just running `mongosh`.
+- Connect to it with any MongoDB client application using the MongoDB URI `mongodb://<username>:<password>@127.0.0.1:27017/`.
+- Connect to it using the MongoDB Shell by just running `mongosh`.
   If you don't have it installed locally, you can run `docker exec -it ferretdb mongosh`.
-- For PostgreSQL, connect to it by running `docker exec -it ferretdb psql -U username postgres`.
+- For PostgreSQL, connect to it by running `docker exec -it ferretdb psql -U <username> postgres`.
 
 You can stop the container with `docker stop ferretdb`.
 
 We also provide binaries and packages for various Linux distributions.
+as well as [Go library package](https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/ferretdb)
+that embeds FerretDB into your application.
 See [our documentation](https://docs.ferretdb.io/installation/) for more details.
 
 ## Building and packaging
@@ -103,10 +100,11 @@ See [there](https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/build/version) fo
 
 ## Managed FerretDB at cloud providers
 
+- [FerretDB Cloud](https://cloud.ferretdb.com/)
 - [Civo](https://www.civo.com/marketplace/FerretDB)
 - [Tembo](https://tembo.io/docs/tembo-stacks/mongo-alternative)
 - [Elestio](https://elest.io/open-source/ferretdb)
-- [Cozystack](https://cozystack.io/docs/components/#managed-ferretdb).
+- [Cozystack](https://cozystack.io/docs/components/#managed-ferretdb)
 
 ## Community
 
@@ -115,7 +113,7 @@ See [there](https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/build/version) fo
 - Documentation: https://docs.ferretdb.io/.
 - X (Twitter): [@ferret_db](https://x.com/ferret_db).
 - Mastodon: [@ferretdb@techhub.social](https://techhub.social/@ferretdb).
-- [Slack chat](https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A) for quick questions.
+- [Slack chat](https://slack.ferretdb.io/) for quick questions.
 - [GitHub Discussions](https://github.com/FerretDB/FerretDB/discussions) for longer topics.
 - [GitHub Issues](https://github.com/FerretDB/FerretDB/issues) for bugs and missing features.
 - [Open Office Hours meeting](https://calendar.google.com/calendar/event?action=TEMPLATE&tmeid=NGhrZTA5dXZ0MzQzN2gyaGVtZmx2aWxmN2pfMjAyNDA0MDhUMTcwMDAwWiBjX24zN3RxdW9yZWlsOWIwMm0wNzQwMDA3MjQ0QGc&tmsrc=c_n37tquoreil9b02m0740007244%40group.calendar.google.com&scp=ALL)

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package github provides a GitHub API client with a shared issues cache.
 package github
 
 import (
@@ -26,7 +27,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/gh"
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v70/github"
 	"github.com/rogpeppe/go-internal/lockedfile"
 )
 

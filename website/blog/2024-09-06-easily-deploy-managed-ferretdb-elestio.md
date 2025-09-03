@@ -96,8 +96,8 @@ Once it's inserted, view the documents by running `db.record.find()`:
 
 The output:
 
-```json5
-[
+```js
+response = [
   {
     _id: ObjectId('66d6a9346e70f5ffc91022c0'),
     username: 'JD',
@@ -116,8 +116,8 @@ db.record.updateOne({ username: 'JD' }, { $set: { likes: 150 } })
 
 The output:
 
-```json5
-{
+```js
+response = {
   acknowledged: true,
   insertedId: null,
   matchedCount: 1,

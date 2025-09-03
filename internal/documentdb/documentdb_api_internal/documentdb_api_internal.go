@@ -28,6 +28,20 @@ func AggregationSupport(ctx context.Context, conn *pgx.Conn, l *slog.Logger, ano
 	return
 }
 
+// ApplyExtensionDataTableUpgrade is a wrapper for
+//
+//	documentdb_api_internal.apply_extension_data_table_upgrade(anonymous integer, anonymous1 integer, anonymous12 integer).
+func ApplyExtensionDataTableUpgrade(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous int32, anonymous1 int32, anonymous12 int32) (err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.apply_extension_data_table_upgrade", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_internal.apply_extension_data_table_upgrade($1, $2, $3)", anonymous, anonymous1, anonymous12)
+	if err = row.Scan(); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.apply_extension_data_table_upgrade", l)
+	}
+	return
+}
+
 // AuthenticateWithScramSha256 is a wrapper for
 //
 //	documentdb_api_internal.authenticate_with_scram_sha256(p_user_name text, p_auth_msg text, p_client_proof text, OUT authenticate_with_scram_sha256 documentdb_core.bson).
@@ -322,6 +336,48 @@ func BsonDollarAddFields(ctx context.Context, conn *pgx.Conn, l *slog.Logger, do
 	return
 }
 
+// BsonDollarAddFields1 is a wrapper for
+//
+//	documentdb_api_internal.bson_dollar_add_fields(document documentdb_core.bson, pathspec documentdb_core.bson, letvariablespec documentdb_core.bson, collationstring text, OUT bson_dollar_add_fields documentdb_core.bson).
+func BsonDollarAddFields1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument, letVariableSpec wirebson.RawDocument, collationstring string) (outBsonDollarAddFields wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_dollar_add_fields", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_dollar_add_fields::bytea FROM documentdb_api_internal.bson_dollar_add_fields($1::bytea, $2::bytea, $3::bytea, $4)", document, pathSpec, letVariableSpec, collationstring)
+	if err = row.Scan(&outBsonDollarAddFields); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_dollar_add_fields", l)
+	}
+	return
+}
+
+// BsonDollarBucketAuto is a wrapper for
+//
+//	documentdb_api_internal.bson_dollar_bucket_auto(document documentdb_core.bson, spec documentdb_core.bson).
+func BsonDollarBucketAuto(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, spec wirebson.RawDocument) (err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_dollar_bucket_auto", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_internal.bson_dollar_bucket_auto($1::bytea, $2::bytea)", document, spec)
+	if err = row.Scan(); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_dollar_bucket_auto", l)
+	}
+	return
+}
+
+// BsonDollarEq is a wrapper for
+//
+//	documentdb_api_internal.bson_dollar_eq(anonymous documentdb_core.bson, anonymous1 documentdb_api_internal.bsonindexbounds, OUT bson_dollar_eq boolean).
+func BsonDollarEq(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 struct{}) (outBsonDollarEq bool, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_dollar_eq", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_dollar_eq FROM documentdb_api_internal.bson_dollar_eq($1::bytea, $2)", anonymous, anonymous1)
+	if err = row.Scan(&outBsonDollarEq); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_dollar_eq", l)
+	}
+	return
+}
+
 // BsonDollarExpr is a wrapper for
 //
 //	documentdb_api_internal.bson_dollar_expr(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, anonymous12 documentdb_core.bson, OUT bson_dollar_expr boolean).
@@ -346,6 +402,62 @@ func BsonDollarExtractMergeFilter(ctx context.Context, conn *pgx.Conn, l *slog.L
 	row := conn.QueryRow(ctx, "SELECT bson_dollar_extract_merge_filter::bytea FROM documentdb_api_internal.bson_dollar_extract_merge_filter($1::bytea, $2)", anonymous, anonymous1)
 	if err = row.Scan(&outBsonDollarExtractMergeFilter); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_dollar_extract_merge_filter", l)
+	}
+	return
+}
+
+// BsonDollarFullscan is a wrapper for
+//
+//	documentdb_api_internal.bson_dollar_fullscan(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, OUT bson_dollar_fullscan boolean).
+func BsonDollarFullscan(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonDollarFullscan bool, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_dollar_fullscan", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_dollar_fullscan FROM documentdb_api_internal.bson_dollar_fullscan($1::bytea, $2::bytea)", anonymous, anonymous1)
+	if err = row.Scan(&outBsonDollarFullscan); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_dollar_fullscan", l)
+	}
+	return
+}
+
+// BsonDollarGt is a wrapper for
+//
+//	documentdb_api_internal.bson_dollar_gt(anonymous documentdb_core.bson, anonymous1 documentdb_api_internal.bsonindexbounds, OUT bson_dollar_gt boolean).
+func BsonDollarGt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 struct{}) (outBsonDollarGt bool, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_dollar_gt", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_dollar_gt FROM documentdb_api_internal.bson_dollar_gt($1::bytea, $2)", anonymous, anonymous1)
+	if err = row.Scan(&outBsonDollarGt); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_dollar_gt", l)
+	}
+	return
+}
+
+// BsonDollarGte is a wrapper for
+//
+//	documentdb_api_internal.bson_dollar_gte(anonymous documentdb_core.bson, anonymous1 documentdb_api_internal.bsonindexbounds, OUT bson_dollar_gte boolean).
+func BsonDollarGte(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 struct{}) (outBsonDollarGte bool, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_dollar_gte", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_dollar_gte FROM documentdb_api_internal.bson_dollar_gte($1::bytea, $2)", anonymous, anonymous1)
+	if err = row.Scan(&outBsonDollarGte); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_dollar_gte", l)
+	}
+	return
+}
+
+// BsonDollarIndexHint is a wrapper for
+//
+//	documentdb_api_internal.bson_dollar_index_hint(document documentdb_core.bson, index_name text, key_document documentdb_core.bson, is_sparse boolean, OUT bson_dollar_index_hint boolean).
+func BsonDollarIndexHint(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, indexName string, keyDocument wirebson.RawDocument, isSparse bool) (outBsonDollarIndexHint bool, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_dollar_index_hint", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_dollar_index_hint FROM documentdb_api_internal.bson_dollar_index_hint($1::bytea, $2, $3::bytea, $4)", document, indexName, keyDocument, isSparse)
+	if err = row.Scan(&outBsonDollarIndexHint); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_dollar_index_hint", l)
 	}
 	return
 }
@@ -448,6 +560,34 @@ func BsonDollarLookupProject(ctx context.Context, conn *pgx.Conn, l *slog.Logger
 	return
 }
 
+// BsonDollarLt is a wrapper for
+//
+//	documentdb_api_internal.bson_dollar_lt(anonymous documentdb_core.bson, anonymous1 documentdb_api_internal.bsonindexbounds, OUT bson_dollar_lt boolean).
+func BsonDollarLt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 struct{}) (outBsonDollarLt bool, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_dollar_lt", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_dollar_lt FROM documentdb_api_internal.bson_dollar_lt($1::bytea, $2)", anonymous, anonymous1)
+	if err = row.Scan(&outBsonDollarLt); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_dollar_lt", l)
+	}
+	return
+}
+
+// BsonDollarLte is a wrapper for
+//
+//	documentdb_api_internal.bson_dollar_lte(anonymous documentdb_core.bson, anonymous1 documentdb_api_internal.bsonindexbounds, OUT bson_dollar_lte boolean).
+func BsonDollarLte(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 struct{}) (outBsonDollarLte bool, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_dollar_lte", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_dollar_lte FROM documentdb_api_internal.bson_dollar_lte($1::bytea, $2)", anonymous, anonymous1)
+	if err = row.Scan(&outBsonDollarLte); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_dollar_lte", l)
+	}
+	return
+}
+
 // BsonDollarMergeAddObjectId is a wrapper for
 //
 //	documentdb_api_internal.bson_dollar_merge_add_object_id(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, OUT bson_dollar_merge_add_object_id documentdb_core.bson).
@@ -462,24 +602,24 @@ func BsonDollarMergeAddObjectId(ctx context.Context, conn *pgx.Conn, l *slog.Log
 	return
 }
 
-// BsonDollarMergeDocuments is a wrapper for
+// BsonDollarMergeAddObjectId1 is a wrapper for
 //
-//	documentdb_api_internal.bson_dollar_merge_documents(document documentdb_core.bson, pathspec documentdb_core.bson, OUT bson_dollar_merge_documents documentdb_core.bson).
-func BsonDollarMergeDocuments(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument) (outBsonDollarMergeDocuments wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_dollar_merge_documents", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+//	documentdb_api_internal.bson_dollar_merge_add_object_id(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, anonymous12 documentdb_core.bson, OUT bson_dollar_merge_add_object_id documentdb_core.bson).
+func BsonDollarMergeAddObjectId1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument, anonymous12 wirebson.RawDocument) (outBsonDollarMergeAddObjectId wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_dollar_merge_add_object_id", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT bson_dollar_merge_documents::bytea FROM documentdb_api_internal.bson_dollar_merge_documents($1::bytea, $2::bytea)", document, pathSpec)
-	if err = row.Scan(&outBsonDollarMergeDocuments); err != nil {
-		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_dollar_merge_documents", l)
+	row := conn.QueryRow(ctx, "SELECT bson_dollar_merge_add_object_id::bytea FROM documentdb_api_internal.bson_dollar_merge_add_object_id($1::bytea, $2::bytea, $3::bytea)", anonymous, anonymous1, anonymous12)
+	if err = row.Scan(&outBsonDollarMergeAddObjectId); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_dollar_merge_add_object_id", l)
 	}
 	return
 }
 
-// BsonDollarMergeDocuments1 is a wrapper for
+// BsonDollarMergeDocuments is a wrapper for
 //
 //	documentdb_api_internal.bson_dollar_merge_documents(document documentdb_core.bson, pathspec documentdb_core.bson, overridearray boolean, OUT bson_dollar_merge_documents documentdb_core.bson).
-func BsonDollarMergeDocuments1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument, overridearray bool) (outBsonDollarMergeDocuments wirebson.RawDocument, err error) {
+func BsonDollarMergeDocuments(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument, overridearray bool) (outBsonDollarMergeDocuments wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_dollar_merge_documents", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
@@ -554,6 +694,20 @@ func BsonDollarMergeHandleWhenMatched(ctx context.Context, conn *pgx.Conn, l *sl
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT bson_dollar_merge_handle_when_matched::bytea FROM documentdb_api_internal.bson_dollar_merge_handle_when_matched($1::bytea, $2::bytea, $3)", anonymous, anonymous1, anonymous12)
+	if err = row.Scan(&outBsonDollarMergeHandleWhenMatched); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_dollar_merge_handle_when_matched", l)
+	}
+	return
+}
+
+// BsonDollarMergeHandleWhenMatched1 is a wrapper for
+//
+//	documentdb_api_internal.bson_dollar_merge_handle_when_matched(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, anonymous12 integer, anonymous123 documentdb_core.bson, anonymous1234 integer, OUT bson_dollar_merge_handle_when_matched documentdb_core.bson).
+func BsonDollarMergeHandleWhenMatched1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument, anonymous12 int32, anonymous123 wirebson.RawDocument, anonymous1234 int32) (outBsonDollarMergeHandleWhenMatched wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_dollar_merge_handle_when_matched", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_dollar_merge_handle_when_matched::bytea FROM documentdb_api_internal.bson_dollar_merge_handle_when_matched($1::bytea, $2::bytea, $3, $4::bytea, $5)", anonymous, anonymous1, anonymous12, anonymous123, anonymous1234)
 	if err = row.Scan(&outBsonDollarMergeHandleWhenMatched); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_dollar_merge_handle_when_matched", l)
 	}
@@ -644,6 +798,20 @@ func BsonDollarProject(ctx context.Context, conn *pgx.Conn, l *slog.Logger, docu
 	return
 }
 
+// BsonDollarProject1 is a wrapper for
+//
+//	documentdb_api_internal.bson_dollar_project(document documentdb_core.bson, pathspec documentdb_core.bson, variablespec documentdb_core.bson, collationstring text, OUT bson_dollar_project documentdb_core.bson).
+func BsonDollarProject1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument, variableSpec wirebson.RawDocument, collationstring string) (outBsonDollarProject wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_dollar_project", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_dollar_project::bytea FROM documentdb_api_internal.bson_dollar_project($1::bytea, $2::bytea, $3::bytea, $4)", document, pathSpec, variableSpec, collationstring)
+	if err = row.Scan(&outBsonDollarProject); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_dollar_project", l)
+	}
+	return
+}
+
 // BsonDollarProjectFind is a wrapper for
 //
 //	documentdb_api_internal.bson_dollar_project_find(document documentdb_core.bson, pathspec documentdb_core.bson, queryspec documentdb_core.bson, letvariablespec documentdb_core.bson, OUT bson_dollar_project_find documentdb_core.bson).
@@ -652,6 +820,20 @@ func BsonDollarProjectFind(ctx context.Context, conn *pgx.Conn, l *slog.Logger, 
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT bson_dollar_project_find::bytea FROM documentdb_api_internal.bson_dollar_project_find($1::bytea, $2::bytea, $3::bytea, $4::bytea)", document, pathSpec, querySpec, letVariableSpec)
+	if err = row.Scan(&outBsonDollarProjectFind); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_dollar_project_find", l)
+	}
+	return
+}
+
+// BsonDollarProjectFind1 is a wrapper for
+//
+//	documentdb_api_internal.bson_dollar_project_find(document documentdb_core.bson, pathspec documentdb_core.bson, queryspec documentdb_core.bson, letvariablespec documentdb_core.bson, collationstring text, OUT bson_dollar_project_find documentdb_core.bson).
+func BsonDollarProjectFind1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument, querySpec wirebson.RawDocument, letVariableSpec wirebson.RawDocument, collationstring string) (outBsonDollarProjectFind wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_dollar_project_find", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_dollar_project_find::bytea FROM documentdb_api_internal.bson_dollar_project_find($1::bytea, $2::bytea, $3::bytea, $4::bytea, $5)", document, pathSpec, querySpec, letVariableSpec, collationstring)
 	if err = row.Scan(&outBsonDollarProjectFind); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_dollar_project_find", l)
 	}
@@ -686,6 +868,20 @@ func BsonDollarRedact(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anony
 	return
 }
 
+// BsonDollarRedact1 is a wrapper for
+//
+//	documentdb_api_internal.bson_dollar_redact(document documentdb_core.bson, redactspec documentdb_core.bson, redactspectext text, variablespec documentdb_core.bson, collationstring text, OUT bson_dollar_redact documentdb_core.bson).
+func BsonDollarRedact1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, redactSpec wirebson.RawDocument, redactspectext string, variableSpec wirebson.RawDocument, collationstring string) (outBsonDollarRedact wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_dollar_redact", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_dollar_redact::bytea FROM documentdb_api_internal.bson_dollar_redact($1::bytea, $2::bytea, $3, $4::bytea, $5)", document, redactSpec, redactspectext, variableSpec, collationstring)
+	if err = row.Scan(&outBsonDollarRedact); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_dollar_redact", l)
+	}
+	return
+}
+
 // BsonDollarReplaceRoot is a wrapper for
 //
 //	documentdb_api_internal.bson_dollar_replace_root(document documentdb_core.bson, pathspec documentdb_core.bson, variablespec documentdb_core.bson, OUT bson_dollar_replace_root documentdb_core.bson).
@@ -694,6 +890,20 @@ func BsonDollarReplaceRoot(ctx context.Context, conn *pgx.Conn, l *slog.Logger, 
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT bson_dollar_replace_root::bytea FROM documentdb_api_internal.bson_dollar_replace_root($1::bytea, $2::bytea, $3::bytea)", document, pathSpec, variableSpec)
+	if err = row.Scan(&outBsonDollarReplaceRoot); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_dollar_replace_root", l)
+	}
+	return
+}
+
+// BsonDollarReplaceRoot1 is a wrapper for
+//
+//	documentdb_api_internal.bson_dollar_replace_root(document documentdb_core.bson, pathspec documentdb_core.bson, variablespec documentdb_core.bson, collationstring text, OUT bson_dollar_replace_root documentdb_core.bson).
+func BsonDollarReplaceRoot1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument, variableSpec wirebson.RawDocument, collationstring string) (outBsonDollarReplaceRoot wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_dollar_replace_root", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_dollar_replace_root::bytea FROM documentdb_api_internal.bson_dollar_replace_root($1::bytea, $2::bytea, $3::bytea, $4)", document, pathSpec, variableSpec, collationstring)
 	if err = row.Scan(&outBsonDollarReplaceRoot); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_dollar_replace_root", l)
 	}
@@ -756,6 +966,20 @@ func BsonExpressionGet(ctx context.Context, conn *pgx.Conn, l *slog.Logger, docu
 	return
 }
 
+// BsonExpressionGet1 is a wrapper for
+//
+//	documentdb_api_internal.bson_expression_get(document documentdb_core.bson, expressionspec documentdb_core.bson, isnullonempty boolean, variablespec documentdb_core.bson, collationstring text, OUT bson_expression_get documentdb_core.bson).
+func BsonExpressionGet1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, expressionSpec wirebson.RawDocument, isnullonempty bool, variableSpec wirebson.RawDocument, collationstring string) (outBsonExpressionGet wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_expression_get", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_expression_get::bytea FROM documentdb_api_internal.bson_expression_get($1::bytea, $2::bytea, $3, $4::bytea, $5)", document, expressionSpec, isnullonempty, variableSpec, collationstring)
+	if err = row.Scan(&outBsonExpressionGet); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_expression_get", l)
+	}
+	return
+}
+
 // BsonExpressionMap is a wrapper for
 //
 //	documentdb_api_internal.bson_expression_map(document documentdb_core.bson, sourcearrayname text, expressionspec documentdb_core.bson, isnullonempty boolean, variablespec documentdb_core.bson, OUT bson_expression_map documentdb_core.bson).
@@ -812,6 +1036,20 @@ func BsonExpressionPartitionGet1(ctx context.Context, conn *pgx.Conn, l *slog.Lo
 	return
 }
 
+// BsonExpressionPartitionGet12 is a wrapper for
+//
+//	documentdb_api_internal.bson_expression_partition_get(document documentdb_core.bson, expressionspec documentdb_core.bson, isnullonempty boolean, variablespec documentdb_core.bson, collationstring text, OUT bson_expression_partition_get documentdb_core.bson).
+func BsonExpressionPartitionGet12(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, expressionSpec wirebson.RawDocument, isnullonempty bool, variableSpec wirebson.RawDocument, collationstring string) (outBsonExpressionPartitionGet wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_expression_partition_get", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_expression_partition_get::bytea FROM documentdb_api_internal.bson_expression_partition_get($1::bytea, $2::bytea, $3, $4::bytea, $5)", document, expressionSpec, isnullonempty, variableSpec, collationstring)
+	if err = row.Scan(&outBsonExpressionPartitionGet); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_expression_partition_get", l)
+	}
+	return
+}
+
 // BsonExtractVector is a wrapper for
 //
 //	documentdb_api_internal.bson_extract_vector(document documentdb_core.bson, path text, OUT bson_extract_vector public.vector).
@@ -854,6 +1092,20 @@ func BsonFirstTransitionOnSorted(ctx context.Context, conn *pgx.Conn, l *slog.Lo
 	return
 }
 
+// BsonFirstnFinal is a wrapper for
+//
+//	documentdb_api_internal.bson_firstn_final(anonymous bytea, OUT bson_firstn_final documentdb_core.bson).
+func BsonFirstnFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonFirstnFinal wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_firstn_final", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_firstn_final::bytea FROM documentdb_api_internal.bson_firstn_final($1)", anonymous)
+	if err = row.Scan(&outBsonFirstnFinal); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_firstn_final", l)
+	}
+	return
+}
+
 // BsonFirstnTransition is a wrapper for
 //
 //	documentdb_api_internal.bson_firstn_transition(anonymous bytea, anonymous1 documentdb_core.bson, anonymous12 bigint, anonymous123 ARRAY, anonymous1234 documentdb_core.bson DEFAULT NULL, OUT bson_firstn_transition bytea).
@@ -892,6 +1144,20 @@ func BsonGeonearWithinRange(ctx context.Context, conn *pgx.Conn, l *slog.Logger,
 	row := conn.QueryRow(ctx, "SELECT bson_geonear_within_range FROM documentdb_api_internal.bson_geonear_within_range($1::bytea, $2::bytea)", anonymous, anonymous1)
 	if err = row.Scan(&outBsonGeonearWithinRange); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_geonear_within_range", l)
+	}
+	return
+}
+
+// BsonIndexTransform is a wrapper for
+//
+//	documentdb_api_internal.bson_index_transform(anonymous bytea, anonymous1 bytea, anonymous12 smallint, anonymous123 internal, OUT bson_index_transform bytea).
+func BsonIndexTransform(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}, anonymous12 struct{}, anonymous123 struct{}) (outBsonIndexTransform struct{}, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_index_transform", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_index_transform FROM documentdb_api_internal.bson_index_transform($1, $2, $3, $4)", anonymous, anonymous1, anonymous12, anonymous123)
+	if err = row.Scan(&outBsonIndexTransform); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_index_transform", l)
 	}
 	return
 }
@@ -948,6 +1214,20 @@ func BsonLastTransitionOnSorted(ctx context.Context, conn *pgx.Conn, l *slog.Log
 	row := conn.QueryRow(ctx, "SELECT bson_last_transition_on_sorted FROM documentdb_api_internal.bson_last_transition_on_sorted($1, $2::bytea, $3::bytea)", anonymous, anonymous1, anonymous12)
 	if err = row.Scan(&outBsonLastTransitionOnSorted); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_last_transition_on_sorted", l)
+	}
+	return
+}
+
+// BsonLastnFinal is a wrapper for
+//
+//	documentdb_api_internal.bson_lastn_final(anonymous bytea, OUT bson_lastn_final documentdb_core.bson).
+func BsonLastnFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonLastnFinal wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_lastn_final", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_lastn_final::bytea FROM documentdb_api_internal.bson_lastn_final($1)", anonymous)
+	if err = row.Scan(&outBsonLastnFinal); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_lastn_final", l)
 	}
 	return
 }
@@ -1134,6 +1414,90 @@ func BsonMinnTransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, ano
 	return
 }
 
+// BsonOrderby is a wrapper for
+//
+//	documentdb_api_internal.bson_orderby(document documentdb_core.bson, filter documentdb_core.bson, collationstring text, OUT bson_orderby documentdb_core.bson).
+func BsonOrderby(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, filter wirebson.RawDocument, collationstring string) (outBsonOrderby wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_orderby", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_orderby::bytea FROM documentdb_api_internal.bson_orderby($1::bytea, $2::bytea, $3)", document, filter, collationstring)
+	if err = row.Scan(&outBsonOrderby); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_orderby", l)
+	}
+	return
+}
+
+// BsonOrderbyCompare is a wrapper for
+//
+//	documentdb_api_internal.bson_orderby_compare(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, OUT bson_orderby_compare integer).
+func BsonOrderbyCompare(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonOrderbyCompare int32, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_orderby_compare", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_orderby_compare FROM documentdb_api_internal.bson_orderby_compare($1::bytea, $2::bytea)", anonymous, anonymous1)
+	if err = row.Scan(&outBsonOrderbyCompare); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_orderby_compare", l)
+	}
+	return
+}
+
+// BsonOrderbyCompareSortSupport is a wrapper for
+//
+//	documentdb_api_internal.bson_orderby_compare_sort_support(anonymous internal).
+func BsonOrderbyCompareSortSupport(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_orderby_compare_sort_support", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_internal.bson_orderby_compare_sort_support($1)", anonymous)
+	if err = row.Scan(); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_orderby_compare_sort_support", l)
+	}
+	return
+}
+
+// BsonOrderbyEq is a wrapper for
+//
+//	documentdb_api_internal.bson_orderby_eq(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, OUT bson_orderby_eq boolean).
+func BsonOrderbyEq(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonOrderbyEq bool, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_orderby_eq", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_orderby_eq FROM documentdb_api_internal.bson_orderby_eq($1::bytea, $2::bytea)", anonymous, anonymous1)
+	if err = row.Scan(&outBsonOrderbyEq); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_orderby_eq", l)
+	}
+	return
+}
+
+// BsonOrderbyGt is a wrapper for
+//
+//	documentdb_api_internal.bson_orderby_gt(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, OUT bson_orderby_gt boolean).
+func BsonOrderbyGt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonOrderbyGt bool, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_orderby_gt", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_orderby_gt FROM documentdb_api_internal.bson_orderby_gt($1::bytea, $2::bytea)", anonymous, anonymous1)
+	if err = row.Scan(&outBsonOrderbyGt); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_orderby_gt", l)
+	}
+	return
+}
+
+// BsonOrderbyLt is a wrapper for
+//
+//	documentdb_api_internal.bson_orderby_lt(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, OUT bson_orderby_lt boolean).
+func BsonOrderbyLt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonOrderbyLt bool, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_orderby_lt", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_orderby_lt FROM documentdb_api_internal.bson_orderby_lt($1::bytea, $2::bytea)", anonymous, anonymous1)
+	if err = row.Scan(&outBsonOrderbyLt); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_orderby_lt", l)
+	}
+	return
+}
+
 // BsonOrderbyPartition is a wrapper for
 //
 //	documentdb_api_internal.bson_orderby_partition(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, anonymous12 boolean, OUT bson_orderby_partition documentdb_core.bson).
@@ -1144,6 +1508,48 @@ func BsonOrderbyPartition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, a
 	row := conn.QueryRow(ctx, "SELECT bson_orderby_partition::bytea FROM documentdb_api_internal.bson_orderby_partition($1::bytea, $2::bytea, $3)", anonymous, anonymous1, anonymous12)
 	if err = row.Scan(&outBsonOrderbyPartition); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_orderby_partition", l)
+	}
+	return
+}
+
+// BsonOrderbyPartition1 is a wrapper for
+//
+//	documentdb_api_internal.bson_orderby_partition(document documentdb_core.bson, filter documentdb_core.bson, istimerangewindow boolean, collationstring text, OUT bson_orderby_partition documentdb_core.bson).
+func BsonOrderbyPartition1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, filter wirebson.RawDocument, istimerangewindow bool, collationstring string) (outBsonOrderbyPartition wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_orderby_partition", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_orderby_partition::bytea FROM documentdb_api_internal.bson_orderby_partition($1::bytea, $2::bytea, $3, $4)", document, filter, istimerangewindow, collationstring)
+	if err = row.Scan(&outBsonOrderbyPartition); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_orderby_partition", l)
+	}
+	return
+}
+
+// BsonOrderbyReverse is a wrapper for
+//
+//	documentdb_api_internal.bson_orderby_reverse(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, OUT bson_orderby_reverse documentdb_core.bson).
+func BsonOrderbyReverse(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonOrderbyReverse wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_orderby_reverse", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_orderby_reverse::bytea FROM documentdb_api_internal.bson_orderby_reverse($1::bytea, $2::bytea)", anonymous, anonymous1)
+	if err = row.Scan(&outBsonOrderbyReverse); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_orderby_reverse", l)
+	}
+	return
+}
+
+// BsonQueryMatch is a wrapper for
+//
+//	documentdb_api_internal.bson_query_match(document documentdb_core.bson, query documentdb_core.bson, variablespec documentdb_core.bson, collationstring text, OUT bson_query_match boolean).
+func BsonQueryMatch(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, query wirebson.RawDocument, variableSpec wirebson.RawDocument, collationstring string) (outBsonQueryMatch bool, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_query_match", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_query_match FROM documentdb_api_internal.bson_query_match($1::bytea, $2::bytea, $3::bytea, $4)", document, query, variableSpec, collationstring)
+	if err = row.Scan(&outBsonQueryMatch); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_query_match", l)
 	}
 	return
 }
@@ -1172,6 +1578,20 @@ func BsonRank(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (err error) {
 	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_internal.bson_rank()")
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_rank", l)
+	}
+	return
+}
+
+// BsonRumCompositeOrdering is a wrapper for
+//
+//	documentdb_api_internal.bson_rum_composite_ordering(anonymous bytea, anonymous1 documentdb_core.bson, anonymous12 smallint, anonymous123 internal, OUT bson_rum_composite_ordering documentdb_core.bson).
+func BsonRumCompositeOrdering(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument, anonymous12 struct{}, anonymous123 struct{}) (outBsonRumCompositeOrdering wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_rum_composite_ordering", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bson_rum_composite_ordering::bytea FROM documentdb_api_internal.bson_rum_composite_ordering($1, $2::bytea, $3, $4)", anonymous, anonymous1, anonymous12, anonymous123)
+	if err = row.Scan(&outBsonRumCompositeOrdering); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_rum_composite_ordering", l)
 	}
 	return
 }
@@ -1388,12 +1808,12 @@ func BsonUniqueShardPathEqual(ctx context.Context, conn *pgx.Conn, l *slog.Logge
 
 // BsonUpdateDocument is a wrapper for
 //
-//	documentdb_api_internal.bson_update_document(document documentdb_core.bson, updatespec documentdb_core.bson, queryspec documentdb_core.bson, arrayfilters documentdb_core.bson DEFAULT NULL, buildupdatedesc boolean DEFAULT false, OUT newdocument documentdb_core.bson, OUT updatedesc documentdb_core.bson).
-func BsonUpdateDocument(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, updateSpec wirebson.RawDocument, querySpec wirebson.RawDocument, arrayfilters wirebson.RawDocument, buildupdatedesc bool) (outNewdocument wirebson.RawDocument, outUpdatedesc wirebson.RawDocument, err error) {
+//	documentdb_api_internal.bson_update_document(document documentdb_core.bson, updatespec documentdb_core.bson, queryspec documentdb_core.bson, arrayfilters documentdb_core.bson DEFAULT NULL, buildupdatedesc boolean DEFAULT false, variablespec documentdb_core.bson DEFAULT NULL, OUT newdocument documentdb_core.bson, OUT updatedesc documentdb_core.bson).
+func BsonUpdateDocument(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, updateSpec wirebson.RawDocument, querySpec wirebson.RawDocument, arrayfilters wirebson.RawDocument, buildupdatedesc bool, variableSpec wirebson.RawDocument) (outNewdocument wirebson.RawDocument, outUpdatedesc wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bson_update_document", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT newdocument::bytea, updatedesc::bytea FROM documentdb_api_internal.bson_update_document($1::bytea, $2::bytea, $3::bytea, $4::bytea, $5)", document, updateSpec, querySpec, arrayfilters, buildupdatedesc)
+	row := conn.QueryRow(ctx, "SELECT newdocument::bytea, updatedesc::bytea FROM documentdb_api_internal.bson_update_document($1::bytea, $2::bytea, $3::bytea, $4::bytea, $5, $6::bytea)", document, updateSpec, querySpec, arrayfilters, buildupdatedesc, variableSpec)
 	if err = row.Scan(&outNewdocument, &outUpdatedesc); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bson_update_document", l)
 	}
@@ -1778,6 +2198,62 @@ func Bsonfirstonsorted(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anon
 	return
 }
 
+// BsonindexboundsIn is a wrapper for
+//
+//	documentdb_api_internal.bsonindexbounds_in(anonymous cstring, OUT bsonindexbounds_in documentdb_api_internal.bsonindexbounds).
+func BsonindexboundsIn(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonindexboundsIn struct{}, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bsonindexbounds_in", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bsonindexbounds_in FROM documentdb_api_internal.bsonindexbounds_in($1)", anonymous)
+	if err = row.Scan(&outBsonindexboundsIn); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bsonindexbounds_in", l)
+	}
+	return
+}
+
+// BsonindexboundsOut is a wrapper for
+//
+//	documentdb_api_internal.bsonindexbounds_out(anonymous documentdb_api_internal.bsonindexbounds, OUT bsonindexbounds_out cstring).
+func BsonindexboundsOut(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonindexboundsOut struct{}, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bsonindexbounds_out", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bsonindexbounds_out FROM documentdb_api_internal.bsonindexbounds_out($1)", anonymous)
+	if err = row.Scan(&outBsonindexboundsOut); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bsonindexbounds_out", l)
+	}
+	return
+}
+
+// BsonindexboundsRecv is a wrapper for
+//
+//	documentdb_api_internal.bsonindexbounds_recv(anonymous internal, OUT bsonindexbounds_recv documentdb_api_internal.bsonindexbounds).
+func BsonindexboundsRecv(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonindexboundsRecv struct{}, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bsonindexbounds_recv", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bsonindexbounds_recv FROM documentdb_api_internal.bsonindexbounds_recv($1)", anonymous)
+	if err = row.Scan(&outBsonindexboundsRecv); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bsonindexbounds_recv", l)
+	}
+	return
+}
+
+// BsonindexboundsSend is a wrapper for
+//
+//	documentdb_api_internal.bsonindexbounds_send(anonymous documentdb_api_internal.bsonindexbounds, OUT bsonindexbounds_send bytea).
+func BsonindexboundsSend(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonindexboundsSend struct{}, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bsonindexbounds_send", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bsonindexbounds_send FROM documentdb_api_internal.bsonindexbounds_send($1)", anonymous)
+	if err = row.Scan(&outBsonindexboundsSend); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bsonindexbounds_send", l)
+	}
+	return
+}
+
 // Bsonintegral is a wrapper for
 //
 //	documentdb_api_internal.bsonintegral(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, anonymous12 bigint).
@@ -1904,6 +2380,76 @@ func Bsonpercentile(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymo
 	return
 }
 
+// BsonqueryEq is a wrapper for
+//
+//	documentdb_api_internal.bsonquery_eq(anonymous documentdb_core.bsonquery, anonymous1 documentdb_api_internal.bsonindexbounds, OUT bsonquery_eq boolean).
+func BsonqueryEq(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}) (outBsonqueryEq bool, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bsonquery_eq", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bsonquery_eq FROM documentdb_api_internal.bsonquery_eq($1, $2)", anonymous, anonymous1)
+	if err = row.Scan(&outBsonqueryEq); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bsonquery_eq", l)
+	}
+	return
+}
+
+// BsonqueryGt is a wrapper for
+//
+//	documentdb_api_internal.bsonquery_gt(anonymous documentdb_core.bsonquery, anonymous1 documentdb_api_internal.bsonindexbounds, OUT bsonquery_gt boolean).
+func BsonqueryGt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}) (outBsonqueryGt bool, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bsonquery_gt", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bsonquery_gt FROM documentdb_api_internal.bsonquery_gt($1, $2)", anonymous, anonymous1)
+	if err = row.Scan(&outBsonqueryGt); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bsonquery_gt", l)
+	}
+	return
+}
+
+// BsonqueryGte is a wrapper for
+//
+//	documentdb_api_internal.bsonquery_gte(anonymous documentdb_core.bsonquery, anonymous1 documentdb_api_internal.bsonindexbounds, OUT bsonquery_gte boolean).
+func BsonqueryGte(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}) (outBsonqueryGte bool, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bsonquery_gte", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bsonquery_gte FROM documentdb_api_internal.bsonquery_gte($1, $2)", anonymous, anonymous1)
+	if err = row.Scan(&outBsonqueryGte); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bsonquery_gte", l)
+	}
+	return
+}
+
+// BsonqueryLt is a wrapper for
+//
+//	documentdb_api_internal.bsonquery_lt(anonymous documentdb_core.bsonquery, anonymous1 documentdb_api_internal.bsonindexbounds, OUT bsonquery_lt boolean).
+func BsonqueryLt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}) (outBsonqueryLt bool, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bsonquery_lt", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bsonquery_lt FROM documentdb_api_internal.bsonquery_lt($1, $2)", anonymous, anonymous1)
+	if err = row.Scan(&outBsonqueryLt); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bsonquery_lt", l)
+	}
+	return
+}
+
+// BsonqueryLte is a wrapper for
+//
+//	documentdb_api_internal.bsonquery_lte(anonymous documentdb_core.bsonquery, anonymous1 documentdb_api_internal.bsonindexbounds, OUT bsonquery_lte boolean).
+func BsonqueryLte(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}) (outBsonqueryLte bool, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.bsonquery_lte", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT bsonquery_lte FROM documentdb_api_internal.bsonquery_lte($1, $2)", anonymous, anonymous1)
+	if err = row.Scan(&outBsonqueryLte); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bsonquery_lte", l)
+	}
+	return
+}
+
 // Bsonstddevpop is a wrapper for
 //
 //	documentdb_api_internal.bsonstddevpop(anonymous documentdb_core.bson).
@@ -1928,20 +2474,6 @@ func Bsonstddevsamp(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymo
 	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_internal.bsonstddevsamp($1::bytea)", anonymous)
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.bsonstddevsamp", l)
-	}
-	return
-}
-
-// BuildIndexConcurrently is a wrapper for
-//
-//	documentdb_api_internal.build_index_concurrently(p_job_index integer).
-func BuildIndexConcurrently(ctx context.Context, conn *pgx.Conn, l *slog.Logger, jobIndex int32) (err error) {
-	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.build_index_concurrently", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
-	defer span.End()
-
-	row := conn.QueryRow(ctx, "CALL documentdb_api_internal.build_index_concurrently($1)", jobIndex)
-	if err = row.Scan(); err != nil {
-		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.build_index_concurrently", l)
 	}
 	return
 }
@@ -2114,6 +2646,20 @@ func CurrentOpWorker(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec w
 	return
 }
 
+// CursorDirectoryCleanup is a wrapper for
+//
+//	documentdb_api_internal.cursor_directory_cleanup(expiry_time_seconds bigint DEFAULT NULL).
+func CursorDirectoryCleanup(ctx context.Context, conn *pgx.Conn, l *slog.Logger, expiryTimeSeconds int64) (err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.cursor_directory_cleanup", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_internal.cursor_directory_cleanup($1)", expiryTimeSeconds)
+	if err = row.Scan(); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.cursor_directory_cleanup", l)
+	}
+	return
+}
+
 // CursorState is a wrapper for
 //
 //	documentdb_api_internal.cursor_state(anonymous documentdb_core.bson, anonymous1 documentdb_core.bson, OUT cursor_state boolean).
@@ -2142,16 +2688,16 @@ func DbStatsWorker(ctx context.Context, conn *pgx.Conn, l *slog.Logger, collecti
 	return
 }
 
-// DeleteExpiredRows is a wrapper for
+// DeleteCursors is a wrapper for
 //
-//	documentdb_api_internal.delete_expired_rows(p_batch_size integer DEFAULT '-1').
-func DeleteExpiredRows(ctx context.Context, conn *pgx.Conn, l *slog.Logger, batchSize int32) (err error) {
-	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.delete_expired_rows", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+//	documentdb_api_internal.delete_cursors(cursorids ARRAY, OUT delete_cursors documentdb_core.bson).
+func DeleteCursors(ctx context.Context, conn *pgx.Conn, l *slog.Logger, cursorids struct{}) (outDeleteCursors wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.delete_cursors", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "CALL documentdb_api_internal.delete_expired_rows($1)", batchSize)
-	if err = row.Scan(); err != nil {
-		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.delete_expired_rows", l)
+	row := conn.QueryRow(ctx, "SELECT delete_cursors::bytea FROM documentdb_api_internal.delete_cursors($1)", cursorids)
+	if err = row.Scan(&outDeleteCursors); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.delete_cursors", l)
 	}
 	return
 }
@@ -2228,13 +2774,13 @@ func DocumentdbGetNextCollectionIndexId(ctx context.Context, conn *pgx.Conn, l *
 
 // EmptyDataTable is a wrapper for
 //
-//	documentdb_api_internal.empty_data_table(OUT shard_key_value bigint, OUT object_id documentdb_core.bson, OUT document documentdb_core.bson, OUT creation_time timestamp with time zone).
-func EmptyDataTable(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outShardKeyValue int64, outObjectID wirebson.RawDocument, outDocument wirebson.RawDocument, outCreationTime struct{}, err error) {
+//	documentdb_api_internal.empty_data_table(OUT shard_key_value bigint, OUT object_id documentdb_core.bson, OUT document documentdb_core.bson).
+func EmptyDataTable(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outShardKeyValue int64, outObjectID wirebson.RawDocument, outDocument wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.empty_data_table", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT shard_key_value, object_id::bytea, document::bytea, creation_time FROM documentdb_api_internal.empty_data_table()")
-	if err = row.Scan(&outShardKeyValue, &outObjectID, &outDocument, &outCreationTime); err != nil {
+	row := conn.QueryRow(ctx, "SELECT shard_key_value, object_id::bytea, document::bytea FROM documentdb_api_internal.empty_data_table()")
+	if err = row.Scan(&outShardKeyValue, &outObjectID, &outDocument); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.empty_data_table", l)
 	}
 	return
@@ -2268,6 +2814,20 @@ func GenerateUniqueShardDocument(ctx context.Context, conn *pgx.Conn, l *slog.Lo
 	return
 }
 
+// GetBloatStatsWorker is a wrapper for
+//
+//	documentdb_api_internal.get_bloat_stats_worker(p_collection_id bigint, OUT get_bloat_stats_worker documentdb_core.bson).
+func GetBloatStatsWorker(ctx context.Context, conn *pgx.Conn, l *slog.Logger, collectionId int64) (outGetBloatStatsWorker wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.get_bloat_stats_worker", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT get_bloat_stats_worker::bytea FROM documentdb_api_internal.get_bloat_stats_worker($1)", collectionId)
+	if err = row.Scan(&outGetBloatStatsWorker); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.get_bloat_stats_worker", l)
+	}
+	return
+}
+
 // GetShardKeyValue is a wrapper for
 //
 //	documentdb_api_internal.get_shard_key_value(p_shard_key documentdb_core.bson, p_collection_id bigint, p_document documentdb_core.bson, OUT get_shard_key_value bigint).
@@ -2278,6 +2838,76 @@ func GetShardKeyValue(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shard
 	row := conn.QueryRow(ctx, "SELECT get_shard_key_value FROM documentdb_api_internal.get_shard_key_value($1::bytea, $2, $3::bytea)", shardKey, collectionId, document)
 	if err = row.Scan(&outGetShardKeyValue); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.get_shard_key_value", l)
+	}
+	return
+}
+
+// GinBsonCompositePathComparePartial is a wrapper for
+//
+//	documentdb_api_internal.gin_bson_composite_path_compare_partial(anonymous bytea, anonymous1 bytea, anonymous12 smallint, anonymous123 internal, OUT gin_bson_composite_path_compare_partial integer).
+func GinBsonCompositePathComparePartial(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}, anonymous12 struct{}, anonymous123 struct{}) (outGinBsonCompositePathComparePartial int32, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.gin_bson_composite_path_compare_partial", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT gin_bson_composite_path_compare_partial FROM documentdb_api_internal.gin_bson_composite_path_compare_partial($1, $2, $3, $4)", anonymous, anonymous1, anonymous12, anonymous123)
+	if err = row.Scan(&outGinBsonCompositePathComparePartial); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.gin_bson_composite_path_compare_partial", l)
+	}
+	return
+}
+
+// GinBsonCompositePathConsistent is a wrapper for
+//
+//	documentdb_api_internal.gin_bson_composite_path_consistent(anonymous internal, anonymous1 smallint, anonymous12 anyelement, anonymous123 integer, anonymous1234 internal, anonymous12345 internal, OUT gin_bson_composite_path_consistent boolean).
+func GinBsonCompositePathConsistent(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}, anonymous12 struct{}, anonymous123 int32, anonymous1234 struct{}, anonymous12345 struct{}) (outGinBsonCompositePathConsistent bool, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.gin_bson_composite_path_consistent", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT gin_bson_composite_path_consistent FROM documentdb_api_internal.gin_bson_composite_path_consistent($1, $2, $3, $4, $5, $6)", anonymous, anonymous1, anonymous12, anonymous123, anonymous1234, anonymous12345)
+	if err = row.Scan(&outGinBsonCompositePathConsistent); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.gin_bson_composite_path_consistent", l)
+	}
+	return
+}
+
+// GinBsonCompositePathExtractQuery is a wrapper for
+//
+//	documentdb_api_internal.gin_bson_composite_path_extract_query(anonymous documentdb_core.bson, anonymous1 internal, anonymous12 smallint, anonymous123 internal, anonymous1234 internal, anonymous12345 internal, anonymous123456 internal, OUT gin_bson_composite_path_extract_query internal).
+func GinBsonCompositePathExtractQuery(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 struct{}, anonymous12 struct{}, anonymous123 struct{}, anonymous1234 struct{}, anonymous12345 struct{}, anonymous123456 struct{}) (outGinBsonCompositePathExtractQuery struct{}, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.gin_bson_composite_path_extract_query", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT gin_bson_composite_path_extract_query FROM documentdb_api_internal.gin_bson_composite_path_extract_query($1::bytea, $2, $3, $4, $5, $6, $7)", anonymous, anonymous1, anonymous12, anonymous123, anonymous1234, anonymous12345, anonymous123456)
+	if err = row.Scan(&outGinBsonCompositePathExtractQuery); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.gin_bson_composite_path_extract_query", l)
+	}
+	return
+}
+
+// GinBsonCompositePathExtractValue is a wrapper for
+//
+//	documentdb_api_internal.gin_bson_composite_path_extract_value(anonymous documentdb_core.bson, anonymous1 internal, OUT gin_bson_composite_path_extract_value internal).
+func GinBsonCompositePathExtractValue(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 struct{}) (outGinBsonCompositePathExtractValue struct{}, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.gin_bson_composite_path_extract_value", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT gin_bson_composite_path_extract_value FROM documentdb_api_internal.gin_bson_composite_path_extract_value($1::bytea, $2)", anonymous, anonymous1)
+	if err = row.Scan(&outGinBsonCompositePathExtractValue); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.gin_bson_composite_path_extract_value", l)
+	}
+	return
+}
+
+// GinBsonCompositePathOptions is a wrapper for
+//
+//	documentdb_api_internal.gin_bson_composite_path_options(anonymous internal).
+func GinBsonCompositePathOptions(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.gin_bson_composite_path_options", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_internal.gin_bson_composite_path_options($1)", anonymous)
+	if err = row.Scan(); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.gin_bson_composite_path_options", l)
 	}
 	return
 }
@@ -2604,16 +3234,16 @@ func RumBsonTextPathOptions(ctx context.Context, conn *pgx.Conn, l *slog.Logger,
 	return
 }
 
-// ScheduleBackgroundIndexBuildWorkers is a wrapper for
+// ScheduleBackgroundIndexBuildJobs is a wrapper for
 //
-//	documentdb_api_internal.schedule_background_index_build_workers(p_max_num_active_user_index_builds integer DEFAULT (current_setting(('documentdb', p_user_index_build_schedule integer DEFAULT (current_setting(('documentdb').
-func ScheduleBackgroundIndexBuildWorkers(ctx context.Context, conn *pgx.Conn, l *slog.Logger, maxNumActiveUserIndexBuilds int32, userIndexBuildSchedule int32) (err error) {
-	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.schedule_background_index_build_workers", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+//	documentdb_api_internal.schedule_background_index_build_jobs(p_force_override boolean DEFAULT false).
+func ScheduleBackgroundIndexBuildJobs(ctx context.Context, conn *pgx.Conn, l *slog.Logger, forceOverride bool) (err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.schedule_background_index_build_jobs", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_internal.schedule_background_index_build_workers($1, $2)", maxNumActiveUserIndexBuilds, userIndexBuildSchedule)
+	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api_internal.schedule_background_index_build_jobs($1)", forceOverride)
 	if err = row.Scan(); err != nil {
-		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.schedule_background_index_build_workers", l)
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.schedule_background_index_build_jobs", l)
 	}
 	return
 }
@@ -2754,6 +3384,20 @@ func TriggerValidateDbname(ctx context.Context, conn *pgx.Conn, l *slog.Logger) 
 	row := conn.QueryRow(ctx, "SELECT trigger_validate_dbname FROM documentdb_api_internal.trigger_validate_dbname()")
 	if err = row.Scan(&outTriggerValidateDbname); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.trigger_validate_dbname", l)
+	}
+	return
+}
+
+// UpdateBsonDocument is a wrapper for
+//
+//	documentdb_api_internal.update_bson_document(document documentdb_core.bson, updatespec documentdb_core.bson, queryspec documentdb_core.bson, arrayfilters documentdb_core.bson DEFAULT NULL, variablespec documentdb_core.bson DEFAULT NULL, OUT newdocument documentdb_core.bson).
+func UpdateBsonDocument(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, updateSpec wirebson.RawDocument, querySpec wirebson.RawDocument, arrayfilters wirebson.RawDocument, variableSpec wirebson.RawDocument) (outNewdocument wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api_internal.update_bson_document", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT newdocument::bytea FROM documentdb_api_internal.update_bson_document($1::bytea, $2::bytea, $3::bytea, $4::bytea, $5::bytea)", document, updateSpec, querySpec, arrayfilters, variableSpec)
+	if err = row.Scan(&outNewdocument); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api_internal.update_bson_document", l)
 	}
 	return
 }

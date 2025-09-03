@@ -44,7 +44,7 @@ The following steps describe a quick local setup:
          - ./data:/var/lib/postgresql/data
 
      ferretdb:
-       image: ghcr.io/ferretdb/ferretdb
+       image: ghcr.io/ferretdb/ferretdb:1
        restart: on-failure
        ports:
          - 27017:27017
@@ -99,7 +99,7 @@ The following steps describe the setup for SQLite:
    ```yaml
    services:
      ferretdb:
-       image: ghcr.io/ferretdb/ferretdb
+       image: ghcr.io/ferretdb/ferretdb:1
        restart: on-failure
        ports:
          - 27017:27017

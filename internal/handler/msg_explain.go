@@ -24,42 +24,33 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgExplain implements `explain` command.
+// msgExplain implements `explain` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgExplain(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	opID := h.operations.Start("command")
-	defer h.operations.Stop(opID)
+func (h *Handler) msgExplain(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	doc := req.Document()
 
-	spec, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+
+	command := doc.Command()
 
 	dbName, err := getRequiredParam[string](doc, "$db")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	explainV, err := getRequiredParamAny(doc, "explain")
+	explainV, err := getRequiredParamAny(doc, command)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -67,7 +58,7 @@ func (h *Handler) MsgExplain(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 	explainSpec, ok := explainV.(wirebson.RawDocument)
 	if !ok {
 		msg := fmt.Sprintf(`required parameter "explain" has type %T (expected document)`, explainV)
-		return nil, lazyerrors.Error(mongoerrors.NewWithArgument(mongoerrors.ErrBadValue, msg, "explain"))
+		return nil, lazyerrors.Error(mongoerrors.NewWithArgument(mongoerrors.ErrBadValue, msg, command))
 	}
 
 	explainDoc, err := explainSpec.Decode()
@@ -82,15 +73,15 @@ func (h *Handler) MsgExplain(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	cmd := explainDoc.Command()
 
-	collection, ok := explainDoc.Get(cmd).(string)
-	if !ok {
-		return nil, mongoerrors.NewWithArgument(mongoerrors.ErrInvalidNamespace, "Failed to parse namespace element", "explain")
+	if _, ok = explainDoc.Get(cmd).(string); !ok {
+		return nil, mongoerrors.NewWithArgument(
+			mongoerrors.ErrInvalidNamespace,
+			"Failed to parse namespace element",
+			command,
+		)
 	}
 
-	h.operations.Update(opID, dbName, collection, doc)
-
 	var f string
-
 	switch cmd {
 	case "aggregate":
 		f = "documentdb_api_catalog.bson_aggregation_pipeline"
@@ -102,7 +93,7 @@ func (h *Handler) MsgExplain(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, mongoerrors.NewWithArgument(
 			mongoerrors.ErrNotImplemented,
 			fmt.Sprintf("explain for %s command is not supported", cmd),
-			"explain",
+			command,
 		)
 	}
 
@@ -113,7 +104,7 @@ func (h *Handler) MsgExplain(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		f,
 	)
 
-	conn, err := h.Pool.Acquire()
+	conn, err := h.p.Acquire()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -145,17 +136,17 @@ func (h *Handler) MsgExplain(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		}
 	}
 
-	serverInfo := must.NotFail(wirebson.NewDocument(
+	serverInfo := wirebson.MustDocument(
 		"host", hostname,
 		"port", int32(port),
 		"version", version.Get().MongoDBVersion,
 		"gitVersion", version.Get().Commit,
 
 		// our extensions
-		"ferretdb", must.NotFail(wirebson.NewDocument(
+		"ferretdb", wirebson.MustDocument(
 			"version", version.Get().Version,
-		)),
-	))
+		),
+	)
 
 	res, err := wirebson.NewDocument(
 		"queryPlanner", queryPlan,
@@ -168,12 +159,7 @@ func (h *Handler) MsgExplain(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
-	reply, err := res.Encode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return wire.NewOpMsg(reply)
+	return middleware.ResponseDoc(req, res)
 }
 
 // unmarshalExplain unmarshalls the plan from EXPLAIN postgreSQL command.
@@ -191,7 +177,7 @@ func unmarshalExplain(b []byte) (*wirebson.Document, error) {
 	return convertJSON(plans[0]).(*wirebson.Document), nil
 }
 
-// convertJSON transforms decoded JSON map[string]any value into bson.Document.
+// convertJSON transforms decoded JSON map[string]any value into [*wirebson.Document].
 func convertJSON(value any) any {
 	switch value := value.(type) {
 	case map[string]any:

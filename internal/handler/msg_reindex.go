@@ -19,32 +19,24 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgReIndex implements `reIndex` command.
+// msgReIndex implements `reIndex` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+func (h *Handler) msgReIndex(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	doc := req.Document()
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
-	}
-
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
 	}
 
 	dbName, err := getRequiredParam[string](doc, "$db")
@@ -73,7 +65,7 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		)
 	}
 
-	conn, err := h.Pool.Acquire()
+	conn, err := h.p.Acquire()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -85,12 +77,14 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		"cursor", wirebson.MustDocument("batchSize", int32(10000)),
 	).Encode())
 
-	listRes, cursorID, err := h.Pool.ListIndexes(connCtx, dbName, listIndexesSpec)
+	listRes, cursorID, err := h.p.ListIndexes(connCtx, dbName, listIndexesSpec)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	if cursorID != 0 {
+		_ = h.p.KillCursor(connCtx, cursorID)
+
 		return nil, lazyerrors.New("too many indexes for re-indexing")
 	}
 
@@ -114,8 +108,6 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
-	// this currently fails due to
-	// TODO https://github.com/FerretDB/FerretDB/issues/4730
 	dropDoc, err := dropRes.DecodeDeep()
 	if err != nil {
 		h.L.DebugContext(connCtx, "MsgReIndex: failed to decode DropIndexes response", logging.Error(err))
@@ -129,7 +121,7 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		"indexes", indexesBefore,
 	).Encode())
 
-	createRes, err := h.createIndexes(connCtx, conn, command, dbName, createSpec)
+	createRes, err := h.createIndexes(connCtx, conn.Conn(), command, dbName, createSpec)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -139,12 +131,14 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
-	listRes, cursorID, err = h.Pool.ListIndexes(connCtx, dbName, listIndexesSpec)
+	listRes, cursorID, err = h.p.ListIndexes(connCtx, dbName, listIndexesSpec)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	if cursorID != 0 {
+		_ = h.p.KillCursor(connCtx, cursorID)
+
 		return nil, lazyerrors.New("too many indexes after re-indexing")
 	}
 
@@ -155,15 +149,10 @@ func (h *Handler) MsgReIndex(connCtx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	indexesAfter := listDoc.Get("cursor").(*wirebson.Document).Get("firstBatch").(*wirebson.Array)
 
-	res, err := wirebson.NewDocument(
+	return middleware.ResponseDoc(req, wirebson.MustDocument(
 		"nIndexesWas", int32(indexesBefore.Len()),
 		"nIndexes", createDoc.Get("numIndexesAfter"),
 		"indexes", indexesAfter,
 		"ok", float64(1),
-	)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return wire.NewOpMsg(res)
+	))
 }

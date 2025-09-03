@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
@@ -39,14 +38,14 @@ func TestOpQuery(t *testing.T) {
 	ctx, conn := s.Ctx, s.WireConn
 
 	t.Run("CollectionNameWithout.$cmd", func(t *testing.T) {
-		q := must.NotFail(wire.NewOpQuery(must.NotFail(wirebson.NewDocument("unknown", int32(1)))))
+		q := wire.MustOpQuery("unknown", int32(1))
 		q.FullCollectionName = "invalid"
 		q.NumberToReturn = -1
 
 		_, resBody, err := conn.Request(ctx, q)
 		require.NoError(t, err)
 
-		resMsg, err := resBody.(*wire.OpReply).RawDocument().Decode()
+		resMsg, err := resBody.(*wire.OpReply).DocumentRaw().Decode()
 		require.NoError(t, err)
 
 		ok := resMsg.Get("ok")
@@ -55,20 +54,20 @@ func TestOpQuery(t *testing.T) {
 		code := resMsg.Get("code")
 		assert.Equal(t, int32(5739101), code)
 
-		expectedMsg := "OP_QUERY is no longer supported. The client driver may require an upgrade."
+		expectedMsg := "OP_QUERY is no longer supported."
 		resErr := resMsg.Get("$err")
 		assert.Contains(t, resErr, expectedMsg)
 	})
 
 	t.Run("UnknownOpQuery", func(t *testing.T) {
-		q := must.NotFail(wire.NewOpQuery(must.NotFail(wirebson.NewDocument("unknown", int32(1)))))
+		q := wire.MustOpQuery("unknown", int32(1))
 		q.FullCollectionName = "admin.$cmd"
 		q.NumberToReturn = -1
 
 		_, resBody, err := conn.Request(ctx, q)
 		require.NoError(t, err)
 
-		resMsg, err := resBody.(*wire.OpReply).RawDocument().Decode()
+		resMsg, err := resBody.(*wire.OpReply).DocumentRaw().Decode()
 		require.NoError(t, err)
 
 		ok := resMsg.Get("ok")
@@ -77,30 +76,30 @@ func TestOpQuery(t *testing.T) {
 		code := resMsg.Get("code")
 		assert.Equal(t, int32(352), code)
 
-		expectedMsg := "Unsupported OP_QUERY command: unknown. The client driver may require an upgrade."
+		expectedMsg := "Unsupported OP_QUERY command: unknown."
 		errMsg := resMsg.Get("errmsg")
 		assert.Contains(t, errMsg, expectedMsg)
 	})
 
 	t.Run("BadNumberToReturn", func(t *testing.T) {
-		q := must.NotFail(wire.NewOpQuery(must.NotFail(wirebson.NewDocument("ismaster", int32(1)))))
+		q := wire.MustOpQuery("ismaster", int32(1))
 		q.FullCollectionName = "admin.$cmd"
 		q.NumberToReturn = 0
 
 		_, resBody, err := conn.Request(ctx, q)
 		require.NoError(t, err)
 
-		res, err := resBody.(*wire.OpReply).RawDocument().Decode()
+		res, err := resBody.(*wire.OpReply).DocumentRaw().Decode()
 		require.NoError(t, err)
 
-		fixCluster(t, res)
+		FixCluster(t, res)
 
-		expected := must.NotFail(wirebson.NewDocument(
+		expected := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "Bad numberToReturn (0) for $cmd type ns - can only be 1 or -1",
 			"code", int32(16979),
 			"codeName", "Location16979",
-		))
+		)
 
 		testutil.AssertEqual(t, expected, res)
 	})
@@ -124,7 +123,7 @@ func TestOpQueryIsMaster(t *testing.T) {
 		t.Run(name, func(tt *testing.T) {
 			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/955")
 
-			q := must.NotFail(wire.NewOpQuery(must.NotFail(wirebson.NewDocument(tc.command, int32(1)))))
+			q := wire.MustOpQuery(tc.command, int32(1))
 			q.FullCollectionName = "admin.$cmd"
 			q.NumberToReturn = -1
 
@@ -132,7 +131,7 @@ func TestOpQueryIsMaster(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotZero(t, resHeader.RequestID)
 
-			res, err := resBody.(*wire.OpReply).RawDocument().Decode()
+			res, err := resBody.(*wire.OpReply).DocumentRaw().Decode()
 			require.NoError(t, err)
 
 			connectionID := res.Get("connectionId")
@@ -154,9 +153,9 @@ func TestOpQueryIsMaster(t *testing.T) {
 			res.Remove("electionId")
 			res.Remove("lastWrite")
 
-			fixCluster(t, res)
+			FixCluster(t, res)
 
-			expectedComparable := must.NotFail(wirebson.NewDocument(
+			expectedComparable := wirebson.MustDocument(
 				"ismaster", true,
 				"maxBsonObjectSize", int32(16777216),
 				"maxMessageSizeBytes", int32(48000000),
@@ -166,7 +165,7 @@ func TestOpQueryIsMaster(t *testing.T) {
 				"maxWireVersion", int32(21),
 				"readOnly", false,
 				"ok", float64(1),
-			))
+			)
 			testutil.AssertEqual(t, expectedComparable, res)
 		})
 	}
@@ -190,10 +189,10 @@ func TestOpQueryIsMasterHelloOk(t *testing.T) {
 		t.Run(name, func(tt *testing.T) {
 			t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/955")
 
-			q := must.NotFail(wire.NewOpQuery(must.NotFail(wirebson.NewDocument(
+			q := wire.MustOpQuery(
 				tc.command, int32(1),
 				"helloOk", true,
-			))))
+			)
 			q.FullCollectionName = "admin.$cmd"
 			q.NumberToReturn = -1
 
@@ -201,7 +200,7 @@ func TestOpQueryIsMasterHelloOk(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotZero(t, resHeader.RequestID)
 
-			res, err := resBody.(*wire.OpReply).RawDocument().Decode()
+			res, err := resBody.(*wire.OpReply).DocumentRaw().Decode()
 			require.NoError(t, err)
 
 			connectionID := res.Get("connectionId")
@@ -223,9 +222,9 @@ func TestOpQueryIsMasterHelloOk(t *testing.T) {
 			res.Remove("electionId")
 			res.Remove("lastWrite")
 
-			fixCluster(t, res)
+			FixCluster(t, res)
 
-			expectedComparable := must.NotFail(wirebson.NewDocument(
+			expectedComparable := wirebson.MustDocument(
 				"helloOk", true,
 				"ismaster", true,
 				"maxBsonObjectSize", int32(16777216),
@@ -236,7 +235,7 @@ func TestOpQueryIsMasterHelloOk(t *testing.T) {
 				"maxWireVersion", int32(21),
 				"readOnly", false,
 				"ok", float64(1),
-			))
+			)
 			testutil.AssertEqual(t, expectedComparable, res)
 		})
 	}
@@ -253,16 +252,16 @@ func TestOpQueryHello(tt *testing.T) {
 
 	ctx, conn := s.Ctx, s.WireConn
 
-	q := must.NotFail(wire.NewOpQuery(must.NotFail(wirebson.NewDocument(
+	q := wire.MustOpQuery(
 		"hello", int32(1),
-	))))
+	)
 	q.FullCollectionName = "admin.$cmd"
 	q.NumberToReturn = -1
 
 	_, resBody, err := conn.Request(ctx, q)
 	require.NoError(t, err)
 
-	res, err := resBody.(*wire.OpReply).RawDocument().Decode()
+	res, err := resBody.(*wire.OpReply).DocumentRaw().Decode()
 	require.NoError(t, err)
 
 	connectionID := res.Get("connectionId")
@@ -284,9 +283,9 @@ func TestOpQueryHello(tt *testing.T) {
 	res.Remove("electionId")
 	res.Remove("lastWrite")
 
-	fixCluster(t, res)
+	FixCluster(t, res)
 
-	expectedComparable := must.NotFail(wirebson.NewDocument(
+	expectedComparable := wirebson.MustDocument(
 		"isWritablePrimary", true,
 		"maxBsonObjectSize", int32(16777216),
 		"maxMessageSizeBytes", int32(48000000),
@@ -296,6 +295,6 @@ func TestOpQueryHello(tt *testing.T) {
 		"maxWireVersion", int32(21),
 		"readOnly", false,
 		"ok", float64(1),
-	))
+	)
 	testutil.AssertEqual(t, expectedComparable, res)
 }

@@ -18,73 +18,58 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgDistinct implements `distinct` command.
+// msgDistinct implements `distinct` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgDistinct(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	opID := h.operations.Start("query")
-	defer h.operations.Stop(opID)
+func (h *Handler) msgDistinct(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	doc := req.Document()
 
-	spec, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	command := doc.Command()
 
 	dbName, err := getRequiredParam[string](doc, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	collection, ok := doc.Get(doc.Command()).(string)
+	collection, ok := doc.Get(command).(string)
 	if !ok {
 		return nil, mongoerrors.NewWithArgument(
 			mongoerrors.ErrInvalidNamespace,
 			"Failed to parse namespace element",
-			doc.Command(),
+			command,
 		)
 	}
-
-	h.operations.Update(opID, dbName, collection, doc)
 
 	if collection == "" {
 		return nil, mongoerrors.NewWithArgument(
 			mongoerrors.ErrInvalidNamespace,
 			fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collection),
-			doc.Command(),
+			command,
 		)
 	}
 
-	conn, err := h.Pool.Acquire()
+	var res wirebson.RawDocument
+
+	err = h.p.WithConn(func(conn *pgx.Conn) error {
+		res, err = documentdb_api.DistinctQuery(connCtx, conn, h.L, dbName, req.DocumentRaw())
+		return err
+	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	defer conn.Release()
 
-	res, err := documentdb_api.DistinctQuery(connCtx, conn.Conn(), h.L, dbName, spec)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if msg, err = wire.NewOpMsg(res); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return msg, nil
+	return middleware.ResponseDoc(req, res)
 }

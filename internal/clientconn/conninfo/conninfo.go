@@ -19,10 +19,12 @@ import (
 	"net/netip"
 	"sync"
 
+	"github.com/FerretDB/FerretDB/v2/internal/util/resource"
 	"github.com/FerretDB/FerretDB/v2/internal/util/scram"
 )
 
 // ConnInfo represents client connection information.
+// It must be one-to-one mapped to a client connection.
 type ConnInfo struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
@@ -31,11 +33,34 @@ type ConnInfo struct {
 	rw           sync.RWMutex   // rw
 	metadataRecv bool           // protected by rw
 	steps        int            // protected by rw
+
+	token   *resource.Token
+	onClose func(*ConnInfo)
 }
 
 // New creates a new ConnInfo.
 func New() *ConnInfo {
-	return new(ConnInfo)
+	res := &ConnInfo{
+		token: resource.NewToken(),
+	}
+
+	resource.Track(res, res.token)
+
+	return res
+}
+
+// Close untracks ConnInfo.
+func (ci *ConnInfo) Close() {
+	if ci.onClose != nil {
+		ci.onClose(ci)
+	}
+
+	resource.Untrack(ci, ci.token)
+}
+
+// OnClose sets a callback to be called when ConnInfo is [Close]'d.
+func (ci *ConnInfo) OnClose(f func(*ConnInfo)) {
+	ci.onClose = f
 }
 
 // Conv returns SCRAM conversation.

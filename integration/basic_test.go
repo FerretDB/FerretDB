@@ -27,6 +27,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/otel"
 
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/observability"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 
@@ -34,11 +35,10 @@ import (
 	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
-func TestCommandCaseSensitive(tt *testing.T) {
-	tt.Parallel()
+func TestCommandCaseSensitive(t *testing.T) {
+	t.Parallel()
 
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB-DocumentDB/issues/9")
-	ctx, collection := setup.Setup(tt)
+	ctx, collection := setup.Setup(t)
 
 	db := collection.Database()
 
@@ -88,8 +88,7 @@ func TestInsertFind(t *testing.T) {
 
 	for _, expected := range shareddata.Docs(providers...) {
 		expected := expected.(bson.D)
-		id, ok := expected.Map()["_id"]
-		require.True(t, ok)
+		id := GetKey(t, expected, "_id")
 
 		t.Run(fmt.Sprint(id), func(t *testing.T) {
 			t.Parallel()
@@ -522,37 +521,89 @@ func TestDebugCommandErrors(t *testing.T) {
 
 	t.Parallel()
 
-	ctx, collection := setup.Setup(t)
-	db := collection.Database()
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{PoolSize: 1})
+	db := s.Collection.Database()
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/2412
+	t.Run("NotString", func(t *testing.T) {
+		res := db.RunCommand(s.Ctx, bson.D{{"ferretDebugError", 207}})
+
+		expected := mongo.CommandError{
+			Code: int32(mongoerrors.ErrBadValue),
+			Name: mongoerrors.ErrBadValue.String(),
+		}
+		AssertMatchesCommandError(t, expected, res.Err())
+
+		msg := `(BadValue) required parameter "ferretDebugError" has type int32 (expected string)`
+		assert.EqualError(t, res.Err(), msg)
+
+		var doc bson.D
+		require.Error(t, res.Decode(&doc))
+
+		require.NoError(t, db.Client().Ping(s.Ctx, nil), "connection should not be closed")
+	})
+
+	t.Run("ErrorCode", func(t *testing.T) {
+		res := db.RunCommand(s.Ctx, bson.D{{"ferretDebugError", "207"}})
+
+		expected := mongo.CommandError{
+			Code: int32(mongoerrors.ErrInvalidUUID),
+			Name: mongoerrors.ErrInvalidUUID.String(),
+		}
+		AssertMatchesCommandError(t, expected, res.Err())
+
+		assert.EqualError(t, res.Err(), `(InvalidUUID) debug error message`)
+
+		var doc bson.D
+		require.Error(t, res.Decode(&doc))
+
+		require.NoError(t, db.Client().Ping(s.Ctx, nil), "connection should not be closed")
+	})
+
+	t.Run("OK", func(t *testing.T) {
+		res := db.RunCommand(s.Ctx, bson.D{{"ferretDebugError", "ok"}})
+
+		assert.NoError(t, res.Err())
+
+		var doc bson.D
+		require.NoError(t, res.Decode(&doc))
+		assert.Equal(t, bson.D{{"ok", float64(1)}}, doc)
+
+		require.NoError(t, db.Client().Ping(s.Ctx, nil), "connection should not be closed")
+	})
 
 	t.Run("LazyError", func(t *testing.T) {
-		t.Parallel()
+		res := db.RunCommand(s.Ctx, bson.D{{"ferretDebugError", "lazy error"}})
 
-		err := db.RunCommand(ctx, bson.D{{"debugError", "lazy error"}}).Err()
 		expected := mongo.CommandError{
-			Code: 1,
-			Name: "InternalError",
+			Code: int32(mongoerrors.ErrInternalError),
+			Name: mongoerrors.ErrInternalError.String(),
 		}
-		AssertMatchesCommandError(t, expected, err)
-		assert.Regexp(t, `msg_debugerror\.go.+MsgDebugError.+lazy error$`, err.Error())
+		AssertMatchesCommandError(t, expected, res.Err())
 
-		require.NoError(t, db.Client().Ping(ctx, nil), "lazy errors should not close connection")
+		msg := `(InternalError) [msg_ferretdebugerror.go:59 handler.(*Handler).msgFerretDebugError] lazy error`
+		assert.EqualError(t, res.Err(), msg)
+
+		var doc bson.D
+		require.Error(t, res.Decode(&doc))
+
+		require.NoError(t, db.Client().Ping(s.Ctx, nil), "connection should not be closed")
 	})
 
 	t.Run("OtherError", func(t *testing.T) {
-		t.Parallel()
+		res := db.RunCommand(s.Ctx, bson.D{{"ferretDebugError", "other error"}})
 
-		err := db.RunCommand(ctx, bson.D{{"debugError", "other error"}}).Err()
 		expected := mongo.CommandError{
-			Code: 1,
-			Name: "InternalError",
+			Code: int32(mongoerrors.ErrInternalError),
+			Name: mongoerrors.ErrInternalError.String(),
 		}
-		AssertMatchesCommandError(t, expected, err)
-		assert.ErrorContains(t, err, "other error")
+		AssertMatchesCommandError(t, expected, res.Err())
 
-		require.NoError(t, db.Client().Ping(ctx, nil), "other errors should not close connection")
+		assert.EqualError(t, res.Err(), "(InternalError) other error")
+
+		var doc bson.D
+		require.Error(t, res.Decode(&doc))
+
+		require.NoError(t, db.Client().Ping(s.Ctx, nil), "connection should not be closed")
 	})
 }
 

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package main contains linter for blog posts.
+// Package main contains linter for documentation and blog posts.
 package main
 
 import (
@@ -28,6 +28,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/FerretDB/gh"
+
 	"github.com/FerretDB/FerretDB/v2/tools/github"
 )
 
@@ -37,15 +39,100 @@ func main() {
 		log.Fatal(err)
 	}
 
+	docsFiles, err := getMarkdownFiles(filepath.Join("website", "docs"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	p, err := github.CacheFilePath()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	client, err := github.NewClient(p, log.Printf, gh.NoopPrintf, gh.NoopPrintf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	err = checkBlogFiles(blogFiles)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = checkDocFiles(client, docsFiles)
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-// issueRE represents FerretDB and microsoft issue url.
+// checkDocFiles checks files are valid.
+func checkDocFiles(client *github.Client, files []string) error {
+	var failed bool
+
+	for _, file := range files {
+		docFailed, err := checkDocFile(client, file)
+		if err != nil {
+			return err
+		}
+
+		if docFailed {
+			failed = true
+		}
+	}
+
+	if failed {
+		return fmt.Errorf("one or more docs contain invalid issue URLs")
+	}
+
+	return nil
+}
+
+// checkDocFile verifies the file contain valid issue URLs.
+func checkDocFile(client *github.Client, file string) (bool, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return true, fmt.Errorf("could not read file %s: %s", file, err)
+	}
+
+	defer func() {
+		if err = f.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	issueURLFailed, err := checkIssueURLs(client, f, file, log.Default())
+	if err != nil {
+		log.Printf("%q: %s", file, err)
+	}
+
+	return issueURLFailed, nil
+}
+
+// getMarkdownFiles returns markdown files in the given directory.
+func getMarkdownFiles(path string) ([]string, error) {
+	var markdownFiles []string
+
+	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if filepath.Ext(path) == ".md" || filepath.Ext(path) == ".mdx" {
+			markdownFiles = append(markdownFiles, path)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return markdownFiles, nil
+}
+
+// issueRE represents FerretDB and documentdb issue url.
 // It returns owner, repo and issue number as submatches.
-var issueRE = regexp.MustCompile(`\Qhttps://github.com/\E(FerretDB|microsoft)/([-\w]+)/issues/(\d+)`)
+var issueRE = regexp.MustCompile(`\Qhttps://github.com/\E(FerretDB|documentdb)/([-\w]+)/issues/(\d+)`)
 
 // checkBlogFiles verifies that blog posts are correctly formatted.
 func checkBlogFiles(files []string) error {
@@ -235,13 +322,13 @@ func verifyTags(fm []byte) error {
 	return nil
 }
 
-// checkIssueURLs validates FerretDB and microsoft issues URLs if they occur in the r [io.Reader].
+// checkIssueURLs validates FerretDB and documentdb issues URLs if they occur in the r [io.Reader].
 // If URL formatting is invalid, the represented issue is closed or not found - the appropriate
 // message is sent to l [*log.Logger].
 //
 // At the end of scan the true value is returned if any of above was detected.
 // An error is returned only if something fatal happened.
-func checkIssueURLs(client *github.Client, r io.Reader, l *log.Logger) (bool, error) {
+func checkIssueURLs(client *github.Client, r io.Reader, filename string, l *log.Logger) (bool, error) {
 	s := bufio.NewScanner(r)
 
 	var failed bool
@@ -269,7 +356,7 @@ func checkIssueURLs(client *github.Client, r io.Reader, l *log.Logger) (bool, er
 		}
 
 		if num <= 0 {
-			l.Printf("incorrect issue number: %s\n", line)
+			l.Printf("incorrect issue number: %s in %s\n", line, filename)
 			failed = true
 
 			continue
@@ -287,15 +374,15 @@ func checkIssueURLs(client *github.Client, r io.Reader, l *log.Logger) (bool, er
 		case github.IssueClosed:
 			failed = true
 
-			l.Printf("linked issue %s is closed", url)
+			l.Printf("linked issue %s is closed in %s", url, filename)
 
 		case github.IssueNotFound:
 			failed = true
 
-			l.Printf("linked issue %s is not found", url)
+			l.Printf("linked issue %s is not found in %s", url, filename)
 
 		default:
-			return false, fmt.Errorf("unknown issue status: %s", status)
+			return false, fmt.Errorf("unknown issue status: %s in %s", status, filename)
 		}
 	}
 

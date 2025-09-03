@@ -33,8 +33,11 @@ type contextKey struct{}
 // Context key for [fileLock] in context returned by [Ctx].
 var fileLockKey = contextKey{}
 
-// Ctx returns test context.
+// Ctx returns test context with OpenTelemetry span, that also can be used with [Exclusive].
 // It is canceled when test is finished or interrupted.
+//
+// Integration tests should use this function.
+// Many unit tests could use the standard [testing.T.Context] instead.
 func Ctx(tb testing.TB) context.Context {
 	tb.Helper()
 
@@ -95,11 +98,11 @@ func Exclusive(ctx context.Context, reason string) {
 	fl.tb.Helper()
 
 	require.NotEmpty(fl.tb, reason)
-	fl.tb.Logf("%s waits for exclusive flock: %s.", fl.tb.Name(), reason)
+	fl.tb.Logf("%s waits for exclusive flock: %s", fl.tb.Name(), reason)
 
 	start := time.Now()
 
 	fl.Lock()
 
-	fl.tb.Logf("%s got exclusive flock in %s.", fl.tb.Name(), time.Since(start))
+	fl.tb.Logf("%s got exclusive flock in %s", fl.tb.Name(), time.Since(start))
 }

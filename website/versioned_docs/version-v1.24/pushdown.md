@@ -32,7 +32,7 @@ the table will be updated frequently.
 :::
 
 <!-- markdownlint-capture -->
-<!-- markdownlint-disable MD001 MD033 MD051 -->
+<!-- markdownlint-disable MD001 MD051 -->
 
 |        | Object | Array | Double                  | String | Binary | ObjectID | Boolean | Date | Null | Regex | Integer | Timestamp | Long                    |
 | ------ | ------ | ----- | ----------------------- | ------ | ------ | -------- | ------- | ---- | ---- | ----- | ------- | --------- | ----------------------- |

@@ -21,12 +21,11 @@ import "context"
 // See also:
 // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/143
 //
-// We use documentdb_api_catalog schema for `listDatabases` and `explain` commands.
-// TODO https://github.com/FerretDB/FerretDB/issues/4722
+// We use documentdb_api_catalog schema for `explain` command.
 //
 // We use documentdb_api_internal schema for indexes and authentication:
-// TODO https://github.com/microsoft/documentdb/issues/25
-// TODO https://github.com/microsoft/documentdb/issues/46
+// TODO https://github.com/documentdb/documentdb/issues/25
+// TODO https://github.com/documentdb/documentdb/issues/46
 //
 // And we generate code for documentdb_core just to track changes.
 //

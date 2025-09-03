@@ -16,12 +16,16 @@ package state
 
 import (
 	"encoding/json"
+	"expvar"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
+
+	"github.com/FerretDB/FerretDB/v2/internal/util/iface"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // Provider provides access to FerretDB process state.
@@ -83,11 +87,19 @@ func NewProviderDir(dir string) (*Provider, error) {
 	return sp, nil
 }
 
+// Var returns an unpublished [expvar.Var] for the state.
+func (p *Provider) Var() expvar.Var {
+	return iface.Stringer(func() string {
+		b := must.NotFail(json.Marshal(p.Get().asMap()))
+		return string(b)
+	})
+}
+
 // MetricsCollector returns Prometheus metrics collector for that provider.
 //
-// If addUUIDToMetric is true, then the UUID is added to the Prometheus metric.
-func (p *Provider) MetricsCollector(addUUIDToMetric bool) prometheus.Collector {
-	return newMetricsCollector(p, addUUIDToMetric)
+// If addUUID is true, then the "uuid" label is added.
+func (p *Provider) MetricsCollector(addUUID bool) prometheus.Collector {
+	return newMetricsCollector(p, addUUID)
 }
 
 // Get returns a copy of the current process state.

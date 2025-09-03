@@ -17,30 +17,22 @@ package handler
 import (
 	"context"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgGetParameter implements `getParameter` command.
+// msgGetParameter implements `getParameter` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgGetParameter(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+func (h *Handler) msgGetParameter(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	doc := req.Document()
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
-	}
-
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
 	}
 
 	getParameter := doc.Get(doc.Command())
@@ -50,35 +42,30 @@ func (h *Handler) MsgGetParameter(connCtx context.Context, msg *wire.OpMsg) (*wi
 		return nil, lazyerrors.Error(err)
 	}
 
-	parameters := must.NotFail(wirebson.NewDocument(
-		// to add a new parameter, fill template and place it in the alphabetical order position
-		//"<name>", must.NotFail(bson.NewDocument(
-		//	"value", <value>,
-		//	"settableAtRuntime", <bool>,
-		//	"settableAtStartup", <bool>,
-		//)),
-		"authenticationMechanisms", must.NotFail(wirebson.NewDocument(
-			"value", must.NotFail(wirebson.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256")),
+	parameters := wirebson.MustDocument(
+		"authenticationMechanisms", wirebson.MustDocument(
+			"value", wirebson.MustArray("SCRAM-SHA-1", "SCRAM-SHA-256"),
 			"settableAtRuntime", false,
 			"settableAtStartup", true,
-		)),
-		"authSchemaVersion", must.NotFail(wirebson.NewDocument(
+		),
+		"authSchemaVersion", wirebson.MustDocument(
 			"value", int32(5),
 			"settableAtRuntime", true,
 			"settableAtStartup", true,
-		)),
-		"featureCompatibilityVersion", must.NotFail(wirebson.NewDocument(
-			"value", must.NotFail(wirebson.NewDocument("version", "7.0")),
+		),
+		"featureCompatibilityVersion", wirebson.MustDocument(
+			// TODO https://github.com/FerretDB/FerretDB/issues/5073
+			"value", wirebson.MustDocument("version", "7.0"),
 			"settableAtRuntime", false,
 			"settableAtStartup", false,
-		)),
-		"quiet", must.NotFail(wirebson.NewDocument(
+		),
+		"quiet", wirebson.MustDocument(
 			"value", false,
 			"settableAtRuntime", true,
 			"settableAtStartup", true,
-		)),
+		),
 		// parameters are alphabetically ordered
-	))
+	)
 
 	res, err := selectParameters(doc, parameters, showDetails, allParameters)
 	if err != nil {
@@ -95,11 +82,7 @@ func (h *Handler) MsgGetParameter(connCtx context.Context, msg *wire.OpMsg) (*wi
 
 	must.NoError(res.Add("ok", float64(1)))
 
-	if msg, err = wire.NewOpMsg(res); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return msg, nil
+	return middleware.ResponseDoc(req, res)
 }
 
 // selectParameters makes a selection of requested parameters.

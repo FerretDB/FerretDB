@@ -20,49 +20,48 @@ import (
 	"testing"
 
 	"github.com/AlekSi/pointer"
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
+	"github.com/FerretDB/wire/wiretest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestPrepareOpMsg(t *testing.T) {
+func TestPrepareRequest(t *testing.T) {
 	for name, tc := range map[string]struct {
-		expectedOpMsg *wire.OpMsg
-		expectedErr   error
-		pairs         []any
+		pairs    []any
+		expected *wirebson.Document
+		err      error
 	}{
 		"Simple": {
-			pairs:         []any{"foo", "bar"},
-			expectedOpMsg: wire.MustOpMsg("foo", "bar"),
+			pairs:    []any{"foo", "bar"},
+			expected: wirebson.MustDocument("foo", "bar"),
 		},
 		"RawMessage": {
-			pairs:         []any{"foo", pointer.To(json.RawMessage(`{"foo":"bar"}`))},
-			expectedOpMsg: wire.MustOpMsg("foo", wirebson.MustDocument("foo", "bar")),
+			pairs:    []any{"foo", pointer.To(json.RawMessage(`{"foo":"bar"}`))},
+			expected: wirebson.MustDocument("foo", wirebson.MustDocument("foo", "bar")),
 		},
 		"RawMessageArray": {
-			pairs:         []any{"foo", pointer.To(json.RawMessage(`["foo","bar"]`))},
-			expectedOpMsg: wire.MustOpMsg("foo", wirebson.MustArray("foo", "bar")),
+			pairs:    []any{"foo", pointer.To(json.RawMessage(`["foo","bar"]`))},
+			expected: wirebson.MustDocument("foo", wirebson.MustArray("foo", "bar")),
 		},
 		"Float32": {
-			pairs:         []any{"foo", pointer.To(float32(1))},
-			expectedOpMsg: wire.MustOpMsg("foo", float64(1)),
+			pairs:    []any{"foo", pointer.To(float32(1))},
+			expected: wirebson.MustDocument("foo", float64(1)),
 		},
 		"EmptyRawMessage": {
-			pairs:       []any{"foo", pointer.To(json.RawMessage{})},
-			expectedErr: fmt.Errorf("Invalid object: []"),
+			pairs: []any{"foo", pointer.To(json.RawMessage{})},
+			err:   fmt.Errorf("[server.go:270 server.prepareRequest] Invalid object: []"),
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			actualDoc, err := prepareOpMsg(tc.pairs...)
-			if tc.expectedErr != nil {
-				assert.Equal(t, tc.expectedErr, err)
+			actual, err := prepareRequest(tc.pairs...)
+			if tc.err != nil {
+				assert.EqualError(t, err, tc.err.Error())
 				return
 			}
 
 			require.NoError(t, err)
-
-			assert.Equal(t, tc.expectedOpMsg, actualDoc)
+			wiretest.AssertEqual(t, tc.expected, actual.Document())
 		})
 	}
 }

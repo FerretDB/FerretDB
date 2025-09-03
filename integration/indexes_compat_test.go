@@ -80,14 +80,14 @@ func TestCreateIndexesCompat(t *testing.T) {
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		models     []mongo.IndexModel
-		resultType compatTestCaseResultType // defaults to nonEmptyResult
+		resultType CompatTestCaseResultType // defaults to NonEmptyResult
 
 		skip             string // TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1086
 		failsForFerretDB string
 	}{
 		"Empty": {
 			models:     []mongo.IndexModel{},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"SingleIndex": {
 			models: []mongo.IndexModel{
@@ -103,7 +103,7 @@ func TestCreateIndexesCompat(t *testing.T) {
 			models: []mongo.IndexModel{
 				{Keys: bson.D{{"_id", -1}}},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/297",
 		},
 		"NonExistentField": {
@@ -130,7 +130,7 @@ func TestCreateIndexesCompat(t *testing.T) {
 			models: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}, {"v", 1}}},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/297",
 		},
 		"CustomName": {
@@ -167,7 +167,7 @@ func TestCreateIndexesCompat(t *testing.T) {
 				{Keys: bson.D{{"v", 1}}},
 				{Keys: bson.D{{"v", 1}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/2910",
 			// the error for existing and non-existing collection are different,
 			// below is the error for existing collection.
@@ -190,7 +190,7 @@ func TestCreateIndexesCompat(t *testing.T) {
 					Keys: bson.D{{"v", -1}, {"v", 1}},
 				},
 			},
-			resultType:       emptyResult,
+			resultType:       EmptyResult,
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/297",
 		},
 		"SameKeyDifferentNames": {
@@ -204,7 +204,7 @@ func TestCreateIndexesCompat(t *testing.T) {
 					Options: options.Index().SetName("bar"),
 				},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"SameNameDifferentKeys": {
 			models: []mongo.IndexModel{
@@ -217,7 +217,7 @@ func TestCreateIndexesCompat(t *testing.T) {
 					Options: options.Index().SetName("index-name"),
 				},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -298,9 +298,9 @@ func TestCreateIndexesCompat(t *testing.T) {
 			}
 
 			switch tc.resultType {
-			case nonEmptyResult:
+			case NonEmptyResult:
 				assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
-			case emptyResult:
+			case EmptyResult:
 				assert.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
@@ -315,7 +315,7 @@ func TestDropIndexesCompat(t *testing.T) {
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		dropIndexName    string                   // name of a single index to drop
 		dropAll          bool                     // set true for drop all indexes, if true dropIndexName must be empty.
-		resultType       compatTestCaseResultType // defaults to nonEmptyResult
+		resultType       CompatTestCaseResultType // defaults to NonEmptyResult
 		toCreate         []mongo.IndexModel       // optional, if not nil create indexes before dropping
 		failsForFerretDB string
 	}{
@@ -326,34 +326,31 @@ func TestDropIndexesCompat(t *testing.T) {
 				{Keys: bson.D{{"bar", 1}}},
 				{Keys: bson.D{{"pam.pam", -1}}},
 			},
-			dropAll:          true,
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4730",
+			dropAll: true,
 		},
 		"ID": {
 			dropIndexName: "_id_",
-			resultType:    emptyResult,
+			resultType:    EmptyResult,
 		},
 		"AscendingValue": {
 			toCreate: []mongo.IndexModel{
 				{Keys: bson.D{{"v", 1}}},
 			},
-			dropIndexName:    "v_1",
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4730",
+			dropIndexName: "v_1",
 		},
 		"DescendingValue": {
 			toCreate: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}}},
 			},
-			dropIndexName:    "v_-1",
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/4730",
+			dropIndexName: "v_-1",
 		},
 		"NonExistent": {
 			dropIndexName: "nonexistent_1",
-			resultType:    emptyResult,
+			resultType:    EmptyResult,
 		},
 		"Empty": {
 			dropIndexName: "",
-			resultType:    emptyResult,
+			resultType:    EmptyResult,
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -434,13 +431,13 @@ func TestDropIndexesCompat(t *testing.T) {
 			}
 
 			switch tc.resultType {
-			case nonEmptyResult:
+			case NonEmptyResult:
 				if tc.failsForFerretDB != "" {
 					return
 				}
 
 				require.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
-			case emptyResult:
+			case EmptyResult:
 				require.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
@@ -478,7 +475,7 @@ func TestCreateIndexesCompatUnique(t *testing.T) {
 			insertDoc: bson.D{{"v", "value"}},
 			new:       true,
 			// This test case passes only because of our hack for
-			// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1147
+			// TODO https://github.com/documentdb/documentdb/issues/25
 			// failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/296",
 		},
 		"NotExistingFieldIndex": {
@@ -518,7 +515,7 @@ func TestCreateIndexesCompatUnique(t *testing.T) {
 			},
 			insertDoc: bson.D{{"v", int32(42)}},
 			// This test case passes only because of our hack for
-			// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1147
+			// TODO https://github.com/documentdb/documentdb/issues/25
 			// failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/296",
 		},
 	} {
@@ -597,7 +594,7 @@ func TestCreateIndexesCompatDuplicates(t *testing.T) {
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		models     []mongo.IndexModel       // normal indexes to create
 		duplicates []mongo.IndexModel       // duplicates to attempt to create
-		resultType compatTestCaseResultType // defaults to nonEmptyResult
+		resultType CompatTestCaseResultType // defaults to NonEmptyResult
 	}{
 		"DuplicateByName": {
 			models: []mongo.IndexModel{
@@ -606,7 +603,7 @@ func TestCreateIndexesCompatDuplicates(t *testing.T) {
 			duplicates: []mongo.IndexModel{
 				{Options: &options.IndexOptions{Name: pointer.To("index_foo")}, Keys: bson.D{{"bar", 1}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DuplicateByKey": {
 			models: []mongo.IndexModel{
@@ -615,7 +612,7 @@ func TestCreateIndexesCompatDuplicates(t *testing.T) {
 			duplicates: []mongo.IndexModel{
 				{Options: &options.IndexOptions{Name: pointer.To("index_not_foo")}, Keys: bson.D{{"foo", 1}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DuplicateByPrimaryKey": {
 			models: []mongo.IndexModel{
@@ -624,7 +621,7 @@ func TestCreateIndexesCompatDuplicates(t *testing.T) {
 			duplicates: []mongo.IndexModel{
 				{Options: &options.IndexOptions{Name: pointer.To("index_foo")}, Keys: bson.D{{"_id", 1}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"FullyIdentical": {
 			models: []mongo.IndexModel{

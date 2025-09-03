@@ -22,7 +22,6 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jackc/pgx/v5/tracelog"
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
@@ -35,7 +34,7 @@ import (
 // No actual connections are established immediately.
 // State's version fields will be set only after a connection is established
 // by some query or ping.
-func newPgxPool(uri string, l *slog.Logger, sp *state.Provider) (*pgxpool.Pool, error) {
+func newPgxPool(uri string, l *slog.Logger, tracer pgx.QueryTracer, sp *state.Provider) (*pgxpool.Pool, error) {
 	must.NotBeZero(sp)
 
 	u, err := url.Parse(uri)
@@ -55,20 +54,17 @@ func newPgxPool(uri string, l *slog.Logger, sp *state.Provider) (*pgxpool.Pool, 
 	// versions and parameters could change without FerretDB restart
 	config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
 		// see https://github.com/jackc/pgx/issues/1726#issuecomment-1711612138
-		ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
 
-		return newPgxPoolCheckConn(ctx, conn, l, sp)
+		if e := newPgxPoolCheckConn(ctx, conn, l, sp); e != nil {
+			return lazyerrors.Error(e)
+		}
+
+		return nil
 	}
 
-	// port tracing, tweak logging
-	// TODO https://github.com/FerretDB/FerretDB/issues/3554
-
-	// try to log everything; logger's configuration will skip extra levels if needed
-	config.ConnConfig.Tracer = &tracelog.TraceLog{
-		Logger:   logging.NewPgxLogger(l),
-		LogLevel: tracelog.LogLevelTrace,
-	}
+	config.ConnConfig.Tracer = tracer
 
 	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeCacheStatement
 
@@ -80,18 +76,19 @@ func newPgxPool(uri string, l *slog.Logger, sp *state.Provider) (*pgxpool.Pool, 
 	return p, nil
 }
 
-// newPgxPoolSetDefaults sets default PostgreSQL URI parameters.
+// newPgxPoolSetDefaults sets default PostgreSQL URL parameters.
 //
 // Keep it in sync with docs.
 func newPgxPoolSetDefaults(values url.Values) {
-	// the default is too low
-	if !values.Has("pool_max_conns") {
-		values.Set("pool_max_conns", "50")
+	// https://pkg.go.dev/github.com/jackc/pgx/v5@v5.7.5/pgxpool#ParseConfig's
+	// defaults are too low.
+
+	if !values.Has("pool_min_conns") {
+		values.Set("pool_min_conns", "10")
 	}
 
-	// to avoid the need to close unused pools ourselves
-	if !values.Has("pool_max_conn_idle_time") {
-		values.Set("pool_max_conn_idle_time", "1m")
+	if !values.Has("pool_max_conns") {
+		values.Set("pool_max_conns", "50")
 	}
 
 	// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNECT-APPLICATION-NAME
@@ -115,7 +112,7 @@ func newPgxPoolCheckConn(ctx context.Context, conn *pgx.Conn, l *slog.Logger, sp
 
 	row := conn.QueryRow(ctx, `SELECT version(), documentdb_api.binary_extended_version()`)
 	if err := row.Scan(&postgresqlVersion, &documentdbVersion); err != nil {
-		return lazyerrors.Error(err)
+		return lazyerrors.Errorf("%w (please check DocumentDB installation)", err)
 	}
 
 	if s := sp.Get(); s.PostgreSQLVersion != postgresqlVersion || s.DocumentDBVersion != documentdbVersion {
@@ -127,21 +124,24 @@ func newPgxPoolCheckConn(ctx context.Context, conn *pgx.Conn, l *slog.Logger, sp
 			l.ErrorContext(ctx, "newPgxPoolCheckConn: failed to update state", logging.Error(err))
 		}
 
+		// TODO https://github.com/FerretDB/FerretDB/issues/4989
+		_ = version.DocumentDBSafeToUpdate
+
 		if s.DocumentDBVersion != "" && s.DocumentDBVersion != version.DocumentDB {
 			l.WarnContext(
-				ctx, "newPgxPoolCheckConn: unexpected DocumentDB version",
+				ctx, "Unexpected DocumentDB version; see "+version.DocumentDBURL,
 				slog.String("expected", version.DocumentDB), slog.String("actual", s.DocumentDBVersion),
 			)
 		}
 	}
 
-	if _, err := conn.Exec(ctx, "SET documentdb.enableUserCrud TO true"); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	if _, err := conn.Exec(ctx, "SET documentdb.maxUserLimit TO 100"); err != nil {
-		return lazyerrors.Error(err)
-	}
+	// TODO https://github.com/FerretDB/FerretDB/issues/5085
+	// if _, err := conn.Exec(ctx, "SET documentdb.enableUserCrud TO true"); err != nil {
+	// 	return lazyerrors.Error(err)
+	// }
+	// if _, err := conn.Exec(ctx, "SET documentdb.maxUserLimit TO 100"); err != nil {
+	// 	return lazyerrors.Error(err)
+	// }
 
 	rows, err := conn.Query(ctx, "SHOW ALL")
 	if err != nil {

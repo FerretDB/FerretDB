@@ -34,7 +34,7 @@ and [contributing guidelines](https://github.com/FerretDB/FerretDB/blob/main-v1/
 - Website and blog: https://www.ferretdb.com/.
 - Twitter: [@ferret_db](https://twitter.com/ferret_db).
 - Mastodon: [@ferretdb@techhub.social](https://techhub.social/@ferretdb).
-- [Slack chat](https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A) for quick questions.
+- [Slack chat](https://slack.ferretdb.io/) for quick questions.
 - [GitHub Discussions](https://github.com/FerretDB/FerretDB/discussions) for longer topics.
 - [GitHub Issues](https://github.com/FerretDB/FerretDB/issues) for bugs and missing features.
 - [Open Office Hours meeting](https://calendar.google.com/calendar/event?action=TEMPLATE&tmeid=NGhrZTA5dXZ0MzQzN2gyaGVtZmx2aWxmN2pfMjAyNDA0MDhUMTcwMDAwWiBjX24zN3RxdW9yZWlsOWIwMm0wNzQwMDA3MjQ0QGc&tmsrc=c_n37tquoreil9b02m0740007244%40group.calendar.google.com&scp=ALL)

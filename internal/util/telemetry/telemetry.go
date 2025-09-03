@@ -43,6 +43,13 @@ type Flag struct {
 	v *bool
 }
 
+// NewFlag creates a new Flag.
+func NewFlag(flag *bool) *Flag {
+	return &Flag{
+		v: flag,
+	}
+}
+
 // UnmarshalText is used by Kong to parse a flag value.
 func (s *Flag) UnmarshalText(text []byte) error {
 	v, err := parseValue(string(text))
@@ -85,7 +92,7 @@ func initialState(f *Flag, dnt string, execName string, prev *bool, l *slog.Logg
 		locked = true
 	}
 
-	// telemetry state is disabled and locked via flag, dnt env or binary name
+	// telemetry state is disabled and locked via flag, config, dnt env or binary name
 	if state != nil {
 		// check for conflicts
 		if f.v != nil && *f.v {

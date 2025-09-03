@@ -17,17 +17,17 @@ package mongoerrors
 import (
 	"fmt"
 
-	"github.com/FerretDB/wire"
-	"github.com/FerretDB/wire/wirebson"
-	"go.mongodb.org/mongo-driver/mongo"
-
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 // Error represents MongoDB command error.
 type Error struct {
-	// Command's argument, operator, or aggregation pipeline stage that caused an error.
+	// Command's argument name, operator name, or aggregation pipeline stage name that caused an error.
 	// Used for metrics and telemetry.
+	//
+	// It should not be the command name itself (e.g. "create" or "collStats"),
+	// except when it is a problem with the collection name (i.e. create's or collStats's value).
+	// It also should not be a user-supplied value (e.g. collection name or index name).
 	Argument string
 
 	mongo.CommandError
@@ -71,6 +71,9 @@ func NewWithArgument(code Code, msg, argument string) *Error {
 // Error implements error interface.
 //
 // We overload [mongo.CommandError]'s method to ensure that Error is always passed by pointer.
+//
+// We probably should remove that method and un-embed mongo.CommandError to avoid typed nil error confusion.
+// TODO https://github.com/FerretDB/FerretDB/issues/4965
 func (e *Error) Error() string {
 	return fmt.Sprintf("%[1]s (%[1]d): %[2]v", Code(e.Code), e.Message)
 }
@@ -83,24 +86,4 @@ func (e *Error) GoString() string {
 		`&mongoerrors.Error{Code: %d, Name: %#q, Message: %#q, Argument: %#q, Wrapped: %s}`,
 		e.Code, e.Name, e.Message, e.Argument, goString(e.Wrapped),
 	)
-}
-
-// Msg returns this error as a OP_MSG message.
-func (e *Error) Msg() *wire.OpMsg {
-	return wire.MustOpMsg(
-		"ok", float64(0),
-		"errmsg", e.Message,
-		"code", int32(e.Code),
-		"codeName", e.Name,
-	)
-}
-
-// Reply returns this error as a OP_REPLY message.
-func (e *Error) Reply() *wire.OpReply {
-	return must.NotFail(wire.NewOpReply(wirebson.MustDocument(
-		"ok", float64(0),
-		"errmsg", e.Message,
-		"code", int32(e.Code),
-		"codeName", e.Name,
-	)))
 }

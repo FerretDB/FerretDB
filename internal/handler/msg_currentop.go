@@ -16,64 +16,37 @@ package handler
 
 import (
 	"context"
-	"time"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
+	"github.com/jackc/pgx/v5"
 
+	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgCurrentOp implements `currentOp` command.
+// msgCurrentOp implements `currentOp` command.
 //
 // The passed context is canceled when the client connection is closed.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/3974
-// TODO https://github.com/microsoft/documentdb/issues/59
-func (h *Handler) MsgCurrentOp(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
+func (h *Handler) msgCurrentOp(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	doc := req.Document()
+
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+		return nil, err
+	}
+
+	var res wirebson.RawDocument
+
+	var err error
+	err = h.p.WithConn(func(conn *pgx.Conn) error {
+		res, err = documentdb_api.CurrentOpCommand(connCtx, conn, h.L, req.DocumentRaw())
+		return err
+	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
-		return nil, err
-	}
-
-	ops := h.operations.Operations()
-	inProgress := wirebson.MakeArray(len(ops))
-
-	for _, op := range ops {
-		since := time.Since(op.CurrentOpTime)
-
-		var ns string
-		if op.DB != "" && op.Collection != "" {
-			ns = op.DB + "." + op.Collection
-		}
-
-		opCommand := op.Command
-		if opCommand == nil {
-			opCommand = must.NotFail(wirebson.NewDocument())
-		}
-
-		doc := wirebson.MustDocument(
-			"type", "op",
-			"active", op.Active,
-			"currentOpTime", time.Now().Format(time.RFC3339),
-			"opid", op.OpID,
-			"secs_running", int64(since.Truncate(time.Second).Seconds()),
-			"microsecs_running", since.Microseconds(),
-			"op", op.Op,
-			"ns", ns,
-			"command", opCommand,
-		)
-
-		must.NoError(inProgress.Add(doc))
-	}
-
-	return wire.MustOpMsg(
-		"inprog", inProgress,
-		"ok", float64(1),
-	), nil
+	return middleware.ResponseDoc(req, res)
 }

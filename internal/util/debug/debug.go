@@ -16,13 +16,11 @@
 package debug
 
 import (
-	"archive/zip"
 	"bytes"
 	"context"
 	"errors"
 	_ "expvar" // for metrics
 	"fmt"
-	"io"
 	"log"
 	"log/slog"
 	"maps"
@@ -37,6 +35,7 @@ import (
 	"github.com/arl/statsviz"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	_ "golang.org/x/net/trace"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
@@ -46,6 +45,7 @@ import (
 
 // Parts of Prometheus metric names.
 const (
+	// TODO https://github.com/FerretDB/FerretDB/issues/3420
 	namespace = "ferretdb"
 	subsystem = "debug"
 )
@@ -78,29 +78,6 @@ type ListenOpts struct {
 	R       prometheus.Registerer
 	Livez   Probe
 	Readyz  Probe
-}
-
-// addToZip adds a new file to the zip archive.
-//
-// Passed [io.ReadCloser] is always closed.
-func addToZip(w *zip.Writer, name string, r io.ReadCloser) (err error) {
-	defer func() {
-		if e := r.Close(); e != nil && err == nil {
-			err = e
-		}
-	}()
-
-	f, err := w.CreateHeader(&zip.FileHeader{
-		Name:   name,
-		Method: zip.Deflate,
-	})
-	if err != nil {
-		return
-	}
-
-	_, err = io.Copy(f, r)
-
-	return
 }
 
 // Listen creates a new debug handler and starts listener on the given TCP address.
@@ -139,60 +116,8 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 		}),
 	))
 
-	http.HandleFunc("/debug/archive", func(rw http.ResponseWriter, req *http.Request) {
-		rw.Header().Set("Content-Type", "application/zip")
-		rw.Header().Set(
-			"Content-Disposition",
-			fmt.Sprintf("attachment; filename=ferretdb-%s.zip", time.Now().Format("2006-01-02-15-04-05")),
-		)
-
-		ctx := req.Context()
-		zipWriter := zip.NewWriter(rw)
-		errs := map[string]error{}
-
-		defer func() {
-			files := slices.Sorted(maps.Keys(errs))
-
-			var b bytes.Buffer
-			for _, f := range files {
-				b.WriteString(fmt.Sprintf("%s: %v\n", f, errs[f]))
-			}
-
-			if err := addToZip(zipWriter, "errors.txt", io.NopCloser(&b)); err != nil {
-				l.ErrorContext(ctx, "Failed to add errors.txt to archive", logging.Error(err))
-			}
-
-			if err := zipWriter.Close(); err != nil {
-				l.ErrorContext(ctx, "Failed to close archive", logging.Error(err))
-			}
-		}()
-
-		host := ctx.Value(http.LocalAddrContextKey).(net.Addr)
-		getReq := must.NotFail(http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://%s/", host), nil))
-
-		for file, u := range map[string]struct {
-			path  string
-			query string
-		}{
-			"goroutine.pprof": {path: "/debug/pprof/goroutine"},
-			"heap.pprof":      {path: "/debug/pprof/heap", query: "gc=1"},
-			"profile.pprof":   {path: "/debug/pprof/profile", query: "seconds=5"},
-			"metrics.txt":     {path: "/debug/metrics"}, // includes version, UUID, etc
-			"vars.json":       {path: "/debug/vars"},
-		} {
-			getReq.URL.Path = u.path
-			getReq.URL.RawQuery = u.query
-
-			l.DebugContext(ctx, "Fetching file for archive", slog.String("file", file), slog.String("url", getReq.URL.String()))
-
-			resp, err := http.DefaultClient.Do(getReq)
-			if err == nil {
-				err = addToZip(zipWriter, file, resp.Body)
-			}
-
-			errs[file] = err
-		}
-	})
+	http.HandleFunc("/debug/archive", archiveHandler(l))
+	http.Handle("/debug/archive.zip", http.RedirectHandler("/debug/archive", 303))
 
 	svOpts := []statsviz.Option{
 		statsviz.Root("/debug/graphs"),
@@ -202,8 +127,8 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 
 	http.Handle("/debug/livez", promhttp.InstrumentHandlerDuration(
 		probeDurations.MustCurryWith(prometheus.Labels{"probe": "livez"}),
-		http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			ctx, cancel := context.WithTimeout(req.Context(), 5*time.Second)
+		http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 			defer cancel()
 
 			if !opts.Livez(ctx) {
@@ -220,8 +145,8 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 
 	http.Handle("/debug/readyz", promhttp.InstrumentHandlerDuration(
 		probeDurations.MustCurryWith(prometheus.Labels{"probe": "readyz"}),
-		http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-			ctx, cancel := context.WithTimeout(req.Context(), 5*time.Second)
+		http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
 			defer cancel()
 
 			if !opts.Livez(ctx) {
@@ -252,8 +177,10 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 		"/debug/readyz":  "Readiness probe",
 
 		// stdlib handlers
-		"/debug/vars":  "Expvar package metrics",
-		"/debug/pprof": "Runtime profiling data for pprof",
+		"/debug/vars":     "Expvar package metrics",
+		"/debug/pprof":    "Runtime profiling data for pprof",
+		"/debug/requests": "/x/net/trace requests",
+		"/debug/events":   "/x/net/trace events",
 	}
 
 	var page bytes.Buffer
@@ -273,8 +200,8 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 		rw.Write(page.Bytes())
 	})
 
-	http.HandleFunc("/", func(rw http.ResponseWriter, req *http.Request) {
-		http.Redirect(rw, req, "/debug", http.StatusSeeOther)
+	http.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) {
+		http.Redirect(rw, r, "/debug", http.StatusSeeOther)
 	})
 
 	lis, err := net.Listen("tcp", opts.TCPAddr)
@@ -295,10 +222,9 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 // It exits when handler is stopped and listener closed.
 func (h *Handler) Serve(ctx context.Context) {
 	s := http.Server{
-		Addr:     h.opts.TCPAddr,
 		Handler:  http.DefaultServeMux,
 		ErrorLog: h.stdL,
-		BaseContext: func(_ net.Listener) context.Context {
+		BaseContext: func(net.Listener) context.Context {
 			return ctx
 		},
 	}

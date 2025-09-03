@@ -17,8 +17,6 @@ package setup
 import (
 	"flag"
 	"os"
-	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -36,6 +34,15 @@ func IsMongoDB(tb testing.TB) bool {
 	tb.Helper()
 
 	return *targetBackendF == "mongodb"
+}
+
+// IsYugabyteDB returns true if the current test is running for `ferretdb-yugabytedb` backend.
+//
+// This function should not be used lightly.
+func IsYugabyteDB(tb testing.TB) bool {
+	tb.Helper()
+
+	return *targetBackendF == "ferretdb-yugabytedb"
 }
 
 // ensureIssueURL panics if URL is not a valid FerretDB issue URL.
@@ -96,17 +103,6 @@ func SkipForMongoDB(tb testing.TB, reason string) {
 
 		tb.Skipf("Skipping for MongoDB: %s.", reason)
 	}
-}
-
-// Dir returns the absolute directory of this package.
-func Dir(tb testing.TB) string {
-	tb.Helper()
-
-	_, file, _, ok := runtime.Caller(0)
-	require.True(tb, ok)
-	require.True(tb, filepath.IsAbs(file))
-
-	return filepath.Dir(file)
 }
 
 // Main is the entry point for all integration test packages.

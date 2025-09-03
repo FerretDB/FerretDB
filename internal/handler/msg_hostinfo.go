@@ -24,23 +24,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// MsgHostInfo implements `hostInfo` command.
+// msgHostInfo implements `hostInfo` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgHostInfo(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+func (h *Handler) msgHostInfo(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	doc := req.Document()
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
@@ -77,24 +73,22 @@ func (h *Handler) MsgHostInfo(connCtx context.Context, msg *wire.OpMsg) (*wire.O
 		os = "Windows"
 	}
 
-	res := must.NotFail(wirebson.NewDocument(
-		"system", must.NotFail(wirebson.NewDocument(
+	return middleware.ResponseDoc(req, wirebson.MustDocument(
+		"system", wirebson.MustDocument(
 			"currentTime", now,
 			"hostname", hostname,
 			"cpuAddrSize", int32(strconv.IntSize),
 			"numCores", int32(runtime.GOMAXPROCS(-1)),
 			"cpuArch", runtime.GOARCH,
-		)),
-		"os", must.NotFail(wirebson.NewDocument(
+		),
+		"os", wirebson.MustDocument(
 			"type", os,
 			"name", osName,
 			"version", osVersion,
-		)),
-		"extra", must.NotFail(wirebson.NewDocument()),
+		),
+		"extra", wirebson.MustDocument(),
 		"ok", float64(1),
 	))
-
-	return wire.NewOpMsg(must.NotFail(res.Encode()))
 }
 
 // parseOSRelease parses the /etc/os-release or /usr/lib/os-release file content,

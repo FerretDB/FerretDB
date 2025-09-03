@@ -18,31 +18,22 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/FerretDB/wire"
+	"github.com/AlekSi/pointer"
 	"github.com/FerretDB/wire/wirebson"
 
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 )
 
-// MsgSetFreeMonitoring implements `setFreeMonitoring` command.
+// msgSetFreeMonitoring implements `setFreeMonitoring` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgSetFreeMonitoring(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+func (h *Handler) msgSetFreeMonitoring(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	doc := req.Document()
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
-	}
-
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
 	}
 
 	action, err := getRequiredParam[string](doc, "action")
@@ -79,17 +70,20 @@ func (h *Handler) MsgSetFreeMonitoring(connCtx context.Context, msg *wire.OpMsg)
 
 	if err := h.StateProvider.Update(func(s *state.State) {
 		if telemetryState {
-			s.EnableTelemetry()
+			s.Telemetry = pointer.ToBool(true)
 		} else {
-			s.DisableTelemetry()
+			s.Telemetry = pointer.ToBool(false)
+			s.LatestVersion = ""
+			s.UpdateInfo = ""
+			s.UpdateAvailable = false
 		}
 	}); err != nil {
 		return nil, err
 	}
 
-	res := must.NotFail(wirebson.NewDocument(
+	res := wirebson.MustDocument(
 		"ok", float64(1),
-	))
+	)
 
-	return wire.NewOpMsg(must.NotFail(res.Encode()))
+	return middleware.ResponseDoc(req, res)
 }

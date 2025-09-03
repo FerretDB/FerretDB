@@ -17,28 +17,22 @@ package handler
 import (
 	"context"
 
-	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// MsgValidate implements `validate` command.
+// msgValidate implements `validate` command.
 //
 // The passed context is canceled when the client connection is closed.
-func (h *Handler) MsgValidate(connCtx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	spec, err := msg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+func (h *Handler) msgValidate(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
+	doc := req.Document()
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
-	}
-
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
 	}
 
 	dbName, err := getRequiredParam[string](doc, "$db")
@@ -46,20 +40,15 @@ func (h *Handler) MsgValidate(connCtx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, err
 	}
 
-	conn, err := h.Pool.Acquire()
+	var res wirebson.RawDocument
+
+	err = h.p.WithConn(func(conn *pgx.Conn) error {
+		res, err = documentdb_api.Validate(connCtx, conn, h.L, dbName, req.DocumentRaw())
+		return err
+	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	defer conn.Release()
 
-	page, err := documentdb_api.Validate(connCtx, conn.Conn(), h.L, dbName, spec)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if msg, err = wire.NewOpMsg(page); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return msg, nil
+	return middleware.ResponseDoc(req, res)
 }

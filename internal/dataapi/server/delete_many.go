@@ -30,14 +30,13 @@ import (
 // DeleteMany implements [ServerInterface].
 func (s *Server) DeleteMany(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	l := s.l
 
-	if l.Enabled(ctx, slog.LevelDebug) {
-		l.DebugContext(ctx, fmt.Sprintf("Request:\n%s\n", must.NotFail(httputil.DumpRequest(r, true))))
+	if s.l.Enabled(ctx, slog.LevelDebug) {
+		s.l.DebugContext(ctx, fmt.Sprintf("Request:\n%s", must.NotFail(httputil.DumpRequest(r, true))))
 	}
 
 	var req api.DeleteRequestBody
-	if err := decodeJsonRequest(r, &req); err != nil {
+	if err := decodeJSONRequest(r, &req); err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
@@ -51,7 +50,7 @@ func (s *Server) DeleteMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	msg, err := prepareOpMsg(
+	msg, err := prepareRequest(
 		"delete", req.Collection,
 		"$db", req.Database,
 		"deletes", wirebson.MustArray(deleteDoc),
@@ -61,17 +60,20 @@ func (s *Server) DeleteMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resMsg, err := s.handler.Commands()["delete"].Handler(ctx, msg)
-	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+	resp := s.m.Handle(ctx, msg)
+	if resp == nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	resDoc := must.NotFail(must.NotFail(resMsg.RawDocument()).Decode())
+	if !resp.OK() {
+		s.writeJSONError(ctx, w, resp)
+		return
+	}
 
-	res := must.NotFail(wirebson.NewDocument(
-		"deletedCount", resDoc.Get("n"),
-	))
+	res := api.DeleteResponseBody{
+		DeletedCount: resp.Document().Get("n"),
+	}
 
-	s.writeJsonResponse(ctx, w, res)
+	s.writeJSONResponse(ctx, w, &res)
 }

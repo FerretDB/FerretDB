@@ -50,6 +50,7 @@ var extraMongoErrors = map[string]int{
 	"Unauthorized":                  13,
 	"ProtocolError":                 17,
 	"AuthenticationFailed":          18,
+	"MaxTimeMSExpired":              50,
 	"CommandNotFound":               59,
 	"OperationFailed":               96,
 	"ClientMetadataCannotBeMutated": 186,
@@ -67,9 +68,8 @@ var extraMongoErrors = map[string]int{
 
 func main() {
 	opts := &logging.NewHandlerOpts{
-		Base:          "console",
-		Level:         slog.LevelDebug,
-		CheckMessages: true,
+		Base:  "console",
+		Level: slog.LevelDebug,
 	}
 	logging.SetupDefault(opts, "")
 
