@@ -61,7 +61,7 @@ func NewRegistry(l *slog.Logger) *Registry {
 				Namespace: namespace,
 				Subsystem: subsystem,
 				Name:      "created_total",
-				Help:      "Unstable: Total number of cursors created.",
+				Help:      "Total number of cursors created.",
 			},
 			[]string{"type"},
 		),
@@ -70,7 +70,7 @@ func NewRegistry(l *slog.Logger) *Registry {
 				Namespace: namespace,
 				Subsystem: subsystem,
 				Name:      "duration_seconds",
-				Help:      "Unstable: Cursors lifetime in seconds.",
+				Help:      "Cursors lifetime in seconds.",
 				Buckets: []float64{
 					(1 * time.Millisecond).Seconds(),
 					(5 * time.Millisecond).Seconds(),

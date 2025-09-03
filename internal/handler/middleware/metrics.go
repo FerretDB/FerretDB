@@ -42,7 +42,7 @@ const (
 // Parts of Prometheus metric names.
 // TODO https://github.com/FerretDB/FerretDB/issues/4965
 const (
-	namespace = "ferretdb_unstable"
+	namespace = "ferretdb"
 	subsystem = "client"
 )
 
@@ -70,7 +70,7 @@ func NewMetrics() *Metrics {
 				Namespace: namespace,
 				Subsystem: subsystem,
 				Name:      "requests_total",
-				Help:      "Unstable: Total number of requests.",
+				Help:      "Total number of requests.",
 			},
 			[]string{"opcode", "command"},
 		),
@@ -82,7 +82,7 @@ func NewMetrics() *Metrics {
 				Namespace: namespace,
 				Subsystem: subsystem,
 				Name:      "responses_total",
-				Help:      "Unstable: Total number of responses.",
+				Help:      "Total number of responses.",
 			},
 			[]string{"opcode", "command", "argument", "result"},
 		),
