@@ -19,6 +19,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"net/url"
 	"testing"
 
 	"github.com/FerretDB/wire"
@@ -43,14 +44,17 @@ func TestSessionConnection(t *testing.T) {
 	ctx, collection, db, conn1 := s.Ctx, s.Collection, s.Collection.Database(), s.WireConn
 	cName, dbName := collection.Name(), db.Name()
 
-	conn2, err := wireclient.Connect(ctx, s.MongoDBURI, testutil.Logger(t))
+	clearUri, _, _, authMechanism, err := wireclient.Credentials(s.MongoDBURI)
+	require.NoError(t, err)
+
+	conn2, err := wireclient.Connect(ctx, clearUri, testutil.Logger(t))
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		require.NoError(t, conn2.Close())
 	})
 
-	err = conn2.Login(ctx, "username", "password", "admin")
+	err = conn2.Login(ctx, url.UserPassword("username", "password"), "admin", authMechanism)
 	require.NoError(t, err)
 
 	_, err = collection.InsertMany(ctx, bson.A{
@@ -122,10 +126,15 @@ func TestSessionConnection(t *testing.T) {
 
 	t.Run("CloseConnection", func(t *testing.T) {
 		var anotherConn *wireclient.Conn
-		anotherConn, err = wireclient.Connect(ctx, s.MongoDBURI, testutil.Logger(t))
+		var creds *url.Userinfo
+
+		clearUri, creds, _, authMechanism, err = wireclient.Credentials(s.MongoDBURI)
 		require.NoError(t, err)
 
-		err = anotherConn.Login(ctx, "username", "password", "admin")
+		anotherConn, err = wireclient.Connect(ctx, clearUri, testutil.Logger(t))
+		require.NoError(t, err)
+
+		err = anotherConn.Login(ctx, creds, "admin", authMechanism)
 		require.NoError(t, err)
 
 		sessionID := startSession(t, ctx, anotherConn)
@@ -185,12 +194,12 @@ func TestSessionConnection(t *testing.T) {
 
 		killCursors(t, ctx, conn1, dbName, cName, cursorID, sessionID, nil)
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", fmt.Sprintf("cursor id %d not found", cursorID),
 			"code", int32(43),
 			"codeName", "CursorNotFound",
-		))
+		)
 
 		getMore(t, ctx, conn1, dbName, cName, sessionID, cursorID, expectedErr)
 	})
@@ -202,12 +211,12 @@ func TestSessionConnection(t *testing.T) {
 
 		invalidSessionID := "invalid"
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "BSON field 'OperationSessionInfo.lsid.id' is the wrong type 'string', expected type 'binData'",
 			"code", int32(14),
 			"codeName", "TypeMismatch",
-		))
+		)
 
 		killCursors(t, ctx, conn1, dbName, cName, cursorID, invalidSessionID, expectedErr)
 
@@ -235,7 +244,7 @@ func TestFindLsidErrors(t *testing.T) {
 		_, resBody, err := conn.Request(ctx, msg)
 		require.NoError(t, err)
 
-		res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+		res, err := must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).DecodeDeep()
 		require.NoError(t, err)
 
 		integration.FixCluster(t, res)
@@ -260,7 +269,7 @@ func TestFindLsidErrors(t *testing.T) {
 		_, resBody, err := conn.Request(ctx, msg)
 		require.NoError(t, err)
 
-		res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+		res, err := must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).DecodeDeep()
 		require.NoError(t, err)
 
 		integration.FixCluster(t, res)
@@ -285,7 +294,7 @@ func TestFindLsidErrors(t *testing.T) {
 		_, resBody, err := conn.Request(ctx, msg)
 		require.NoError(t, err)
 
-		res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+		res, err := must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).DecodeDeep()
 		require.NoError(t, err)
 
 		integration.FixCluster(t, res)
@@ -310,7 +319,7 @@ func TestFindLsidErrors(t *testing.T) {
 		_, resBody, err := conn.Request(ctx, msg)
 		require.NoError(t, err)
 
-		res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+		res, err := must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).DecodeDeep()
 		require.NoError(t, err)
 
 		integration.FixCluster(t, res)
@@ -335,7 +344,7 @@ func TestFindLsidErrors(t *testing.T) {
 		_, resBody, err := conn.Request(ctx, msg)
 		require.NoError(t, err)
 
-		res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+		res, err := must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).DecodeDeep()
 		require.NoError(t, err)
 
 		integration.FixCluster(t, res)
@@ -380,14 +389,17 @@ func TestSessionConnectionDifferentUser(t *testing.T) {
 	}).Err()
 	require.NoError(t, err)
 
-	userConn, err := wireclient.Connect(ctx, s.MongoDBURI, testutil.Logger(t))
+	clearUri, _, _, authMechanism, err := wireclient.Credentials(s.MongoDBURI)
+	require.NoError(t, err)
+
+	userConn, err := wireclient.Connect(ctx, clearUri, testutil.Logger(t))
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		require.NoError(t, userConn.Close())
 	})
 
-	err = userConn.Login(ctx, user, pass, dbName)
+	err = userConn.Login(ctx, url.UserPassword(user, pass), "admin", authMechanism)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -484,14 +496,14 @@ func TestSessionConnectionDifferentUser(t *testing.T) {
 
 		cursorID := find(t, ctx, adminConn, dbName, cName, sessionID)
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			// errmsg field is not compared, because as it is difficult produce exact format of document as below
 			// `not authorized on admin to execute command{ killCursors: "test", cursors: [ 8541858944752455730 ],
 			// lsid: { id: UUID("363dad0b-d9b8-406f-9575-b11a3779faa0") }, $db: "admin" }`
 			"code", int32(13),
 			"codeName", "Unauthorized",
-		))
+		)
 
 		killCursors(t, ctx, userConn, dbName, cName, cursorID, sessionID, expectedErr)
 
@@ -510,7 +522,7 @@ func startSession(t testing.TB, ctx context.Context, conn *wireclient.Conn) wire
 	require.NoError(t, err)
 
 	var res *wirebson.Document
-	res, err = must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+	res, err = must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).DecodeDeep()
 	require.NoError(t, err)
 
 	integration.FixCluster(t, res)
@@ -553,7 +565,7 @@ func killCursors(t testing.TB, ctx context.Context, conn *wireclient.Conn, dbNam
 	_, resBody, err := conn.Request(ctx, msg)
 	require.NoError(t, err)
 
-	res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+	res, err := must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).DecodeDeep()
 	require.NoError(t, err)
 
 	integration.FixCluster(t, res)
@@ -569,13 +581,13 @@ func killCursors(t testing.TB, ctx context.Context, conn *wireclient.Conn, dbNam
 		return
 	}
 
-	expected := must.NotFail(wirebson.NewDocument(
+	expected := wirebson.MustDocument(
 		"cursorsKilled", wirebson.MustArray(cursorID),
-		"cursorsNotFound", wirebson.MakeArray(0),
-		"cursorsAlive", wirebson.MakeArray(0),
-		"cursorsUnknown", wirebson.MakeArray(0),
+		"cursorsNotFound", wirebson.MustArray(),
+		"cursorsAlive", wirebson.MustArray(),
+		"cursorsUnknown", wirebson.MustArray(),
 		"ok", float64(1),
-	))
+	)
 
 	testutil.AssertEqual(t, expected, res)
 }
@@ -602,7 +614,7 @@ func find(t testing.TB, ctx context.Context, conn *wireclient.Conn, db, coll str
 	_, resBody, err := conn.Request(ctx, msg)
 	require.NoError(t, err)
 
-	res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+	res, err := must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).DecodeDeep()
 	require.NoError(t, err)
 
 	integration.FixCluster(t, res)
@@ -665,7 +677,7 @@ func getMore(t testing.TB, ctx context.Context, conn *wireclient.Conn, db, coll 
 	_, resBody, err := conn.Request(ctx, msg)
 	require.NoError(t, err)
 
-	res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+	res, err := must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).DecodeDeep()
 	require.NoError(t, err)
 
 	integration.FixCluster(t, res)

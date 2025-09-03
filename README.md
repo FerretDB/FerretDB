@@ -19,7 +19,7 @@
 
 FerretDB is an open-source alternative to MongoDB.
 It is a proxy that converts MongoDB 5.0+ wire protocol queries to SQL
-and uses PostgreSQL with [DocumentDB extension](https://github.com/microsoft/documentdb) as a database engine.
+and uses PostgreSQL with [DocumentDB extension](https://github.com/documentdb/documentdb) as a database engine.
 
 ```mermaid
 flowchart LR
@@ -59,7 +59,7 @@ and [contributing guidelines](CONTRIBUTING.md).
 Run this command to start FerretDB with PostgreSQL, make sure to update `<username>` and `<password>`:
 
 ```sh
-docker run -d --rm --name ferretdb -p 27017:27017 --platform linux/amd64 \
+docker run -d --rm --name ferretdb -p 27017:27017 \
   -e POSTGRES_USER=<username> \
   -e POSTGRES_PASSWORD=<password> \
   ghcr.io/ferretdb/ferretdb-eval:2

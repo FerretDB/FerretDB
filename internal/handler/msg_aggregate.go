@@ -25,15 +25,11 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgAggregate(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	doc := req.Document()
 
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
-	doc, err := spec.Decode()
+	userID, sessionID, err := h.s.CreateOrUpdateByLSID(connCtx, doc)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	dbName, err := getRequiredParam[string](doc, "$db")
@@ -41,17 +37,12 @@ func (h *Handler) msgAggregate(connCtx context.Context, req *middleware.Request)
 		return nil, err
 	}
 
-	userID, sessionID, err := h.s.CreateOrUpdateByLSID(connCtx, doc)
-	if err != nil {
-		return nil, err
-	}
-
-	page, cursorID, err := h.Pool.Aggregate(connCtx, dbName, spec)
+	page, cursorID, err := h.p.Aggregate(connCtx, dbName, req.DocumentRaw())
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	h.s.AddCursor(connCtx, userID, sessionID, cursorID)
 
-	return middleware.ResponseMsg(page)
+	return middleware.ResponseDoc(req, page)
 }

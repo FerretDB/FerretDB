@@ -47,8 +47,8 @@ const config = {
           let res = [];
 
           if (!(to.startsWith("/v1") || to.startsWith("/v2"))) {
-            // /v2.1/installation/ -> /installation/
-            res.push("/v2.1" + to);
+            // /v2.5/installation/ -> /installation/
+            res.push("/v2.5" + to);
           }
 
           if (to.startsWith("/installation/ferretdb")) {
@@ -89,8 +89,8 @@ const config = {
           // https://docusaurus.io/docs/api/plugins/@docusaurus/plugin-content-docs#configuration
           versions: {
             current: {
-              label: "v2.2",
-              path: "v2.2",
+              label: "v2.6",
+              path: "v2.6",
             },
           },
         },
@@ -105,6 +105,12 @@ const config = {
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       image: "img/logo-dark.jpg",
+      imageZoom: {
+        selector: ".markdown img",
+        options: {
+          margin: 64,
+        },
+      },
       navbar: {
         logo: {
           alt: "FerretDB Logo",

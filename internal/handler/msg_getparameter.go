@@ -29,18 +29,9 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgGetParameter(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	doc := req.Document()
 
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
@@ -51,36 +42,30 @@ func (h *Handler) msgGetParameter(connCtx context.Context, req *middleware.Reque
 		return nil, lazyerrors.Error(err)
 	}
 
-	parameters := must.NotFail(wirebson.NewDocument(
-		// to add a new parameter, fill template and place it in the alphabetical order position
-		//"<name>", must.NotFail(bson.NewDocument(
-		//	"value", <value>,
-		//	"settableAtRuntime", <bool>,
-		//	"settableAtStartup", <bool>,
-		//)),
-		"authenticationMechanisms", must.NotFail(wirebson.NewDocument(
-			"value", must.NotFail(wirebson.NewArray("SCRAM-SHA-1", "SCRAM-SHA-256")),
+	parameters := wirebson.MustDocument(
+		"authenticationMechanisms", wirebson.MustDocument(
+			"value", wirebson.MustArray("SCRAM-SHA-1", "SCRAM-SHA-256"),
 			"settableAtRuntime", false,
 			"settableAtStartup", true,
-		)),
-		"authSchemaVersion", must.NotFail(wirebson.NewDocument(
+		),
+		"authSchemaVersion", wirebson.MustDocument(
 			"value", int32(5),
 			"settableAtRuntime", true,
 			"settableAtStartup", true,
-		)),
-		"featureCompatibilityVersion", must.NotFail(wirebson.NewDocument(
+		),
+		"featureCompatibilityVersion", wirebson.MustDocument(
 			// TODO https://github.com/FerretDB/FerretDB/issues/5073
-			"value", must.NotFail(wirebson.NewDocument("version", "7.0")),
+			"value", wirebson.MustDocument("version", "7.0"),
 			"settableAtRuntime", false,
 			"settableAtStartup", false,
-		)),
-		"quiet", must.NotFail(wirebson.NewDocument(
+		),
+		"quiet", wirebson.MustDocument(
 			"value", false,
 			"settableAtRuntime", true,
 			"settableAtStartup", true,
-		)),
+		),
 		// parameters are alphabetically ordered
-	))
+	)
 
 	res, err := selectParameters(doc, parameters, showDetails, allParameters)
 	if err != nil {
@@ -97,7 +82,7 @@ func (h *Handler) msgGetParameter(connCtx context.Context, req *middleware.Reque
 
 	must.NoError(res.Add("ok", float64(1)))
 
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }
 
 // selectParameters makes a selection of requested parameters.

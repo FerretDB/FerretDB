@@ -1619,12 +1619,14 @@ func TestAggregateCompatSort(t *testing.T) {
 			}}}},
 		},
 
-		"DotNotationIndex": {
-			pipeline: bson.A{bson.D{{"$sort", bson.D{
-				{"v.0", 1},
-				{"_id", 1}, // sort by _id when v is the same.
-			}}}},
-		},
+		// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/355
+		// "DotNotationIndex": {
+		// 	pipeline: bson.A{bson.D{{"$sort", bson.D{
+		// 		{"v.0", 1},
+		// 		{"_id", 1}, // sort by _id when v is the same.
+		// 	}}}},
+		// },
+
 		"DotNotationNonExistent": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{
 				{"invalid.foo", 1},

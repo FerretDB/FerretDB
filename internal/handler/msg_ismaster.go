@@ -29,18 +29,9 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgIsMaster(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	doc := req.Document()
 
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
@@ -49,7 +40,7 @@ func (h *Handler) msgIsMaster(connCtx context.Context, req *middleware.Request) 
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }
 
 // checkClientMetadata checks if the message does not contain client metadata after it was received already.
@@ -59,15 +50,15 @@ func checkClientMetadata(ctx context.Context, doc *wirebson.Document) error {
 		return nil
 	}
 
-	connInfo := conninfo.Get(ctx)
-	if connInfo.MetadataRecv() {
+	ci := conninfo.Get(ctx)
+	if ci.MetadataRecv() {
 		return mongoerrors.New(
 			mongoerrors.ErrClientMetadataCannotBeMutated,
 			"The client metadata document may only be sent in the first hello",
 		)
 	}
 
-	connInfo.SetMetadataRecv()
+	ci.SetMetadataRecv()
 
 	return nil
 }

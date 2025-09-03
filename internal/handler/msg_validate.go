@@ -29,12 +29,9 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgValidate(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	doc, err := req.OpMsg.Document()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	doc := req.Document()
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
@@ -43,20 +40,15 @@ func (h *Handler) msgValidate(connCtx context.Context, req *middleware.Request) 
 		return nil, err
 	}
 
-	spec, err := req.OpMsg.DocumentRaw()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
 	var res wirebson.RawDocument
 
-	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
-		res, err = documentdb_api.Validate(connCtx, conn, h.L, dbName, spec)
+	err = h.p.WithConn(func(conn *pgx.Conn) error {
+		res, err = documentdb_api.Validate(connCtx, conn, h.L, dbName, req.DocumentRaw())
 		return err
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }

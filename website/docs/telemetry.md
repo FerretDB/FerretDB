@@ -1,5 +1,5 @@
 ---
-sidebar_position: 7
+sidebar_position: 8
 slug: /telemetry/ # referenced in many places
 ---
 
@@ -26,10 +26,10 @@ The following data is collected:
 - Build configuration (Go version, build flags and tags)
 - Uptime
 - Command statistics:
-  - protocol operation codes (e.g. `OP_MSG`, `OP_QUERY`);
+  - protocol operation names (e.g. `OP_MSG`, `OP_QUERY`);
   - command names (e.g., `find`, `aggregate`);
   - arguments (e.g., `sort`, `$count`);
-  - error codes (e.g., `NotImplemented`, `InternalError`; or `ok`).
+  - error names (e.g., `NotImplemented`, `InternalError`; or `ok`).
 
 :::info
 Argument values, data field names, successful responses, or error messages are never collected.
@@ -136,11 +136,6 @@ The latter acts as if it is `enabled` with two differences:
 :::info
 `undecided` state does not automatically change into `enabled` or `disabled`.
 Explicit user action is required (see below) to change an `undecided` state to `enabled` or `disabled`.
-:::
-
-:::caution
-Telemetry reporting is `undecided` and can't be configured for [embeddable FerretDB](installation/ferretdb/go.md) yet.
-We intend to add [this feature](https://github.com/FerretDB/FerretDB/issues/4750) in the future.
 :::
 
 ### Disable telemetry

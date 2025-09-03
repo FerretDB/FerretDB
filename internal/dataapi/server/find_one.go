@@ -36,12 +36,12 @@ func (s *Server) FindOne(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req api.FindOneRequestBody
-	if err := decodeJsonRequest(r, &req); err != nil {
+	if err := decodeJSONRequest(r, &req); err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
-	msg, err := prepareOpMsg(
+	msg, err := prepareRequest(
 		"find", req.Collection,
 		"$db", req.Database,
 		"filter", req.Filter,
@@ -53,26 +53,37 @@ func (s *Server) FindOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resMsg, err := s.handler.Handle(ctx, msg)
+	resp := s.m.Handle(ctx, msg)
+	if resp == nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	if !resp.OK() {
+		s.writeJSONError(ctx, w, resp)
+		return
+	}
+
+	cursor := resp.Document().Get("cursor").(wirebson.AnyDocument)
+	firstBatch := must.NotFail(cursor.Decode()).Get("firstBatch").(wirebson.AnyArray)
+
+	var res api.FindOneResponseBody
+
+	docs := must.NotFail(firstBatch.Decode())
+	if docs.Len() == 0 {
+		s.writeJSONResponse(ctx, w, &res)
+		return
+	}
+
+	doc := docs.Get(0).(wirebson.AnyDocument)
+
+	b, err := marshalSingleJSON(doc)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
-	resRaw := must.NotFail(resMsg.OpMsg.RawDocument())
-	cursor := must.NotFail(resRaw.Decode()).Get("cursor").(wirebson.AnyDocument)
-	firstBatch := must.NotFail(cursor.Decode()).Get("firstBatch").(wirebson.AnyArray)
+	res.Document = &b
 
-	var doc wirebson.RawDocument
-
-	docs := must.NotFail(firstBatch.Decode())
-	if docs.Len() > 0 {
-		doc = must.NotFail(docs.Get(0).(wirebson.AnyDocument).Encode())
-	}
-
-	res := must.NotFail(wirebson.NewDocument(
-		"document", doc,
-	))
-
-	s.writeJsonResponse(ctx, w, res)
+	s.writeJSONResponse(ctx, w, &res)
 }

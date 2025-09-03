@@ -60,8 +60,7 @@ const config = {
 
           onInlineTags: "throw",
           onUntruncatedBlogPosts: "throw",
-          // TODO https://github.com/FerretDB/FerretDB/issues/4587
-          // onInlineAuthors: "throw",
+          onInlineAuthors: "throw",
 
           blogSidebarTitle: "All posts",
           blogSidebarCount: "ALL",
@@ -99,6 +98,12 @@ const config = {
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
       image: "img/logo-dark.jpg",
+      imageZoom: {
+        selector: ".markdown img",
+        options: {
+          margin: 64,
+        },
+      },
       navbar: {
         logo: {
           alt: "FerretDB Logo",

@@ -48,6 +48,7 @@ const (
 	ErrCommandNotSupported                         = Code(115)     // CommandNotSupported
 	ErrNamespaceNotSharded                         = Code(118)     // NamespaceNotSharded
 	ErrDocumentFailedValidation                    = Code(121)     // DocumentFailedValidation
+	ErrCursorInUse                                 = Code(143)     // CursorInUse
 	ErrExceededMemoryLimit                         = Code(146)     // ExceededMemoryLimit
 	ErrDurationOverflow                            = Code(159)     // DurationOverflow
 	ErrViewDepthLimitExceeded                      = Code(165)     // ViewDepthLimitExceeded
@@ -69,12 +70,14 @@ const (
 	ErrCollectionUUIDMismatch                      = Code(361)     // CollectionUUIDMismatch
 	ErrUserCountLimitExceeded                      = Code(8000)    // UserCountLimitExceeded
 	ErrLocation10065                               = Code(10065)   // Location10065
+	ErrNotWritablePrimary                          = Code(10107)   // NotWritablePrimary
 	ErrBsonObjectTooLarge                          = Code(10334)   // BsonObjectTooLarge
 	ErrDuplicateKey                                = Code(11000)   // DuplicateKey
 	ErrBackgroundOperationInProgressForNamespace   = Code(12587)   // BackgroundOperationInProgressForNamespace
 	ErrLocation13026                               = Code(13026)   // Location13026
 	ErrLocation13027                               = Code(13027)   // Location13027
 	ErrLocation13068                               = Code(13068)   // Location13068
+	ErrLocation13103                               = Code(13103)   // Location13103
 	ErrLocation13111                               = Code(13111)   // Location13111
 	ErrMergeStageNoMatchingDocument                = Code(13113)   // MergeStageNoMatchingDocument
 	ErrDbAlreadyExists                             = Code(13297)   // DbAlreadyExists
@@ -144,6 +147,7 @@ const (
 	ErrLocation17276                               = Code(17276)   // Location17276
 	ErrLocation17308                               = Code(17308)   // Location17308
 	ErrLocation17310                               = Code(17310)   // Location17310
+	ErrLocation17385                               = Code(17385)   // Location17385
 	ErrDocumentAfterUpdateLargerThanMaxSize        = Code(17419)   // DocumentAfterUpdateLargerThanMaxSize
 	ErrDocumentToUpsertLargerThanMaxSize           = Code(17420)   // DocumentToUpsertLargerThanMaxSize
 	ErrLocation18533                               = Code(18533)   // Location18533
@@ -218,6 +222,9 @@ const (
 	ErrLocation31271                               = Code(31271)   // Location31271
 	ErrLocation31276                               = Code(31276)   // Location31276
 	ErrLocation31308                               = Code(31308)   // Location31308
+	ErrLocation31319                               = Code(31319)   // Location31319
+	ErrLocation31320                               = Code(31320)   // Location31320
+	ErrLocation31321                               = Code(31321)   // Location31321
 	ErrLocation31325                               = Code(31325)   // Location31325
 	ErrLocation31393                               = Code(31393)   // Location31393
 	ErrLocation31395                               = Code(31395)   // Location31395
@@ -308,6 +315,18 @@ const (
 	ErrLocation40236                               = Code(40236)   // Location40236
 	ErrLocation40237                               = Code(40237)   // Location40237
 	ErrLocation40238                               = Code(40238)   // Location40238
+	ErrLocation40239                               = Code(40239)   // Location40239
+	ErrLocation40240                               = Code(40240)   // Location40240
+	ErrLocation40241                               = Code(40241)   // Location40241
+	ErrLocation40242                               = Code(40242)   // Location40242
+	ErrLocation40243                               = Code(40243)   // Location40243
+	ErrLocation40244                               = Code(40244)   // Location40244
+	ErrLocation40245                               = Code(40245)   // Location40245
+	ErrLocation40246                               = Code(40246)   // Location40246
+	ErrLocation40257                               = Code(40257)   // Location40257
+	ErrLocation40258                               = Code(40258)   // Location40258
+	ErrLocation40260                               = Code(40260)   // Location40260
+	ErrLocation40261                               = Code(40261)   // Location40261
 	ErrLocation40272                               = Code(40272)   // Location40272
 	ErrLocation40319                               = Code(40319)   // Location40319
 	ErrLocation40321                               = Code(40321)   // Location40321
@@ -575,6 +594,7 @@ var pgCodes = map[string]Code{
 	"M000U": ErrCommandNotSupported,                         // 115
 	"M000V": ErrNamespaceNotSharded,                         // 118
 	"M00CO": ErrDocumentFailedValidation,                    // 121
+	"M00EL": ErrCursorInUse,                                 // 143
 	"M000W": ErrExceededMemoryLimit,                         // 146
 	"M000X": ErrDurationOverflow,                            // 159
 	"M000Y": ErrViewDepthLimitExceeded,                      // 165
@@ -591,12 +611,14 @@ var pgCodes = map[string]Code{
 	"M0019": ErrCollectionUUIDMismatch,                      // 361
 	"M00DR": ErrUserCountLimitExceeded,                      // 8000
 	"M001A": ErrLocation10065,                               // 10065
+	"M00E8": ErrNotWritablePrimary,                          // 10107
 	"M001B": ErrBsonObjectTooLarge,                          // 10334
 	"M001C": ErrDuplicateKey,                                // 11000
 	"M001D": ErrBackgroundOperationInProgressForNamespace,   // 12587
 	"M001E": ErrLocation13026,                               // 13026
 	"M001F": ErrLocation13027,                               // 13027
 	"M001G": ErrLocation13068,                               // 13068
+	"M00EM": ErrLocation13103,                               // 13103
 	"M00CS": ErrLocation13111,                               // 13111
 	"M001H": ErrMergeStageNoMatchingDocument,                // 13113
 	"M001I": ErrDbAlreadyExists,                             // 13297
@@ -665,6 +687,7 @@ var pgCodes = map[string]Code{
 	"M0037": ErrLocation17276,                               // 17276
 	"M0038": ErrLocation17308,                               // 17308
 	"M0039": ErrLocation17310,                               // 17310
+	"M00EN": ErrLocation17385,                               // 17385
 	"M003A": ErrDocumentAfterUpdateLargerThanMaxSize,        // 17419
 	"M003B": ErrDocumentToUpsertLargerThanMaxSize,           // 17420
 	"M003E": ErrLocation18533,                               // 18533
@@ -739,6 +762,9 @@ var pgCodes = map[string]Code{
 	"M005B": ErrLocation31271,                               // 31271
 	"M005C": ErrLocation31276,                               // 31276
 	"M005D": ErrLocation31308,                               // 31308
+	"M00EO": ErrLocation31319,                               // 31319
+	"M00EP": ErrLocation31320,                               // 31320
+	"M00EQ": ErrLocation31321,                               // 31321
 	"M005E": ErrLocation31325,                               // 31325
 	"M005F": ErrLocation31393,                               // 31393
 	"M005G": ErrLocation31395,                               // 31395
@@ -829,6 +855,18 @@ var pgCodes = map[string]Code{
 	"M00DT": ErrLocation40236,                               // 40236
 	"M008Y": ErrLocation40237,                               // 40237
 	"M007P": ErrLocation40238,                               // 40238
+	"M00E9": ErrLocation40239,                               // 40239
+	"M00EA": ErrLocation40240,                               // 40240
+	"M00EB": ErrLocation40241,                               // 40241
+	"M00EC": ErrLocation40242,                               // 40242
+	"M00ED": ErrLocation40243,                               // 40243
+	"M00EE": ErrLocation40244,                               // 40244
+	"M00EF": ErrLocation40245,                               // 40245
+	"M00EG": ErrLocation40246,                               // 40246
+	"M00EH": ErrLocation40257,                               // 40257
+	"M00EI": ErrLocation40258,                               // 40258
+	"M00EJ": ErrLocation40260,                               // 40260
+	"M00EK": ErrLocation40261,                               // 40261
 	"M007Q": ErrLocation40272,                               // 40272
 	"M007R": ErrLocation40319,                               // 40319
 	"M007S": ErrLocation40321,                               // 40321

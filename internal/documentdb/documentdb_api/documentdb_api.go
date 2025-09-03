@@ -86,14 +86,42 @@ func CollStats(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName
 
 // Collection is a wrapper for
 //
-//	documentdb_api.collection(p_database_name text, p_collection_name text, OUT shard_key_value bigint, OUT object_id documentdb_core.bson, OUT document documentdb_core.bson, OUT creation_time timestamp with time zone).
-func Collection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string) (outShardKeyValue int64, outObjectID wirebson.RawDocument, outDocument wirebson.RawDocument, outCreationTime struct{}, err error) {
+//	documentdb_api.collection(p_database_name text, p_collection_name text, OUT shard_key_value bigint, OUT object_id documentdb_core.bson, OUT document documentdb_core.bson).
+func Collection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string) (outShardKeyValue int64, outObjectID wirebson.RawDocument, outDocument wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.collection", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
-	row := conn.QueryRow(ctx, "SELECT shard_key_value, object_id::bytea, document::bytea, creation_time FROM documentdb_api.collection($1, $2)", databaseName, collectionName)
-	if err = row.Scan(&outShardKeyValue, &outObjectID, &outDocument, &outCreationTime); err != nil {
+	row := conn.QueryRow(ctx, "SELECT shard_key_value, object_id::bytea, document::bytea FROM documentdb_api.collection($1, $2)", databaseName, collectionName)
+	if err = row.Scan(&outShardKeyValue, &outObjectID, &outDocument); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.collection", l)
+	}
+	return
+}
+
+// Compact is a wrapper for
+//
+//	documentdb_api.compact(p_spec documentdb_core.bson, OUT compact documentdb_core.bson).
+func Compact(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outCompact wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.compact", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT compact::bytea FROM documentdb_api.compact($1::bytea)", spec)
+	if err = row.Scan(&outCompact); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api.compact", l)
+	}
+	return
+}
+
+// ConnectionStatus is a wrapper for
+//
+//	documentdb_api.connection_status(p_spec documentdb_core.bson, OUT connection_status documentdb_core.bson).
+func ConnectionStatus(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outConnectionStatus wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.connection_status", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT connection_status::bytea FROM documentdb_api.connection_status($1::bytea)", spec)
+	if err = row.Scan(&outConnectionStatus); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api.connection_status", l)
 	}
 	return
 }
@@ -150,6 +178,20 @@ func CreateIndexesBackground(ctx context.Context, conn *pgx.Conn, l *slog.Logger
 	row := conn.QueryRow(ctx, "SELECT retval::bytea, ok, requests::bytea FROM documentdb_api.create_indexes_background($1, $2::bytea)", databaseName, indexSpec)
 	if err = row.Scan(&outRetVal, &outOk, &outRequests); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.create_indexes_background", l)
+	}
+	return
+}
+
+// CreateRole is a wrapper for
+//
+//	documentdb_api.create_role(p_spec documentdb_core.bson, OUT create_role documentdb_core.bson).
+func CreateRole(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outCreateRole wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.create_role", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT create_role::bytea FROM documentdb_api.create_role($1::bytea)", spec)
+	if err = row.Scan(&outCreateRole); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api.create_role", l)
 	}
 	return
 }
@@ -262,6 +304,20 @@ func DropDatabase(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseN
 	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api.drop_database($1, $2::bytea)", databaseName, writeConcern)
 	if err = row.Scan(); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.drop_database", l)
+	}
+	return
+}
+
+// DropRole is a wrapper for
+//
+//	documentdb_api.drop_role(p_spec documentdb_core.bson, OUT drop_role documentdb_core.bson).
+func DropRole(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outDropRole wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.drop_role", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT drop_role::bytea FROM documentdb_api.drop_role($1::bytea)", spec)
+	if err = row.Scan(&outDropRole); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api.drop_role", l)
 	}
 	return
 }
@@ -406,6 +462,20 @@ func ReshardCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shar
 	return
 }
 
+// RolesInfo is a wrapper for
+//
+//	documentdb_api.roles_info(p_spec documentdb_core.bson, OUT roles_info documentdb_core.bson).
+func RolesInfo(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outRolesInfo wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.roles_info", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT roles_info::bytea FROM documentdb_api.roles_info($1::bytea)", spec)
+	if err = row.Scan(&outRolesInfo); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api.roles_info", l)
+	}
+	return
+}
+
 // ShardCollection is a wrapper for
 //
 //	documentdb_api.shard_collection(p_database_name text, p_collection_name text, p_shard_key documentdb_core.bson, p_is_reshard boolean DEFAULT true).
@@ -458,6 +528,20 @@ func Update(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName st
 	row := conn.QueryRow(ctx, "SELECT p_result::bytea, p_success FROM documentdb_api.update($1, $2::bytea, $3::bytea)", databaseName, update, insertDocuments)
 	if err = row.Scan(&outResult, &outSuccess); err != nil {
 		err = mongoerrors.Make(ctx, err, "documentdb_api.update", l)
+	}
+	return
+}
+
+// UpdateRole is a wrapper for
+//
+//	documentdb_api.update_role(p_spec documentdb_core.bson, OUT update_role documentdb_core.bson).
+func UpdateRole(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outUpdateRole wirebson.RawDocument, err error) {
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.update_role", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
+	defer span.End()
+
+	row := conn.QueryRow(ctx, "SELECT update_role::bytea FROM documentdb_api.update_role($1::bytea)", spec)
+	if err = row.Scan(&outUpdateRole); err != nil {
+		err = mongoerrors.Make(ctx, err, "documentdb_api.update_role", l)
 	}
 	return
 }

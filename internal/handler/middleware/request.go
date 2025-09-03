@@ -15,99 +15,137 @@
 package middleware
 
 import (
-	"sync"
+	"fmt"
 	"sync/atomic"
 
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
+
+	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// Request represents incoming command from the client.
+// lastRequestID stores last generated request ID.
+var lastRequestID atomic.Int32
+
+// Request represents an incoming command from the client.
+//
+// It may be constructed from [*wire.MsgHeader]/[wire.MsgBody] (for the wire protocol listener)
+// or from [*wirebson.Document] (for data API and MCP listeners).
+// The other value is extracted/generated and cached during Request creation, because we need both:
+//   - raw documents carried by [wire.MsgBody] are used by both DocumentDB and proxy handlers;
+//   - (non-deeply) decoded documents are used by routing, metrics, etc.
 type Request struct {
-	// the order of fields is weird to make the struct smaller due to alignment
-
-	OpMsg   *wire.OpMsg
-	OpQuery *wire.OpQuery
-
-	header *wire.MsgHeader // protected by rw
-	rw     sync.RWMutex
+	header *wire.MsgHeader
+	body   wire.MsgBody
+	doc    *wirebson.Document // only section 0 for OpMsg
 }
 
 // RequestWire creates a new request from the given wire protocol header and body.
-func RequestWire(header *wire.MsgHeader, body wire.MsgBody) *Request {
+// Error is returned if the body cannot be decoded.
+func RequestWire(header *wire.MsgHeader, body wire.MsgBody) (*Request, error) {
+	must.NotBeZero(header)
+	must.NotBeZero(body)
+
 	req := &Request{
 		header: header,
+		body:   body,
 	}
 
 	switch body := body.(type) {
 	case *wire.OpMsg:
-		req.OpMsg = body
+		if header.OpCode != wire.OpCodeMsg {
+			return nil, lazyerrors.Errorf("expected OpCodeMsg, got %s", header.OpCode)
+		}
+
+		var err error
+		if req.doc, err = body.Section0(); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
 	case *wire.OpQuery:
-		req.OpQuery = body
+		if header.OpCode != wire.OpCodeQuery {
+			return nil, lazyerrors.Errorf("expected OpCodeQuery, got %s", header.OpCode)
+		}
+
+		var err error
+		if req.doc, err = body.Query(); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
 	default:
-		panic("unsupported body type")
+		return nil, lazyerrors.Errorf("unsupported body type %T", body)
 	}
 
-	return req
+	req.doc.Freeze()
+
+	return req, nil
+}
+
+// RequestDoc creates a new request from the given document.
+// Error is returned if it cannot be decoded.
+//
+// If it is [*wirebson.Document], it freezes it.
+func RequestDoc(doc wirebson.AnyDocument) (*Request, error) {
+	must.NotBeZero(doc)
+
+	body, err := wire.NewOpMsg(doc)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	header := &wire.MsgHeader{
+		MessageLength: int32(wire.MsgHeaderLen + body.Size()),
+		RequestID:     lastRequestID.Add(1),
+		OpCode:        wire.OpCodeMsg,
+	}
+
+	d, err := doc.Decode()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	d.Freeze()
+
+	return &Request{
+		header: header,
+		body:   body,
+		doc:    d,
+	}, nil
 }
 
 // WireHeader returns the request header for the wire protocol.
-//
-// It Request was constructed with one, it is returned unmodified.
-// Otherwise, a new header is created, cached, and returned.
 func (req *Request) WireHeader() *wire.MsgHeader {
-	req.rw.RLock()
-
-	if h := req.header; h != nil {
-		defer req.rw.RUnlock()
-		return h
-	}
-
-	req.rw.RUnlock()
-	req.rw.Lock()
-	defer req.rw.Unlock()
-
-	// a concurrent call might have set it already; check again
-	if h := req.header; h != nil {
-		return h
-	}
-
-	req.header = &wire.MsgHeader{
-		RequestID: lastRequestID.Add(1),
-	}
-	var b []byte
-
-	switch {
-	case req.OpMsg != nil:
-		req.header.OpCode = wire.OpCodeMsg
-		b, _ = req.OpMsg.MarshalBinary()
-	case req.OpQuery != nil:
-		req.header.OpCode = wire.OpCodeQuery
-		b, _ = req.OpQuery.MarshalBinary()
-	default:
-		panic("unsupported body type")
-	}
-
-	req.header.MessageLength = int32(wire.MsgHeaderLen + len(b))
-
 	return req.header
 }
 
 // WireBody returns the request body for the wire protocol.
 func (req *Request) WireBody() wire.MsgBody {
-	switch {
-	case req.OpMsg != nil:
-		return req.OpMsg
-	case req.OpQuery != nil:
-		return req.OpQuery
+	return req.body
+}
+
+// DocumentRaw returns the raw request document
+// (only section 0 for OpMsg).
+func (req *Request) DocumentRaw() wirebson.RawDocument {
+	switch body := req.body.(type) {
+	case *wire.OpMsg:
+		return body.Section0Raw()
+	case *wire.OpQuery:
+		return body.QueryRaw()
 	default:
-		panic("empty body")
+		panic(fmt.Sprintf("unexpected body type %T", body))
 	}
 }
 
-// lastRequestID stores last generated request ID.
-var lastRequestID atomic.Int32
+// Document returns the request document
+// (only section 0 for OpMsg).
+func (req *Request) Document() *wirebson.Document {
+	return req.doc
+}
 
-func init() {
-	// so generated IDs are noticeably different from IDs from typical clients
-	lastRequestID.Store(1_000_000_000)
+// DocumentDeep returns the deeply decoded request document.
+// Callers should use it instead of `resp.DocumentRaw().DecodeDeep()`.
+func (req *Request) DocumentDeep() (*wirebson.Document, error) {
+	// we might want to cache it in the future if there are many callers
+	return req.DocumentRaw().DecodeDeep()
 }

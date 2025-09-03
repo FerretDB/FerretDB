@@ -2,8 +2,6 @@
 # Please use global .gitignore file for .DS_Store, .idea/, go.work, .envrc, etc.
 # See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files#configuring-ignored-files-for-all-repositories-on-your-computer
 
-docker-compose.override.yml
-
 state.json
 telemetry.json
 
@@ -15,6 +13,7 @@ telemetry.json
 *.tmp
 *.txt
 !website/static/*.txt
+*.xml
 
 .task/
 bin/

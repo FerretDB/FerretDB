@@ -39,10 +39,13 @@ jobs:
       name: cloudflare-dev-blog
       url: ${{ steps.extract.outputs.extracted_url }}
 
+    permissions:
+      contents: read
+
     steps:
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0 # for wrangler to work
           lfs: true
@@ -102,6 +105,9 @@ jobs:
       name: cloudflare-dev-docs
       url: ${{ steps.extract.outputs.extracted_url }}
 
+    permissions:
+      contents: read
+
     steps:
       # We can't easily download build results from the Docs workflow:
       # https://github.com/actions/download-artifact/issues/172
@@ -110,7 +116,7 @@ jobs:
 
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0 # for wrangler to work
           lfs: true

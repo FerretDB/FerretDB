@@ -30,18 +30,9 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgUpdateUser(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	doc := req.Document()
 
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
@@ -50,9 +41,9 @@ func (h *Handler) msgUpdateUser(connCtx context.Context, req *middleware.Request
 		return nil, err
 	}
 
-	updateSpec := must.NotFail(wirebson.NewDocument(
+	updateSpec := wirebson.MustDocument(
 		"updateUser", user,
-	))
+	)
 
 	if customData := doc.Get("customData"); customData != nil {
 		must.NoError(updateSpec.Add("customData", customData))
@@ -87,7 +78,7 @@ func (h *Handler) msgUpdateUser(connCtx context.Context, req *middleware.Request
 
 	var res wirebson.RawDocument
 
-	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
+	err = h.p.WithConn(func(conn *pgx.Conn) error {
 		// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/859
 		res, err = documentdb_api.UpdateUser(connCtx, conn, h.L, must.NotFail(updateSpec.Encode()))
 		return err
@@ -96,5 +87,5 @@ func (h *Handler) msgUpdateUser(connCtx context.Context, req *middleware.Request
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }

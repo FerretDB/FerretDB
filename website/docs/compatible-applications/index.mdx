@@ -1,0 +1,63 @@
+---
+sidebar_position: 2
+slug: /compatible-applications
+description: Explore compatible applications tested by the FerretDB team.
+---
+
+# Compatible applications
+
+import React from 'react'
+import { categorizedApps } from './applications.js'
+import styles from './grid.module.css'
+
+Explore compatible applications tested by the FerretDB team.
+
+export const Grid = ({ apps }) => (
+
+<div className={styles.container}>
+  <div className={styles.grid}>
+    {apps.map(({ name, logo, link }) => (
+      <a
+        key={name}
+        href={link}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`${styles.card} card`}
+      >
+        <img src={logo} alt={`${name} logo`} className={styles.logo} />
+        {name}
+      </a>
+    ))}
+  </div>
+</div>
+);
+
+<div style={{ marginTop: '3rem' }} />
+
+## GUI Client Tools
+
+<Grid apps={categorizedApps.guis} />
+
+## Deployment Platforms
+
+<Grid apps={categorizedApps.deploy} />
+
+## Monitoring and Observability
+
+<Grid apps={categorizedApps.monitoring} />
+
+## Data Migration
+
+<Grid apps={categorizedApps.migration} />
+
+## Content Management Systems
+
+<Grid apps={categorizedApps.cms} />
+
+## Others
+
+<Grid apps={categorizedApps.others} />
+
+Want to see your application listed here?
+Click the "Edit this page" button at the bottom of this page to submit a pull request with your application details.
+You can also join [our community](../introduction.md#community) to tell us about it.

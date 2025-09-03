@@ -35,18 +35,9 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgHello(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	doc := req.Document()
 
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
@@ -55,23 +46,17 @@ func (h *Handler) msgHello(connCtx context.Context, req *middleware.Request) (*m
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }
 
 // hello checks client metadata and returns hello's document fields.
 // It also returns response for deprecated `isMaster` and `ismaster` commands.
-func (h *Handler) hello(ctx context.Context, spec wirebson.AnyDocument, tcpHost, name string) (*wirebson.Document, error) {
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/78
-	doc, err := spec.Decode()
-	if err != nil {
+func (h *Handler) hello(ctx context.Context, doc *wirebson.Document, tcpHost, name string) (*wirebson.Document, error) {
+	if err := checkClientMetadata(ctx, doc); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err = checkClientMetadata(ctx, doc); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	res := must.NotFail(wirebson.NewDocument())
+	res := wirebson.MustDocument()
 
 	switch doc.Command() {
 	case "hello":
@@ -97,7 +82,7 @@ func (h *Handler) hello(ctx context.Context, spec wirebson.AnyDocument, tcpHost,
 		}
 
 		must.NoError(res.Add("setName", name))
-		must.NoError(res.Add("hosts", must.NotFail(wirebson.NewArray(tcpHost))))
+		must.NoError(res.Add("hosts", wirebson.MustArray(tcpHost)))
 	}
 
 	must.NoError(res.Add("maxBsonObjectSize", maxBsonObjectSize))

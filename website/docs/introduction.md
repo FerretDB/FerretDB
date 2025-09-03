@@ -1,14 +1,14 @@
 ---
 sidebar_position: 1
 slug: /
-description: This is the FerretDB documentation, containing all the details on FerretDB – the open-source MongoDB alternative that translates MongoDB wire protocol queries to SQL, with [PostgreSQL with DocumentDB extension](https://github.com/microsoft/documentdb) as the database engine.
+description: This is the FerretDB documentation, containing all the details on FerretDB – the open-source MongoDB alternative that translates MongoDB wire protocol queries to SQL, with [PostgreSQL with DocumentDB extension](https://github.com/documentdb/documentdb) as the database engine.
 ---
 
 # Introduction
 
 FerretDB is an open-source alternative to MongoDB.
 It is a proxy that converts MongoDB 5.0+ wire protocol queries to SQL
-and uses PostgreSQL with [DocumentDB extension](https://github.com/microsoft/documentdb) as a database engine.
+and uses PostgreSQL with [DocumentDB extension](https://github.com/documentdb/documentdb) as a database engine.
 
 ```mermaid
 flowchart LR
@@ -49,6 +49,11 @@ See our:
 - [Usage guides](usage/)
 
 :::
+
+## Compatible applications
+
+As an open-source alternative to MongoDB, FerretDB can be used with many applications that already support MongoDB.
+Please check out our [compatible applications](./compatible-applications/index.mdx) page for a list of applications that have been tested by the FerretDB team.
 
 ## Community
 
