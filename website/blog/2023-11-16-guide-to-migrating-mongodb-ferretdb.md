@@ -70,7 +70,7 @@ That's the joy of open source!
 
 ### Prerequisites
 
-Before starting any migration processs, you should have the following:
+Before starting any migration process, you should have the following:
 
 - MongoDB connection URI
 - FerretDB connection URI
