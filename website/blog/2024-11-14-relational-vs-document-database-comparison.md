@@ -187,7 +187,7 @@ To summarize, relational databases excel in structured environments where data c
 Document databases, on the other hand, are often best for applications with flexible schemas, high scalability needs, and data that doesn't require strong consistency across transactions.
 For document database enthusiasts, check out [the Document Database Community](https://documentdatabase.org/) – a great platform to learn about recent trends, technologies, and news in the document database space.
 
-If you are looking for a open source document database alternative to MongoDB, FerretDB is a great choice to consider.
+If you are looking for an open source document database alternative to MongoDB, FerretDB is a great choice to consider.
 FerretDB combines the best of both worlds, offering the flexibility of a document database with the reliability and consistency of PostgreSQL.
 It is a document database with MongoDB compatibility built-in by enabling PostgreSQL or SQLite to run MongoDB workloads.
 

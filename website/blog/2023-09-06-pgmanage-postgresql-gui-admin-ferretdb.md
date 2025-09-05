@@ -165,7 +165,7 @@ Besides, users can track and revert changes using PgManage's "Config History" dr
 
 FerretDB gives users the chance to use MongoDB's user-friendly queries and syntax while having the reliability and robustness of a PostgreSQL backend - basically the best of both worlds.
 
-And for PostgreSQL administrators, PgManage can be an incredible tool to administer a FerretDB database, providing a intuitive to manage, scale, and configure your servers – [check it out here to get started](https://pgmanage.readthedocs.io/).
+And for PostgreSQL administrators, PgManage can be an incredible tool to administer a FerretDB database, providing an intuitive to manage, scale, and configure your servers – [check it out here to get started](https://pgmanage.readthedocs.io/).
 
 The possibilities are endless, and we can't wait to find out what you do with FerretDB and PgManage.
 For more information on FerretDB, [see our documentation](https://github.com/FerretDB/FerretDB) and [GitHub page](https://github.com/FerretDB/FerretDB).
