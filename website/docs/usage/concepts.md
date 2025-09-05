@@ -27,8 +27,7 @@ Here is an example of a single document:
 The above data is stored in a single document.
 
 :::note
-FerretDB follows almost the same naming conventions as MongoDB.
-However, there are a few restrictions, which you can find [here](../migration/compatibility.md#limitations).
+FerretDB follows almost the [same naming conventions as MongoDB with a few restrictions](../migration/compatibility.md#limitations).
 :::
 
 For complex documents, you can nest documents inside other documents:
