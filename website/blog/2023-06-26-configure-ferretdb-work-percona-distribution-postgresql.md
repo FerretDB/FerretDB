@@ -140,7 +140,7 @@ ferretdb --handler=pg --postgresql-url=postgres://127.0.0.1:5432/ferretdb --list
 Great!
 We've connected to the Percona Distribution for PostgreSQL and we're ready to start using FerretDB.
 
-Note that FerretDB provides a list of flags for configuring your database – see them [here](https://docs.ferretdb.io/configuration/flags/).
+Note that FerretDB provides [a list of flags for configuring your database](https://docs.ferretdb.io/configuration/flags/).
 
 From a new terminal, let's access the PostgreSQL command line:
 
