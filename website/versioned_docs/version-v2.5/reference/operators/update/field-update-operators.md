@@ -13,7 +13,7 @@ Field update operators allow you to modify the value of a specified field in a d
 | [`$inc`](#inc)                 | Increments a given field's value                                                             |
 | [`$mul`](#mul)                 | Multiplies a given field's value by a specific value                                         |
 | [`$rename`](#rename)           | Renames a given field with another name                                                      |
-| [`$min`](#min)                 | Updates a particular field only when the specified value is lesser than the specified value  |
+| [`$min`](#min)                 | Updates a particular field only when the specified value is less than the specified value    |
 | [`$max`](#max)                 | Updates a particular field only when the specified value is greater than the specified value |
 | [`$currentDate`](#currentdate) | Specifies the current date and time as the value of a given field                            |
 | [`$setOnInsert`](#setoninsert) | Inserts elements into an array only if they don't already exist                              |
