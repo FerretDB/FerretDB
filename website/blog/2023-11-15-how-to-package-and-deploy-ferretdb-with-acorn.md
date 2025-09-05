@@ -385,6 +385,6 @@ Acorn makes it easy to encapsulate complex services, secrets, containers, jobs, 
 Moreover, with Acorn and FerretDB being open source, you won't have to worry about vendor lock-in.
 So whether you're tinkering with new ideas or applications for production, FerretDB is an ideal option.
 
-For more information on FerreDB, check out the [docs](https://docs.ferretdb.io/quickstart-guide/) or contact any of [our community channels](https://docs.ferretdb.io/#community) for help.
+For more information on FerretDB, check out the [docs](https://docs.ferretdb.io/quickstart-guide/) or contact any of [our community channels](https://docs.ferretdb.io/#community) for help.
 
 Give it a go – deploy your FerretDB app with Acorn.
