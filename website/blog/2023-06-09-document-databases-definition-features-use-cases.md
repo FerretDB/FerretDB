@@ -189,7 +189,7 @@ It translates documents using MongoDB's BSON format to JSONB in PostgreSQL (pres
 
 Users are able to leverage similar syntax and query language as MongoDB, so an insert statement and query in FerretDB looks like this:
 
-<!-- write an insert statemnt for that document below -->
+<!-- write an insert statement for that document below -->
 
 ```js
 db.users.insert({
