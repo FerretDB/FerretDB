@@ -21,7 +21,7 @@ These are the major differences between FerretDB v1.x and v2.x:
    So if your connection string in v1.x looks like
    `mongodb://username:password@localhost:27017/ferretdb?authMechanism=PLAIN`,
    use `mongodb://username:password@localhost:27017/` with 2.x.
-   Find out more about FerretDB authentication [here](../security/authentication.md).
+   Find out more about [FerretDB authentication](../security/authentication.md).
 3. OpLog is not supported yet.
 
 ## Migrating from FerretDB v1.x to v2.x
