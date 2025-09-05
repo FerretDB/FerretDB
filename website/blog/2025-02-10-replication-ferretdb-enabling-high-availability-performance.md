@@ -103,7 +103,7 @@ Applications relying on real-time data consistency must account for potential di
 ## Getting started with replication in FerretDB
 
 Replication is one of the new features that come with FerretDB 2.0 – it also includes vector search, extensive aggregation operations, and higher feature compatibility with MongoDB.
-Learn more about the release [here](2025-01-23-ferretdb-releases-v2-faster-more-compatible-mongodb-alternative.md).
+[Learn more about the release](2025-01-23-ferretdb-releases-v2-faster-more-compatible-mongodb-alternative.md).
 
 Organizations can now go ahead to implement replication strategies based on their workload requirements, performance needs, and geographic distribution goals.
 They can improve query response times, balance traffic, and scale globally with replication.
