@@ -442,7 +442,7 @@ db.createUser({
 })
 ```
 
-You can learn more about authentication in FerretDB [here](https://docs.ferretdb.io/security/authentication/).
+You can learn more about [authentication in FerretDB](https://docs.ferretdb.io/security/authentication/).
 
 ### 19. Delete user
 
