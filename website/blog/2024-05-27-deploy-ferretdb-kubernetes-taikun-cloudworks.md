@@ -57,7 +57,7 @@ You can set it up on a Kubernetes cluster through the Percona PostgreSQL Operato
 
 So start by installing the Operator with `kubectl` on your Kubernetes environment setup.
 
-Apply the Percona PostgreSQL Operator within the `ferretdb` namepace:
+Apply the Percona PostgreSQL Operator within the `ferretdb` namespace:
 
 ```sh
 kubectl apply --server-side -f https://raw.githubusercontent.com/percona/percona-postgresql-operator/v2.3.1/deploy/bundle.yaml -n ferretdb
