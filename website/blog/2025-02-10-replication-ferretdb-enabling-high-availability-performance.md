@@ -109,6 +109,6 @@ Organizations can now go ahead to implement replication strategies based on thei
 They can improve query response times, balance traffic, and scale globally with replication.
 
 As FerretDB evolves, expect even more enhancements to support load-intensive applications that want to migrate from MongoDB.
-FerretDB Cloud is also in the works, offering a fully managed database service – join the waitlist for early access [here](https://cloud.ferretdb.com/signup).
+FerretDB Cloud is also in the works, offering a fully managed database service – join the [waitlist for early access](https://cloud.ferretdb.com/signup).
 
 For a more extensive implementation of replication in FerretDB, [check out our guide on setting up replication for FerretDB](https://docs.ferretdb.io/guides/replication/).
