@@ -130,7 +130,7 @@ You can connect PgManage with the `ferretdb` database using the exposed Postgres
 
 Once you've signed in to PgManage, navigate to the "Connections" tab, and click "Manage connections"; go ahead and add a new connection.
 
-![Connection setttings](/img/blog/ferretdb-pgmanage/connection-settings.png)
+![Connection settings](/img/blog/ferretdb-pgmanage/connection-settings.png)
 
 Test the connection to be sure it's successful, and then save changes.
 With FerretDB connection to PgManage, you'll be able to access all the data in `ferretdb`.
