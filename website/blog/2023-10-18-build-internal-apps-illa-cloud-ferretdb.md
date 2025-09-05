@@ -61,7 +61,7 @@ ILLA provides "Action type", "Collection", and "Transformer" methods when creati
 
 ### 1. Query all data using `find`
 
-Let's an create action for retrieving all the data in the `supply` collection of the FerretDB instance.
+Let's create action for retrieving all the data in the `supply` collection of the FerretDB instance.
 
 ![Actions to display for query all on supply collection](/img/blog/ferretdb-illacloud/5-query-all-data.png)
 
