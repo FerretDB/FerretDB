@@ -62,7 +62,7 @@ You can deploy a managed FerretDB instance on Taikun CloudWorks using the Ferret
 FerretDB relies on PostgreSQL as the backend database, and the Percona PostgreSQL Operator provides a robust and scalable PostgreSQL solution.
 So before installing the chart, ensure the [Percona PostgreSQL Operator](https://github.com/percona/percona-postgresql-operator) is installed and running in your Kubernetes cluster.
 
-You can install the Percona PostgreSQL Operator by following their installation guide [here](https://github.com/percona/percona-postgresql-operator#installation) or by running the following command:
+You can [install the Percona PostgreSQL Operator by following their installation guide](https://github.com/percona/percona-postgresql-operator#installation) or by running the following command:
 
 ```sh
 kubectl apply --server-side -f https://raw.githubusercontent.com/percona/percona-postgresql-operator/v2.3.1/deploy/bundle.yaml -n newferret
