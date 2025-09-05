@@ -76,7 +76,7 @@ You can go ahead to start the services with `docker compose up -d`.
 FerretDB enables you to perform MongoDB queries and commands and stores the data in Postgres.
 For the purpose of this tutorial, we'll be adding sample data to the FerretDB database.
 
-If you have `mongosh`, you can run FerretDB using this connection URI with the right authentucation credentials:
+If you have `mongosh`, you can run FerretDB using this connection URI with the right authentication credentials:
 
 ```sh
 mongodb://username:password@127.0.0.1/ferretdb?authMechanism=PLAIN

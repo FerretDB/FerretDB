@@ -175,7 +175,7 @@ networks:
 ```
 
 You can then start the services with `docker compose up -d`.
-Once the services are up and running, you can connect to the FerretDB instance using the authencation credentials created during the setup.
+Once the services are up and running, you can connect to the FerretDB instance using the authentication credentials created during the setup.
 
 ```sh
 mongosh "mongodb://user:pass@ferretdb/ferretdb"
