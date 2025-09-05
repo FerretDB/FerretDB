@@ -275,7 +275,7 @@ db.books.aggregate([
 ])
 ```
 
-Find out more about aggregation pipelines in FerretDB [here](https://docs.ferretdb.io/usage/aggregation/).
+Find out more about [aggregation pipelines in FerretDB](https://docs.ferretdb.io/usage/aggregation/).
 
 ### 14. Run analytical operations on FerretDB with `$group` and `$avg`
 
