@@ -25,7 +25,7 @@ This is how the members of the open source community encourage new tech enthusia
 
 [Hacktoberfest](https://hacktoberfest.com/) is an annual online event celebrating the open source movement.
 This year, registration starts on September 26.
-To participate, you need to send at least four open-sourced pull requests on GitHub or Gitlab between September 26th and October 31st, for projects that indicate they are looking for Hacktoberfest contributions (`hacktoberfest` topics), and those pull requests need to be accepted by the repository owners.
+To participate, you need to send at least four open-sourced pull requests on GitHub or GitLab between September 26th and October 31st, for projects that indicate they are looking for Hacktoberfest contributions (`hacktoberfest` topics), and those pull requests need to be accepted by the repository owners.
 
 The participants who complete Hacktoberfest can receive one of these prizes: a tree planted in their name or a unique digital reward.
 
