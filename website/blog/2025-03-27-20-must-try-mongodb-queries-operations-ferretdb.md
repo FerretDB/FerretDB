@@ -156,7 +156,7 @@ For instance, to drop the index on the `title` field:
 db.books.dropIndex({ title: 1 })
 ```
 
-Learn more about indexes in FerretDB [here](https://docs.ferretdb.io/usage/indexes/).
+Learn more about [indexes in FerretDB](https://docs.ferretdb.io/usage/indexes/).
 
 ### 9. TTL indexes
 
