@@ -47,7 +47,7 @@ Telling users to go on-prem if they don't like the fees is cynical and not feasi
 Moreover, I am curious about the amount of source code which is available for MongoDB Atlas, which you would theoretically need to run in order to replace it.
 
 When MongoDB requested the OSI to recognize SSPL as an Open Source license, they were not taken aback by the fact that it was [not recognized as such](https://opensource.org/node/1099).
-However, [MongoDB proceeded to continue calling theselves Open Source](https://www.mongodb.com/why-use-mongodb), just because they could.
+However, [MongoDB proceeded to continue calling themselves Open Source](https://www.mongodb.com/why-use-mongodb), just because they could.
 They still do.
 They decided that they understand better what the definition of open source is.
 
