@@ -163,7 +163,7 @@ Learn more about indexes in FerretDB [here](https://docs.ferretdb.io/usage/index
 A Time-To-Live (TTL) index auto-deletes expired data after a set time.
 That means no manual deletions and no bloated storage.
 
-If a library tracks book reservations for instance, a TTL index can remove records after a year, so outdated holds don't clutter queries or waste space.
+If a library tracks book reservations, for instance, a TTL index can remove records after a year, so outdated holds don't clutter queries or waste space.
 
 It is recommended to create the TTL index before inserting documents.
 So if the document was added before the TTL index, it may not be affected until a new one is inserted.
