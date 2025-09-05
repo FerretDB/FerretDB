@@ -195,7 +195,7 @@ func TestEndSessionsUnauthenticated(t *testing.T) {
 }
 
 // endSession sends a request to end the given session.
-// If expectedErr is not nil, the error is checked, otherwise it checks the response.
+// If expectedErr is not nil, the error is checked; otherwise, it checks the response.
 func endSessions(t testing.TB, ctx context.Context, conn *wireclient.Conn, dbName string, sessions any, expectedErr *wirebson.Document) {
 	msg := wire.MustOpMsg(
 		"endSessions", sessions,

@@ -544,7 +544,7 @@ func startSession(t testing.TB, ctx context.Context, conn *wireclient.Conn) wire
 }
 
 // killCursors sends a request to kill the given cursor.
-// If expectedErr is not nil, the error is checked, otherwise it checks the response.
+// If expectedErr is not nil, the error is checked; otherwise, it checks the response.
 // If expectedErr does not have `errmsg` field set, it compares error code only.
 func killCursors(t testing.TB, ctx context.Context, conn *wireclient.Conn, dbName, cName string, cursorID, sessionID any, expectedErr *wirebson.Document) {
 	msg := wire.MustOpMsg(
@@ -657,7 +657,7 @@ func find(t testing.TB, ctx context.Context, conn *wireclient.Conn, db, coll str
 
 // getMore sends a request and checks the next batch contains a document {_id: 'b'}
 // When non-empty sessionID is provided, `lsid` field is set.
-// If expectedErr is not nil, the error is checked, otherwise it checks the response.
+// If expectedErr is not nil, the error is checked; otherwise, it checks the response.
 func getMore(t testing.TB, ctx context.Context, conn *wireclient.Conn, db, coll string, sessionID wirebson.Binary, cursorID any, expectedErr *wirebson.Document) {
 	msg := wire.MustOpMsg(
 		"getMore", cursorID,
