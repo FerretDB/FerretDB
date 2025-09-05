@@ -32,7 +32,7 @@ Before you proceed, you will need to have the following:
 
 ## Creating FerretDB resource
 
-We'll use ILLA Builder to create a simple dashboard UI for the FerretDB intance.
+We'll use ILLA Builder to create a simple dashboard UI for the FerretDB instance.
 
 ![ILLA Builder](/img/blog/ferretdb-illacloud/1-illabuilder.png)
 
