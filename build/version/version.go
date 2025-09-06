@@ -208,7 +208,7 @@ func readBuildInfo() (version, commit string) {
 	if buildInfo.Main.Path == ferretdbModule {
 		version = buildInfo.Main.Version
 
-		// in the case 1 even for tags due to https://github.com/golang/go/issues/72877
+		// for case 1, even for tags due to https://github.com/golang/go/issues/72877
 		if version == "(devel)" {
 			version = ""
 		}
