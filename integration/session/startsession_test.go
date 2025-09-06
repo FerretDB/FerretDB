@@ -592,7 +592,7 @@ func killCursors(t testing.TB, ctx context.Context, conn *wireclient.Conn, dbNam
 	testutil.AssertEqual(t, expected, res)
 }
 
-// find sends a request with a batch size of 1 and returns cursorID.
+// find sends a request with a batch size of `1` and returns cursorID.
 // When non-empty sessionID is provided, `lsid` field is set.
 // It checks the first batch contains a document {_id: 'a'}.
 func find(t testing.TB, ctx context.Context, conn *wireclient.Conn, db, coll string, sessionID wirebson.Binary) any {
