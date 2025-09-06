@@ -199,7 +199,7 @@ deno run --allow-net --allow-read --allow-write index.ts
 
 Once the application is up and running, the endpoint `http://localhost:3000/` should be accessible.
 
-We will setup a connection in Postman to test if the Deno server is running and accessible.
+We will set up a connection in Postman to test if the Deno server is running and accessible.
 If it is, you should get this response from the API:
 
 ```json
