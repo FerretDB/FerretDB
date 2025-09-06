@@ -17,7 +17,7 @@ What if you could overcome Node.js's limitations and build a RESTful API with en
 [Node.js](https://nodejs.org/en) has been the most popular server-side JavaScript runtime environment for quite some time now.
 For many developers, it has become a crucial part of the popularized web development stacks such as MEAN (MongoDB, Express, Angular, and Node.js) and MERN (MongoDB, Express, React, and Node.js).
 
-However, Node.js is not without its limitations – a centralized module system, no built-in support for Typescript, complex dependency management, and poor security.
+However, Node.js is not without its limitations – a centralized module system, no built-in support for TypeScript, complex dependency management, and poor security.
 
 To address these issues, the creators of Node.js developed [Deno](https://deno.com/).
 It comes with built-in TypeScript support, a more secure runtime that requires explicit permission to access files, networks, and environments, and a simplified module system that uses URL imports instead of centralized packages.
