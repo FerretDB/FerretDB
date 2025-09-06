@@ -18,7 +18,7 @@ Recently, we've been working on a new backend architecture, along with the addit
 We are confident that these improvements will help us deliver a better optimized [open source database alternative to MongoDB](https://blog.ferretdb.io/open-source-is-in-danger/), and also allow more developers to take advantage of FerretDB.
 
 The massive support and significant contributions from the community cannot be understated in this progress.
-In this release alone, we had 4 new contributors – [@aenkya](https://github.com/aenkya), [@pratikmota](https://github.com/pratikmota), [@durgakiran](https://github.com/durgakiran), and [@slavabobik](https://github.com/slavabobik) – which is so amazing!
+In this release alone, we had four new contributors – [@aenkya](https://github.com/aenkya), [@pratikmota](https://github.com/pratikmota), [@durgakiran](https://github.com/durgakiran), and [@slavabobik](https://github.com/slavabobik) – which is so amazing!
 Surely, this is a sign of our growing community and the incredible potential of FerretDB.
 
 Let's have a look at some of the key changes in this release.
