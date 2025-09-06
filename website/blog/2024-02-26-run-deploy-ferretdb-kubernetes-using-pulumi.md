@@ -54,7 +54,7 @@ This guide uses minikube to create a cluster.
 minikube is a local Kubernetes setup that makes it easy to learn, experiment, and develop for Kubernetes.
 Check out the minikube [setup on how to get started and create a cluster](https://minikube.sigs.k8s.io/docs/start/).
 
-Please also ensure that your cluster is set as the current context.
+Please ensure that your cluster is set as the current context.
 
 To list all available contexts available to `kubectl`:
 

@@ -233,7 +233,7 @@ They also send telemetry traces to the local Jaeger instance that can be accesse
 Above everything else, we value consistency in the source code.
 If you see some code that doesn't follow some best practice but is consistent,
 please keep it that way;
-but please also tell us about it, so we can improve all of it.
+but please tell us about it, so we can improve all of it.
 If, on the other hand, you see code that is inconsistent without apparent reason (or comment),
 please improve it as you work on it.
 
@@ -357,7 +357,7 @@ Before submitting a pull request, please make sure that:
 3. Comments are added or updated for all new or changed code.
    Please add missing comments for all (both exported and unexported)
    new and changed top-level declarations (`package`, `var`, `const`, `func`, `type`).
-   Please also check that formatting is correct in the `task godocs` output.
+   Please check that formatting is correct in the `task godocs` output.
 4. `task all` passes.
 
 #### Submitting PR
