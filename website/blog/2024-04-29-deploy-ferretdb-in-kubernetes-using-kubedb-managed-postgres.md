@@ -26,7 +26,7 @@ This blog post will demonstrate how to run and deploy FerretDB in Kubernetes usi
 
 Ensure to have the following set up.
 
-- Kubernetes cluster ([Minikube](https://minikube.sigs.k8s.io/docs/start/) or [Docker Desktop's Kubernetes](https://www.docker.com/products/docker-desktop/), or any cloud-based service ypu prefer)
+- Kubernetes cluster ([Minikube](https://minikube.sigs.k8s.io/docs/start/) or [Docker Desktop's Kubernetes](https://www.docker.com/products/docker-desktop/), or any cloud-based service you prefer)
 - [Get AppsCode License (get cluster ID)](https://appscode.com/issue-license/)
 - [Helm](https://helm.sh/)
 - [`kubectl`](https://kubernetes.io/docs/reference/kubectl/)
