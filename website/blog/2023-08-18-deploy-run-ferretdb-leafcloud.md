@@ -372,7 +372,7 @@ hippo-repo-host-0          2/2     Running     0          7h
 pgo-6f664c9f44-mmptx       1/1     Running     0          7h
 ```
 
-Next you need to connect using your FerretDB URI, where username and password should correspond with the PosgreSQL credentials set earlier, and you can get the FERRETDB SVC (`10.254.17.193:27017`) by running `kubectl get svc -n postgres-operator`.
+Next you need to connect using your FerretDB URI, where username and password should correspond with the PostgreSQL credentials set earlier, and you can get the FERRETDB SVC (`10.254.17.193:27017`) by running `kubectl get svc -n postgres-operator`.
 
 ```text
 kubectl get svc -n postgres-operator
