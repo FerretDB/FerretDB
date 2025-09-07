@@ -6,6 +6,8 @@ FROM --platform=linux/amd64 ghcr.io/ferretdb/postgres-documentdb-dev:17-ferretdb
 
 RUN --mount=type=cache,target=/var/cache/apt <<EOF
 
+apt install -y curl
+
 curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash
 
 curl -L https://pgp.mongodb.com/server-7.0.asc | apt-key add -
