@@ -81,7 +81,7 @@ The results will be saved `tmp/bin`.
 ### Setting a GITHUB_TOKEN
 
 Some of our development tools require access to public information on GitHub
-at a rate higher than allowed for unauthenticated requests.
+at a rate beyond that allowed for unauthenticated requests.
 Those tools will report a problem in this case.
 It could be solved by creating a new classic or fine-grained personal access token
 [there](https://github.com/settings/tokens).
