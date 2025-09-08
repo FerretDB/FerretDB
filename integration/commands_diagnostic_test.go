@@ -269,48 +269,48 @@ func TestHostInfoCommand(t *testing.T) {
 	for _, elem := range a {
 		switch elem.Key {
 		case "system":
-			var elemForComparsion bson.D
+			var elemForComparison bson.D
 
 			for _, subElem := range elem.Value.(bson.D) {
 				switch subElem.Key {
 				case "currentTime":
 					assert.IsType(t, primitive.DateTime(0), subElem.Value)
-					elemForComparsion = append(elemForComparsion, bson.E{"currentTime", primitive.DateTime(0)})
+					elemForComparison = append(elemForComparison, bson.E{"currentTime", primitive.DateTime(0)})
 
 				case "hostname", "cpuArch":
 					assert.IsType(t, "", subElem.Value)
-					elemForComparsion = append(elemForComparsion, bson.E{subElem.Key, ""})
+					elemForComparison = append(elemForComparison, bson.E{subElem.Key, ""})
 
 				case "cpuAddrSize", "numCores":
 					assert.IsType(t, int32(0), subElem.Value)
-					elemForComparsion = append(elemForComparsion, bson.E{subElem.Key, int32(0)})
+					elemForComparison = append(elemForComparison, bson.E{subElem.Key, int32(0)})
 
 				case "numPhysicalCores", "numCpuSockets", "numNumaNodes", "numaEnabled", "memSizeMB", "memLimitMB":
 					// not implemented in FerretDB, do nothing
 					// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/587
 
 				default:
-					elemForComparsion = append(elemForComparsion, subElem)
+					elemForComparison = append(elemForComparison, subElem)
 				}
 			}
 
-			actualComparable = append(actualComparable, bson.E{"system", elemForComparsion})
+			actualComparable = append(actualComparable, bson.E{"system", elemForComparison})
 
 		case "os":
-			var elemForComparsion bson.D
+			var elemForComparison bson.D
 
 			for _, subElem := range elem.Value.(bson.D) {
 				switch subElem.Key {
 				case "type", "name", "version":
 					assert.IsType(t, "", subElem.Value)
-					elemForComparsion = append(elemForComparsion, bson.E{subElem.Key, ""})
+					elemForComparison = append(elemForComparison, bson.E{subElem.Key, ""})
 
 				default:
-					elemForComparsion = append(elemForComparsion, subElem)
+					elemForComparison = append(elemForComparison, subElem)
 				}
 			}
 
-			actualComparable = append(actualComparable, bson.E{"os", elemForComparsion})
+			actualComparable = append(actualComparable, bson.E{"os", elemForComparison})
 
 		case "extra":
 			assert.IsType(t, bson.D{}, elem.Value)
@@ -349,7 +349,7 @@ func TestListCommandsCommand(t *testing.T) {
 	err := collection.Database().RunCommand(ctx, bson.D{{"listCommands", 42}}).Decode(&res)
 	require.NoError(t, err)
 
-	var actualForComparsion bson.D
+	var actualForComparison bson.D
 
 	for _, v := range res {
 		switch v.Key {
@@ -383,10 +383,10 @@ func TestListCommandsCommand(t *testing.T) {
 				}
 			}
 
-			actualForComparsion = append(actualForComparsion, bson.E{"commands", commandsComparable})
+			actualForComparison = append(actualForComparison, bson.E{"commands", commandsComparable})
 
 		default:
-			actualForComparsion = append(actualForComparsion, v)
+			actualForComparison = append(actualForComparison, v)
 		}
 	}
 
@@ -395,7 +395,7 @@ func TestListCommandsCommand(t *testing.T) {
 		{"ok", float64(1)},
 	}
 
-	AssertEqualDocuments(t, expected, actualForComparsion)
+	AssertEqualDocuments(t, expected, actualForComparison)
 }
 
 func TestValidateCommand(t *testing.T) {
