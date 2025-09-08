@@ -69,10 +69,10 @@ The proxy is a single point of failure, it is intentionally set up this way to s
 
 ![FerretDB before recovery without Nova](/img/blog/ferretdb-nova/ferretdb-before-recovery-without-nova.png)
 
-With the described setup in place, Nova can execute the following recovery steps if Cluster 1 fails:
+With the described setup in place, Nova can execute the following recovery steps if cluster 1 fails:
 
 1. Set Percona cluster 2 as primary
-2. Set Percona cluster 1 as standby (You cannot have two primary clusters simultaneously in one setup as it would disrupt the backup process. If Cluster 1 is initially marked as failed due to network issues and Cluster 2 takes over, Nova must ensure that, if Cluster 1 becomes available again, it does not reconnect as the primary.)
+2. Set Percona cluster 1 as standby (You cannot have two primary clusters simultaneously in one setup as it would disrupt the backup process. If cluster 1 is initially marked as failed due to network issues and cluster 2 takes over, Nova must ensure that, if cluster 1 becomes available again, it does not reconnect as the primary.)
 3. Connect HAProxy to FerretDB in cluster 2
 
 ## Automating the setup and recovery execution

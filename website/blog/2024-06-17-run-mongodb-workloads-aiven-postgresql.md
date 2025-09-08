@@ -124,7 +124,7 @@ db.astronomy.insertMany([
 ])
 ```
 
-So we have an `astronomy` collection containing 5 documents with different star data, including their mass, diameter, and distance from Earth.
+So we have an `astronomy` collection containing five documents with different star data, including their mass, diameter, and distance from Earth.
 Note that the mass is in kilograms, the diameter in kilometers, and the distance from Earth in light years.
 
 #### Query the data

@@ -19,7 +19,7 @@ If you're unfamiliar with the new PostgreSQL backend, [here's an overview that s
 
 It's been an exciting time at FerretDB and the open source community as we rounded up the last of the Hactoberfest PRs.
 We celebrate all the new contributors to FerretDB and their support for a truly open source alternative to MongoDB.
-In this latest release, we had 3 new contributors to FerretDB: [@ShatilKhan](https://github.com/ShatilKhan), [@rubiagatra](https://github.com/rubiagatra), and [@gen1us2k](https://github.com/gen1us2k).
+In this latest release, we had three new contributors to FerretDB: [@ShatilKhan](https://github.com/ShatilKhan), [@rubiagatra](https://github.com/rubiagatra), and [@gen1us2k](https://github.com/gen1us2k).
 
 Let's check out the new features.
 

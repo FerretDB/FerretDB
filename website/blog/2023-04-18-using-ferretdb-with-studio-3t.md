@@ -210,7 +210,7 @@ db.test.insertMany([
 ])
 ```
 
-This should insert 4 documents into the collection.
+This should insert four documents into the collection.
 If it's not visible on the screen, right the collection and click "Refresh".
 
 ![Insert operation](/img/blog/ferretdb-studio3t/image6.png)
