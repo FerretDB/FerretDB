@@ -156,7 +156,7 @@ For instance, to drop the index on the `title` field:
 db.books.dropIndex({ title: 1 })
 ```
 
-Learn more about indexes in FerretDB [here](https://docs.ferretdb.io/usage/indexes/).
+Learn more about [indexes in FerretDB](https://docs.ferretdb.io/usage/indexes/).
 
 ### 9. TTL indexes
 
@@ -275,7 +275,7 @@ db.books.aggregate([
 ])
 ```
 
-Find out more about aggregation pipelines in FerretDB [here](https://docs.ferretdb.io/usage/aggregation/).
+Find out more about [aggregation pipelines in FerretDB](https://docs.ferretdb.io/usage/aggregation/).
 
 ### 14. Run analytical operations on FerretDB with `$group` and `$avg`
 
@@ -442,7 +442,7 @@ db.createUser({
 })
 ```
 
-You can learn more about authentication in FerretDB [here](https://docs.ferretdb.io/security/authentication/).
+You can learn more about [authentication in FerretDB](https://docs.ferretdb.io/security/authentication/).
 
 ### 19. Delete user
 

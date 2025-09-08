@@ -94,5 +94,4 @@ If you're still on v1, you're missing out on all these new features and improvem
 FerretDB v2 is the most feature-complete open source alternative to MongoDB – see our
 [releases page](https://github.com/FerretDB/FerretDB/releases) to try it out!
 
-If you have any questions about FerretDB, please feel free to reach out on any of our channels listed
-[here](https://docs.ferretdb.io/#community).
+If you have any questions about FerretDB, please feel free to reach out on any of our [channels](https://docs.ferretdb.io/#community).

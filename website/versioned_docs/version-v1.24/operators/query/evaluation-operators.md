@@ -129,7 +129,7 @@ The output:
 
 :::note
 The regex flag for ignoring white spaces (`x`) is not currently supported.
-Follow [here](https://github.com/FerretDB/FerretDB/issues/592) for more updates.
+Follow [FerretDB/FerretDB#592](https://github.com/FerretDB/FerretDB/issues/592) for more updates.
 :::
 
 To perform case-insensitive matching, use the `i` flag in the `regex` expression.

@@ -95,7 +95,7 @@ We are also proud to announce that FerretDB now has:
 With the release of FerretDB 1.0, these numbers will only continue to grow.
 
 We are executing on our [roadmap](https://github.com/orgs/FerretDB/projects/2), and are planning to add more significant features in the coming months.
-Get started with FerretDB 1.0 GA [here](https://github.com/FerretDB/FerretDB#quickstart).
+Get started with [FerretDB 1.0 GA](https://github.com/FerretDB/FerretDB#quickstart).
 
 ## Where are we headed?
 

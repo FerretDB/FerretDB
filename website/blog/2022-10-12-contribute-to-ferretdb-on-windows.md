@@ -51,7 +51,7 @@ Apart from the Git settings, you also need to configure Docker.
 
 We should have installed git, Golang, and Docker for Windows by now.
 
-To start contributing, we will need the FerretDB source code located [here](https://github.com/FerretDB/FerretDB.git).
+To start contributing, we will need the [FerretDB source code](https://github.com/FerretDB/FerretDB.git).
 So we must fork the repository to make it possible to send PR.
 
 ![fork the FerretDB repository](/img/blog/image6.png)

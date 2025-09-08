@@ -223,4 +223,4 @@ In addition to this, you can also leverage NoSQLBooster's Visual Explain tool to
 Beyond the examples shown in this article, you can explore other features of FerretDB using NoSQLBooster and other MongoDB GUI applications.
 With every new release, FerretDB builds on its list of new features ([see them here](https://blog.ferretdb.io/ferretdb-v-1-5-0-beta-support-sqlite/)) and compatible applications.
 
-If you would like to contribute or are interested in learning more about FerretDB, please reach out to us [here](https://github.com/FerretDB/FerretDB/#community).
+If you would like to contribute or are interested in learning more about FerretDB, please [reach out to us](https://github.com/FerretDB/FerretDB/#community).

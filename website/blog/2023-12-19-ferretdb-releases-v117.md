@@ -41,7 +41,7 @@ We've also improved `validate` diagnostic command, and added more fields to `lis
 
 ## We wish you a happy holiday season
 
-Find the complete list of changes for FerretDB v1.17.0 [here](https://github.com/FerretDB/FerretDB/releases/tag/v1.17.0)
+Find the complete list of changes for [FerretDB v1.17.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.17.0)
 
 Thank you to everyone who contributed to this release, the open source community, and to all our users for your continued support.
 
