@@ -908,7 +908,7 @@ func createKillSessionUser(t *testing.T, ctx context.Context, db *mongo.Database
 }
 
 // killAllSessionsByPattern sends a request to kill all sessions that matches the pattern.
-// If expectedErr is not nil, the error is checked, otherwise it checks the response.
+// If expectedErr is not nil, the error is checked; otherwise, it checks the response.
 func killAllSessionsByPattern(t testing.TB, ctx context.Context, conn *wireclient.Conn, dbName string, pattern any, expectedErr *wirebson.Document) {
 	msg := wire.MustOpMsg(
 		"killAllSessionsByPattern", pattern,
