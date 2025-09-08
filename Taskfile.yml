@@ -322,6 +322,7 @@ tasks:
         --no-auth
         --listen-addr=:27017
         --listen-data-api-addr=127.0.0.1:8899
+        --listen-mcp-addr=127.0.0.1:8081
         --proxy-addr=127.0.0.1:37017
         --postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
@@ -336,6 +337,7 @@ tasks:
         --mode={{.MODE}}
         --listen-addr=:27017
         --listen-data-api-addr=127.0.0.1:8899
+        --listen-mcp-addr=127.0.0.1:8081
         --proxy-addr=127.0.0.1:47017
         --postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
@@ -352,6 +354,7 @@ tasks:
         --no-auth
         --listen-addr=:27017
         --listen-data-api-addr=127.0.0.1:8899
+        --listen-mcp-addr=127.0.0.1:8081
         --proxy-addr=127.0.0.1:37017
         --postgresql-url='postgres://username:password@127.0.0.1:5433/yugabyte'
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
@@ -366,6 +369,7 @@ tasks:
         --mode={{.MODE}}
         --listen-addr=:27017
         --listen-data-api-addr=127.0.0.1:8899
+        --listen-mcp-addr=127.0.0.1:8081
         --proxy-addr=127.0.0.1:47017
         --postgresql-url='postgres://username:password@127.0.0.1:5433/yugabyte'
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
@@ -408,6 +412,11 @@ tasks:
     cmds:
       - bin/pkgsite{{exeExt}} -http=127.0.0.1:6060 -open
 
+  ollama-model:
+    desc: "Pull Ollama model"
+    cmds:
+      - ollama pull qwen3:0.6b
+
   ollama:
     desc: "Run Ollama server"
     cmds:
@@ -419,8 +428,7 @@ tasks:
   mcphost:
     desc: "Run MCPHost for local Ollama server"
     cmds:
-      # TODO https://github.com/FerretDB/FerretDB/issues/5277
-      # - bin/mcphost --config build/mcphost.json --model ollama:{{.LLM}}
+      - bin/mcphost --config build/mcphost.json --model ollama:{{.LLM}}
 
   psql:
     desc: "Run psql"

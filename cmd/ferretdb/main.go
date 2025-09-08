@@ -74,6 +74,7 @@ var cli struct {
 		TLSKeyFile  string `default:""                help:"TLS key file path."`
 		TLSCaFile   string `default:""                help:"TLS CA file path."`
 		DataAPIAddr string `default:""                help:"Listen TCP address for HTTP Data API."`
+		MCPAddr     string `default:""                help:"Listen TCP address for MCP server. Unauthenticated."`
 	} `embed:"" prefix:"listen-" group:"Interfaces"`
 
 	Proxy struct {
@@ -252,6 +253,7 @@ func checkFlags(logger *slog.Logger) {
 		&cli.Listen.Unix,
 		&cli.Listen.TLS,
 		&cli.Listen.DataAPIAddr,
+		&cli.Listen.MCPAddr,
 		&cli.DebugAddr,
 		&cli.OTel.Traces.URL,
 	} {
@@ -272,6 +274,10 @@ func checkFlags(logger *slog.Logger) {
 
 	if !cli.Auth {
 		logger.WarnContext(ctx, "Authentication is disabled; the server will accept any connection")
+	}
+
+	if cli.Auth && cli.Listen.MCPAddr != "" {
+		logger.WarnContext(ctx, "MCP server is enabled; MCP server does not support authentication; it will accept any request")
 	}
 }
 
@@ -491,6 +497,8 @@ func run() {
 		TestRecordsDir: cli.Dev.RecordsDir,
 
 		DataAPIAddr: cli.Listen.DataAPIAddr,
+
+		MCPAddr: cli.Listen.MCPAddr,
 	})
 	if res == nil {
 		os.Exit(1)
