@@ -65,7 +65,7 @@ That will produce a Docker image with tag `cla-assistant-local:latest` that you 
 
 Next, we will need to register an OAuth App [there](https://github.com/settings/developers) that will be used by CLA Assistant to receive webhooks from pull requests:
 
-![Register an Oauth App](/img/blog/cla1.jpg)
+![Register an OAuth App](/img/blog/cla1.jpg)
 
 App's Authorization callback URL should be `https://<domain>/auth/github/callback`.
 

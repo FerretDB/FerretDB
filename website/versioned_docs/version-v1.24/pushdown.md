@@ -21,7 +21,7 @@ You can learn more about query pushdown in our [blog post](https://blog.ferretdb
 
 The following table shows all operators and types that FerretDB pushdowns on PostgreSQL backend.
 If filter uses type and operator, that's marked as pushdown-supported on this list,
-FerretDB will prefetch less data, resulting with more performent query.
+FerretDB will prefetch less data, resulting with more performant query.
 
 If your application requires better performance for specific operation,
 feel free to share this with us in our [community](/#community)!

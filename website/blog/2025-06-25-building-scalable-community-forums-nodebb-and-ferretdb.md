@@ -78,7 +78,7 @@ Here's a step-by-step guide to get you started:
 
    NodeBB also requires an admin user to be created during the setup process.
    Do this by providing the username, email, and password credentials when prompted.
-   You will need the admin credentials to login to the admin panel of your NodeBB forum.
+   You will need the admin credentials to log in to the admin panel of your NodeBB forum.
 
 4. **Launch NodeBB and test:** Once configured, launch your NodeBB application by running `./nodebb start` from the NodeBB root directory.
 5. **Access your NodeBB forum:**

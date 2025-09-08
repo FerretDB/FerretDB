@@ -38,7 +38,7 @@ You would do the following:
          --postgresql-url=<postgres_connection>
    ```
 
-   The `--listen-addr` flag or the `FERRERDB_LISTEN_ADDR` environment variable is set to `127.0.0.1:27017` by default.
+   The `--listen-addr` flag or the `FERRETDB_LISTEN_ADDR` environment variable is set to `127.0.0.1:27017` by default.
 
 2. Run `mongosh` to connect to the `--listen-addr` and then insert some documents.
 3. Run a query to fetch the first post from each author sorted by date and author.

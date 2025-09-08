@@ -22,7 +22,7 @@ It also supports branching, which allows you to create a copy of your database i
 Neon maintains 100% compatibility with any application that uses the official Postgres release.
 That makes Neon a good option to consider as the database backend for FerretDB, while leveraging Neon's native features to scale and manage your database infrastructure easily.
 
-In this blog post, you'll learn about FerretDB and and how you can add MongoDB compatibility to Neon.
+In this blog post, you'll learn about FerretDB and how you can add MongoDB compatibility to Neon.
 
 ## Advantages of using FerretDB
 

@@ -113,7 +113,7 @@ The community may suggest the direction for evolving the project, which is anoth
 And who knows?
 Maybe at one point, PostgreSQL may become one database for everything.
 
-[Check out FerretDB on Github](https://github.com/FerretDB/FerretDB).
+[Check out FerretDB on GitHub](https://github.com/FerretDB/FerretDB).
 
 [Check out Tembo on GitHub](https://github.com/tembo-io/tembo).
 

@@ -194,7 +194,7 @@ test>
 
 ```
 
-With the insertOne() comand, one document record is inserted into the collection.
+With the insertOne() command, one document record is inserted into the collection.
 Let's attempt to retrieve the documents in this collection using the find() method:
 
 ```js
