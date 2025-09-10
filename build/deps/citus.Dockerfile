@@ -1,1 +1,1 @@
-FROM citusdata/citus:13.0
+FROM citusdata/citus:13.2
