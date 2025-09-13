@@ -281,7 +281,7 @@ func TestHostInfoCommand(t *testing.T) {
 					assert.IsType(t, "", subElem.Value)
 					elemForComparison = append(elemForComparison, bson.E{subElem.Key, ""})
 
-				case "cpuAddrSize", "numCores":
+				case "cpuAddrSize", "numCores", "numCoresAvailableToProcess":
 					assert.IsType(t, int32(0), subElem.Value)
 					elemForComparison = append(elemForComparison, bson.E{subElem.Key, int32(0)})
 
@@ -327,6 +327,7 @@ func TestHostInfoCommand(t *testing.T) {
 			{"hostname", ""},
 			{"cpuAddrSize", int32(0)},
 			{"numCores", int32(0)},
+			{"numCoresAvailableToProcess", int32(0)},
 			{"cpuArch", ""},
 		}},
 		{"os", bson.D{
