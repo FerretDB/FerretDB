@@ -21,6 +21,8 @@ import (
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel"
+	otelsemconv "go.opentelemetry.io/otel/semconv/v1.34.0"
+	oteltrace "go.opentelemetry.io/otel/trace"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/bsonhex"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
@@ -34,7 +36,14 @@ import (
 //
 //nolint:lll // copied from generated code
 func DropIndexes(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, arg wirebson.RawDocument, retVal wirebson.RawDocument) (outRetVal wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.drop_indexes")
+	ctx, span := otel.Tracer("").Start(
+		ctx,
+		"documentdb_api.drop_indexes",
+		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
+		oteltrace.WithAttributes(
+			otelsemconv.DBStoredProcedureName("documentdb_api.drop_indexes"),
+		),
+	)
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "CALL documentdb_api.drop_indexes($1, $2::bytea, $3::bytea)", databaseName, arg, retVal)
