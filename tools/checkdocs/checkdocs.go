@@ -130,9 +130,9 @@ func getMarkdownFiles(path string) ([]string, error) {
 	return markdownFiles, nil
 }
 
-// issueRE represents FerretDB and microsoft issue url.
+// issueRE represents FerretDB and documentdb issue url.
 // It returns owner, repo and issue number as submatches.
-var issueRE = regexp.MustCompile(`\Qhttps://github.com/\E(FerretDB|microsoft)/([-\w]+)/issues/(\d+)`)
+var issueRE = regexp.MustCompile(`\Qhttps://github.com/\E(FerretDB|documentdb)/([-\w]+)/issues/(\d+)`)
 
 // checkBlogFiles verifies that blog posts are correctly formatted.
 func checkBlogFiles(files []string) error {
@@ -322,7 +322,7 @@ func verifyTags(fm []byte) error {
 	return nil
 }
 
-// checkIssueURLs validates FerretDB and microsoft issues URLs if they occur in the r [io.Reader].
+// checkIssueURLs validates FerretDB and documentdb issues URLs if they occur in the r [io.Reader].
 // If URL formatting is invalid, the represented issue is closed or not found - the appropriate
 // message is sent to l [*log.Logger].
 //

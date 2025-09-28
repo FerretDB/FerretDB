@@ -114,7 +114,7 @@ func Convert(routineParams map[string][]map[string]any, l *slog.Logger) map[stri
 			ScanArgs:     strings.Join(scanArgs, ", "),
 		}
 
-		// TODO https://github.com/microsoft/documentdb/issues/49
+		// TODO https://github.com/documentdb/documentdb/issues/49
 		if r.IsProcedure {
 			l.Warn("Procedure skipped due to unable to decode output", slog.String("function", r.SQLName))
 

@@ -31,17 +31,17 @@ import (
 
 // Parts of Prometheus metric names.
 const (
-	// TODO https://github.com/FerretDB/FerretDB/issues/5402
-	namespace = "ferretdb_unstable"
+	namespace = "ferretdb"
 	subsystem = "pool"
 )
 
 // Pool represent a pool of PostgreSQL connections.
 type Pool struct {
-	p     *pgxpool.Pool
-	r     *cursor.Registry
-	l     *slog.Logger
-	token *resource.Token
+	p      *pgxpool.Pool
+	r      *cursor.Registry
+	l      *slog.Logger
+	tracer *tracer
+	token  *resource.Token
 }
 
 // NewPool creates a new pool of PostgreSQL connections.
@@ -51,16 +51,20 @@ func NewPool(uri string, l *slog.Logger, sp *state.Provider) (*Pool, error) {
 	must.NotBeZero(l)
 	must.NotBeZero(sp)
 
-	p, err := newPgxPool(uri, logging.WithName(l, "pgx"), sp)
+	tl := logging.WithName(l, "pgx")
+	t := newTracer(tl)
+
+	p, err := newPgxPool(uri, tl, t, sp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	res := &Pool{
-		p:     p,
-		r:     cursor.NewRegistry(logging.WithName(l, "cursors")),
-		l:     l,
-		token: resource.NewToken(),
+		p:      p,
+		r:      cursor.NewRegistry(logging.WithName(l, "cursors")),
+		l:      l,
+		tracer: t,
+		token:  resource.NewToken(),
 	}
 	resource.Track(res, res.token)
 
@@ -114,16 +118,14 @@ func (p *Pool) Describe(ch chan<- *prometheus.Desc) {
 // Collect implements [prometheus.Collector].
 func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	p.r.Collect(ch)
+	p.tracer.Collect(ch)
 
 	stats := p.p.Stat()
-
-	// check metrics and labels, set zero values
-	// TODO https://github.com/FerretDB/FerretDB/issues/5402
 
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "acquires_total"),
-			"Unstable: The cumulative count of successful connection acquires from the pool.",
+			"The cumulative count of successful connection acquires from the pool.",
 			nil, nil,
 		),
 		prometheus.CounterValue,
@@ -133,7 +135,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "acquires_duration_seconds_total"),
-			"Unstable: The total duration of all successful connection acquires from the pool.",
+			"The total duration of all successful connection acquires from the pool.",
 			nil, nil,
 		),
 		prometheus.CounterValue,
@@ -143,7 +145,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "acquired"),
-			"Unstable: The number of currently acquired connections in the pool.",
+			"The number of currently acquired connections in the pool.",
 			nil, nil,
 		),
 		prometheus.GaugeValue,
@@ -153,7 +155,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "acquires_canceled_total"),
-			"Unstable: The cumulative count of connection acquires from the pool that were canceled.",
+			"The cumulative count of connection acquires from the pool that were canceled.",
 			nil, nil,
 		),
 		prometheus.CounterValue,
@@ -163,7 +165,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "constructing"),
-			"Unstable: The number of connections with construction in progress in the pool.",
+			"The number of connections with construction in progress in the pool.",
 			nil, nil,
 		),
 		prometheus.GaugeValue,
@@ -173,7 +175,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "acquires_empty_total"),
-			"Unstable: The cumulative count of successful connection acquires from the pool "+
+			"The cumulative count of successful connection acquires from the pool "+
 				"that waited for a resource to be released or constructed because the pool was empty.",
 			nil, nil,
 		),
@@ -184,7 +186,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "idle"),
-			"Unstable: The number of currently idle connections in the pool.",
+			"The number of currently idle connections in the pool.",
 			nil, nil,
 		),
 		prometheus.GaugeValue,
@@ -194,7 +196,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "max_size"),
-			"Unstable: The maximum size of the connection pool.",
+			"The maximum size of the connection pool.",
 			nil, nil,
 		),
 		prometheus.GaugeValue,
@@ -204,7 +206,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "size"),
-			"Unstable: Total number of connections currently in the pool. "+
+			"Total number of connections currently in the pool. "+
 				"Should be a sum of constructing, acquired, and idle.",
 			nil, nil,
 		),
@@ -215,7 +217,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "opened_total"),
-			"Unstable: The cumulative count of new connections opened.",
+			"The cumulative count of new connections opened.",
 			nil, nil,
 		),
 		prometheus.CounterValue,
@@ -225,7 +227,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "destroyed_maxlifetime_total"),
-			"Unstable: The cumulative count of connections destroyed because they exceeded pool_max_conn_lifetime.",
+			"The cumulative count of connections destroyed because they exceeded pool_max_conn_lifetime.",
 			nil, nil,
 		),
 		prometheus.CounterValue,
@@ -235,7 +237,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "destroyed_maxidle_total"),
-			"Unstable: The cumulative count of connections destroyed because they exceeded pool_max_conn_idle_time.",
+			"The cumulative count of connections destroyed because they exceeded pool_max_conn_idle_time.",
 			nil, nil,
 		),
 		prometheus.CounterValue,
@@ -245,7 +247,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "acquires_empty_duration_seconds_total"),
-			"Unstable: The cumulative time waited for successful acquires from the pool "+
+			"The cumulative time waited for successful acquires from the pool "+
 				"for a resource to be released or constructed because the pool was empty.",
 			nil, nil,
 		),

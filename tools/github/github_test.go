@@ -62,7 +62,7 @@ func TestClient(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, IssueNotFound, actual)
 
-		actual, err = c.checkIssueStatus(t.Context(), "microsoft", "documentdb", 1)
+		actual, err = c.checkIssueStatus(t.Context(), "documentdb", "documentdb", 1)
 		require.NoError(t, err)
 		assert.Equal(t, IssueClosed, actual)
 	})
@@ -85,7 +85,7 @@ func TestClient(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, IssueNotFound, actual)
 
-		actual, err = c.IssueStatus(t.Context(), "microsoft", "documentdb", 1)
+		actual, err = c.IssueStatus(t.Context(), "documentdb", "documentdb", 1)
 		require.NoError(t, err)
 		assert.Equal(t, IssueClosed, actual)
 
@@ -110,7 +110,7 @@ func TestClient(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, IssueNotFound, actual)
 
-		actual, err = c.IssueStatus(t.Context(), "microsoft", "documentdb", 1)
+		actual, err = c.IssueStatus(t.Context(), "documentdb", "documentdb", 1)
 		require.NoError(t, err)
 		assert.Equal(t, IssueClosed, actual)
 	})

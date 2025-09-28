@@ -2,9 +2,9 @@
 // https://github.com/cloudwego/eino#dependencies
 module github.com/FerretDB/FerretDB/v2/tools/mcphost
 
-go 1.24.0
+go 1.25
 
-toolchain go1.24.6
+toolchain go1.25.1
 
 tool github.com/mark3labs/mcphost
 
@@ -70,7 +70,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
-	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
@@ -89,8 +89,8 @@ require (
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mailru/easyjson v0.9.0 // indirect
 	github.com/mark3labs/mcp-filesystem-server v0.11.1 // indirect
-	github.com/mark3labs/mcp-go v0.37.0 // indirect
-	github.com/mark3labs/mcphost v0.29.0 // indirect
+	github.com/mark3labs/mcp-go v0.39.0 // indirect
+	github.com/mark3labs/mcphost v0.31.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect

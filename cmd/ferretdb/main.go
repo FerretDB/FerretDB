@@ -364,8 +364,6 @@ func run() {
 
 	checkFlags(logger)
 
-	setGOMAXPROCS(logger)
-
 	ctx, stop := ctxutil.SigTerm(context.Background())
 
 	go func() {

@@ -12,8 +12,8 @@ ARG LABEL_COMMIT
 
 # prepare stage
 
-# https://github.com/docker-library/golang/issues/570
-FROM --platform=$BUILDPLATFORM golang:1.24.6-bookworm AS eval-prepare
+# TODO https://github.com/FerretDB/FerretDB/issues/5449
+FROM --platform=$BUILDPLATFORM golang:1.25.1-bookworm AS eval-prepare
 
 # use a single directory for all Go caches to simplify RUN --mount commands below
 ENV GOPATH=/cache/gopath
@@ -37,8 +37,8 @@ EOF
 
 # build stage
 
-# https://github.com/docker-library/golang/issues/570
-FROM golang:1.24.6-bookworm AS eval-build
+# TODO https://github.com/FerretDB/FerretDB/issues/5449
+FROM golang:1.25.1-bookworm AS eval-build
 
 ARG TARGETARCH
 
