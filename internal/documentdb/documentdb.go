@@ -25,7 +25,7 @@ import "context"
 //
 // We use documentdb_api_internal schema for indexes and authentication:
 // TODO https://github.com/documentdb/documentdb/issues/25
-// TODO https://github.com/documentdb/documentdb/issues/46
+// TODO https://github.com/documentdb/documentdb/issues/333
 //
 // And we generate code for documentdb_core just to track changes.
 //
