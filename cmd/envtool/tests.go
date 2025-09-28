@@ -584,8 +584,8 @@ func testsRun(ctx context.Context, params *TestsRunParams, logger *slog.Logger) 
 
 	ot, err := observability.NewOTelTraceExporter(&observability.OTelTraceExporterOpts{
 		Logger:  logger,
-		Service: "envtool-tests",
 		URL:     "http://127.0.0.1:4318/v1/traces",
+		Service: "envtool-tests",
 	})
 	if err != nil {
 		return lazyerrors.Error(err)
