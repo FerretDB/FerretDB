@@ -22,6 +22,7 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	"strconv"
 	"sync"
 
 	"github.com/FerretDB/wire"
@@ -50,7 +51,13 @@ type conn struct {
 // newConn creates a new connection.
 // Context cancellation stops dialing, but does not affect established connection.
 func newConn(ctx context.Context, opts *NewOpts) (res *conn, err error) {
-	host, port, err := net.SplitHostPort(opts.Addr)
+	host, portS, err := net.SplitHostPort(opts.Addr)
+	if err != nil {
+		err = lazyerrors.Error(err)
+		return
+	}
+
+	port, err := strconv.Atoi(portS)
 	if err != nil {
 		err = lazyerrors.Error(err)
 		return
