@@ -62,15 +62,16 @@ Additionally:
 
 ## Miscellaneous
 
-| Flag                  | Description                                                                                                                 | Environment Variable       | Default Value                  |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------- | -------------------------- | ------------------------------ |
-| `--mode`              | [Operation mode](operation-modes.md)                                                                                        | `FERRETDB_MODE`            | `normal`                       |
-| `--state-dir`         | Path to the FerretDB state directory                                                                                        | `FERRETDB_STATE_DIR`       | `.`<br />(`/state` for Docker) |
-| `--[no-]auth`         | [Enable authentication](../security/authentication.md)                                                                      | `FERRETDB_AUTH`            | enabled                        |
-| `--log-level`         | Log level: 'debug', 'info', 'warn', 'error'                                                                                 | `FERRETDB_LOG_LEVEL`       | `info`                         |
-| `--[no-]log-uuid`     | Add instance UUID to all log messages                                                                                       | `FERRETDB_LOG_UUID`        | disabled                       |
-| `--[no-]metrics-uuid` | Add instance UUID to all metrics                                                                                            | `FERRETDB_METRICS_UUID`    | disabled                       |
-| `--otel-traces-url`   | OpenTelemetry OTLP/HTTP traces endpoint URL (e.g. `http://host:4318/v1/traces`)<br />(set to empty value or `-` to disable) | `FERRETDB_OTEL_TRACES_URL` | disabled                       |
-| `--telemetry`         | Enable or disable [basic telemetry](telemetry.md)                                                                           | `FERRETDB_TELEMETRY`       | `undecided`                    |
+| Flag                  | Description                                                                                                                 | Environment Variable         | Default Value                  |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | ------------------------------ |
+| `--mode`              | [Operation mode](operation-modes.md)                                                                                        | `FERRETDB_MODE`              | `normal`                       |
+| `--state-dir`         | Path to the FerretDB state directory                                                                                        | `FERRETDB_STATE_DIR`         | `.`<br />(`/state` for Docker) |
+| `--[no-]auth`         | [Enable authentication](../security/authentication.md)                                                                      | `FERRETDB_AUTH`              | enabled                        |
+| `--log-level`         | Log level: 'debug', 'info', 'warn', 'error'                                                                                 | `FERRETDB_LOG_LEVEL`         | `info`                         |
+| `--[no-]log-uuid`     | Add instance UUID to all log messages                                                                                       | `FERRETDB_LOG_UUID`          | disabled                       |
+| `--[no-]metrics-uuid` | Add instance UUID to all metrics                                                                                            | `FERRETDB_METRICS_UUID`      | disabled                       |
+| `--otel-service-name` | OpenTelemetry service name                                                                                                  | `FERRETDB_OTEL_SERVICE_NAME` | `ferretdb`                     |
+| `--otel-traces-url`   | OpenTelemetry OTLP/HTTP traces endpoint URL (e.g. `http://host:4318/v1/traces`)<br />(set to empty value or `-` to disable) | `FERRETDB_OTEL_TRACES_URL`   | disabled                       |
+| `--telemetry`         | Enable or disable [basic telemetry](telemetry.md)                                                                           | `FERRETDB_TELEMETRY`         | `undecided`                    |
 
 <!-- Do not document `--dev-XXX` flags -->
