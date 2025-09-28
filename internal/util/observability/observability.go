@@ -46,7 +46,8 @@ type OTelTraceExporter struct {
 
 // OTelTraceExporterOpts represents [OTelTraceExporter] options.
 type OTelTraceExporterOpts struct {
-	Logger  *slog.Logger
+	Logger *slog.Logger
+
 	URL     string
 	Service string
 }
