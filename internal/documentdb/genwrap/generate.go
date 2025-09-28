@@ -44,7 +44,6 @@ import (
 	"go.opentelemetry.io/otel"
 	otelsemconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 	oteltrace "go.opentelemetry.io/otel/trace"
-	otelsemconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 )
