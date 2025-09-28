@@ -61,14 +61,7 @@ var funcTemplate = template.Must(template.New("func").Parse(`
 //
 //	{{.Comment}}.
 func {{.FuncName}}({{.Params}}) ({{.Returns}}) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"{{.FuncName}}",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("{{.SQLFuncName}}"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "{{.SQLFuncName}}", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow({{.QueryRowArgs}})

@@ -9,7 +9,6 @@ import (
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel"
-	otelsemconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 	oteltrace "go.opentelemetry.io/otel/trace"
 
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
@@ -19,14 +18,7 @@ import (
 //
 //	documentdb_api.aggregate_cursor_first_page(database text, commandspec documentdb_core.bson, cursorid bigint DEFAULT 0, OUT cursorpage documentdb_core.bson, OUT continuation documentdb_core.bson, OUT persistconnection boolean, OUT cursorid bigint).
 func AggregateCursorFirstPage(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, commandSpec wirebson.RawDocument, cursorID int64) (outCursorPage wirebson.RawDocument, outContinuation wirebson.RawDocument, outPersistConnection bool, outCursorID int64, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"AggregateCursorFirstPage",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.aggregate_cursor_first_page"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.aggregate_cursor_first_page", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT cursorpage::bytea, continuation::bytea, persistconnection, cursorid FROM documentdb_api.aggregate_cursor_first_page($1, $2::bytea, $3)", database, commandSpec, cursorID)
@@ -40,14 +32,7 @@ func AggregateCursorFirstPage(ctx context.Context, conn *pgx.Conn, l *slog.Logge
 //
 //	documentdb_api.binary_extended_version(OUT binary_extended_version text).
 func BinaryExtendedVersion(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBinaryExtendedVersion string, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"BinaryExtendedVersion",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.binary_extended_version"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.binary_extended_version", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT binary_extended_version FROM documentdb_api.binary_extended_version()")
@@ -61,14 +46,7 @@ func BinaryExtendedVersion(ctx context.Context, conn *pgx.Conn, l *slog.Logger) 
 //
 //	documentdb_api.binary_version(OUT binary_version text).
 func BinaryVersion(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBinaryVersion string, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"BinaryVersion",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.binary_version"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.binary_version", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT binary_version FROM documentdb_api.binary_version()")
@@ -82,14 +60,7 @@ func BinaryVersion(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outBina
 //
 //	documentdb_api.coll_mod(p_database_name text, p_collection_name text, p_spec documentdb_core.bson, OUT coll_mod documentdb_core.bson).
 func CollMod(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string, spec wirebson.RawDocument) (outCollMod wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"CollMod",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.coll_mod"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.coll_mod", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT coll_mod::bytea FROM documentdb_api.coll_mod($1, $2, $3::bytea)", databaseName, collectionName, spec)
@@ -103,14 +74,7 @@ func CollMod(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName s
 //
 //	documentdb_api.coll_stats(p_database_name text, p_collection_name text, p_scale double precision DEFAULT 1, OUT coll_stats documentdb_core.bson).
 func CollStats(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string, scale float64) (outCollStats wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"CollStats",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.coll_stats"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.coll_stats", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT coll_stats::bytea FROM documentdb_api.coll_stats($1, $2, $3)", databaseName, collectionName, scale)
@@ -124,14 +88,7 @@ func CollStats(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName
 //
 //	documentdb_api.collection(p_database_name text, p_collection_name text, OUT shard_key_value bigint, OUT object_id documentdb_core.bson, OUT document documentdb_core.bson).
 func Collection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string) (outShardKeyValue int64, outObjectID wirebson.RawDocument, outDocument wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"Collection",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.collection"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.collection", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT shard_key_value, object_id::bytea, document::bytea FROM documentdb_api.collection($1, $2)", databaseName, collectionName)
@@ -145,14 +102,7 @@ func Collection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseNam
 //
 //	documentdb_api.compact(p_spec documentdb_core.bson, OUT compact documentdb_core.bson).
 func Compact(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outCompact wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"Compact",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.compact"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.compact", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT compact::bytea FROM documentdb_api.compact($1::bytea)", spec)
@@ -166,14 +116,7 @@ func Compact(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.
 //
 //	documentdb_api.connection_status(p_spec documentdb_core.bson, OUT connection_status documentdb_core.bson).
 func ConnectionStatus(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outConnectionStatus wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"ConnectionStatus",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.connection_status"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.connection_status", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT connection_status::bytea FROM documentdb_api.connection_status($1::bytea)", spec)
@@ -187,14 +130,7 @@ func ConnectionStatus(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec 
 //
 //	documentdb_api.count_query(database text, countspec documentdb_core.bson, OUT document documentdb_core.bson).
 func CountQuery(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, countSpec wirebson.RawDocument) (outDocument wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"CountQuery",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.count_query"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.count_query", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT document::bytea FROM documentdb_api.count_query($1, $2::bytea)", database, countSpec)
@@ -208,14 +144,7 @@ func CountQuery(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database st
 //
 //	documentdb_api.create_collection(p_database_name text, p_collection_name text, OUT create_collection boolean).
 func CreateCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string) (outCreateCollection bool, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"CreateCollection",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.create_collection"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.create_collection", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT create_collection FROM documentdb_api.create_collection($1, $2)", databaseName, collectionName)
@@ -229,14 +158,7 @@ func CreateCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, datab
 //
 //	documentdb_api.create_collection_view(dbname text, createspec documentdb_core.bson, OUT create_collection_view documentdb_core.bson).
 func CreateCollectionView(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, createSpec wirebson.RawDocument) (outCreateCollectionView wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"CreateCollectionView",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.create_collection_view"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.create_collection_view", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT create_collection_view::bytea FROM documentdb_api.create_collection_view($1, $2::bytea)", database, createSpec)
@@ -250,14 +172,7 @@ func CreateCollectionView(ctx context.Context, conn *pgx.Conn, l *slog.Logger, d
 //
 //	documentdb_api.create_indexes_background(p_database_name text, p_index_spec documentdb_core.bson, OUT retval documentdb_core.bson, OUT ok boolean, OUT requests documentdb_core.bson).
 func CreateIndexesBackground(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, indexSpec wirebson.RawDocument) (outRetVal wirebson.RawDocument, outOk bool, outRequests wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"CreateIndexesBackground",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.create_indexes_background"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.create_indexes_background", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT retval::bytea, ok, requests::bytea FROM documentdb_api.create_indexes_background($1, $2::bytea)", databaseName, indexSpec)
@@ -271,14 +186,7 @@ func CreateIndexesBackground(ctx context.Context, conn *pgx.Conn, l *slog.Logger
 //
 //	documentdb_api.create_role(p_spec documentdb_core.bson, OUT create_role documentdb_core.bson).
 func CreateRole(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outCreateRole wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"CreateRole",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.create_role"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.create_role", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT create_role::bytea FROM documentdb_api.create_role($1::bytea)", spec)
@@ -292,14 +200,7 @@ func CreateRole(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebs
 //
 //	documentdb_api.create_user(p_spec documentdb_core.bson, OUT create_user documentdb_core.bson).
 func CreateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outCreateUser wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"CreateUser",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.create_user"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.create_user", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT create_user::bytea FROM documentdb_api.create_user($1::bytea)", spec)
@@ -313,14 +214,7 @@ func CreateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebs
 //
 //	documentdb_api.current_op_command(p_spec documentdb_core.bson, OUT document documentdb_core.bson).
 func CurrentOpCommand(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outDocument wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"CurrentOpCommand",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.current_op_command"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.current_op_command", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT document::bytea FROM documentdb_api.current_op_command($1::bytea)", spec)
@@ -334,14 +228,7 @@ func CurrentOpCommand(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec 
 //
 //	documentdb_api.cursor_get_more(database text, getmorespec documentdb_core.bson, continuationspec documentdb_core.bson, OUT cursorpage documentdb_core.bson, OUT continuation documentdb_core.bson).
 func CursorGetMore(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, getMoreSpec wirebson.RawDocument, continuationSpec wirebson.RawDocument) (outCursorPage wirebson.RawDocument, outContinuation wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"CursorGetMore",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.cursor_get_more"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.cursor_get_more", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT cursorpage::bytea, continuation::bytea FROM documentdb_api.cursor_get_more($1, $2::bytea, $3::bytea)", database, getMoreSpec, continuationSpec)
@@ -355,14 +242,7 @@ func CursorGetMore(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database
 //
 //	documentdb_api.db_stats(p_database_name text, p_scale double precision DEFAULT 1, p_freestorage boolean DEFAULT false, OUT db_stats documentdb_core.bson).
 func DbStats(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, scale float64, freestorage bool) (outDbStats wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"DbStats",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.db_stats"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.db_stats", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT db_stats::bytea FROM documentdb_api.db_stats($1, $2, $3)", databaseName, scale, freestorage)
@@ -376,14 +256,7 @@ func DbStats(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName s
 //
 //	documentdb_api.delete(p_database_name text, p_delete documentdb_core.bson, p_insert_documents documentdb_core.bsonsequence DEFAULT NULL, OUT p_result documentdb_core.bson, OUT p_success boolean).
 func Delete(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, delete wirebson.RawDocument, insertDocuments []byte) (outResult wirebson.RawDocument, outSuccess bool, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"Delete",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.delete"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.delete", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT p_result::bytea, p_success FROM documentdb_api.delete($1, $2::bytea, $3::bytea)", databaseName, delete, insertDocuments)
@@ -397,14 +270,7 @@ func Delete(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName st
 //
 //	documentdb_api.distinct_query(database text, distinctspec documentdb_core.bson, OUT document documentdb_core.bson).
 func DistinctQuery(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, distinctSpec wirebson.RawDocument) (outDocument wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"DistinctQuery",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.distinct_query"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.distinct_query", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT document::bytea FROM documentdb_api.distinct_query($1, $2::bytea)", database, distinctSpec)
@@ -418,14 +284,7 @@ func DistinctQuery(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database
 //
 //	documentdb_api.drop_collection(p_database_name text, p_collection_name text, p_write_concern documentdb_core.bson DEFAULT NULL, p_collection_uuid uuid DEFAULT NULL, p_track_changes boolean DEFAULT true, OUT drop_collection boolean).
 func DropCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string, writeConcern wirebson.RawDocument, collectionUuid []byte, trackChanges bool) (outDropCollection bool, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"DropCollection",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.drop_collection"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.drop_collection", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT drop_collection FROM documentdb_api.drop_collection($1, $2, $3::bytea, $4, $5)", databaseName, collectionName, writeConcern, collectionUuid, trackChanges)
@@ -439,14 +298,7 @@ func DropCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databas
 //
 //	documentdb_api.drop_database(p_database_name text, p_write_concern documentdb_core.bson DEFAULT NULL).
 func DropDatabase(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, writeConcern wirebson.RawDocument) (err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"DropDatabase",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.drop_database"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.drop_database", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api.drop_database($1, $2::bytea)", databaseName, writeConcern)
@@ -460,14 +312,7 @@ func DropDatabase(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseN
 //
 //	documentdb_api.drop_role(p_spec documentdb_core.bson, OUT drop_role documentdb_core.bson).
 func DropRole(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outDropRole wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"DropRole",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.drop_role"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.drop_role", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT drop_role::bytea FROM documentdb_api.drop_role($1::bytea)", spec)
@@ -481,14 +326,7 @@ func DropRole(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson
 //
 //	documentdb_api.drop_user(p_spec documentdb_core.bson, OUT drop_user documentdb_core.bson).
 func DropUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outDropUser wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"DropUser",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.drop_user"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.drop_user", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT drop_user::bytea FROM documentdb_api.drop_user($1::bytea)", spec)
@@ -502,14 +340,7 @@ func DropUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson
 //
 //	documentdb_api.find_and_modify(p_database_name text, p_message documentdb_core.bson, OUT p_result documentdb_core.bson, OUT p_success boolean).
 func FindAndModify(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, message wirebson.RawDocument) (outResult wirebson.RawDocument, outSuccess bool, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"FindAndModify",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.find_and_modify"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.find_and_modify", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT p_result::bytea, p_success FROM documentdb_api.find_and_modify($1, $2::bytea)", databaseName, message)
@@ -523,14 +354,7 @@ func FindAndModify(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database
 //
 //	documentdb_api.find_cursor_first_page(database text, commandspec documentdb_core.bson, cursorid bigint DEFAULT 0, OUT cursorpage documentdb_core.bson, OUT continuation documentdb_core.bson, OUT persistconnection boolean, OUT cursorid bigint).
 func FindCursorFirstPage(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, commandSpec wirebson.RawDocument, cursorID int64) (outCursorPage wirebson.RawDocument, outContinuation wirebson.RawDocument, outPersistConnection bool, outCursorID int64, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"FindCursorFirstPage",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.find_cursor_first_page"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.find_cursor_first_page", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT cursorpage::bytea, continuation::bytea, persistconnection, cursorid FROM documentdb_api.find_cursor_first_page($1, $2::bytea, $3)", database, commandSpec, cursorID)
@@ -544,14 +368,7 @@ func FindCursorFirstPage(ctx context.Context, conn *pgx.Conn, l *slog.Logger, da
 //
 //	documentdb_api.insert(p_database_name text, p_insert documentdb_core.bson, p_insert_documents documentdb_core.bsonsequence DEFAULT NULL, OUT p_result documentdb_core.bson, OUT p_success boolean).
 func Insert(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, insert wirebson.RawDocument, insertDocuments []byte) (outResult wirebson.RawDocument, outSuccess bool, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"Insert",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.insert"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.insert", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT p_result::bytea, p_success FROM documentdb_api.insert($1, $2::bytea, $3::bytea)", databaseName, insert, insertDocuments)
@@ -565,14 +382,7 @@ func Insert(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName st
 //
 //	documentdb_api.insert_one(p_database_name text, p_collection_name text, p_document documentdb_core.bson, OUT insert_one documentdb_core.bson).
 func InsertOne(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string, document wirebson.RawDocument) (outInsertOne wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"InsertOne",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.insert_one"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.insert_one", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT insert_one::bytea FROM documentdb_api.insert_one($1, $2, $3::bytea)", databaseName, collectionName, document)
@@ -586,14 +396,7 @@ func InsertOne(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName
 //
 //	documentdb_api.list_collections_cursor_first_page(database text, commandspec documentdb_core.bson, cursorid bigint DEFAULT 0, OUT cursorpage documentdb_core.bson, OUT continuation documentdb_core.bson, OUT persistconnection boolean, OUT cursorid bigint).
 func ListCollectionsCursorFirstPage(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, commandSpec wirebson.RawDocument, cursorID int64) (outCursorPage wirebson.RawDocument, outContinuation wirebson.RawDocument, outPersistConnection bool, outCursorID int64, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"ListCollectionsCursorFirstPage",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.list_collections_cursor_first_page"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.list_collections_cursor_first_page", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT cursorpage::bytea, continuation::bytea, persistconnection, cursorid FROM documentdb_api.list_collections_cursor_first_page($1, $2::bytea, $3)", database, commandSpec, cursorID)
@@ -607,14 +410,7 @@ func ListCollectionsCursorFirstPage(ctx context.Context, conn *pgx.Conn, l *slog
 //
 //	documentdb_api.list_databases(p_list_databases_spec documentdb_core.bson, OUT list_databases documentdb_core.bson).
 func ListDatabases(ctx context.Context, conn *pgx.Conn, l *slog.Logger, listDatabasesSpec wirebson.RawDocument) (outListDatabases wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"ListDatabases",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.list_databases"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.list_databases", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT list_databases::bytea FROM documentdb_api.list_databases($1::bytea)", listDatabasesSpec)
@@ -628,14 +424,7 @@ func ListDatabases(ctx context.Context, conn *pgx.Conn, l *slog.Logger, listData
 //
 //	documentdb_api.list_indexes_cursor_first_page(database text, commandspec documentdb_core.bson, cursorid bigint DEFAULT 0, OUT cursorpage documentdb_core.bson, OUT continuation documentdb_core.bson, OUT persistconnection boolean, OUT cursorid bigint).
 func ListIndexesCursorFirstPage(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, commandSpec wirebson.RawDocument, cursorID int64) (outCursorPage wirebson.RawDocument, outContinuation wirebson.RawDocument, outPersistConnection bool, outCursorID int64, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"ListIndexesCursorFirstPage",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.list_indexes_cursor_first_page"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.list_indexes_cursor_first_page", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT cursorpage::bytea, continuation::bytea, persistconnection, cursorid FROM documentdb_api.list_indexes_cursor_first_page($1, $2::bytea, $3)", database, commandSpec, cursorID)
@@ -649,14 +438,7 @@ func ListIndexesCursorFirstPage(ctx context.Context, conn *pgx.Conn, l *slog.Log
 //
 //	documentdb_api.rename_collection(p_database_name text, p_collection_name text, p_target_name text, p_drop_target boolean DEFAULT false).
 func RenameCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string, targetName string, dropTarget bool) (err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"RenameCollection",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.rename_collection"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.rename_collection", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api.rename_collection($1, $2, $3, $4)", databaseName, collectionName, targetName, dropTarget)
@@ -670,14 +452,7 @@ func RenameCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, datab
 //
 //	documentdb_api.reshard_collection(p_shard_key_spec documentdb_core.bson).
 func ReshardCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shardKeySpec wirebson.RawDocument) (err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"ReshardCollection",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.reshard_collection"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.reshard_collection", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api.reshard_collection($1::bytea)", shardKeySpec)
@@ -691,14 +466,7 @@ func ReshardCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shar
 //
 //	documentdb_api.roles_info(p_spec documentdb_core.bson, OUT roles_info documentdb_core.bson).
 func RolesInfo(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outRolesInfo wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"RolesInfo",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.roles_info"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.roles_info", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT roles_info::bytea FROM documentdb_api.roles_info($1::bytea)", spec)
@@ -712,14 +480,7 @@ func RolesInfo(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebso
 //
 //	documentdb_api.shard_collection(p_database_name text, p_collection_name text, p_shard_key documentdb_core.bson, p_is_reshard boolean DEFAULT true).
 func ShardCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string, shardKey wirebson.RawDocument, isReshard bool) (err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"ShardCollection",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.shard_collection"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.shard_collection", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api.shard_collection($1, $2, $3::bytea, $4)", databaseName, collectionName, shardKey, isReshard)
@@ -733,14 +494,7 @@ func ShardCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databa
 //
 //	documentdb_api.shard_collection(p_shard_key_spec documentdb_core.bson).
 func ShardCollection1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shardKeySpec wirebson.RawDocument) (err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"ShardCollection1",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.shard_collection"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.shard_collection", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api.shard_collection($1::bytea)", shardKeySpec)
@@ -754,14 +508,7 @@ func ShardCollection1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shard
 //
 //	documentdb_api.unshard_collection(p_shard_key_spec documentdb_core.bson).
 func UnshardCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shardKeySpec wirebson.RawDocument) (err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"UnshardCollection",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.unshard_collection"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.unshard_collection", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT FROM documentdb_api.unshard_collection($1::bytea)", shardKeySpec)
@@ -775,14 +522,7 @@ func UnshardCollection(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shar
 //
 //	documentdb_api.update(p_database_name text, p_update documentdb_core.bson, p_insert_documents documentdb_core.bsonsequence DEFAULT NULL, OUT p_result documentdb_core.bson, OUT p_success boolean).
 func Update(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, update wirebson.RawDocument, insertDocuments []byte) (outResult wirebson.RawDocument, outSuccess bool, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"Update",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.update"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.update", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT p_result::bytea, p_success FROM documentdb_api.update($1, $2::bytea, $3::bytea)", databaseName, update, insertDocuments)
@@ -796,14 +536,7 @@ func Update(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName st
 //
 //	documentdb_api.update_role(p_spec documentdb_core.bson, OUT update_role documentdb_core.bson).
 func UpdateRole(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outUpdateRole wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"UpdateRole",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.update_role"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.update_role", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT update_role::bytea FROM documentdb_api.update_role($1::bytea)", spec)
@@ -817,14 +550,7 @@ func UpdateRole(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebs
 //
 //	documentdb_api.update_user(p_spec documentdb_core.bson, OUT update_user documentdb_core.bson).
 func UpdateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outUpdateUser wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"UpdateUser",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.update_user"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.update_user", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT update_user::bytea FROM documentdb_api.update_user($1::bytea)", spec)
@@ -838,14 +564,7 @@ func UpdateUser(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebs
 //
 //	documentdb_api.users_info(p_spec documentdb_core.bson, OUT users_info documentdb_core.bson).
 func UsersInfo(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outUsersInfo wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"UsersInfo",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.users_info"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.users_info", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT users_info::bytea FROM documentdb_api.users_info($1::bytea)", spec)
@@ -859,14 +578,7 @@ func UsersInfo(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebso
 //
 //	documentdb_api.validate(database text, validatespec documentdb_core.bson, OUT document documentdb_core.bson).
 func Validate(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string, validateSpec wirebson.RawDocument) (outDocument wirebson.RawDocument, err error) {
-	ctx, span := otel.Tracer("").Start(
-		ctx,
-		"Validate",
-		oteltrace.WithAttributes(
-			otelsemconv.DBStoredProcedureName("documentdb_api.validate"),
-			// TODO DBQuerySummaryKey
-		),
-	)
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb_api.validate", oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	defer span.End()
 
 	row := conn.QueryRow(ctx, "SELECT document::bytea FROM documentdb_api.validate($1, $2::bytea)", database, validateSpec)
