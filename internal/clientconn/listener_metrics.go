@@ -23,7 +23,7 @@ import (
 // Parts of Prometheus metric names.
 const (
 	// TODO https://github.com/FerretDB/FerretDB/issues/3420
-	namespace = "ferretdb_unstable"
+	namespace = "ferretdb"
 	subsystem = "client"
 )
 
@@ -41,7 +41,7 @@ func NewListenerMetrics() *listenerMetrics {
 				Namespace: namespace,
 				Subsystem: subsystem,
 				Name:      "accepts_total",
-				Help:      "Unstable: Total number of accepted client connections.",
+				Help:      "Total number of accepted client connections.",
 			},
 			[]string{"error"},
 		),
@@ -50,7 +50,7 @@ func NewListenerMetrics() *listenerMetrics {
 				Namespace: namespace,
 				Subsystem: subsystem,
 				Name:      "duration_seconds",
-				Help:      "Unstable: Client connection lifetime in seconds.",
+				Help:      "Client connection lifetime in seconds.",
 				Buckets: []float64{
 					1,
 					5,

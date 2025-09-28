@@ -204,7 +204,7 @@ func (resp *Response) OK() bool {
 	case float64:
 		return v == float64(1)
 	case bool:
-		// TODO https://github.com/microsoft/documentdb/issues/49
+		// TODO https://github.com/documentdb/documentdb/issues/49
 		return v
 	case int32:
 		return v == int32(1)
