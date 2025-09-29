@@ -140,12 +140,32 @@ func (t *tracer) TraceConnectEnd(ctx context.Context, data pgx.TraceConnectEndDa
 // It is called at the beginning of [pgx.Conn.Prepare] calls.
 // The returned context is used for the rest of the call and will be passed to [tracer.TracePrepareEnd].
 func (t *tracer) TracePrepareStart(ctx context.Context, conn *pgx.Conn, data pgx.TracePrepareStartData) context.Context {
+	ctx, _ = otel.Tracer("").Start(
+		ctx,
+		"documentdb.Prepare",
+		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
+		oteltrace.WithAttributes(
+			otelsemconv.DBQueryText(data.SQL),
+		),
+	)
+
 	return t.tl.TracePrepareStart(ctx, conn, data)
 }
 
 // TracePrepareEnd implements [pgx.PrepareTracer].
 func (t *tracer) TracePrepareEnd(ctx context.Context, conn *pgx.Conn, data pgx.TracePrepareEndData) {
 	t.tl.TracePrepareEnd(ctx, conn, data)
+
+	span := oteltrace.SpanFromContext(ctx)
+
+	if data.Err == nil {
+		span.SetStatus(otelcodes.Ok, "")
+	} else {
+		span.SetStatus(otelcodes.Error, "")
+		span.RecordError(data.Err)
+	}
+
+	span.End()
 }
 
 // TraceQueryStart implements [pgx.QueryTracer].
@@ -153,9 +173,13 @@ func (t *tracer) TracePrepareEnd(ctx context.Context, conn *pgx.Conn, data pgx.T
 // It is called at the beginning of [pgx.Conn.Query], [pgx.Conn.QueryRow], and [pgx.Conn.Exec] calls.
 // The returned context is used for the rest of the call and will be passed to [tracer.TraceQueryEnd].
 func (t *tracer) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
+	ctx = context.WithValue(ctx, queryKey, time.Now())
+
+	t.requests.With(prometheus.Labels{}).Inc()
+
 	ctx, _ = otel.Tracer("").Start(
 		ctx,
-		"Query",
+		"documentdb.Query",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBQueryText(data.SQL),
