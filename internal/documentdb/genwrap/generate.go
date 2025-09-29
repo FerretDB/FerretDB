@@ -63,7 +63,7 @@ var funcTemplate = template.Must(template.New("func").Parse(`
 func {{.FuncName}}({{.Params}}) ({{.Returns}}) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"{{.SQLFuncName}}",
+		"{{.Package}}.{{.FuncName}}",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("{{.SQLFuncName}}"),
@@ -81,6 +81,7 @@ func {{.FuncName}}({{.Params}}) ({{.Returns}}) {
 
 // templateData contains information need for generating a function to run SQL query and scan the output.
 type templateData struct {
+	Package      string
 	FuncName     string
 	SQLFuncName  string
 	Comment      string

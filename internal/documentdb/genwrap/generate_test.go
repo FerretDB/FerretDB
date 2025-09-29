@@ -32,6 +32,7 @@ func TestGenerateGoFunction(t *testing.T) {
 	}{
 		"DropIndexes": {
 			data: templateData{
+				Package:     "documentdb_api",
 				FuncName:    "DropIndexes",
 				SQLFuncName: "documentdb_api.drop_indexes",
 				IsProcedure: true,
