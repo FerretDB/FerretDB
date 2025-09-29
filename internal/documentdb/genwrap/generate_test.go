@@ -32,6 +32,7 @@ func TestGenerateGoFunction(t *testing.T) {
 	}{
 		"DropIndexes": {
 			data: templateData{
+				Package:     "documentdb_api",
 				FuncName:    "DropIndexes",
 				SQLFuncName: "documentdb_api.drop_indexes",
 				IsProcedure: true,
@@ -52,7 +53,7 @@ func TestGenerateGoFunction(t *testing.T) {
 func DropIndexes(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, arg wirebson.RawDocument, retValue wirebson.RawDocument) (outRetValue wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api.drop_indexes",
+		"documentdb_api.DropIndexes",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api.drop_indexes"),

@@ -21,7 +21,7 @@ import (
 func AggregationSupport(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outAggregationSupport struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.aggregation_support",
+		"documentdb_api_internal.AggregationSupport",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.aggregation_support"),
@@ -42,7 +42,7 @@ func AggregationSupport(ctx context.Context, conn *pgx.Conn, l *slog.Logger, ano
 func ApplyExtensionDataTableUpgrade(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous int32, anonymous1 int32, anonymous12 int32) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.apply_extension_data_table_upgrade",
+		"documentdb_api_internal.ApplyExtensionDataTableUpgrade",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.apply_extension_data_table_upgrade"),
@@ -63,7 +63,7 @@ func ApplyExtensionDataTableUpgrade(ctx context.Context, conn *pgx.Conn, l *slog
 func AuthenticateWithScramSha256(ctx context.Context, conn *pgx.Conn, l *slog.Logger, userName string, authMsg string, clientProof string) (outAuthenticateWithScramSha256 wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.authenticate_with_scram_sha256",
+		"documentdb_api_internal.AuthenticateWithScramSha256",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.authenticate_with_scram_sha256"),
@@ -84,7 +84,7 @@ func AuthenticateWithScramSha256(ctx context.Context, conn *pgx.Conn, l *slog.Lo
 func BsonAddToSet(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_add_to_set",
+		"documentdb_api_internal.BsonAddToSet",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_add_to_set"),
@@ -105,7 +105,7 @@ func BsonAddToSet(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous
 func BsonAddToSetFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonAddToSetFinal wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_add_to_set_final",
+		"documentdb_api_internal.BsonAddToSetFinal",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_add_to_set_final"),
@@ -126,7 +126,7 @@ func BsonAddToSetFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anon
 func BsonAddToSetTransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonAddToSetTransition struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_add_to_set_transition",
+		"documentdb_api_internal.BsonAddToSetTransition",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_add_to_set_transition"),
@@ -147,7 +147,7 @@ func BsonAddToSetTransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger,
 func BsonArrayAggMinvtransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument, anonymous12 string, anonymous123 bool) (outBsonArrayAggMinvtransition struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_array_agg_minvtransition",
+		"documentdb_api_internal.BsonArrayAggMinvtransition",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_array_agg_minvtransition"),
@@ -168,7 +168,7 @@ func BsonArrayAggMinvtransition(ctx context.Context, conn *pgx.Conn, l *slog.Log
 func BsonConstFill(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_const_fill",
+		"documentdb_api_internal.BsonConstFill",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_const_fill"),
@@ -189,7 +189,7 @@ func BsonConstFill(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymou
 func BsonCovariancePopFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonCovariancePopFinal wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_covariance_pop_final",
+		"documentdb_api_internal.BsonCovariancePopFinal",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_covariance_pop_final"),
@@ -210,7 +210,7 @@ func BsonCovariancePopFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger,
 func BsonCovariancePopSampCombine(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}) (outBsonCovariancePopSampCombine struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_covariance_pop_samp_combine",
+		"documentdb_api_internal.BsonCovariancePopSampCombine",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_covariance_pop_samp_combine"),
@@ -231,7 +231,7 @@ func BsonCovariancePopSampCombine(ctx context.Context, conn *pgx.Conn, l *slog.L
 func BsonCovariancePopSampInvtransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument, anonymous12 wirebson.RawDocument) (outBsonCovariancePopSampInvtransition struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_covariance_pop_samp_invtransition",
+		"documentdb_api_internal.BsonCovariancePopSampInvtransition",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_covariance_pop_samp_invtransition"),
@@ -252,7 +252,7 @@ func BsonCovariancePopSampInvtransition(ctx context.Context, conn *pgx.Conn, l *
 func BsonCovariancePopSampTransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument, anonymous12 wirebson.RawDocument) (outBsonCovariancePopSampTransition struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_covariance_pop_samp_transition",
+		"documentdb_api_internal.BsonCovariancePopSampTransition",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_covariance_pop_samp_transition"),
@@ -273,7 +273,7 @@ func BsonCovariancePopSampTransition(ctx context.Context, conn *pgx.Conn, l *slo
 func BsonCovarianceSampFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonCovarianceSampFinal wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_covariance_samp_final",
+		"documentdb_api_internal.BsonCovarianceSampFinal",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_covariance_samp_final"),
@@ -294,7 +294,7 @@ func BsonCovarianceSampFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger
 func BsonDenseRank(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dense_rank",
+		"documentdb_api_internal.BsonDenseRank",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dense_rank"),
@@ -315,7 +315,7 @@ func BsonDenseRank(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (err err
 func BsonDensifyFull(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_densify_full",
+		"documentdb_api_internal.BsonDensifyFull",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_densify_full"),
@@ -336,7 +336,7 @@ func BsonDensifyFull(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonym
 func BsonDensifyPartition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_densify_partition",
+		"documentdb_api_internal.BsonDensifyPartition",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_densify_partition"),
@@ -357,7 +357,7 @@ func BsonDensifyPartition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, a
 func BsonDensifyRange(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_densify_range",
+		"documentdb_api_internal.BsonDensifyRange",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_densify_range"),
@@ -378,7 +378,7 @@ func BsonDensifyRange(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anony
 func BsonDerivativeTransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument, anonymous12 wirebson.RawDocument, anonymous123 int64) (outBsonDerivativeTransition struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_derivative_transition",
+		"documentdb_api_internal.BsonDerivativeTransition",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_derivative_transition"),
@@ -399,7 +399,7 @@ func BsonDerivativeTransition(ctx context.Context, conn *pgx.Conn, l *slog.Logge
 func BsonDistinctArrayAggFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonDistinctArrayAggFinal wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_distinct_array_agg_final",
+		"documentdb_api_internal.BsonDistinctArrayAggFinal",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_distinct_array_agg_final"),
@@ -420,7 +420,7 @@ func BsonDistinctArrayAggFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logg
 func BsonDistinctArrayAggTransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonDistinctArrayAggTransition struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_distinct_array_agg_transition",
+		"documentdb_api_internal.BsonDistinctArrayAggTransition",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_distinct_array_agg_transition"),
@@ -441,7 +441,7 @@ func BsonDistinctArrayAggTransition(ctx context.Context, conn *pgx.Conn, l *slog
 func BsonDocumentAddScoreField(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 float64) (outBsonDocumentAddScoreField wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_document_add_score_field",
+		"documentdb_api_internal.BsonDocumentAddScoreField",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_document_add_score_field"),
@@ -462,7 +462,7 @@ func BsonDocumentAddScoreField(ctx context.Context, conn *pgx.Conn, l *slog.Logg
 func BsonDocumentNumber(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_document_number",
+		"documentdb_api_internal.BsonDocumentNumber",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_document_number"),
@@ -483,7 +483,7 @@ func BsonDocumentNumber(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (er
 func BsonDollarAddFields(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument, letVariableSpec wirebson.RawDocument) (outBsonDollarAddFields wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_add_fields",
+		"documentdb_api_internal.BsonDollarAddFields",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_add_fields"),
@@ -504,7 +504,7 @@ func BsonDollarAddFields(ctx context.Context, conn *pgx.Conn, l *slog.Logger, do
 func BsonDollarAddFields1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument, letVariableSpec wirebson.RawDocument, collationstring string) (outBsonDollarAddFields wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_add_fields",
+		"documentdb_api_internal.BsonDollarAddFields1",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_add_fields"),
@@ -525,7 +525,7 @@ func BsonDollarAddFields1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, d
 func BsonDollarBucketAuto(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, spec wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_bucket_auto",
+		"documentdb_api_internal.BsonDollarBucketAuto",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_bucket_auto"),
@@ -546,7 +546,7 @@ func BsonDollarBucketAuto(ctx context.Context, conn *pgx.Conn, l *slog.Logger, d
 func BsonDollarEq(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 struct{}) (outBsonDollarEq bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_eq",
+		"documentdb_api_internal.BsonDollarEq",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_eq"),
@@ -567,7 +567,7 @@ func BsonDollarEq(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous
 func BsonDollarExpr(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument, anonymous12 wirebson.RawDocument) (outBsonDollarExpr bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_expr",
+		"documentdb_api_internal.BsonDollarExpr",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_expr"),
@@ -588,7 +588,7 @@ func BsonDollarExpr(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymo
 func BsonDollarExtractMergeFilter(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 string) (outBsonDollarExtractMergeFilter wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_extract_merge_filter",
+		"documentdb_api_internal.BsonDollarExtractMergeFilter",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_extract_merge_filter"),
@@ -609,7 +609,7 @@ func BsonDollarExtractMergeFilter(ctx context.Context, conn *pgx.Conn, l *slog.L
 func BsonDollarFullscan(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonDollarFullscan bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_fullscan",
+		"documentdb_api_internal.BsonDollarFullscan",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_fullscan"),
@@ -630,7 +630,7 @@ func BsonDollarFullscan(ctx context.Context, conn *pgx.Conn, l *slog.Logger, ano
 func BsonDollarGt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 struct{}) (outBsonDollarGt bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_gt",
+		"documentdb_api_internal.BsonDollarGt",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_gt"),
@@ -651,7 +651,7 @@ func BsonDollarGt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous
 func BsonDollarGte(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 struct{}) (outBsonDollarGte bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_gte",
+		"documentdb_api_internal.BsonDollarGte",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_gte"),
@@ -672,7 +672,7 @@ func BsonDollarGte(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymou
 func BsonDollarIndexHint(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, indexName string, keyDocument wirebson.RawDocument, isSparse bool) (outBsonDollarIndexHint bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_index_hint",
+		"documentdb_api_internal.BsonDollarIndexHint",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_index_hint"),
@@ -693,7 +693,7 @@ func BsonDollarIndexHint(ctx context.Context, conn *pgx.Conn, l *slog.Logger, do
 func BsonDollarInverseMatch(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, spec wirebson.RawDocument) (outBsonDollarInverseMatch bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_inverse_match",
+		"documentdb_api_internal.BsonDollarInverseMatch",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_inverse_match"),
@@ -714,7 +714,7 @@ func BsonDollarInverseMatch(ctx context.Context, conn *pgx.Conn, l *slog.Logger,
 func BsonDollarLookupExpressionEvalMerge(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument, variableSpec wirebson.RawDocument) (outBsonDollarLookupExpressionEvalMerge wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_lookup_expression_eval_merge",
+		"documentdb_api_internal.BsonDollarLookupExpressionEvalMerge",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_lookup_expression_eval_merge"),
@@ -735,7 +735,7 @@ func BsonDollarLookupExpressionEvalMerge(ctx context.Context, conn *pgx.Conn, l 
 func BsonDollarLookupExtractFilterArray(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonDollarLookupExtractFilterArray struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_lookup_extract_filter_array",
+		"documentdb_api_internal.BsonDollarLookupExtractFilterArray",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_lookup_extract_filter_array"),
@@ -756,7 +756,7 @@ func BsonDollarLookupExtractFilterArray(ctx context.Context, conn *pgx.Conn, l *
 func BsonDollarLookupExtractFilterExpression(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonDollarLookupExtractFilterExpression wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_lookup_extract_filter_expression",
+		"documentdb_api_internal.BsonDollarLookupExtractFilterExpression",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_lookup_extract_filter_expression"),
@@ -777,7 +777,7 @@ func BsonDollarLookupExtractFilterExpression(ctx context.Context, conn *pgx.Conn
 func BsonDollarLookupFilterSupport(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonDollarLookupFilterSupport struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_lookup_filter_support",
+		"documentdb_api_internal.BsonDollarLookupFilterSupport",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_lookup_filter_support"),
@@ -798,7 +798,7 @@ func BsonDollarLookupFilterSupport(ctx context.Context, conn *pgx.Conn, l *slog.
 func BsonDollarLookupJoinFilter(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument, anonymous12 string) (outBsonDollarLookupJoinFilter bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_lookup_join_filter",
+		"documentdb_api_internal.BsonDollarLookupJoinFilter",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_lookup_join_filter"),
@@ -819,7 +819,7 @@ func BsonDollarLookupJoinFilter(ctx context.Context, conn *pgx.Conn, l *slog.Log
 func BsonDollarLookupProject(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 struct{}, anonymous12 string) (outBsonDollarLookupProject wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_lookup_project",
+		"documentdb_api_internal.BsonDollarLookupProject",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_lookup_project"),
@@ -840,7 +840,7 @@ func BsonDollarLookupProject(ctx context.Context, conn *pgx.Conn, l *slog.Logger
 func BsonDollarLt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 struct{}) (outBsonDollarLt bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_lt",
+		"documentdb_api_internal.BsonDollarLt",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_lt"),
@@ -861,7 +861,7 @@ func BsonDollarLt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous
 func BsonDollarLte(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 struct{}) (outBsonDollarLte bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_lte",
+		"documentdb_api_internal.BsonDollarLte",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_lte"),
@@ -882,7 +882,7 @@ func BsonDollarLte(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymou
 func BsonDollarMergeAddObjectId(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonDollarMergeAddObjectId wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_merge_add_object_id",
+		"documentdb_api_internal.BsonDollarMergeAddObjectId",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_merge_add_object_id"),
@@ -903,7 +903,7 @@ func BsonDollarMergeAddObjectId(ctx context.Context, conn *pgx.Conn, l *slog.Log
 func BsonDollarMergeAddObjectId1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument, anonymous12 wirebson.RawDocument) (outBsonDollarMergeAddObjectId wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_merge_add_object_id",
+		"documentdb_api_internal.BsonDollarMergeAddObjectId1",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_merge_add_object_id"),
@@ -924,7 +924,7 @@ func BsonDollarMergeAddObjectId1(ctx context.Context, conn *pgx.Conn, l *slog.Lo
 func BsonDollarMergeDocuments(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument, overridearray bool) (outBsonDollarMergeDocuments wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_merge_documents",
+		"documentdb_api_internal.BsonDollarMergeDocuments",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_merge_documents"),
@@ -945,7 +945,7 @@ func BsonDollarMergeDocuments(ctx context.Context, conn *pgx.Conn, l *slog.Logge
 func BsonDollarMergeDocumentsAtPath(ctx context.Context, conn *pgx.Conn, l *slog.Logger, leftdocument wirebson.RawDocument, rightdocument wirebson.RawDocument, fieldpath string) (outBsonDollarMergeDocumentsAtPath wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_merge_documents_at_path",
+		"documentdb_api_internal.BsonDollarMergeDocumentsAtPath",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_merge_documents_at_path"),
@@ -966,7 +966,7 @@ func BsonDollarMergeDocumentsAtPath(ctx context.Context, conn *pgx.Conn, l *slog
 func BsonDollarMergeFailWhenNotMatched(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 string) (outBsonDollarMergeFailWhenNotMatched wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_merge_fail_when_not_matched",
+		"documentdb_api_internal.BsonDollarMergeFailWhenNotMatched",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_merge_fail_when_not_matched"),
@@ -987,7 +987,7 @@ func BsonDollarMergeFailWhenNotMatched(ctx context.Context, conn *pgx.Conn, l *s
 func BsonDollarMergeFilterSupport(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonDollarMergeFilterSupport struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_merge_filter_support",
+		"documentdb_api_internal.BsonDollarMergeFilterSupport",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_merge_filter_support"),
@@ -1008,7 +1008,7 @@ func BsonDollarMergeFilterSupport(ctx context.Context, conn *pgx.Conn, l *slog.L
 func BsonDollarMergeGenerateObjectId(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument) (outBsonDollarMergeGenerateObjectId wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_merge_generate_object_id",
+		"documentdb_api_internal.BsonDollarMergeGenerateObjectId",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_merge_generate_object_id"),
@@ -1029,7 +1029,7 @@ func BsonDollarMergeGenerateObjectId(ctx context.Context, conn *pgx.Conn, l *slo
 func BsonDollarMergeHandleWhenMatched(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument, anonymous12 int32) (outBsonDollarMergeHandleWhenMatched wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_merge_handle_when_matched",
+		"documentdb_api_internal.BsonDollarMergeHandleWhenMatched",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_merge_handle_when_matched"),
@@ -1050,7 +1050,7 @@ func BsonDollarMergeHandleWhenMatched(ctx context.Context, conn *pgx.Conn, l *sl
 func BsonDollarMergeHandleWhenMatched1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument, anonymous12 int32, anonymous123 wirebson.RawDocument, anonymous1234 int32) (outBsonDollarMergeHandleWhenMatched wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_merge_handle_when_matched",
+		"documentdb_api_internal.BsonDollarMergeHandleWhenMatched1",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_merge_handle_when_matched"),
@@ -1071,7 +1071,7 @@ func BsonDollarMergeHandleWhenMatched1(ctx context.Context, conn *pgx.Conn, l *s
 func BsonDollarMergeJoin(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument, anonymous12 string) (outBsonDollarMergeJoin bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_merge_join",
+		"documentdb_api_internal.BsonDollarMergeJoin",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_merge_join"),
@@ -1092,7 +1092,7 @@ func BsonDollarMergeJoin(ctx context.Context, conn *pgx.Conn, l *slog.Logger, an
 func BsonDollarNotGt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonDollarNotGt bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_not_gt",
+		"documentdb_api_internal.BsonDollarNotGt",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_not_gt"),
@@ -1113,7 +1113,7 @@ func BsonDollarNotGt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonym
 func BsonDollarNotGte(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonDollarNotGte bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_not_gte",
+		"documentdb_api_internal.BsonDollarNotGte",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_not_gte"),
@@ -1134,7 +1134,7 @@ func BsonDollarNotGte(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anony
 func BsonDollarNotLt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonDollarNotLt bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_not_lt",
+		"documentdb_api_internal.BsonDollarNotLt",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_not_lt"),
@@ -1155,7 +1155,7 @@ func BsonDollarNotLt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonym
 func BsonDollarNotLte(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonDollarNotLte bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_not_lte",
+		"documentdb_api_internal.BsonDollarNotLte",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_not_lte"),
@@ -1176,7 +1176,7 @@ func BsonDollarNotLte(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anony
 func BsonDollarProject(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument, variableSpec wirebson.RawDocument) (outBsonDollarProject wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_project",
+		"documentdb_api_internal.BsonDollarProject",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_project"),
@@ -1197,7 +1197,7 @@ func BsonDollarProject(ctx context.Context, conn *pgx.Conn, l *slog.Logger, docu
 func BsonDollarProject1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument, variableSpec wirebson.RawDocument, collationstring string) (outBsonDollarProject wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_project",
+		"documentdb_api_internal.BsonDollarProject1",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_project"),
@@ -1218,7 +1218,7 @@ func BsonDollarProject1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, doc
 func BsonDollarProjectFind(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument, querySpec wirebson.RawDocument, letVariableSpec wirebson.RawDocument) (outBsonDollarProjectFind wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_project_find",
+		"documentdb_api_internal.BsonDollarProjectFind",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_project_find"),
@@ -1239,7 +1239,7 @@ func BsonDollarProjectFind(ctx context.Context, conn *pgx.Conn, l *slog.Logger, 
 func BsonDollarProjectFind1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument, querySpec wirebson.RawDocument, letVariableSpec wirebson.RawDocument, collationstring string) (outBsonDollarProjectFind wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_project_find",
+		"documentdb_api_internal.BsonDollarProjectFind1",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_project_find"),
@@ -1260,7 +1260,7 @@ func BsonDollarProjectFind1(ctx context.Context, conn *pgx.Conn, l *slog.Logger,
 func BsonDollarRange(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonDollarRange bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_range",
+		"documentdb_api_internal.BsonDollarRange",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_range"),
@@ -1281,7 +1281,7 @@ func BsonDollarRange(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonym
 func BsonDollarRedact(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument, anonymous12 string, anonymous123 wirebson.RawDocument) (outBsonDollarRedact wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_redact",
+		"documentdb_api_internal.BsonDollarRedact",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_redact"),
@@ -1302,7 +1302,7 @@ func BsonDollarRedact(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anony
 func BsonDollarRedact1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, redactSpec wirebson.RawDocument, redactspectext string, variableSpec wirebson.RawDocument, collationstring string) (outBsonDollarRedact wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_redact",
+		"documentdb_api_internal.BsonDollarRedact1",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_redact"),
@@ -1323,7 +1323,7 @@ func BsonDollarRedact1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, docu
 func BsonDollarReplaceRoot(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument, variableSpec wirebson.RawDocument) (outBsonDollarReplaceRoot wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_replace_root",
+		"documentdb_api_internal.BsonDollarReplaceRoot",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_replace_root"),
@@ -1344,7 +1344,7 @@ func BsonDollarReplaceRoot(ctx context.Context, conn *pgx.Conn, l *slog.Logger, 
 func BsonDollarReplaceRoot1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, pathSpec wirebson.RawDocument, variableSpec wirebson.RawDocument, collationstring string) (outBsonDollarReplaceRoot wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_replace_root",
+		"documentdb_api_internal.BsonDollarReplaceRoot1",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_replace_root"),
@@ -1365,7 +1365,7 @@ func BsonDollarReplaceRoot1(ctx context.Context, conn *pgx.Conn, l *slog.Logger,
 func BsonDollarSelectivity(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}, anonymous12 struct{}, anonymous123 int32) (outBsonDollarSelectivity float64, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_selectivity",
+		"documentdb_api_internal.BsonDollarSelectivity",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_selectivity"),
@@ -1386,7 +1386,7 @@ func BsonDollarSelectivity(ctx context.Context, conn *pgx.Conn, l *slog.Logger, 
 func BsonDollarText(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonDollarText bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_dollar_text",
+		"documentdb_api_internal.BsonDollarText",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_dollar_text"),
@@ -1407,7 +1407,7 @@ func BsonDollarText(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymo
 func BsonExpMovingAvg(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument, anonymous12 bool) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_exp_moving_avg",
+		"documentdb_api_internal.BsonExpMovingAvg",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_exp_moving_avg"),
@@ -1428,7 +1428,7 @@ func BsonExpMovingAvg(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anony
 func BsonExpressionGet(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, expressionSpec wirebson.RawDocument, isnullonempty bool, variableSpec wirebson.RawDocument) (outBsonExpressionGet wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_expression_get",
+		"documentdb_api_internal.BsonExpressionGet",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_expression_get"),
@@ -1449,7 +1449,7 @@ func BsonExpressionGet(ctx context.Context, conn *pgx.Conn, l *slog.Logger, docu
 func BsonExpressionGet1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, expressionSpec wirebson.RawDocument, isnullonempty bool, variableSpec wirebson.RawDocument, collationstring string) (outBsonExpressionGet wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_expression_get",
+		"documentdb_api_internal.BsonExpressionGet1",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_expression_get"),
@@ -1470,7 +1470,7 @@ func BsonExpressionGet1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, doc
 func BsonExpressionMap(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, sourcearrayname string, expressionSpec wirebson.RawDocument, isnullonempty bool, variableSpec wirebson.RawDocument) (outBsonExpressionMap wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_expression_map",
+		"documentdb_api_internal.BsonExpressionMap",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_expression_map"),
@@ -1491,7 +1491,7 @@ func BsonExpressionMap(ctx context.Context, conn *pgx.Conn, l *slog.Logger, docu
 func BsonExpressionPartitionByFieldsGet(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, expressionSpec wirebson.RawDocument) (outBsonExpressionPartitionByFieldsGet wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_expression_partition_by_fields_get",
+		"documentdb_api_internal.BsonExpressionPartitionByFieldsGet",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_expression_partition_by_fields_get"),
@@ -1512,7 +1512,7 @@ func BsonExpressionPartitionByFieldsGet(ctx context.Context, conn *pgx.Conn, l *
 func BsonExpressionPartitionGet(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, expressionSpec wirebson.RawDocument, isnullonempty bool) (outBsonExpressionPartitionGet wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_expression_partition_get",
+		"documentdb_api_internal.BsonExpressionPartitionGet",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_expression_partition_get"),
@@ -1533,7 +1533,7 @@ func BsonExpressionPartitionGet(ctx context.Context, conn *pgx.Conn, l *slog.Log
 func BsonExpressionPartitionGet1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, expressionSpec wirebson.RawDocument, isnullonempty bool, variableSpec wirebson.RawDocument) (outBsonExpressionPartitionGet wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_expression_partition_get",
+		"documentdb_api_internal.BsonExpressionPartitionGet1",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_expression_partition_get"),
@@ -1554,7 +1554,7 @@ func BsonExpressionPartitionGet1(ctx context.Context, conn *pgx.Conn, l *slog.Lo
 func BsonExpressionPartitionGet12(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, expressionSpec wirebson.RawDocument, isnullonempty bool, variableSpec wirebson.RawDocument, collationstring string) (outBsonExpressionPartitionGet wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_expression_partition_get",
+		"documentdb_api_internal.BsonExpressionPartitionGet12",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_expression_partition_get"),
@@ -1575,7 +1575,7 @@ func BsonExpressionPartitionGet12(ctx context.Context, conn *pgx.Conn, l *slog.L
 func BsonExtractVector(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, path string) (outBsonExtractVector struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_extract_vector",
+		"documentdb_api_internal.BsonExtractVector",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_extract_vector"),
@@ -1596,7 +1596,7 @@ func BsonExtractVector(ctx context.Context, conn *pgx.Conn, l *slog.Logger, docu
 func BsonFirstTransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument, anonymous12 struct{}, anonymous123 wirebson.RawDocument) (outBsonFirstTransition struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_first_transition",
+		"documentdb_api_internal.BsonFirstTransition",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_first_transition"),
@@ -1617,7 +1617,7 @@ func BsonFirstTransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, an
 func BsonFirstTransitionOnSorted(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument, anonymous12 wirebson.RawDocument) (outBsonFirstTransitionOnSorted struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_first_transition_on_sorted",
+		"documentdb_api_internal.BsonFirstTransitionOnSorted",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_first_transition_on_sorted"),
@@ -1638,7 +1638,7 @@ func BsonFirstTransitionOnSorted(ctx context.Context, conn *pgx.Conn, l *slog.Lo
 func BsonFirstnFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonFirstnFinal wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_firstn_final",
+		"documentdb_api_internal.BsonFirstnFinal",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_firstn_final"),
@@ -1659,7 +1659,7 @@ func BsonFirstnFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonym
 func BsonFirstnTransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument, anonymous12 int64, anonymous123 struct{}, anonymous1234 wirebson.RawDocument) (outBsonFirstnTransition struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_firstn_transition",
+		"documentdb_api_internal.BsonFirstnTransition",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_firstn_transition"),
@@ -1680,7 +1680,7 @@ func BsonFirstnTransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, a
 func BsonFirstnTransitionOnSorted(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument, anonymous12 int64, anonymous123 wirebson.RawDocument) (outBsonFirstnTransitionOnSorted struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_firstn_transition_on_sorted",
+		"documentdb_api_internal.BsonFirstnTransitionOnSorted",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_firstn_transition_on_sorted"),
@@ -1701,7 +1701,7 @@ func BsonFirstnTransitionOnSorted(ctx context.Context, conn *pgx.Conn, l *slog.L
 func BsonGeonearWithinRange(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonGeonearWithinRange bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_geonear_within_range",
+		"documentdb_api_internal.BsonGeonearWithinRange",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_geonear_within_range"),
@@ -1722,7 +1722,7 @@ func BsonGeonearWithinRange(ctx context.Context, conn *pgx.Conn, l *slog.Logger,
 func BsonIndexTransform(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}, anonymous12 struct{}, anonymous123 struct{}) (outBsonIndexTransform struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_index_transform",
+		"documentdb_api_internal.BsonIndexTransform",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_index_transform"),
@@ -1743,7 +1743,7 @@ func BsonIndexTransform(ctx context.Context, conn *pgx.Conn, l *slog.Logger, ano
 func BsonIntegralDerivativeFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonIntegralDerivativeFinal wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_integral_derivative_final",
+		"documentdb_api_internal.BsonIntegralDerivativeFinal",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_integral_derivative_final"),
@@ -1764,7 +1764,7 @@ func BsonIntegralDerivativeFinal(ctx context.Context, conn *pgx.Conn, l *slog.Lo
 func BsonIntegralTransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument, anonymous12 wirebson.RawDocument, anonymous123 int64) (outBsonIntegralTransition struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_integral_transition",
+		"documentdb_api_internal.BsonIntegralTransition",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_integral_transition"),
@@ -1785,7 +1785,7 @@ func BsonIntegralTransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger,
 func BsonLastTransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument, anonymous12 struct{}, anonymous123 wirebson.RawDocument) (outBsonLastTransition struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_last_transition",
+		"documentdb_api_internal.BsonLastTransition",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_last_transition"),
@@ -1806,7 +1806,7 @@ func BsonLastTransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, ano
 func BsonLastTransitionOnSorted(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument, anonymous12 wirebson.RawDocument) (outBsonLastTransitionOnSorted struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_last_transition_on_sorted",
+		"documentdb_api_internal.BsonLastTransitionOnSorted",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_last_transition_on_sorted"),
@@ -1827,7 +1827,7 @@ func BsonLastTransitionOnSorted(ctx context.Context, conn *pgx.Conn, l *slog.Log
 func BsonLastnFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonLastnFinal wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_lastn_final",
+		"documentdb_api_internal.BsonLastnFinal",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_lastn_final"),
@@ -1848,7 +1848,7 @@ func BsonLastnFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymo
 func BsonLastnTransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument, anonymous12 int64, anonymous123 struct{}, anonymous1234 wirebson.RawDocument) (outBsonLastnTransition struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_lastn_transition",
+		"documentdb_api_internal.BsonLastnTransition",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_lastn_transition"),
@@ -1869,7 +1869,7 @@ func BsonLastnTransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, an
 func BsonLastnTransitionOnSorted(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument, anonymous12 int64, anonymous123 wirebson.RawDocument) (outBsonLastnTransitionOnSorted struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_lastn_transition_on_sorted",
+		"documentdb_api_internal.BsonLastnTransitionOnSorted",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_lastn_transition_on_sorted"),
@@ -1890,7 +1890,7 @@ func BsonLastnTransitionOnSorted(ctx context.Context, conn *pgx.Conn, l *slog.Lo
 func BsonLinearFill(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_linear_fill",
+		"documentdb_api_internal.BsonLinearFill",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_linear_fill"),
@@ -1911,7 +1911,7 @@ func BsonLinearFill(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymo
 func BsonLocfFill(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_locf_fill",
+		"documentdb_api_internal.BsonLocfFill",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_locf_fill"),
@@ -1932,7 +1932,7 @@ func BsonLocfFill(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous
 func BsonMaxminnCombine(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}) (outBsonMaxminnCombine struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_maxminn_combine",
+		"documentdb_api_internal.BsonMaxminnCombine",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_maxminn_combine"),
@@ -1953,7 +1953,7 @@ func BsonMaxminnCombine(ctx context.Context, conn *pgx.Conn, l *slog.Logger, ano
 func BsonMaxminnFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonMaxminnFinal wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_maxminn_final",
+		"documentdb_api_internal.BsonMaxminnFinal",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_maxminn_final"),
@@ -1974,7 +1974,7 @@ func BsonMaxminnFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anony
 func BsonMaxnTransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonMaxnTransition struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_maxn_transition",
+		"documentdb_api_internal.BsonMaxnTransition",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_maxn_transition"),
@@ -1995,7 +1995,7 @@ func BsonMaxnTransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, ano
 func BsonMergeObjects(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 int64, anonymous12 struct{}, anonymous123 wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_merge_objects",
+		"documentdb_api_internal.BsonMergeObjects",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_merge_objects"),
@@ -2016,7 +2016,7 @@ func BsonMergeObjects(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anony
 func BsonMergeObjectsFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonMergeObjectsFinal wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_merge_objects_final",
+		"documentdb_api_internal.BsonMergeObjectsFinal",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_merge_objects_final"),
@@ -2037,7 +2037,7 @@ func BsonMergeObjectsFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, 
 func BsonMergeObjectsOnSorted(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_merge_objects_on_sorted",
+		"documentdb_api_internal.BsonMergeObjectsOnSorted",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_merge_objects_on_sorted"),
@@ -2058,7 +2058,7 @@ func BsonMergeObjectsOnSorted(ctx context.Context, conn *pgx.Conn, l *slog.Logge
 func BsonMergeObjectsTransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument, anonymous12 int64, anonymous123 struct{}, anonymous1234 wirebson.RawDocument) (outBsonMergeObjectsTransition struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_merge_objects_transition",
+		"documentdb_api_internal.BsonMergeObjectsTransition",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_merge_objects_transition"),
@@ -2079,7 +2079,7 @@ func BsonMergeObjectsTransition(ctx context.Context, conn *pgx.Conn, l *slog.Log
 func BsonMergeObjectsTransitionOnSorted(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonMergeObjectsTransitionOnSorted struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_merge_objects_transition_on_sorted",
+		"documentdb_api_internal.BsonMergeObjectsTransitionOnSorted",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_merge_objects_transition_on_sorted"),
@@ -2100,7 +2100,7 @@ func BsonMergeObjectsTransitionOnSorted(ctx context.Context, conn *pgx.Conn, l *
 func BsonMinnTransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonMinnTransition struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_minn_transition",
+		"documentdb_api_internal.BsonMinnTransition",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_minn_transition"),
@@ -2121,7 +2121,7 @@ func BsonMinnTransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, ano
 func BsonOrderby(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, filter wirebson.RawDocument, collationstring string) (outBsonOrderby wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_orderby",
+		"documentdb_api_internal.BsonOrderby",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_orderby"),
@@ -2142,7 +2142,7 @@ func BsonOrderby(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document w
 func BsonOrderbyCompare(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonOrderbyCompare int32, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_orderby_compare",
+		"documentdb_api_internal.BsonOrderbyCompare",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_orderby_compare"),
@@ -2163,7 +2163,7 @@ func BsonOrderbyCompare(ctx context.Context, conn *pgx.Conn, l *slog.Logger, ano
 func BsonOrderbyCompareSortSupport(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_orderby_compare_sort_support",
+		"documentdb_api_internal.BsonOrderbyCompareSortSupport",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_orderby_compare_sort_support"),
@@ -2184,7 +2184,7 @@ func BsonOrderbyCompareSortSupport(ctx context.Context, conn *pgx.Conn, l *slog.
 func BsonOrderbyEq(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonOrderbyEq bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_orderby_eq",
+		"documentdb_api_internal.BsonOrderbyEq",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_orderby_eq"),
@@ -2205,7 +2205,7 @@ func BsonOrderbyEq(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymou
 func BsonOrderbyGt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonOrderbyGt bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_orderby_gt",
+		"documentdb_api_internal.BsonOrderbyGt",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_orderby_gt"),
@@ -2226,7 +2226,7 @@ func BsonOrderbyGt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymou
 func BsonOrderbyLt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonOrderbyLt bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_orderby_lt",
+		"documentdb_api_internal.BsonOrderbyLt",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_orderby_lt"),
@@ -2247,7 +2247,7 @@ func BsonOrderbyLt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymou
 func BsonOrderbyPartition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument, anonymous12 bool) (outBsonOrderbyPartition wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_orderby_partition",
+		"documentdb_api_internal.BsonOrderbyPartition",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_orderby_partition"),
@@ -2268,7 +2268,7 @@ func BsonOrderbyPartition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, a
 func BsonOrderbyPartition1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, filter wirebson.RawDocument, istimerangewindow bool, collationstring string) (outBsonOrderbyPartition wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_orderby_partition",
+		"documentdb_api_internal.BsonOrderbyPartition1",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_orderby_partition"),
@@ -2289,7 +2289,7 @@ func BsonOrderbyPartition1(ctx context.Context, conn *pgx.Conn, l *slog.Logger, 
 func BsonOrderbyReverse(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonOrderbyReverse wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_orderby_reverse",
+		"documentdb_api_internal.BsonOrderbyReverse",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_orderby_reverse"),
@@ -2310,7 +2310,7 @@ func BsonOrderbyReverse(ctx context.Context, conn *pgx.Conn, l *slog.Logger, ano
 func BsonQueryMatch(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, query wirebson.RawDocument, variableSpec wirebson.RawDocument, collationstring string) (outBsonQueryMatch bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_query_match",
+		"documentdb_api_internal.BsonQueryMatch",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_query_match"),
@@ -2331,7 +2331,7 @@ func BsonQueryMatch(ctx context.Context, conn *pgx.Conn, l *slog.Logger, documen
 func BsonQueryToTsquery(ctx context.Context, conn *pgx.Conn, l *slog.Logger, query wirebson.RawDocument, textsearch string) (outBsonQueryToTsquery struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_query_to_tsquery",
+		"documentdb_api_internal.BsonQueryToTsquery",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_query_to_tsquery"),
@@ -2352,7 +2352,7 @@ func BsonQueryToTsquery(ctx context.Context, conn *pgx.Conn, l *slog.Logger, que
 func BsonRank(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_rank",
+		"documentdb_api_internal.BsonRank",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_rank"),
@@ -2373,7 +2373,7 @@ func BsonRank(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (err error) {
 func BsonRumCompositeOrdering(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument, anonymous12 struct{}, anonymous123 struct{}) (outBsonRumCompositeOrdering wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_rum_composite_ordering",
+		"documentdb_api_internal.BsonRumCompositeOrdering",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_rum_composite_ordering"),
@@ -2394,7 +2394,7 @@ func BsonRumCompositeOrdering(ctx context.Context, conn *pgx.Conn, l *slog.Logge
 func BsonSearchParam(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonSearchParam bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_search_param",
+		"documentdb_api_internal.BsonSearchParam",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_search_param"),
@@ -2415,7 +2415,7 @@ func BsonSearchParam(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonym
 func BsonShift(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 int32, anonymous12 wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_shift",
+		"documentdb_api_internal.BsonShift",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_shift"),
@@ -2436,7 +2436,7 @@ func BsonShift(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wi
 func BsonStdDevPopFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonStdDevPopFinal wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_std_dev_pop_final",
+		"documentdb_api_internal.BsonStdDevPopFinal",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_std_dev_pop_final"),
@@ -2457,7 +2457,7 @@ func BsonStdDevPopFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, ano
 func BsonStdDevPopSampCombine(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}) (outBsonStdDevPopSampCombine struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_std_dev_pop_samp_combine",
+		"documentdb_api_internal.BsonStdDevPopSampCombine",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_std_dev_pop_samp_combine"),
@@ -2478,7 +2478,7 @@ func BsonStdDevPopSampCombine(ctx context.Context, conn *pgx.Conn, l *slog.Logge
 func BsonStdDevPopSampTransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonStdDevPopSampTransition struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_std_dev_pop_samp_transition",
+		"documentdb_api_internal.BsonStdDevPopSampTransition",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_std_dev_pop_samp_transition"),
@@ -2499,7 +2499,7 @@ func BsonStdDevPopSampTransition(ctx context.Context, conn *pgx.Conn, l *slog.Lo
 func BsonStdDevPopSampWinfuncInvtransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonStdDevPopSampWinfuncInvtransition struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_std_dev_pop_samp_winfunc_invtransition",
+		"documentdb_api_internal.BsonStdDevPopSampWinfuncInvtransition",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_std_dev_pop_samp_winfunc_invtransition"),
@@ -2520,7 +2520,7 @@ func BsonStdDevPopSampWinfuncInvtransition(ctx context.Context, conn *pgx.Conn, 
 func BsonStdDevPopWinfuncFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonStdDevPopWinfuncFinal wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_std_dev_pop_winfunc_final",
+		"documentdb_api_internal.BsonStdDevPopWinfuncFinal",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_std_dev_pop_winfunc_final"),
@@ -2541,7 +2541,7 @@ func BsonStdDevPopWinfuncFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logg
 func BsonStdDevSampFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonStdDevSampFinal wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_std_dev_samp_final",
+		"documentdb_api_internal.BsonStdDevSampFinal",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_std_dev_samp_final"),
@@ -2562,7 +2562,7 @@ func BsonStdDevSampFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, an
 func BsonStdDevSampWinfuncFinal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonStdDevSampWinfuncFinal wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_std_dev_samp_winfunc_final",
+		"documentdb_api_internal.BsonStdDevSampWinfuncFinal",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_std_dev_samp_winfunc_final"),
@@ -2583,7 +2583,7 @@ func BsonStdDevSampWinfuncFinal(ctx context.Context, conn *pgx.Conn, l *slog.Log
 func BsonSumAvgMinvtransition(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonSumAvgMinvtransition struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_sum_avg_minvtransition",
+		"documentdb_api_internal.BsonSumAvgMinvtransition",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_sum_avg_minvtransition"),
@@ -2604,7 +2604,7 @@ func BsonSumAvgMinvtransition(ctx context.Context, conn *pgx.Conn, l *slog.Logge
 func BsonTextMetaQual(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 struct{}, anonymous12 struct{}, anonymous123 bool) (outBsonTextMetaQual bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_text_meta_qual",
+		"documentdb_api_internal.BsonTextMetaQual",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_text_meta_qual"),
@@ -2625,7 +2625,7 @@ func BsonTextMetaQual(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anony
 func BsonTextTsquery(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 struct{}) (outBsonTextTsquery bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_text_tsquery",
+		"documentdb_api_internal.BsonTextTsquery",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_text_tsquery"),
@@ -2646,7 +2646,7 @@ func BsonTextTsquery(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonym
 func BsonUniqueExclusionIndexEqual(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}) (outBsonUniqueExclusionIndexEqual bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_unique_exclusion_index_equal",
+		"documentdb_api_internal.BsonUniqueExclusionIndexEqual",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_unique_exclusion_index_equal"),
@@ -2667,7 +2667,7 @@ func BsonUniqueExclusionIndexEqual(ctx context.Context, conn *pgx.Conn, l *slog.
 func BsonUniqueIndexEqual(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonUniqueIndexEqual bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_unique_index_equal",
+		"documentdb_api_internal.BsonUniqueIndexEqual",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_unique_index_equal"),
@@ -2688,7 +2688,7 @@ func BsonUniqueIndexEqual(ctx context.Context, conn *pgx.Conn, l *slog.Logger, a
 func BsonUniqueShardPathEqual(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outBsonUniqueShardPathEqual bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_unique_shard_path_equal",
+		"documentdb_api_internal.BsonUniqueShardPathEqual",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_unique_shard_path_equal"),
@@ -2709,7 +2709,7 @@ func BsonUniqueShardPathEqual(ctx context.Context, conn *pgx.Conn, l *slog.Logge
 func BsonUpdateDocument(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, updateSpec wirebson.RawDocument, querySpec wirebson.RawDocument, arrayfilters wirebson.RawDocument, buildupdatedesc bool, variableSpec wirebson.RawDocument) (outNewdocument wirebson.RawDocument, outUpdatedesc wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_update_document",
+		"documentdb_api_internal.BsonUpdateDocument",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_update_document"),
@@ -2730,7 +2730,7 @@ func BsonUpdateDocument(ctx context.Context, conn *pgx.Conn, l *slog.Logger, doc
 func BsonUpdateReturnedValue(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shardKeyId int64) (outBsonUpdateReturnedValue int32, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_update_returned_value",
+		"documentdb_api_internal.BsonUpdateReturnedValue",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_update_returned_value"),
@@ -2751,7 +2751,7 @@ func BsonUpdateReturnedValue(ctx context.Context, conn *pgx.Conn, l *slog.Logger
 func BsonValueDollarAll(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonValueDollarAll struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_value_dollar_all",
+		"documentdb_api_internal.BsonValueDollarAll",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_value_dollar_all"),
@@ -2772,7 +2772,7 @@ func BsonValueDollarAll(ctx context.Context, conn *pgx.Conn, l *slog.Logger, ano
 func BsonValueDollarBitsAllClear(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonValueDollarBitsAllClear struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_value_dollar_bits_all_clear",
+		"documentdb_api_internal.BsonValueDollarBitsAllClear",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_value_dollar_bits_all_clear"),
@@ -2793,7 +2793,7 @@ func BsonValueDollarBitsAllClear(ctx context.Context, conn *pgx.Conn, l *slog.Lo
 func BsonValueDollarBitsAllSet(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonValueDollarBitsAllSet struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_value_dollar_bits_all_set",
+		"documentdb_api_internal.BsonValueDollarBitsAllSet",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_value_dollar_bits_all_set"),
@@ -2814,7 +2814,7 @@ func BsonValueDollarBitsAllSet(ctx context.Context, conn *pgx.Conn, l *slog.Logg
 func BsonValueDollarBitsAnyClear(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonValueDollarBitsAnyClear struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_value_dollar_bits_any_clear",
+		"documentdb_api_internal.BsonValueDollarBitsAnyClear",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_value_dollar_bits_any_clear"),
@@ -2835,7 +2835,7 @@ func BsonValueDollarBitsAnyClear(ctx context.Context, conn *pgx.Conn, l *slog.Lo
 func BsonValueDollarBitsAnySet(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonValueDollarBitsAnySet struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_value_dollar_bits_any_set",
+		"documentdb_api_internal.BsonValueDollarBitsAnySet",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_value_dollar_bits_any_set"),
@@ -2856,7 +2856,7 @@ func BsonValueDollarBitsAnySet(ctx context.Context, conn *pgx.Conn, l *slog.Logg
 func BsonValueDollarElemmatch(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonValueDollarElemmatch struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_value_dollar_elemmatch",
+		"documentdb_api_internal.BsonValueDollarElemmatch",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_value_dollar_elemmatch"),
@@ -2877,7 +2877,7 @@ func BsonValueDollarElemmatch(ctx context.Context, conn *pgx.Conn, l *slog.Logge
 func BsonValueDollarEq(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonValueDollarEq struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_value_dollar_eq",
+		"documentdb_api_internal.BsonValueDollarEq",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_value_dollar_eq"),
@@ -2898,7 +2898,7 @@ func BsonValueDollarEq(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anon
 func BsonValueDollarExists(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonValueDollarExists struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_value_dollar_exists",
+		"documentdb_api_internal.BsonValueDollarExists",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_value_dollar_exists"),
@@ -2919,7 +2919,7 @@ func BsonValueDollarExists(ctx context.Context, conn *pgx.Conn, l *slog.Logger, 
 func BsonValueDollarGt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonValueDollarGt struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_value_dollar_gt",
+		"documentdb_api_internal.BsonValueDollarGt",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_value_dollar_gt"),
@@ -2940,7 +2940,7 @@ func BsonValueDollarGt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anon
 func BsonValueDollarGte(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonValueDollarGte struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_value_dollar_gte",
+		"documentdb_api_internal.BsonValueDollarGte",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_value_dollar_gte"),
@@ -2961,7 +2961,7 @@ func BsonValueDollarGte(ctx context.Context, conn *pgx.Conn, l *slog.Logger, ano
 func BsonValueDollarIn(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonValueDollarIn struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_value_dollar_in",
+		"documentdb_api_internal.BsonValueDollarIn",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_value_dollar_in"),
@@ -2982,7 +2982,7 @@ func BsonValueDollarIn(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anon
 func BsonValueDollarLt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonValueDollarLt struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_value_dollar_lt",
+		"documentdb_api_internal.BsonValueDollarLt",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_value_dollar_lt"),
@@ -3003,7 +3003,7 @@ func BsonValueDollarLt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anon
 func BsonValueDollarLte(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonValueDollarLte struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_value_dollar_lte",
+		"documentdb_api_internal.BsonValueDollarLte",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_value_dollar_lte"),
@@ -3024,7 +3024,7 @@ func BsonValueDollarLte(ctx context.Context, conn *pgx.Conn, l *slog.Logger, ano
 func BsonValueDollarMod(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonValueDollarMod struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_value_dollar_mod",
+		"documentdb_api_internal.BsonValueDollarMod",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_value_dollar_mod"),
@@ -3045,7 +3045,7 @@ func BsonValueDollarMod(ctx context.Context, conn *pgx.Conn, l *slog.Logger, ano
 func BsonValueDollarNe(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonValueDollarNe struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_value_dollar_ne",
+		"documentdb_api_internal.BsonValueDollarNe",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_value_dollar_ne"),
@@ -3066,7 +3066,7 @@ func BsonValueDollarNe(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anon
 func BsonValueDollarNin(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonValueDollarNin struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_value_dollar_nin",
+		"documentdb_api_internal.BsonValueDollarNin",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_value_dollar_nin"),
@@ -3087,7 +3087,7 @@ func BsonValueDollarNin(ctx context.Context, conn *pgx.Conn, l *slog.Logger, ano
 func BsonValueDollarRegex(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonValueDollarRegex struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_value_dollar_regex",
+		"documentdb_api_internal.BsonValueDollarRegex",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_value_dollar_regex"),
@@ -3108,7 +3108,7 @@ func BsonValueDollarRegex(ctx context.Context, conn *pgx.Conn, l *slog.Logger, a
 func BsonValueDollarSize(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonValueDollarSize struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_value_dollar_size",
+		"documentdb_api_internal.BsonValueDollarSize",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_value_dollar_size"),
@@ -3129,7 +3129,7 @@ func BsonValueDollarSize(ctx context.Context, conn *pgx.Conn, l *slog.Logger, an
 func BsonValueDollarType(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument) (outBsonValueDollarType struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bson_value_dollar_type",
+		"documentdb_api_internal.BsonValueDollarType",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bson_value_dollar_type"),
@@ -3150,7 +3150,7 @@ func BsonValueDollarType(ctx context.Context, conn *pgx.Conn, l *slog.Logger, an
 func Bsoncovariancepop(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsoncovariancepop",
+		"documentdb_api_internal.Bsoncovariancepop",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsoncovariancepop"),
@@ -3171,7 +3171,7 @@ func Bsoncovariancepop(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anon
 func Bsoncovariancesamp(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsoncovariancesamp",
+		"documentdb_api_internal.Bsoncovariancesamp",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsoncovariancesamp"),
@@ -3192,7 +3192,7 @@ func Bsoncovariancesamp(ctx context.Context, conn *pgx.Conn, l *slog.Logger, ano
 func Bsonderivative(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument, anonymous12 int64) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsonderivative",
+		"documentdb_api_internal.Bsonderivative",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsonderivative"),
@@ -3213,7 +3213,7 @@ func Bsonderivative(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymo
 func Bsonfirst(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 struct{}, anonymous12 wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsonfirst",
+		"documentdb_api_internal.Bsonfirst",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsonfirst"),
@@ -3234,7 +3234,7 @@ func Bsonfirst(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wi
 func Bsonfirstn(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 int64, anonymous12 struct{}, anonymous123 wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsonfirstn",
+		"documentdb_api_internal.Bsonfirstn",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsonfirstn"),
@@ -3255,7 +3255,7 @@ func Bsonfirstn(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous w
 func Bsonfirstnonsorted(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 int64, anonymous12 wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsonfirstnonsorted",
+		"documentdb_api_internal.Bsonfirstnonsorted",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsonfirstnonsorted"),
@@ -3276,7 +3276,7 @@ func Bsonfirstnonsorted(ctx context.Context, conn *pgx.Conn, l *slog.Logger, ano
 func Bsonfirstonsorted(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsonfirstonsorted",
+		"documentdb_api_internal.Bsonfirstonsorted",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsonfirstonsorted"),
@@ -3297,7 +3297,7 @@ func Bsonfirstonsorted(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anon
 func BsonindexboundsIn(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonindexboundsIn struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsonindexbounds_in",
+		"documentdb_api_internal.BsonindexboundsIn",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsonindexbounds_in"),
@@ -3318,7 +3318,7 @@ func BsonindexboundsIn(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anon
 func BsonindexboundsOut(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonindexboundsOut struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsonindexbounds_out",
+		"documentdb_api_internal.BsonindexboundsOut",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsonindexbounds_out"),
@@ -3339,7 +3339,7 @@ func BsonindexboundsOut(ctx context.Context, conn *pgx.Conn, l *slog.Logger, ano
 func BsonindexboundsRecv(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonindexboundsRecv struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsonindexbounds_recv",
+		"documentdb_api_internal.BsonindexboundsRecv",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsonindexbounds_recv"),
@@ -3360,7 +3360,7 @@ func BsonindexboundsRecv(ctx context.Context, conn *pgx.Conn, l *slog.Logger, an
 func BsonindexboundsSend(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outBsonindexboundsSend struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsonindexbounds_send",
+		"documentdb_api_internal.BsonindexboundsSend",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsonindexbounds_send"),
@@ -3381,7 +3381,7 @@ func BsonindexboundsSend(ctx context.Context, conn *pgx.Conn, l *slog.Logger, an
 func Bsonintegral(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument, anonymous12 int64) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsonintegral",
+		"documentdb_api_internal.Bsonintegral",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsonintegral"),
@@ -3402,7 +3402,7 @@ func Bsonintegral(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous
 func Bsonlast(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 struct{}, anonymous12 wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsonlast",
+		"documentdb_api_internal.Bsonlast",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsonlast"),
@@ -3423,7 +3423,7 @@ func Bsonlast(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wir
 func Bsonlastn(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 int64, anonymous12 struct{}, anonymous123 wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsonlastn",
+		"documentdb_api_internal.Bsonlastn",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsonlastn"),
@@ -3444,7 +3444,7 @@ func Bsonlastn(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wi
 func Bsonlastnonsorted(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 int64, anonymous12 wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsonlastnonsorted",
+		"documentdb_api_internal.Bsonlastnonsorted",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsonlastnonsorted"),
@@ -3465,7 +3465,7 @@ func Bsonlastnonsorted(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anon
 func Bsonlastonsorted(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsonlastonsorted",
+		"documentdb_api_internal.Bsonlastonsorted",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsonlastonsorted"),
@@ -3486,7 +3486,7 @@ func Bsonlastonsorted(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anony
 func Bsonmaxn(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsonmaxn",
+		"documentdb_api_internal.Bsonmaxn",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsonmaxn"),
@@ -3507,7 +3507,7 @@ func Bsonmaxn(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wir
 func Bsonmedian(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 int32, anonymous12 wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsonmedian",
+		"documentdb_api_internal.Bsonmedian",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsonmedian"),
@@ -3528,7 +3528,7 @@ func Bsonmedian(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous w
 func Bsonminn(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsonminn",
+		"documentdb_api_internal.Bsonminn",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsonminn"),
@@ -3549,7 +3549,7 @@ func Bsonminn(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wir
 func Bsonpercentile(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 int32, anonymous12 wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsonpercentile",
+		"documentdb_api_internal.Bsonpercentile",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsonpercentile"),
@@ -3570,7 +3570,7 @@ func Bsonpercentile(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymo
 func BsonqueryEq(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}) (outBsonqueryEq bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsonquery_eq",
+		"documentdb_api_internal.BsonqueryEq",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsonquery_eq"),
@@ -3591,7 +3591,7 @@ func BsonqueryEq(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous 
 func BsonqueryGt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}) (outBsonqueryGt bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsonquery_gt",
+		"documentdb_api_internal.BsonqueryGt",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsonquery_gt"),
@@ -3612,7 +3612,7 @@ func BsonqueryGt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous 
 func BsonqueryGte(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}) (outBsonqueryGte bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsonquery_gte",
+		"documentdb_api_internal.BsonqueryGte",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsonquery_gte"),
@@ -3633,7 +3633,7 @@ func BsonqueryGte(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous
 func BsonqueryLt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}) (outBsonqueryLt bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsonquery_lt",
+		"documentdb_api_internal.BsonqueryLt",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsonquery_lt"),
@@ -3654,7 +3654,7 @@ func BsonqueryLt(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous 
 func BsonqueryLte(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}) (outBsonqueryLte bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsonquery_lte",
+		"documentdb_api_internal.BsonqueryLte",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsonquery_lte"),
@@ -3675,7 +3675,7 @@ func BsonqueryLte(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous
 func Bsonstddevpop(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsonstddevpop",
+		"documentdb_api_internal.Bsonstddevpop",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsonstddevpop"),
@@ -3696,7 +3696,7 @@ func Bsonstddevpop(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymou
 func Bsonstddevsamp(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.bsonstddevsamp",
+		"documentdb_api_internal.Bsonstddevsamp",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.bsonstddevsamp"),
@@ -3717,7 +3717,7 @@ func Bsonstddevsamp(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymo
 func CheckBuildIndexStatus(ctx context.Context, conn *pgx.Conn, l *slog.Logger, arg wirebson.RawDocument) (outRetVal wirebson.RawDocument, outOk bool, outComplete bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.check_build_index_status",
+		"documentdb_api_internal.CheckBuildIndexStatus",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.check_build_index_status"),
@@ -3738,7 +3738,7 @@ func CheckBuildIndexStatus(ctx context.Context, conn *pgx.Conn, l *slog.Logger, 
 func CheckBuildIndexStatusInternal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, arg wirebson.RawDocument) (outCheckBuildIndexStatusInternal wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.check_build_index_status_internal",
+		"documentdb_api_internal.CheckBuildIndexStatusInternal",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.check_build_index_status_internal"),
@@ -3759,7 +3759,7 @@ func CheckBuildIndexStatusInternal(ctx context.Context, conn *pgx.Conn, l *slog.
 func CollStatsAggregation(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string, collstatsSpec wirebson.RawDocument) (outCollStatsAggregation wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.coll_stats_aggregation",
+		"documentdb_api_internal.CollStatsAggregation",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.coll_stats_aggregation"),
@@ -3780,7 +3780,7 @@ func CollStatsAggregation(ctx context.Context, conn *pgx.Conn, l *slog.Logger, d
 func CollStatsWorker(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string, scale float64) (outCollStatsWorker wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.coll_stats_worker",
+		"documentdb_api_internal.CollStatsWorker",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.coll_stats_worker"),
@@ -3801,7 +3801,7 @@ func CollStatsWorker(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databa
 func CollectionUpdateTrigger(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outCollectionUpdateTrigger struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.collection_update_trigger",
+		"documentdb_api_internal.CollectionUpdateTrigger",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.collection_update_trigger"),
@@ -3822,7 +3822,7 @@ func CollectionUpdateTrigger(ctx context.Context, conn *pgx.Conn, l *slog.Logger
 func CommandFeatureCounterStats(ctx context.Context, conn *pgx.Conn, l *slog.Logger, resetStatsAfterRead bool) (outFeatureName string, outUsageCount int32, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.command_feature_counter_stats",
+		"documentdb_api_internal.CommandFeatureCounterStats",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.command_feature_counter_stats"),
@@ -3843,7 +3843,7 @@ func CommandFeatureCounterStats(ctx context.Context, conn *pgx.Conn, l *slog.Log
 func CreateBuiltinIdIndex(ctx context.Context, conn *pgx.Conn, l *slog.Logger, collectionId int64, registerIdIndex bool) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.create_builtin_id_index",
+		"documentdb_api_internal.CreateBuiltinIdIndex",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.create_builtin_id_index"),
@@ -3864,7 +3864,7 @@ func CreateBuiltinIdIndex(ctx context.Context, conn *pgx.Conn, l *slog.Logger, c
 func CreateIndexesBackgroundInternal(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, arg wirebson.RawDocument) (outCreateIndexesBackgroundInternal wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.create_indexes_background_internal",
+		"documentdb_api_internal.CreateIndexesBackgroundInternal",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.create_indexes_background_internal"),
@@ -3885,7 +3885,7 @@ func CreateIndexesBackgroundInternal(ctx context.Context, conn *pgx.Conn, l *slo
 func CreateIndexesNonConcurrently(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, arg wirebson.RawDocument, skipCheckCollectionCreate bool) (outCreateIndexesNonConcurrently wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.create_indexes_non_concurrently",
+		"documentdb_api_internal.CreateIndexesNonConcurrently",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.create_indexes_non_concurrently"),
@@ -3906,7 +3906,7 @@ func CreateIndexesNonConcurrently(ctx context.Context, conn *pgx.Conn, l *slog.L
 func CurrentCursorState(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument) (outCurrentCursorState wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.current_cursor_state",
+		"documentdb_api_internal.CurrentCursorState",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.current_cursor_state"),
@@ -3927,7 +3927,7 @@ func CurrentCursorState(ctx context.Context, conn *pgx.Conn, l *slog.Logger, ano
 func CurrentOpAggregation(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outDocument wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.current_op_aggregation",
+		"documentdb_api_internal.CurrentOpAggregation",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.current_op_aggregation"),
@@ -3948,7 +3948,7 @@ func CurrentOpAggregation(ctx context.Context, conn *pgx.Conn, l *slog.Logger, s
 func CurrentOpWorker(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec wirebson.RawDocument) (outDocument wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.current_op_worker",
+		"documentdb_api_internal.CurrentOpWorker",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.current_op_worker"),
@@ -3969,7 +3969,7 @@ func CurrentOpWorker(ctx context.Context, conn *pgx.Conn, l *slog.Logger, spec w
 func CursorDirectoryCleanup(ctx context.Context, conn *pgx.Conn, l *slog.Logger, expiryTimeSeconds int64) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.cursor_directory_cleanup",
+		"documentdb_api_internal.CursorDirectoryCleanup",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.cursor_directory_cleanup"),
@@ -3990,7 +3990,7 @@ func CursorDirectoryCleanup(ctx context.Context, conn *pgx.Conn, l *slog.Logger,
 func CursorState(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 wirebson.RawDocument) (outCursorState bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.cursor_state",
+		"documentdb_api_internal.CursorState",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.cursor_state"),
@@ -4011,7 +4011,7 @@ func CursorState(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous 
 func DbStatsWorker(ctx context.Context, conn *pgx.Conn, l *slog.Logger, collectionIds struct{}) (outDbStatsWorker wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.db_stats_worker",
+		"documentdb_api_internal.DbStatsWorker",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.db_stats_worker"),
@@ -4032,7 +4032,7 @@ func DbStatsWorker(ctx context.Context, conn *pgx.Conn, l *slog.Logger, collecti
 func DeleteCursors(ctx context.Context, conn *pgx.Conn, l *slog.Logger, cursorids struct{}) (outDeleteCursors wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.delete_cursors",
+		"documentdb_api_internal.DeleteCursors",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.delete_cursors"),
@@ -4053,7 +4053,7 @@ func DeleteCursors(ctx context.Context, conn *pgx.Conn, l *slog.Logger, cursorid
 func DeleteOne(ctx context.Context, conn *pgx.Conn, l *slog.Logger, collectionId int64, shardKeyValue int64, query wirebson.RawDocument, sort wirebson.RawDocument, returnDocument bool, returnFields wirebson.RawDocument) (outOIsRowDeleted bool, outOResultDeletedDocument wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.delete_one",
+		"documentdb_api_internal.DeleteOne",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.delete_one"),
@@ -4074,7 +4074,7 @@ func DeleteOne(ctx context.Context, conn *pgx.Conn, l *slog.Logger, collectionId
 func DeleteWorker(ctx context.Context, conn *pgx.Conn, l *slog.Logger, collectionId int64, shardKeyValue int64, shardOid struct{}, updateInternalSpec wirebson.RawDocument, updateInternalDocs []byte) (outDeleteWorker wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.delete_worker",
+		"documentdb_api_internal.DeleteWorker",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.delete_worker"),
@@ -4095,7 +4095,7 @@ func DeleteWorker(ctx context.Context, conn *pgx.Conn, l *slog.Logger, collectio
 func DocumentdbCoreBsonToBson(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument) (outDocumentdbCoreBsonToBson wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.documentdb_core_bson_to_bson",
+		"documentdb_api_internal.DocumentdbCoreBsonToBson",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.documentdb_core_bson_to_bson"),
@@ -4116,7 +4116,7 @@ func DocumentdbCoreBsonToBson(ctx context.Context, conn *pgx.Conn, l *slog.Logge
 func DocumentdbGetNextCollectionId(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outDocumentdbGetNextCollectionId int64, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.documentdb_get_next_collection_id",
+		"documentdb_api_internal.DocumentdbGetNextCollectionId",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.documentdb_get_next_collection_id"),
@@ -4137,7 +4137,7 @@ func DocumentdbGetNextCollectionId(ctx context.Context, conn *pgx.Conn, l *slog.
 func DocumentdbGetNextCollectionIndexId(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outDocumentdbGetNextCollectionIndexId int32, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.documentdb_get_next_collection_index_id",
+		"documentdb_api_internal.DocumentdbGetNextCollectionIndexId",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.documentdb_get_next_collection_index_id"),
@@ -4158,7 +4158,7 @@ func DocumentdbGetNextCollectionIndexId(ctx context.Context, conn *pgx.Conn, l *
 func EmptyDataTable(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outShardKeyValue int64, outObjectID wirebson.RawDocument, outDocument wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.empty_data_table",
+		"documentdb_api_internal.EmptyDataTable",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.empty_data_table"),
@@ -4179,7 +4179,7 @@ func EmptyDataTable(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outSha
 func EnsureValidDbColl(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous string, anonymous1 string) (outEnsureValidDbColl bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.ensure_valid_db_coll",
+		"documentdb_api_internal.EnsureValidDbColl",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.ensure_valid_db_coll"),
@@ -4200,7 +4200,7 @@ func EnsureValidDbColl(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anon
 func GenerateUniqueShardDocument(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, shardKeyValue int64, uniqueSpec wirebson.RawDocument, sparse bool) (outGenerateUniqueShardDocument wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.generate_unique_shard_document",
+		"documentdb_api_internal.GenerateUniqueShardDocument",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.generate_unique_shard_document"),
@@ -4221,7 +4221,7 @@ func GenerateUniqueShardDocument(ctx context.Context, conn *pgx.Conn, l *slog.Lo
 func GetBloatStatsWorker(ctx context.Context, conn *pgx.Conn, l *slog.Logger, collectionId int64) (outGetBloatStatsWorker wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.get_bloat_stats_worker",
+		"documentdb_api_internal.GetBloatStatsWorker",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.get_bloat_stats_worker"),
@@ -4242,7 +4242,7 @@ func GetBloatStatsWorker(ctx context.Context, conn *pgx.Conn, l *slog.Logger, co
 func GetShardKeyValue(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shardKey wirebson.RawDocument, collectionId int64, document wirebson.RawDocument) (outGetShardKeyValue int64, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.get_shard_key_value",
+		"documentdb_api_internal.GetShardKeyValue",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.get_shard_key_value"),
@@ -4263,7 +4263,7 @@ func GetShardKeyValue(ctx context.Context, conn *pgx.Conn, l *slog.Logger, shard
 func GinBsonCompositePathComparePartial(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}, anonymous12 struct{}, anonymous123 struct{}) (outGinBsonCompositePathComparePartial int32, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.gin_bson_composite_path_compare_partial",
+		"documentdb_api_internal.GinBsonCompositePathComparePartial",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.gin_bson_composite_path_compare_partial"),
@@ -4284,7 +4284,7 @@ func GinBsonCompositePathComparePartial(ctx context.Context, conn *pgx.Conn, l *
 func GinBsonCompositePathConsistent(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}, anonymous12 struct{}, anonymous123 int32, anonymous1234 struct{}, anonymous12345 struct{}) (outGinBsonCompositePathConsistent bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.gin_bson_composite_path_consistent",
+		"documentdb_api_internal.GinBsonCompositePathConsistent",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.gin_bson_composite_path_consistent"),
@@ -4305,7 +4305,7 @@ func GinBsonCompositePathConsistent(ctx context.Context, conn *pgx.Conn, l *slog
 func GinBsonCompositePathExtractQuery(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 struct{}, anonymous12 struct{}, anonymous123 struct{}, anonymous1234 struct{}, anonymous12345 struct{}, anonymous123456 struct{}) (outGinBsonCompositePathExtractQuery struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.gin_bson_composite_path_extract_query",
+		"documentdb_api_internal.GinBsonCompositePathExtractQuery",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.gin_bson_composite_path_extract_query"),
@@ -4326,7 +4326,7 @@ func GinBsonCompositePathExtractQuery(ctx context.Context, conn *pgx.Conn, l *sl
 func GinBsonCompositePathExtractValue(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 struct{}) (outGinBsonCompositePathExtractValue struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.gin_bson_composite_path_extract_value",
+		"documentdb_api_internal.GinBsonCompositePathExtractValue",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.gin_bson_composite_path_extract_value"),
@@ -4347,7 +4347,7 @@ func GinBsonCompositePathExtractValue(ctx context.Context, conn *pgx.Conn, l *sl
 func GinBsonCompositePathOptions(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.gin_bson_composite_path_options",
+		"documentdb_api_internal.GinBsonCompositePathOptions",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.gin_bson_composite_path_options"),
@@ -4368,7 +4368,7 @@ func GinBsonCompositePathOptions(ctx context.Context, conn *pgx.Conn, l *slog.Lo
 func GinBsonExclusionConsistent(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}, anonymous12 struct{}, anonymous123 int32, anonymous1234 struct{}, anonymous12345 struct{}) (outGinBsonExclusionConsistent bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.gin_bson_exclusion_consistent",
+		"documentdb_api_internal.GinBsonExclusionConsistent",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.gin_bson_exclusion_consistent"),
@@ -4389,7 +4389,7 @@ func GinBsonExclusionConsistent(ctx context.Context, conn *pgx.Conn, l *slog.Log
 func GinBsonExclusionExtractQuery(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}, anonymous12 struct{}, anonymous123 struct{}, anonymous1234 struct{}, anonymous12345 struct{}, anonymous123456 struct{}) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.gin_bson_exclusion_extract_query",
+		"documentdb_api_internal.GinBsonExclusionExtractQuery",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.gin_bson_exclusion_extract_query"),
@@ -4410,7 +4410,7 @@ func GinBsonExclusionExtractQuery(ctx context.Context, conn *pgx.Conn, l *slog.L
 func GinBsonExclusionExtractValue(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}) (outGinBsonExclusionExtractValue struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.gin_bson_exclusion_extract_value",
+		"documentdb_api_internal.GinBsonExclusionExtractValue",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.gin_bson_exclusion_extract_value"),
@@ -4431,7 +4431,7 @@ func GinBsonExclusionExtractValue(ctx context.Context, conn *pgx.Conn, l *slog.L
 func GinBsonExclusionOptions(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.gin_bson_exclusion_options",
+		"documentdb_api_internal.GinBsonExclusionOptions",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.gin_bson_exclusion_options"),
@@ -4452,7 +4452,7 @@ func GinBsonExclusionOptions(ctx context.Context, conn *pgx.Conn, l *slog.Logger
 func GinBsonHashedConsistent(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}, anonymous12 struct{}, anonymous123 int32, anonymous1234 struct{}, anonymous12345 struct{}) (outGinBsonHashedConsistent bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.gin_bson_hashed_consistent",
+		"documentdb_api_internal.GinBsonHashedConsistent",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.gin_bson_hashed_consistent"),
@@ -4473,7 +4473,7 @@ func GinBsonHashedConsistent(ctx context.Context, conn *pgx.Conn, l *slog.Logger
 func GinBsonHashedExtractQuery(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 struct{}, anonymous12 struct{}, anonymous123 struct{}, anonymous1234 struct{}, anonymous12345 struct{}, anonymous123456 struct{}) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.gin_bson_hashed_extract_query",
+		"documentdb_api_internal.GinBsonHashedExtractQuery",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.gin_bson_hashed_extract_query"),
@@ -4494,7 +4494,7 @@ func GinBsonHashedExtractQuery(ctx context.Context, conn *pgx.Conn, l *slog.Logg
 func GinBsonHashedExtractValue(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 struct{}) (outGinBsonHashedExtractValue struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.gin_bson_hashed_extract_value",
+		"documentdb_api_internal.GinBsonHashedExtractValue",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.gin_bson_hashed_extract_value"),
@@ -4515,7 +4515,7 @@ func GinBsonHashedExtractValue(ctx context.Context, conn *pgx.Conn, l *slog.Logg
 func GinBsonHashedOptions(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.gin_bson_hashed_options",
+		"documentdb_api_internal.GinBsonHashedOptions",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.gin_bson_hashed_options"),
@@ -4536,7 +4536,7 @@ func GinBsonHashedOptions(ctx context.Context, conn *pgx.Conn, l *slog.Logger, a
 func GinBsonUniqueShardConsistent(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}, anonymous12 struct{}, anonymous123 int32, anonymous1234 struct{}, anonymous12345 struct{}) (outGinBsonUniqueShardConsistent bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.gin_bson_unique_shard_consistent",
+		"documentdb_api_internal.GinBsonUniqueShardConsistent",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.gin_bson_unique_shard_consistent"),
@@ -4557,7 +4557,7 @@ func GinBsonUniqueShardConsistent(ctx context.Context, conn *pgx.Conn, l *slog.L
 func GinBsonUniqueShardExtractQuery(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 struct{}, anonymous12 struct{}, anonymous123 struct{}, anonymous1234 struct{}, anonymous12345 struct{}, anonymous123456 struct{}) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.gin_bson_unique_shard_extract_query",
+		"documentdb_api_internal.GinBsonUniqueShardExtractQuery",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.gin_bson_unique_shard_extract_query"),
@@ -4578,7 +4578,7 @@ func GinBsonUniqueShardExtractQuery(ctx context.Context, conn *pgx.Conn, l *slog
 func GinBsonUniqueShardExtractValue(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 struct{}) (outGinBsonUniqueShardExtractValue struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.gin_bson_unique_shard_extract_value",
+		"documentdb_api_internal.GinBsonUniqueShardExtractValue",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.gin_bson_unique_shard_extract_value"),
@@ -4599,7 +4599,7 @@ func GinBsonUniqueShardExtractValue(ctx context.Context, conn *pgx.Conn, l *slog
 func GinBsonUniqueShardPreConsistent(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}, anonymous12 wirebson.RawDocument, anonymous123 int32, anonymous1234 struct{}, anonymous12345 struct{}, anonymous123456 struct{}, anonymous1234567 struct{}) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.gin_bson_unique_shard_pre_consistent",
+		"documentdb_api_internal.GinBsonUniqueShardPreConsistent",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.gin_bson_unique_shard_pre_consistent"),
@@ -4620,7 +4620,7 @@ func GinBsonUniqueShardPreConsistent(ctx context.Context, conn *pgx.Conn, l *slo
 func IndexBuildIsInProgress(ctx context.Context, conn *pgx.Conn, l *slog.Logger, indexId int32) (outIndexBuildIsInProgress bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.index_build_is_in_progress",
+		"documentdb_api_internal.IndexBuildIsInProgress",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.index_build_is_in_progress"),
@@ -4641,7 +4641,7 @@ func IndexBuildIsInProgress(ctx context.Context, conn *pgx.Conn, l *slog.Logger,
 func IndexSpecAsBson(ctx context.Context, conn *pgx.Conn, l *slog.Logger, indexSpec struct{}, forGetIndexes bool, namespacename string) (outIndexSpecAsBson wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.index_spec_as_bson",
+		"documentdb_api_internal.IndexSpecAsBson",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.index_spec_as_bson"),
@@ -4662,7 +4662,7 @@ func IndexSpecAsBson(ctx context.Context, conn *pgx.Conn, l *slog.Logger, indexS
 func IndexSpecOptionsAreEquivalent(ctx context.Context, conn *pgx.Conn, l *slog.Logger, leftIndexSpec struct{}, rightIndexSpec struct{}) (outIndexSpecOptionsAreEquivalent bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.index_spec_options_are_equivalent",
+		"documentdb_api_internal.IndexSpecOptionsAreEquivalent",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.index_spec_options_are_equivalent"),
@@ -4683,7 +4683,7 @@ func IndexSpecOptionsAreEquivalent(ctx context.Context, conn *pgx.Conn, l *slog.
 func IndexStatsAggregation(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string) (outIndexStatsAggregation wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.index_stats_aggregation",
+		"documentdb_api_internal.IndexStatsAggregation",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.index_stats_aggregation"),
@@ -4704,7 +4704,7 @@ func IndexStatsAggregation(ctx context.Context, conn *pgx.Conn, l *slog.Logger, 
 func IndexStatsWorker(ctx context.Context, conn *pgx.Conn, l *slog.Logger, databaseName string, collectionName string) (outIndexStatsWorker wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.index_stats_worker",
+		"documentdb_api_internal.IndexStatsWorker",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.index_stats_worker"),
@@ -4725,7 +4725,7 @@ func IndexStatsWorker(ctx context.Context, conn *pgx.Conn, l *slog.Logger, datab
 func InsertOne(ctx context.Context, conn *pgx.Conn, l *slog.Logger, collectionId int64, shardKeyValue int64, document wirebson.RawDocument) (outInsertOne bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.insert_one",
+		"documentdb_api_internal.InsertOne",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.insert_one"),
@@ -4746,7 +4746,7 @@ func InsertOne(ctx context.Context, conn *pgx.Conn, l *slog.Logger, collectionId
 func InsertWorker(ctx context.Context, conn *pgx.Conn, l *slog.Logger, collectionId int64, shardKeyValue int64, shardOid struct{}, insertInternalSpec wirebson.RawDocument, insertInternalDocs []byte) (outInsertWorker wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.insert_worker",
+		"documentdb_api_internal.InsertWorker",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.insert_worker"),
@@ -4767,7 +4767,7 @@ func InsertWorker(ctx context.Context, conn *pgx.Conn, l *slog.Logger, collectio
 func InvalidateCollectionCache(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.invalidate_collection_cache",
+		"documentdb_api_internal.InvalidateCollectionCache",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.invalidate_collection_cache"),
@@ -4788,7 +4788,7 @@ func InvalidateCollectionCache(ctx context.Context, conn *pgx.Conn, l *slog.Logg
 func RecordIdIndex(ctx context.Context, conn *pgx.Conn, l *slog.Logger, collectionId int64) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.record_id_index",
+		"documentdb_api_internal.RecordIdIndex",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.record_id_index"),
@@ -4809,7 +4809,7 @@ func RecordIdIndex(ctx context.Context, conn *pgx.Conn, l *slog.Logger, collecti
 func RumBsonSinglePathExtractTsvector(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous wirebson.RawDocument, anonymous1 struct{}, anonymous12 struct{}, anonymous123 struct{}, anonymous1234 struct{}) (outRumBsonSinglePathExtractTsvector struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.rum_bson_single_path_extract_tsvector",
+		"documentdb_api_internal.RumBsonSinglePathExtractTsvector",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.rum_bson_single_path_extract_tsvector"),
@@ -4830,7 +4830,7 @@ func RumBsonSinglePathExtractTsvector(ctx context.Context, conn *pgx.Conn, l *sl
 func RumBsonTextPathOptions(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.rum_bson_text_path_options",
+		"documentdb_api_internal.RumBsonTextPathOptions",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.rum_bson_text_path_options"),
@@ -4851,7 +4851,7 @@ func RumBsonTextPathOptions(ctx context.Context, conn *pgx.Conn, l *slog.Logger,
 func ScheduleBackgroundIndexBuildJobs(ctx context.Context, conn *pgx.Conn, l *slog.Logger, forceOverride bool) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.schedule_background_index_build_jobs",
+		"documentdb_api_internal.ScheduleBackgroundIndexBuildJobs",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.schedule_background_index_build_jobs"),
@@ -4872,7 +4872,7 @@ func ScheduleBackgroundIndexBuildJobs(ctx context.Context, conn *pgx.Conn, l *sl
 func SchemaValidationAgainstUpdate(ctx context.Context, conn *pgx.Conn, l *slog.Logger, evalState struct{}, targetDocument wirebson.RawDocument, sourceDocument wirebson.RawDocument, isModerate bool) (outSchemaValidationAgainstUpdate bool, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.schema_validation_against_update",
+		"documentdb_api_internal.SchemaValidationAgainstUpdate",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.schema_validation_against_update"),
@@ -4893,7 +4893,7 @@ func SchemaValidationAgainstUpdate(ctx context.Context, conn *pgx.Conn, l *slog.
 func ScramSha256GetSaltAndIterations(ctx context.Context, conn *pgx.Conn, l *slog.Logger, userName string) (outScramSha256GetSaltAndIterations wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.scram_sha256_get_salt_and_iterations",
+		"documentdb_api_internal.ScramSha256GetSaltAndIterations",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.scram_sha256_get_salt_and_iterations"),
@@ -4914,7 +4914,7 @@ func ScramSha256GetSaltAndIterations(ctx context.Context, conn *pgx.Conn, l *slo
 func TdigestAddDouble(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument, anonymous12 int32, anonymous123 wirebson.RawDocument) (outTdigestAddDouble struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.tdigest_add_double",
+		"documentdb_api_internal.TdigestAddDouble",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.tdigest_add_double"),
@@ -4935,7 +4935,7 @@ func TdigestAddDouble(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anony
 func TdigestAddDoubleArray(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 wirebson.RawDocument, anonymous12 int32, anonymous123 wirebson.RawDocument) (outTdigestAddDoubleArray struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.tdigest_add_double_array",
+		"documentdb_api_internal.TdigestAddDoubleArray",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.tdigest_add_double_array"),
@@ -4956,7 +4956,7 @@ func TdigestAddDoubleArray(ctx context.Context, conn *pgx.Conn, l *slog.Logger, 
 func TdigestArrayPercentiles(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outTdigestArrayPercentiles wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.tdigest_array_percentiles",
+		"documentdb_api_internal.TdigestArrayPercentiles",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.tdigest_array_percentiles"),
@@ -4977,7 +4977,7 @@ func TdigestArrayPercentiles(ctx context.Context, conn *pgx.Conn, l *slog.Logger
 func TdigestCombine(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}) (outTdigestCombine struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.tdigest_combine",
+		"documentdb_api_internal.TdigestCombine",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.tdigest_combine"),
@@ -4998,7 +4998,7 @@ func TdigestCombine(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymo
 func TdigestDeserial(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}, anonymous1 struct{}) (outTdigestDeserial struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.tdigest_deserial",
+		"documentdb_api_internal.TdigestDeserial",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.tdigest_deserial"),
@@ -5019,7 +5019,7 @@ func TdigestDeserial(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonym
 func TdigestPercentile(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outTdigestPercentile wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.tdigest_percentile",
+		"documentdb_api_internal.TdigestPercentile",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.tdigest_percentile"),
@@ -5040,7 +5040,7 @@ func TdigestPercentile(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anon
 func TdigestSerial(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymous struct{}) (outTdigestSerial struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.tdigest_serial",
+		"documentdb_api_internal.TdigestSerial",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.tdigest_serial"),
@@ -5061,7 +5061,7 @@ func TdigestSerial(ctx context.Context, conn *pgx.Conn, l *slog.Logger, anonymou
 func TriggerValidateDbname(ctx context.Context, conn *pgx.Conn, l *slog.Logger) (outTriggerValidateDbname struct{}, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.trigger_validate_dbname",
+		"documentdb_api_internal.TriggerValidateDbname",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.trigger_validate_dbname"),
@@ -5082,7 +5082,7 @@ func TriggerValidateDbname(ctx context.Context, conn *pgx.Conn, l *slog.Logger) 
 func UpdateBsonDocument(ctx context.Context, conn *pgx.Conn, l *slog.Logger, document wirebson.RawDocument, updateSpec wirebson.RawDocument, querySpec wirebson.RawDocument, arrayfilters wirebson.RawDocument, variableSpec wirebson.RawDocument) (outNewdocument wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.update_bson_document",
+		"documentdb_api_internal.UpdateBsonDocument",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.update_bson_document"),
@@ -5103,7 +5103,7 @@ func UpdateBsonDocument(ctx context.Context, conn *pgx.Conn, l *slog.Logger, doc
 func UpdateOne(ctx context.Context, conn *pgx.Conn, l *slog.Logger, collectionId int64, shardKeyValue int64, query wirebson.RawDocument, update wirebson.RawDocument, shardKey wirebson.RawDocument, isUpsert bool, sort wirebson.RawDocument, returnOldOrNew bool, returnFields wirebson.RawDocument, arrayFilters wirebson.RawDocument) (outOIsRowUpdated bool, outOUpdateSkipped bool, outOIsRetry bool, outOReinsertDocument wirebson.RawDocument, outOUpsertedObjectId struct{}, outOResultDocument wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.update_one",
+		"documentdb_api_internal.UpdateOne",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.update_one"),
@@ -5124,7 +5124,7 @@ func UpdateOne(ctx context.Context, conn *pgx.Conn, l *slog.Logger, collectionId
 func UpdateWorker(ctx context.Context, conn *pgx.Conn, l *slog.Logger, collectionId int64, shardKeyValue int64, shardOid struct{}, updateInternalSpec wirebson.RawDocument, updateInternalDocs []byte) (outUpdateWorker wirebson.RawDocument, err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.update_worker",
+		"documentdb_api_internal.UpdateWorker",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.update_worker"),
@@ -5145,7 +5145,7 @@ func UpdateWorker(ctx context.Context, conn *pgx.Conn, l *slog.Logger, collectio
 func ValidateDbname(ctx context.Context, conn *pgx.Conn, l *slog.Logger, database string) (err error) {
 	ctx, span := otel.Tracer("").Start(
 		ctx,
-		"documentdb_api_internal.validate_dbname",
+		"documentdb_api_internal.ValidateDbname",
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
 			otelsemconv.DBStoredProcedureName("documentdb_api_internal.validate_dbname"),
