@@ -27,6 +27,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel"
 	otelattribute "go.opentelemetry.io/otel/attribute"
+	otelcodes "go.opentelemetry.io/otel/codes"
 	otelsemconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 	oteltrace "go.opentelemetry.io/otel/trace"
 
@@ -162,7 +163,7 @@ func (m *Middleware) dispatch(ctx context.Context, req *Request) (docdb, proxy *
 		wg.Add(1)
 
 		go func() {
-			dCtx, _ := otel.Tracer("").Start(ctx, "Middleware.Handle/documentdb")
+			dCtx, _ := otel.Tracer("").Start(ctx, "middleware.Handle/documentdb")
 
 			//exhaustruct:enforce
 			d := &dispatcher{
@@ -180,7 +181,7 @@ func (m *Middleware) dispatch(ctx context.Context, req *Request) (docdb, proxy *
 		wg.Add(1)
 
 		go func() {
-			dCtx, _ := otel.Tracer("").Start(ctx, "Middleware.Handle/proxy")
+			dCtx, _ := otel.Tracer("").Start(ctx, "middleware.Handle/proxy")
 
 			//exhaustruct:enforce
 			d := &dispatcher{
@@ -222,7 +223,7 @@ func (m *Middleware) startSpan(ctx context.Context, req *Request) context.Contex
 
 	ctx, _ = otel.Tracer("").Start(
 		ctx,
-		"Middleware.Handle",
+		"middleware.Handle",
 		oteltrace.WithAttributes(
 			otelsemconv.DBOperationName(command),
 			otelsemconv.DBNamespace(database),
@@ -244,6 +245,8 @@ func (m *Middleware) endSpan(ctx context.Context, resp *Response) {
 
 	if resp != nil {
 		if c := resp.ErrorCode(); c != mongoerrors.ErrUnset {
+			span.SetStatus(otelcodes.Error, resp.ErrorName())
+
 			span.SetAttributes(
 				otelsemconv.DBResponseStatusCode(strconv.Itoa(int(c))),
 			)

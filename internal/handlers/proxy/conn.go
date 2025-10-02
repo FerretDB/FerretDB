@@ -107,6 +107,7 @@ func newConn(ctx context.Context, opts *NewOpts) (res *conn, err error) {
 		bufw: bufio.NewWriter(c),
 		bufr: bufio.NewReader(c),
 	}
+
 	return
 }
 
@@ -204,24 +205,24 @@ func (c *conn) handle(ctx context.Context, req *middleware.Request) (resp *middl
 	_ = c.c.SetDeadline(deadline)
 
 	if err = wire.WriteMessage(c.bufw, req.WireHeader(), req.WireBody()); err != nil {
-		err = lazyerrors.Error(ctx.Err())
+		err = lazyerrors.Error(err)
 		return
 	}
 
 	if err = c.bufw.Flush(); err != nil {
-		err = lazyerrors.Error(ctx.Err())
+		err = lazyerrors.Error(err)
 		return
 	}
 
 	header, body, err := wire.ReadMessage(c.bufr)
 	if err != nil {
-		err = lazyerrors.Error(ctx.Err())
+		err = lazyerrors.Error(err)
 		return
 	}
 
 	resp, err = middleware.ResponseWire(header, body)
 	if err != nil {
-		err = lazyerrors.Error(ctx.Err())
+		err = lazyerrors.Error(err)
 		return
 	}
 
