@@ -50,7 +50,7 @@ The liveness probe endpoint is `/debug/livez` while the readiness probe endpoint
 
 Similarly, all Docker images now include a `HEALTHCHECK` instruction that behaves like a readiness probe, so that the Docker container is only considered healthy when FerretDB is ready to handle connections.
 
-In adddition to that, we have introduced a new debug handler at `/debug/archive` to improve observability.
+In addition to that, we have introduced a new debug handler at `/debug/archive` to improve observability.
 This handler self-scrapes Prometheus metrics via `/debug/metrics`, captures a binary memory `pprof` profile via `/debug/pprof/heap`, and finally packages the collected data into a `.zip` archive and streams it to the client with a proper content-disposition header.
 
 We intend to expand this feature with additional parameters and files in future updates.

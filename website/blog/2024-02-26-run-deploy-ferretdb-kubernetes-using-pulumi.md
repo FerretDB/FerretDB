@@ -3,7 +3,7 @@ slug: run-deploy-ferretdb-kubernetes-using-pulumi
 title: 'How to run and deploy FerretDB in Kubernetes using Pulumi'
 authors: [alex]
 description: >
-  Here, you’ll learn to set up a fully managed, scalable FerretDB on top of StackGres using using Pulumi.
+  Here, you’ll learn to set up a fully managed, scalable FerretDB on top of StackGres using Pulumi.
 image: /img/blog/ferretdb-pulumi.jpg
 tags: [tutorial, community, postgresql tools, open source, cloud]
 ---

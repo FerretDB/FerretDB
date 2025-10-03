@@ -10,7 +10,7 @@ tags: [compatible applications, tutorial, postgresql tools]
 
 ![Using PgManage as PostgreSQL GUI Admin for FerretDB](/img/blog/ferretdb-pgmanage.jpg)
 
-One of the biggest advantages of using [FerretDB](https://www.ferretdb.io/) – the truly open source alternative alternative to MongoDB – is that you can manage, scale, and deploy it on almost any PostgreSQL management architecture, and that includes [PgManage](https://www.commandprompt.com/products/pgmanage/).
+One of the biggest advantages of using [FerretDB](https://www.ferretdb.io/) – the truly open source alternative to MongoDB – is that you can manage, scale, and deploy it on almost any PostgreSQL management architecture, and that includes [PgManage](https://www.commandprompt.com/products/pgmanage/).
 
 <!--truncate-->
 
@@ -76,7 +76,7 @@ You can go ahead to start the services with `docker compose up -d`.
 FerretDB enables you to perform MongoDB queries and commands and stores the data in Postgres.
 For the purpose of this tutorial, we'll be adding sample data to the FerretDB database.
 
-If you have `mongosh`, you can run FerretDB using this connection URI with the right authentucation credentials:
+If you have `mongosh`, you can run FerretDB using this connection URI with the right authentication credentials:
 
 ```sh
 mongodb://username:password@127.0.0.1/ferretdb?authMechanism=PLAIN
@@ -130,7 +130,7 @@ You can connect PgManage with the `ferretdb` database using the exposed Postgres
 
 Once you've signed in to PgManage, navigate to the "Connections" tab, and click "Manage connections"; go ahead and add a new connection.
 
-![Connection setttings](/img/blog/ferretdb-pgmanage/connection-settings.png)
+![Connection settings](/img/blog/ferretdb-pgmanage/connection-settings.png)
 
 Test the connection to be sure it's successful, and then save changes.
 With FerretDB connection to PgManage, you'll be able to access all the data in `ferretdb`.
@@ -165,7 +165,7 @@ Besides, users can track and revert changes using PgManage's "Config History" dr
 
 FerretDB gives users the chance to use MongoDB's user-friendly queries and syntax while having the reliability and robustness of a PostgreSQL backend - basically the best of both worlds.
 
-And for PostgreSQL administrators, PgManage can be an incredible tool to administer a FerretDB database, providing a intuitive to manage, scale, and configure your servers – [check it out here to get started](https://pgmanage.readthedocs.io/).
+And for PostgreSQL administrators, PgManage can be an incredible tool to administer a FerretDB database, providing an intuitive to manage, scale, and configure your servers – [check it out here to get started](https://pgmanage.readthedocs.io/).
 
 The possibilities are endless, and we can't wait to find out what you do with FerretDB and PgManage.
 For more information on FerretDB, [see our documentation](https://github.com/FerretDB/FerretDB) and [GitHub page](https://github.com/FerretDB/FerretDB).
