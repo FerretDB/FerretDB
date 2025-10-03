@@ -1,0 +1,7 @@
+---
+label: User management commands
+position: 4
+link:
+  type: generated-index
+  description: >
+    User management commands in FerretDB, including user creation, deletion, and management.
