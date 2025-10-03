@@ -131,6 +131,7 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (resp *mi
 	if rc := h.runCtx; rc != nil && rc.Err() != nil {
 		h.runM.Unlock()
 		err = lazyerrors.Error(rc.Err())
+		return
 	}
 
 	// we need to use Add under a lock to avoid a race with Wait in Run
