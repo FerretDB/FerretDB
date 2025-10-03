@@ -19,11 +19,13 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	otelattribute "go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
+	otelsemconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 	oteltrace "go.opentelemetry.io/otel/trace"
 
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
@@ -164,7 +166,7 @@ func (d *dispatcher) enforceContract(ctx context.Context, req *Request, resp *Re
 	return resp, err
 }
 
-// endSpan ends the OpenTelemetry span from the context, that is started in [Middleware.dispatch].
+// endSpan ends the OpenTelemetry span from the context (that is started in [Middleware.dispatch]).
 func (d *dispatcher) endSpan(ctx context.Context, resp *Response, res result) {
 	span := oteltrace.SpanFromContext(ctx)
 	if res == resultOK {
@@ -174,8 +176,14 @@ func (d *dispatcher) endSpan(ctx context.Context, resp *Response, res result) {
 	}
 
 	if resp != nil {
+		if c := resp.ErrorCode(); c != mongoerrors.ErrUnset {
+			span.SetAttributes(
+				otelsemconv.DBResponseStatusCode(strconv.Itoa(int(c))),
+			)
+		}
+
 		span.SetAttributes(
-			otelattribute.Int("db.ferretdb.response_id", int(resp.header.RequestID)),
+			otelattribute.Int("db.ferretdb.response_id", int(resp.WireHeader().RequestID)),
 		)
 	}
 
