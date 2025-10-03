@@ -34,7 +34,7 @@ type Response struct {
 	header     *wire.MsgHeader
 	body       wire.MsgBody
 	doc        *wirebson.Document // only section 0 for OpMsg
-	mongoError *mongoerrors.Error // may be nil
+	mongoError *mongoerrors.Error // may be nil even for error response (for proxy handler, for example)
 }
 
 // ResponseWire creates a new response from the given wire protocol header and body.
