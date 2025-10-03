@@ -55,7 +55,7 @@ This handler self-scrapes Prometheus metrics via `/debug/metrics`, captures a bi
 
 We intend to expand this feature with additional parameters and files in future updates.
 
-Please find the documentation for all improvements in observability in this release (OpenTelemetry traces, Kubernetes probes, debug archive) [here](https://docs.ferretdb.io/configuration/observability/).
+Please find the [documentation for all improvements in observability](https://docs.ferretdb.io/configuration/observability/) in this release (OpenTelemetry traces, Kubernetes probes, debug archive).
 
 ## Experimental `systemd` configuration in .deb and .rpm packages
 
