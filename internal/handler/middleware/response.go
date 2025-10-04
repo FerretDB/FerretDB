@@ -34,7 +34,7 @@ type Response struct {
 	header     *wire.MsgHeader
 	body       wire.MsgBody
 	doc        *wirebson.Document // only section 0 for OpMsg
-	mongoError *mongoerrors.Error // may be nil
+	mongoError *mongoerrors.Error // may be nil even for error response (for proxy handler, for example)
 }
 
 // ResponseWire creates a new response from the given wire protocol header and body.
@@ -89,11 +89,11 @@ func ResponseDoc(req *Request, doc wirebson.AnyDocument) (*Response, error) {
 	resp := &Response{
 		header: &wire.MsgHeader{
 			RequestID:  lastRequestID.Add(1),
-			ResponseTo: req.header.RequestID,
+			ResponseTo: req.WireHeader().RequestID,
 		},
 	}
 
-	switch req.header.OpCode {
+	switch req.WireHeader().OpCode {
 	case wire.OpCodeMsg:
 		resp.header.OpCode = wire.OpCodeMsg
 
@@ -127,7 +127,7 @@ func ResponseDoc(req *Request, doc wirebson.AnyDocument) (*Response, error) {
 	case wire.OpCodeCompressed:
 		fallthrough
 	default:
-		return nil, lazyerrors.Errorf("unexpected request header %s", req.header)
+		return nil, lazyerrors.Errorf("unexpected request header %s", req.WireHeader())
 	}
 
 	resp.header.MessageLength = int32(wire.MsgHeaderLen + resp.body.Size())
@@ -215,7 +215,27 @@ func (resp *Response) OK() bool {
 	}
 }
 
-// ErrorName returns the error name of the response, if any.
+// ErrorCode returns the error code of the response, or [mongoerrors.ErrUnset] (zero).
+func (resp *Response) ErrorCode() mongoerrors.Code {
+	if resp.mongoError != nil {
+		return mongoerrors.Code(resp.mongoError.Code)
+	}
+
+	if resp.OK() {
+		return mongoerrors.ErrUnset
+	}
+
+	switch v := resp.doc.Get("code").(type) {
+	case int32:
+		return mongoerrors.Code(v)
+	case int64:
+		return mongoerrors.Code(v)
+	default:
+		return mongoerrors.ErrUnset
+	}
+}
+
+// ErrorName returns the error name of the response, or an empty string.
 func (resp *Response) ErrorName() string {
 	if resp.mongoError != nil {
 		return resp.mongoError.Name
@@ -230,15 +250,12 @@ func (resp *Response) ErrorName() string {
 		return n
 	}
 
-	// legacy reply
-	switch v := resp.doc.Get("code").(type) {
-	case int32:
-		return mongoerrors.Code(v).String()
-	case int64:
-		return mongoerrors.Code(v).String()
-	default:
-		return ""
+	// legacy replies do not have "codeName" field
+	if c := resp.ErrorCode(); c != mongoerrors.ErrUnset {
+		return c.String()
 	}
+
+	return ""
 }
 
 // MongoError returns [*mongoerrors.Error], if the response was created with [ResponseErr].

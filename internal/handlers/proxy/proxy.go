@@ -21,6 +21,9 @@ import (
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"go.opentelemetry.io/otel"
+	otelcodes "go.opentelemetry.io/otel/codes"
+	oteltrace "go.opentelemetry.io/otel/trace"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
@@ -100,16 +103,36 @@ func (h *Handler) Run(ctx context.Context) {
 }
 
 // Handle implements [middleware.Handler] by sending it to another wire protocol compatible service.
-func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
+func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (resp *middleware.Response, err error) {
+	ctx, span := otel.Tracer("").Start(
+		ctx,
+		"proxy.Handler.Handle",
+		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
+	)
+
+	defer func() {
+		if err == nil {
+			span.SetStatus(otelcodes.Ok, "")
+		} else {
+			span.SetStatus(otelcodes.Error, "")
+			span.RecordError(err)
+		}
+
+		span.End()
+	}()
+
 	if ctx.Err() != nil {
-		return nil, lazyerrors.Error(ctx.Err())
+		err = lazyerrors.Error(ctx.Err())
+		return
 	}
 
 	h.runM.Lock()
 
 	if rc := h.runCtx; rc != nil && rc.Err() != nil {
 		h.runM.Unlock()
-		return nil, lazyerrors.Error(rc.Err())
+		err = lazyerrors.Error(rc.Err())
+
+		return
 	}
 
 	// we need to use Add under a lock to avoid a race with Wait in Run
@@ -122,22 +145,49 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middlew
 
 	c, err := h.getConn(ctx, ci)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		err = lazyerrors.Error(err)
+		return
 	}
 
-	return c.handle(ctx, req)
+	resp, err = c.handle(ctx, req)
+	if err != nil {
+		err = lazyerrors.Error(err)
+	}
+
+	return
 }
 
 // getConn returns a proxy connection for the given client connection info,
 // establishing it if necessary, while preserving one-to-one mapping.
-func (h *Handler) getConn(ctx context.Context, ci *conninfo.ConnInfo) (*conn, error) {
+func (h *Handler) getConn(ctx context.Context, ci *conninfo.ConnInfo) (c *conn, err error) {
+	ctx, span := otel.Tracer("").Start(
+		ctx,
+		"proxy.Handler.getConn",
+		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
+	)
+
+	defer func() {
+		if err == nil {
+			span.SetStatus(otelcodes.Ok, "")
+		} else {
+			span.SetStatus(otelcodes.Error, "")
+			span.RecordError(err)
+		}
+
+		span.End()
+	}()
+
 	// fast path
 	h.connsRW.RLock()
 	cg := h.connsGet[ci]
 	h.connsRW.RUnlock()
 
 	if cg != nil {
-		return cg()
+		if c, err = cg(); err != nil {
+			err = lazyerrors.Error(err)
+		}
+
+		return
 	}
 
 	// slow path
@@ -147,25 +197,34 @@ func (h *Handler) getConn(ctx context.Context, ci *conninfo.ConnInfo) (*conn, er
 	// a concurrent call might have started creating connection already; check again
 	if cg = h.connsGet[ci]; cg != nil {
 		h.connsRW.Unlock()
-		return cg()
+
+		if c, err = cg(); err != nil {
+			err = lazyerrors.Error(err)
+		}
+
+		return
 	}
 
 	cg = sync.OnceValues(func() (*conn, error) {
-		c, err := newConn(ctx, h.opts)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
+		oc, oerr := newConn(ctx, h.opts)
+		if oerr != nil {
+			return nil, lazyerrors.Error(oerr)
 		}
 
 		ci.OnClose(h.closeConn)
 
-		return c, nil
+		return oc, nil
 	})
 
 	h.connsGet[ci] = cg
 
 	h.connsRW.Unlock()
 
-	return cg()
+	if c, err = cg(); err != nil {
+		err = lazyerrors.Error(err)
+	}
+
+	return
 }
 
 // closeConn closes the proxy connection for the given client connection info.

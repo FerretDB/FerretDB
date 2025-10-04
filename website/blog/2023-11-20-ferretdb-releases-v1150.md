@@ -60,7 +60,7 @@ Over the past three months, we've had 24 different community contributors, which
 
 Aside from this, FerretDB now has:
 
-- More than 20.9k [gchr.io](https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb) downloads; 500+ [downloads on Docker](https://hub.docker.com/r/ferretdb/ferretdb/tags)
+- More than 20.9k [ghcr.io](https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb) downloads; 500+ [downloads on Docker](https://hub.docker.com/r/ferretdb/ferretdb/tags)
 - More cloud providers (like [Vultr](https://www.vultr.com/docs/ferretdb-managed-database-guide/), [Civo](https://www.civo.com/marketplace/FerretDB), and [Scaleway](https://www.scaleway.com/en/betas/#managed-document-database)) offering FerretDB as a managed service
 - Over 7.9k stars on GitHub
 

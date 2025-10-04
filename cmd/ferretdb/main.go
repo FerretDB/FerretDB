@@ -98,7 +98,8 @@ var cli struct {
 	MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics." group:"Miscellaneous" negatable:""`
 
 	OTel struct {
-		Traces struct {
+		ServiceName string `default:"ferretdb" help:"OpenTelemetry service name."`
+		Traces      struct {
 			URL string `default:"" help:"OpenTelemetry OTLP/HTTP traces endpoint URL (e.g. 'http://host:4318/v1/traces')."`
 		} `embed:"" prefix:"traces-"`
 	} `embed:"" prefix:"otel-" group:"Miscellaneous"`
@@ -363,8 +364,6 @@ func run() {
 
 	checkFlags(logger)
 
-	setGOMAXPROCS(logger)
-
 	ctx, stop := ctxutil.SigTerm(context.Background())
 
 	go func() {
@@ -423,9 +422,8 @@ func run() {
 
 			ot, e := observability.NewOTelTraceExporter(&observability.OTelTraceExporterOpts{
 				Logger:  l,
-				Service: "ferretdb",
-				Version: version.Get().Version,
 				URL:     cli.OTel.Traces.URL,
+				Service: cli.OTel.ServiceName,
 			})
 			if e != nil {
 				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create Otel tracer", logging.Error(e))
