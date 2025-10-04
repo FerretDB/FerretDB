@@ -116,10 +116,10 @@ func TestQueryArrayCompatDotNotation(t *testing.T) {
 		"FieldArrayIndex": {
 			filter: bson.D{{"v.foo[0]", int32(42)}},
 		},
-		"FieldArrayAsterix": {
+		"FieldArrayAsterisk": {
 			filter: bson.D{{"v.foo[*]", int32(42)}},
 		},
-		"FieldAsterix": {
+		"FieldAsterisk": {
 			filter: bson.D{{"v.*", int32(42)}},
 		},
 		"FieldAt": {
