@@ -55,7 +55,7 @@ func (h *Handler) msgCreateIndexes(connCtx context.Context, req *middleware.Requ
 
 	var res wirebson.AnyDocument
 
-	err = h.p.WithConn(func(conn *pgx.Conn) error {
+	err = h.p.WithConn(connCtx, func(conn *pgx.Conn) error {
 		res, err = h.createIndexes(connCtx, conn, doc.Command(), dbName, req.DocumentRaw())
 		return err
 	})

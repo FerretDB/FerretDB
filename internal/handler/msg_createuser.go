@@ -41,8 +41,16 @@ func (h *Handler) msgCreateUser(connCtx context.Context, req *middleware.Request
 	doc = doc.Copy()
 	doc.Remove("mechanisms")
 
+	var roles *wirebson.Array
+	var err error
+
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/911
-	roles, _ := doc.Get("roles").(*wirebson.Array)
+	if rolesV, ok := doc.Get("roles").(wirebson.AnyArray); ok {
+		if roles, err = rolesV.Decode(); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
 	if roles == nil || roles.Len() == 0 {
 		roles = wirebson.MustArray(
 			wirebson.MustDocument("role", "clusterAdmin", "db", "admin"),
@@ -59,8 +67,7 @@ func (h *Handler) msgCreateUser(connCtx context.Context, req *middleware.Request
 
 	var res wirebson.RawDocument
 
-	var err error
-	err = h.p.WithConn(func(conn *pgx.Conn) error {
+	err = h.p.WithConn(connCtx, func(conn *pgx.Conn) error {
 		res, err = documentdb.CreateUser(connCtx, conn, h.L, doc)
 		return err
 	})

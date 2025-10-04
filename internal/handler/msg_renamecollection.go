@@ -124,7 +124,7 @@ func (h *Handler) msgRenameCollection(connCtx context.Context, req *middleware.R
 		)
 	}
 
-	conn, err := h.p.Acquire()
+	conn, err := h.p.Acquire(connCtx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

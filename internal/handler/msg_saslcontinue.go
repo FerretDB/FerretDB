@@ -103,7 +103,7 @@ func (h *Handler) saslContinue(ctx context.Context, doc *wirebson.Document) (*wi
 
 	var res wirebson.RawDocument
 
-	err = h.p.WithConn(func(conn *pgx.Conn) error {
+	err = h.p.WithConn(ctx, func(conn *pgx.Conn) error {
 		res, err = documentdb_api_internal.AuthenticateWithScramSha256(ctx, conn, h.L, username, authMsg, clientProof)
 		return err
 	})

@@ -45,7 +45,7 @@ func (p *Pool) GetMore(ctx context.Context, db string, spec wirebson.RawDocument
 	}
 
 	if conn == nil {
-		poolConn, err := p.Acquire()
+		poolConn, err := p.Acquire(ctx)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -90,7 +90,7 @@ func (p *Pool) ListCollections(ctx context.Context, db string, spec wirebson.Raw
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb.Pool.ListCollections")
 	defer span.End()
 
-	poolConn, err := p.Acquire()
+	poolConn, err := p.Acquire(ctx)
 	if err != nil {
 		return nil, 0, lazyerrors.Error(err)
 	}
@@ -127,7 +127,7 @@ func (p *Pool) Find(ctx context.Context, db string, spec wirebson.RawDocument) (
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb.Pool.Find")
 	defer span.End()
 
-	poolConn, err := p.Acquire()
+	poolConn, err := p.Acquire(ctx)
 	if err != nil {
 		return nil, 0, lazyerrors.Error(err)
 	}
@@ -164,7 +164,7 @@ func (p *Pool) Aggregate(ctx context.Context, db string, spec wirebson.RawDocume
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb.Pool.Aggregate")
 	defer span.End()
 
-	poolConn, err := p.Acquire()
+	poolConn, err := p.Acquire(ctx)
 	if err != nil {
 		return nil, 0, lazyerrors.Error(err)
 	}
@@ -201,7 +201,7 @@ func (p *Pool) ListIndexes(ctx context.Context, db string, spec wirebson.RawDocu
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb.Pool.ListIndexes")
 	defer span.End()
 
-	poolConn, err := p.Acquire()
+	poolConn, err := p.Acquire(ctx)
 	if err != nil {
 		return nil, 0, lazyerrors.Error(err)
 	}
