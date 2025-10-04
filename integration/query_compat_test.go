@@ -125,14 +125,14 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 						t = setup.FailsForFerretDB(tt, tc.failsForFerretDB)
 					}
 
-					targetIdx, tagetErr := targetCollection.Indexes().CreateOne(ctx, mongo.IndexModel{
+					targetIdx, targetErr := targetCollection.Indexes().CreateOne(ctx, mongo.IndexModel{
 						Keys: bson.D{{"v", 1}},
 					})
 					compatIdx, compatErr := compatCollection.Indexes().CreateOne(ctx, mongo.IndexModel{
 						Keys: bson.D{{"v", 1}},
 					})
 
-					require.NoError(t, tagetErr)
+					require.NoError(t, targetErr)
 					require.NoError(t, compatErr)
 					require.Equal(t, compatIdx, targetIdx)
 
