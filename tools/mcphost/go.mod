@@ -2,9 +2,9 @@
 // https://github.com/cloudwego/eino#dependencies
 module github.com/FerretDB/FerretDB/v2/tools/mcphost
 
-go 1.24.0
+go 1.25
 
-toolchain go1.24.6
+toolchain go1.25.1
 
 tool github.com/mark3labs/mcphost
 

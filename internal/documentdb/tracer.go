@@ -23,6 +23,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/tracelog"
 	"github.com/prometheus/client_golang/prometheus"
+	"go.opentelemetry.io/otel"
+	otelcodes "go.opentelemetry.io/otel/codes"
+	otelsemconv "go.opentelemetry.io/otel/semconv/v1.34.0"
+	oteltrace "go.opentelemetry.io/otel/trace"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
@@ -136,12 +140,32 @@ func (t *tracer) TraceConnectEnd(ctx context.Context, data pgx.TraceConnectEndDa
 // It is called at the beginning of [pgx.Conn.Prepare] calls.
 // The returned context is used for the rest of the call and will be passed to [tracer.TracePrepareEnd].
 func (t *tracer) TracePrepareStart(ctx context.Context, conn *pgx.Conn, data pgx.TracePrepareStartData) context.Context {
+	ctx, _ = otel.Tracer("").Start(
+		ctx,
+		"documentdb.Prepare",
+		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
+		oteltrace.WithAttributes(
+			otelsemconv.DBQueryText(data.SQL),
+		),
+	)
+
 	return t.tl.TracePrepareStart(ctx, conn, data)
 }
 
 // TracePrepareEnd implements [pgx.PrepareTracer].
 func (t *tracer) TracePrepareEnd(ctx context.Context, conn *pgx.Conn, data pgx.TracePrepareEndData) {
 	t.tl.TracePrepareEnd(ctx, conn, data)
+
+	span := oteltrace.SpanFromContext(ctx)
+
+	if data.Err == nil {
+		span.SetStatus(otelcodes.Ok, "")
+	} else {
+		span.SetStatus(otelcodes.Error, "")
+		span.RecordError(data.Err)
+	}
+
+	span.End()
 }
 
 // TraceQueryStart implements [pgx.QueryTracer].
@@ -153,6 +177,15 @@ func (t *tracer) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data pgx.T
 
 	t.requests.With(prometheus.Labels{}).Inc()
 
+	ctx, _ = otel.Tracer("").Start(
+		ctx,
+		"documentdb.Query",
+		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
+		oteltrace.WithAttributes(
+			otelsemconv.DBQueryText(data.SQL),
+		),
+	)
+
 	return t.tl.TraceQueryStart(ctx, conn, data)
 }
 
@@ -163,6 +196,17 @@ func (t *tracer) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, data pgx.Tra
 	t.duration.With(prometheus.Labels{}).Observe(duration.Seconds())
 
 	t.tl.TraceQueryEnd(ctx, conn, data)
+
+	span := oteltrace.SpanFromContext(ctx)
+
+	if data.Err == nil {
+		span.SetStatus(otelcodes.Ok, "")
+	} else {
+		span.SetStatus(otelcodes.Error, "")
+		span.RecordError(data.Err)
+	}
+
+	span.End()
 }
 
 // Describe implements prometheus.Collector.
