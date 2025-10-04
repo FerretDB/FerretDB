@@ -83,7 +83,7 @@ func listenerMongoDBURI(tb testing.TB, hostPort, unixSocketPath string) string {
 func setupListener(tb testing.TB, ctx context.Context, opts *ListenerOpts, logger *slog.Logger) string {
 	tb.Helper()
 
-	ctx, span := otel.Tracer("").Start(ctx, "setupListener")
+	ctx, span := otel.Tracer("").Start(ctx, "setup.setupListener")
 	defer span.End()
 
 	require.Empty(tb, *targetURLF, "-target-url must be empty for in-process FerretDB")
@@ -155,7 +155,7 @@ func setupListener(tb testing.TB, ctx context.Context, opts *ListenerOpts, logge
 	go func() {
 		defer close(runDone)
 
-		runCtx, runSpan := otel.Tracer("").Start(ctx, "setupListener.Run")
+		runCtx, runSpan := otel.Tracer("").Start(ctx, "setup.setupListener.Run")
 		defer runSpan.End()
 
 		res.Run(runCtx)
