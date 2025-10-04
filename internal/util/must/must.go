@@ -62,7 +62,7 @@ func NotBeZero[T comparable](v T) {
 
 // BeTrue panic if the b is not true.
 //
-// Use that function only for static initialization, test code, or statemants that
+// Use that function only for static initialization, test code, or statements that
 // "can't" be false. When in doubt, don't.
 func BeTrue(b bool) {
 	if !b {

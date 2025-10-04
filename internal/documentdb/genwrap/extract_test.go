@@ -35,7 +35,7 @@ func TestExtract(t *testing.T) {
 
 	expected := map[string]any{
 		"specific_schema":    "documentdb_api",
-		"specific_name":      "aggregate_cursor_first_page_19119",
+		"specific_name":      "aggregate_cursor_first_page_19120",
 		"routine_name":       "aggregate_cursor_first_page",
 		"routine_type":       "FUNCTION",
 		"routine_data_type":  "record",
@@ -52,7 +52,7 @@ func TestExtract(t *testing.T) {
 
 	expected = map[string]any{
 		"specific_schema":    "documentdb_api",
-		"specific_name":      "aggregate_cursor_first_page_19119",
+		"specific_name":      "aggregate_cursor_first_page_19120",
 		"routine_name":       "aggregate_cursor_first_page",
 		"routine_type":       "FUNCTION",
 		"routine_data_type":  "record",

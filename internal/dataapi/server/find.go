@@ -55,18 +55,29 @@ func (s *Server) Find(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resMsg, err := s.handler.Handle(ctx, msg)
+	resp := s.m.Handle(ctx, msg)
+	if resp == nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	if !resp.OK() {
+		s.writeJSONError(ctx, w, resp)
+		return
+	}
+
+	cursor := resp.Document().Get("cursor").(wirebson.AnyDocument)
+	firstBatch := must.NotFail(cursor.Decode()).Get("firstBatch").(wirebson.AnyArray)
+
+	b, err := marshalSingleJSON(firstBatch)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
-	resRaw := must.NotFail(resMsg.OpMsg.DocumentRaw())
-	cursor := must.NotFail(resRaw.Decode()).Get("cursor").(wirebson.AnyDocument)
+	res := api.FindManyResponseBody{
+		Documents: &b,
+	}
 
-	res := wirebson.MustDocument(
-		"documents", must.NotFail(cursor.Decode()).Get("firstBatch"),
-	)
-
-	s.writeJSONResponse(ctx, w, res)
+	s.writeJSONResponse(ctx, w, &res)
 }

@@ -49,13 +49,13 @@ func (h *Handler) msgCreateIndexes(connCtx context.Context, req *middleware.Requ
 		return nil, mongoerrors.NewWithArgument(
 			mongoerrors.ErrLocation40414,
 			"BSON field 'createIndexes.indexes' is missing but a required field",
-			"createIndexes",
+			"indexes",
 		)
 	}
 
 	var res wirebson.AnyDocument
 
-	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
+	err = h.p.WithConn(func(conn *pgx.Conn) error {
 		res, err = h.createIndexes(connCtx, conn, doc.Command(), dbName, req.DocumentRaw())
 		return err
 	})
@@ -69,7 +69,7 @@ func (h *Handler) msgCreateIndexes(connCtx context.Context, req *middleware.Requ
 // createIndexes calls DocumentDB API to create indexes, decodes and maps embedded error to command error if any.
 // It returns a document for createIndexes response.
 func (h *Handler) createIndexes(connCtx context.Context, conn *pgx.Conn, command, dbName string, spec wirebson.RawDocument) (wirebson.AnyDocument, error) { //nolint:lll // for readability
-	// TODO https://github.com/microsoft/documentdb/issues/25
+	// TODO https://github.com/documentdb/documentdb/issues/25
 	// resRaw, _, _, err := documentdb_api.CreateIndexesBackground(connCtx, conn.Conn(), h.L, dbName, spec)
 	resRaw, err := documentdb_api_internal.CreateIndexesNonConcurrently(connCtx, conn, h.L, dbName, spec, true)
 	if err != nil {
@@ -105,7 +105,7 @@ func (h *Handler) createIndexes(connCtx context.Context, conn *pgx.Conn, command
 
 	if code != 0 {
 		errMsg, _ := defaultShard.Get("errmsg").(string)
-		return nil, mongoerrors.NewWithArgument(code, errMsg, command)
+		return nil, mongoerrors.New(code, errMsg)
 	}
 
 	resOk := defaultShard.Get("ok").(int32)

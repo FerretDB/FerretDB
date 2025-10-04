@@ -28,8 +28,9 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	otelsdkresource "go.opentelemetry.io/otel/sdk/resource"
 	otelsdktrace "go.opentelemetry.io/otel/sdk/trace"
-	otelsemconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	otelsemconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 
+	"github.com/FerretDB/FerretDB/v2/build/version"
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
@@ -47,9 +48,8 @@ type OTelTraceExporter struct {
 type OTelTraceExporterOpts struct {
 	Logger *slog.Logger
 
-	Service string
-	Version string
 	URL     string
+	Service string
 }
 
 // NewOTelTraceExporter sets up [OTelTraceExporter] and global tracer provider
@@ -85,7 +85,8 @@ func NewOTelTraceExporter(opts *OTelTraceExporterOpts) (*OTelTraceExporter, erro
 		otelsdktrace.WithBatcher(exporter, otelsdktrace.WithBatchTimeout(time.Second)),
 		otelsdktrace.WithResource(otelsdkresource.NewSchemaless(
 			otelsemconv.ServiceName(opts.Service),
-			otelsemconv.ServiceVersion(opts.Version),
+			otelsemconv.ServiceVersion(version.Get().Version),
+			otelsemconv.DBSystemNameKey.String("ferretdb"),
 		)),
 		otelsdktrace.WithSampler(otelsdktrace.AlwaysSample()),
 		otelsdktrace.WithRawSpanLimits(otelsdktrace.SpanLimits{
