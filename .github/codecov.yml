@@ -30,7 +30,32 @@ flag_management:
 
 # https://docs.codecov.com/docs/pull-request-comments
 comment:
-  layout: reach,diff,files,flags
+  layout: reach,diff,files,flags,components
+
+# https://docs.codecov.com/docs/components
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        target: auto
+        threshold: 1%
+  individual_components:
+    - component_id: clientconn
+      name: "clientconn"
+      paths:
+        - internal/clientconn/**
+    - component_id: dataapi
+      name: "dataapi"
+      paths:
+        - internal/dataapi/**
+    - component_id: documentdb
+      name: "documentdb"
+      paths:
+        - internal/documentdb/**
+    - component_id: handler
+      name: "handler"
+      paths:
+        - internal/handler/**
 
 # https://docs.codecov.com/docs/github-checks
 # Annotations may be hidden by pressing the "a" key or by unselecting "Show annotations" in the top right of the file.

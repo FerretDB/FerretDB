@@ -41,7 +41,6 @@ For example, you can follow the following steps:
 3. Stop FerretDB (This depends on your operating system and the way you run FerretDB)
 
 4. Connect to PostgreSQL and drop `ferretdb` database as it's not needed anymore:
-
    - `psql -h 127.0.0.1 -p 5432 -U username postgres`
    - `DROP DATABASE ferretdb`
 

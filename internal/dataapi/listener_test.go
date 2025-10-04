@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dataapi
+package dataapi_test
 
 import (
 	"bytes"
@@ -21,7 +21,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,12 +28,8 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn"
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
-	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
-	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/setup"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
@@ -61,6 +56,22 @@ func TestSmokeDataAPI(t *testing.T) {
 		assert.JSONEq(t, `{"documents":[]}`, string(body))
 	})
 
+	t.Run("FindOneEmpty", func(t *testing.T) {
+		jsonBody := `{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {}
+		}`
+
+		res, err := postJSON(t, "http://"+addr+"/action/findOne", jsonBody)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"document":null}`, string(body))
+	})
+
 	docs := []string{
 		`{"_id":1,"v":"foo"}`,
 		`{"_id":2,"v":42}`,
@@ -80,7 +91,7 @@ func TestSmokeDataAPI(t *testing.T) {
 
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
-		assert.JSONEq(t, `{"n":1}`, string(body))
+		assert.JSONEq(t, `{"insertedId":1}`, string(body))
 	})
 
 	t.Run("InsertMany", func(t *testing.T) {
@@ -96,7 +107,7 @@ func TestSmokeDataAPI(t *testing.T) {
 
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
-		assert.JSONEq(t, `{"n":1}`, string(body))
+		assert.JSONEq(t, `{"insertedIds": [2, 3]}`, string(body))
 	})
 
 	t.Run("UpdateOne", func(t *testing.T) {
@@ -211,6 +222,102 @@ func TestSmokeDataAPI(t *testing.T) {
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
 		assert.JSONEq(t, `{"documents":[`+docs[2]+`]}`, string(body))
+	})
+
+	t.Run("InsertOneEmptyId", func(t *testing.T) {
+		jsonBody := `{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"document": ` + `{"v":"foo"}` + `
+		}`
+
+		res, err := postJSON(t, "http://"+addr+"/action/insertOne", jsonBody)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+
+		bodyStr := strings.TrimSpace(string(body))
+		assert.Regexp(t,
+			`^{"insertedId":"[0-9a-f]{24}"}$`,
+			bodyStr,
+			"expected %q, got %q",
+			`{"insertedId":"<ObjectID>"}`,
+			string(body),
+		)
+	})
+
+	t.Run("UpsertOne", func(t *testing.T) {
+		jsonBody := `{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {"v":"non-existent"},
+			"update": {"$set":{"v":"foo"}},
+			"upsert": true
+		}`
+
+		res, err := postJSON(t, "http://"+addr+"/action/updateOne", jsonBody)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+
+		bodyStr := strings.TrimSpace(string(body))
+		assert.Regexp(t,
+			`^{"matchedCount":1,"modifiedCount":0,"upsertedId":".*[0-9a-f]{24}.*"}$`,
+			bodyStr,
+			"expected %q, got %q",
+			`{"upsertedId":"<ObjectID>"}`,
+			string(body),
+		)
+	})
+
+	t.Run("UpsertOneStringId", func(t *testing.T) {
+		jsonBody := `{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {"v":"non-existent"},
+			"update": {"$set":{"_id":"string_id","v":"foo"}},
+			"upsert": true
+		}`
+
+		res, err := postJSON(t, "http://"+addr+"/action/updateOne", jsonBody)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"matchedCount":1,"modifiedCount":0,"upsertedId":"string_id"}`, string(body))
+	})
+
+	t.Run("UpsertMany", func(t *testing.T) {
+		jsonBody := `{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {"v":"non-existent"},
+			"update": {"$set":{"v":"foo"}},
+			"upsert": true
+		}`
+
+		res, err := postJSON(t, "http://"+addr+"/action/updateMany", jsonBody)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+
+		bodyStr := strings.TrimSpace(string(body))
+		assert.Regexp(t,
+			`^{"matchedCount":1,"modifiedCount":0,"upsertedId":".*[0-9a-f]{24}.*"}$`,
+			bodyStr,
+			"expected %q, got %q",
+			`{"upsertedId":"<ObjectID>"}`,
+			string(body),
+		)
 	})
 }
 
@@ -353,65 +460,53 @@ func setupDataAPI(tb testing.TB, auth bool) (addr string, dbName string) {
 
 	l := testutil.Logger(tb)
 
-	p, err := documentdb.NewPool(uri, logging.WithName(l, "pool"), sp)
-	require.NoError(tb, err)
-
-	handlerOpts := &handler.NewOpts{
-		Pool: p,
-		Auth: auth,
-
-		L:             logging.WithName(l, "handler"),
+	//exhaustruct:enforce
+	res := setup.Setup(tb.Context(), &setup.SetupOpts{
+		Logger:        l,
 		StateProvider: sp,
-	}
+		Metrics:       middleware.NewMetrics(),
 
-	h, err := handler.New(handlerOpts)
-	require.NoError(tb, err)
+		PostgreSQLURL:          uri,
+		Auth:                   auth,
+		ReplSetName:            "",
+		SessionCleanupInterval: 0,
 
-	listenerOpts := clientconn.ListenerOpts{
-		Handler: h,
-		Metrics: connmetrics.NewListenerMetrics(),
-		Logger:  logging.WithName(l, "listener"),
-		TCP:     "127.0.0.1:0",
-		Mode:    middleware.NormalMode,
-	}
+		ProxyAddr:        "",
+		ProxyTLSCertFile: "",
+		ProxyTLSKeyFile:  "",
+		ProxyTLSCAFile:   "",
 
-	lis, err := clientconn.Listen(&listenerOpts)
-	require.NoError(tb, err)
+		TCPAddr:        "127.0.0.1:0",
+		UnixAddr:       "",
+		TLSAddr:        "",
+		TLSCertFile:    "",
+		TLSKeyFile:     "",
+		TLSCAFile:      "",
+		Mode:           middleware.NormalMode,
+		TestRecordsDir: "",
 
-	var apiLis *Listener
-	apiLis, err = Listen(&ListenOpts{
-		TCPAddr: "127.0.0.1:0",
-		L:       logging.WithName(l, "dataapi"),
-		Handler: h,
+		DataAPIAddr: "127.0.0.1:0",
 	})
-	require.NoError(tb, err)
+	require.NotNil(tb, res)
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
-	var wg sync.WaitGroup
+
+	runDone := make(chan struct{})
+
+	go func() {
+		defer close(runDone)
+		res.Run(ctx)
+	}()
 
 	// ensure that all listener's and handler's logs are written before test ends
 	tb.Cleanup(func() {
 		cancel()
-		wg.Wait()
+		<-runDone
 	})
-
-	wg.Add(1)
-
-	go func() {
-		defer wg.Done()
-		lis.Run(ctx)
-	}()
-
-	wg.Add(1)
-
-	go func() {
-		defer wg.Done()
-		apiLis.Run(ctx)
-	}()
 
 	u := &url.URL{
 		Scheme: "mongodb",
-		Host:   lis.TCPAddr().String(),
+		Host:   res.WireListener.TCPAddr().String(),
 		Path:   "/",
 	}
 
@@ -422,7 +517,7 @@ func setupDataAPI(tb testing.TB, auth bool) (addr string, dbName string) {
 	client, err := mongo.Connect(options.Client().ApplyURI(u.String()))
 	require.NoError(tb, err)
 
-	addr = apiLis.lis.Addr().String()
+	addr = res.DataAPIListener.Addr().String()
 	dbName = testutil.DatabaseName(tb)
 
 	err = client.Database(dbName).Drop(ctx)

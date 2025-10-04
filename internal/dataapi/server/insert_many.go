@@ -41,10 +41,55 @@ func (s *Server) InsertMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	docsArr, err := unmarshalSingleJSON(&req.Documents)
+	if err != nil {
+		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		return
+	}
+
+	documents, err := docsArr.(wirebson.RawArray).Decode()
+	if err != nil {
+		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var insertedIds []any
+
+	for i, v := range documents.All() {
+		v, ok := v.(wirebson.AnyDocument)
+		if !ok {
+			http.Error(w, fmt.Sprintf("document %d is not a valid BSON document", i), http.StatusBadRequest)
+			return
+		}
+
+		var doc *wirebson.Document
+
+		doc, err = ensureID(v)
+		if err != nil {
+			http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+			return
+		}
+
+		var insertedId any
+
+		insertedId, err = wirebson.ToDriver(doc.Get("_id"))
+		if err != nil {
+			http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if err = documents.Replace(i, doc); err != nil {
+			http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+			return
+		}
+
+		insertedIds = append(insertedIds, insertedId)
+	}
+
 	msg, err := prepareRequest(
 		"insert", req.Collection,
 		"$db", req.Database,
-		"documents", req.Documents,
+		"documents", documents,
 		"lsid", GetLSID(ctx),
 	)
 	if err != nil {
@@ -52,15 +97,20 @@ func (s *Server) InsertMany(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = s.handler.Handle(ctx, msg)
-	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+	resp := s.m.Handle(ctx, msg)
+	if resp == nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	res := wirebson.MustDocument(
-		"n", float64(1),
-	)
+	if !resp.OK() {
+		s.writeJSONError(ctx, w, resp)
+		return
+	}
 
-	s.writeJSONResponse(ctx, w, res)
+	res := api.InsertManyResponseBody{
+		InsertedIds: &insertedIds,
+	}
+
+	s.writeJSONResponse(ctx, w, &res)
 }

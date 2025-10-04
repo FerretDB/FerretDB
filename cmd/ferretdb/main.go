@@ -12,17 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package main is the entry point for FerretDB server.
 package main
 
 import (
-	"cmp"
 	"context"
 	"encoding/json"
 	"expvar"
 	"fmt"
 	"log"
 	"log/slog"
-	"math"
 	"os"
 	"runtime"
 	runtimedebug "runtime/debug"
@@ -34,15 +33,10 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
-	"go.uber.org/automaxprocs/maxprocs"
 	_ "golang.org/x/crypto/x509roots/fallback" // register root TLS certificates for production Docker image
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn"
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/v2/internal/dataapi"
-	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
-	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/debug"
@@ -51,6 +45,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/observability"
+	"github.com/FerretDB/FerretDB/v2/internal/util/setup"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/telemetry"
 )
@@ -103,7 +98,8 @@ var cli struct {
 	MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics." group:"Miscellaneous" negatable:""`
 
 	OTel struct {
-		Traces struct {
+		ServiceName string `default:"ferretdb" help:"OpenTelemetry service name."`
+		Traces      struct {
 			URL string `default:"" help:"OpenTelemetry OTLP/HTTP traces endpoint URL (e.g. 'http://host:4318/v1/traces')."`
 		} `embed:"" prefix:"traces-"`
 	} `embed:"" prefix:"otel-" group:"Miscellaneous"`
@@ -249,7 +245,22 @@ func setupDefaultLogger(format string, uuid string) *slog.Logger {
 }
 
 // checkFlags checks that CLI flags are not self-contradictory and produces warnings if needed.
+// It also replaces "-" with "" for some flags to make it easier to configure FerretDB with environment variables.
 func checkFlags(logger *slog.Logger) {
+	// keep in sync with documentation
+	for _, p := range []*string{
+		&cli.Listen.Addr,
+		&cli.Listen.Unix,
+		&cli.Listen.TLS,
+		&cli.Listen.DataAPIAddr,
+		&cli.DebugAddr,
+		&cli.OTel.Traces.URL,
+	} {
+		if *p == "-" {
+			*p = ""
+		}
+	}
+
 	ctx := context.Background()
 
 	if devbuild.Enabled {
@@ -353,19 +364,6 @@ func run() {
 
 	checkFlags(logger)
 
-	maxprocsOpts := []maxprocs.Option{
-		maxprocs.Min(2),
-		maxprocs.RoundQuotaFunc(func(v float64) int {
-			return int(math.Ceil(v))
-		}),
-		maxprocs.Logger(func(format string, a ...any) {
-			logger.Info(fmt.Sprintf(format, a...))
-		}),
-	}
-	if _, err = maxprocs.Set(maxprocsOpts...); err != nil {
-		logger.Warn("Failed to set GOMAXPROCS", logging.Error(err))
-	}
-
 	ctx, stop := ctxutil.SigTerm(context.Background())
 
 	go func() {
@@ -381,7 +379,7 @@ func run() {
 
 	var wg sync.WaitGroup
 
-	if cmp.Or(cli.DebugAddr, "-") != "-" {
+	if cli.DebugAddr != "" {
 		wg.Add(1)
 
 		go func() {
@@ -414,7 +412,7 @@ func run() {
 		}()
 	}
 
-	if cmp.Or(cli.OTel.Traces.URL, "-") != "-" {
+	if cli.OTel.Traces.URL != "" {
 		wg.Add(1)
 
 		go func() {
@@ -424,9 +422,8 @@ func run() {
 
 			ot, e := observability.NewOTelTraceExporter(&observability.OTelTraceExporterOpts{
 				Logger:  l,
-				Service: "ferretdb",
-				Version: version.Get().Version,
 				URL:     cli.OTel.Traces.URL,
+				Service: cli.OTel.ServiceName,
 			})
 			if e != nil {
 				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create Otel tracer", logging.Error(e))
@@ -436,7 +433,7 @@ func run() {
 		}()
 	}
 
-	lm := connmetrics.NewListenerMetrics()
+	mm := middleware.NewMetrics()
 
 	{
 		wg.Add(1)
@@ -453,7 +450,7 @@ func run() {
 				DNT:            os.Getenv("DO_NOT_TRACK"),
 				ExecName:       os.Args[0],
 				P:              stateProvider,
-				ConnMetrics:    lm.ConnMetrics,
+				Metrics:        mm,
 				L:              l,
 				UndecidedDelay: cli.Dev.Telemetry.UndecidedDelay,
 				ReportInterval: cli.Dev.Telemetry.ReportInterval,
@@ -466,97 +463,42 @@ func run() {
 		}()
 	}
 
-	p, err := documentdb.NewPool(cli.PostgreSQLURL, logging.WithName(logger, "pool"), stateProvider)
-	if err != nil {
-		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct pool", logging.Error(err))
-	}
-
-	tcpAddr := cli.Listen.Addr
-	if cmp.Or(tcpAddr, "-") == "-" {
-		tcpAddr = ""
-	}
-
-	unixAddr := cli.Listen.Unix
-	if cmp.Or(unixAddr, "-") == "-" {
-		unixAddr = ""
-	}
-
-	tlsAddr := cli.Listen.TLS
-	if cmp.Or(tlsAddr, "-") == "-" {
-		tlsAddr = ""
-	}
-
-	handlerOpts := &handler.NewOpts{
-		Pool: p,
-		Auth: cli.Auth,
-
-		TCPHost:     tcpAddr,
-		ReplSetName: cli.Dev.ReplSetName,
-
-		L:             logging.WithName(logger, "handler"),
-		ConnMetrics:   lm.ConnMetrics,
+	//exhaustruct:enforce
+	res := setup.Setup(ctx, &setup.SetupOpts{
+		Logger:        logger,
 		StateProvider: stateProvider,
-	}
+		Metrics:       mm,
 
-	h, err := handler.New(handlerOpts)
-	if err != nil {
-		p.Close()
-		handlerOpts.L.LogAttrs(ctx, logging.LevelFatal, "Failed to construct handler", logging.Error(err))
-	}
+		PostgreSQLURL:          cli.PostgreSQLURL,
+		Auth:                   cli.Auth,
+		ReplSetName:            cli.Dev.ReplSetName,
+		SessionCleanupInterval: 0,
 
-	lis, err := clientconn.Listen(&clientconn.ListenerOpts{
-		Handler: h,
-		Metrics: lm,
-		Logger:  logger,
-
-		TCP:  tcpAddr,
-		Unix: unixAddr,
-
-		TLS:         tlsAddr,
-		TLSCertFile: cli.Listen.TLSCertFile,
-		TLSKeyFile:  cli.Listen.TLSKeyFile,
-		TLSCAFile:   cli.Listen.TLSCaFile,
-
-		Mode:             middleware.Mode(cli.Mode),
 		ProxyAddr:        cli.Proxy.Addr,
 		ProxyTLSCertFile: cli.Proxy.TLSCertFile,
 		ProxyTLSKeyFile:  cli.Proxy.TLSKeyFile,
 		ProxyTLSCAFile:   cli.Proxy.TLSCaFile,
 
+		TCPAddr:        cli.Listen.Addr,
+		UnixAddr:       cli.Listen.Unix,
+		TLSAddr:        cli.Listen.TLS,
+		TLSCertFile:    cli.Listen.TLSCertFile,
+		TLSKeyFile:     cli.Listen.TLSKeyFile,
+		TLSCAFile:      cli.Listen.TLSCaFile,
+		Mode:           middleware.Mode(cli.Mode),
 		TestRecordsDir: cli.Dev.RecordsDir,
+
+		DataAPIAddr: cli.Listen.DataAPIAddr,
 	})
-	if err != nil {
-		p.Close()
-		logger.LogAttrs(ctx, logging.LevelFatal, "Failed to construct listener", logging.Error(err))
+	if res == nil {
+		os.Exit(1)
 	}
 
-	if cmp.Or(cli.Listen.DataAPIAddr, "-") != "-" {
-		wg.Add(1)
+	listener.Store(res.WireListener)
 
-		go func() {
-			defer wg.Done()
+	metricsRegisterer.MustRegister(res)
 
-			l := logging.WithName(logger, "dataapi")
-
-			lis, e := dataapi.Listen(&dataapi.ListenOpts{
-				TCPAddr: cli.Listen.DataAPIAddr,
-				L:       l,
-				Handler: h,
-			})
-			if e != nil {
-				p.Close()
-				l.LogAttrs(ctx, logging.LevelFatal, "Failed to construct DataAPI listener", logging.Error(e))
-			}
-
-			lis.Run(ctx)
-		}()
-	}
-
-	listener.Store(lis)
-
-	metricsRegisterer.MustRegister(lis)
-
-	lis.Run(ctx)
+	res.Run(ctx)
 
 	wg.Wait()
 

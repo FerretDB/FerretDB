@@ -112,6 +112,7 @@ func Convert(rows []map[string]any, l *slog.Logger) map[string]map[string]templa
 		uniqueFunctionName := c.uniqueName(slices.Collect(maps.Keys(schemas[schema])), routineName)
 
 		r := templateData{
+			Package:      schema,
 			FuncName:     c.pascalCase(uniqueFunctionName),
 			SQLFuncName:  fmt.Sprintf("%s.%s", schema, routineName),
 			Comment:      fmt.Sprintf("%s.%s(%s)", schema, routineName, strings.Join(comment, ", ")),
@@ -124,7 +125,7 @@ func Convert(rows []map[string]any, l *slog.Logger) map[string]map[string]templa
 			ScanArgs:     strings.Join(scanArgs, ", "),
 		}
 
-		// TODO https://github.com/microsoft/documentdb/issues/49
+		// TODO https://github.com/documentdb/documentdb/issues/49
 		if r.IsProcedure {
 			l.Warn("Procedure skipped due to unable to decode output", slog.String("function", r.SQLFuncName))
 

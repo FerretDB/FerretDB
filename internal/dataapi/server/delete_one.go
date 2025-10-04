@@ -61,17 +61,20 @@ func (s *Server) DeleteOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resMsg, err := s.handler.Handle(ctx, msg)
-	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+	resp := s.m.Handle(ctx, msg)
+	if resp == nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	resDoc := must.NotFail(must.NotFail(resMsg.OpMsg.DocumentRaw()).Decode())
+	if !resp.OK() {
+		s.writeJSONError(ctx, w, resp)
+		return
+	}
 
-	res := wirebson.MustDocument(
-		"deletedCount", resDoc.Get("n"),
-	)
+	res := api.DeleteResponseBody{
+		DeletedCount: resp.Document().Get("n"),
+	}
 
-	s.writeJSONResponse(ctx, w, res)
+	s.writeJSONResponse(ctx, w, &res)
 }
