@@ -24,9 +24,11 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/server"
-	"github.com/FerretDB/FerretDB/v2/internal/handler"
+	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
@@ -41,11 +43,13 @@ type Listener struct {
 // ListenOpts represents [Listen] options.
 type ListenOpts struct {
 	L       *slog.Logger
-	Handler *handler.Handler
+	M       *middleware.Middleware
 	TCPAddr string
+	Auth    bool
 }
 
 // Listen creates a new dataapi handler and starts listener on the given TCP address.
+// [Listener.Run] must be called on the returned value.
 func Listen(opts *ListenOpts) (*Listener, error) {
 	lis, err := net.Listen("tcp", opts.TCPAddr)
 	if err != nil {
@@ -55,7 +59,7 @@ func Listen(opts *ListenOpts) (*Listener, error) {
 	return &Listener{
 		opts: opts,
 		lis:  lis,
-		srv:  server.New(opts.L, opts.Handler),
+		srv:  server.New(opts.L, opts.M),
 	}, nil
 }
 
@@ -65,7 +69,7 @@ func Listen(opts *ListenOpts) (*Listener, error) {
 func (lis *Listener) Run(ctx context.Context) {
 	srvHandler := api.HandlerFromMux(lis.srv, http.NewServeMux())
 
-	if lis.opts.Handler.Auth {
+	if lis.opts.Auth {
 		srvHandler = lis.srv.AuthMiddleware(srvHandler)
 	}
 
@@ -87,4 +91,18 @@ func (lis *Listener) Run(ctx context.Context) {
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/4848
 	<-ctx.Done()
+}
+
+// Addr returns TCP listener's address.
+// It can be used to determine an actually used port, if it was zero.
+func (lis *Listener) Addr() net.Addr {
+	return lis.lis.Addr()
+}
+
+// Describe implements [prometheus.Collector].
+func (lis *Listener) Describe(ch chan<- *prometheus.Desc) {
+}
+
+// Collect implements [prometheus.Collector].
+func (lis *Listener) Collect(ch chan<- prometheus.Metric) {
 }

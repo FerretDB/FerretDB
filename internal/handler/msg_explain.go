@@ -104,7 +104,7 @@ func (h *Handler) msgExplain(connCtx context.Context, req *middleware.Request) (
 		f,
 	)
 
-	conn, err := h.Pool.Acquire()
+	conn, err := h.p.Acquire()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
