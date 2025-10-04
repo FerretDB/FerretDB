@@ -102,6 +102,7 @@ func Convert(routineParams map[string][]map[string]any, l *slog.Logger) map[stri
 		uniqueFunctionName := c.uniqueName(slices.Collect(maps.Keys(schemas[schema])), routineName)
 
 		r := templateData{
+			Package:      schema,
 			FuncName:     c.pascalCase(uniqueFunctionName),
 			SQLName:      fmt.Sprintf("%s.%s", schema, routineName),
 			Comment:      fmt.Sprintf("%s.%s(%s)", schema, routineName, strings.Join(comment, ", ")),

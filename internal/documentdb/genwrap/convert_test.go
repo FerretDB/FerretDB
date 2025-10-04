@@ -213,6 +213,7 @@ func TestConvert2(t *testing.T) {
 	expected := map[string]map[string]templateData{
 		"documentdb_api": {
 			"binary_extended_version": {
+				Package:     "documentdb_api",
 				FuncName:    "BinaryExtendedVersion",
 				SQLName:     "documentdb_api.binary_extended_version",
 				SQLArgs:     "",
@@ -236,6 +237,7 @@ func TestConvert2(t *testing.T) {
 		},
 		"documentdb_core": {
 			"bsonquery_compare": {
+				Package:     "documentdb_core",
 				FuncName:    "BsonqueryCompare",
 				SQLName:     "documentdb_core.bsonquery_compare",
 				IsProcedure: false,
@@ -249,6 +251,7 @@ func TestConvert2(t *testing.T) {
 				QueryRowArgs: "anonymous, anonymous1",
 			},
 			"bsonquery_compare1": {
+				Package:     "documentdb_core",
 				FuncName:    "BsonqueryCompare1",
 				SQLName:     "documentdb_core.bsonquery_compare",
 				IsProcedure: false,
