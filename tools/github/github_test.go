@@ -15,7 +15,6 @@
 package github
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -44,7 +43,6 @@ func TestClient(t *testing.T) {
 	t.Parallel()
 
 	cacheFilePath := filepath.Join(t.TempDir(), "cache.json")
-	ctx := context.Background()
 
 	t.Run("CheckIssueStatus", func(t *testing.T) {
 		t.Parallel()
@@ -52,19 +50,19 @@ func TestClient(t *testing.T) {
 		c, err := NewClient(cacheFilePath, t.Logf, t.Logf, t.Logf)
 		require.NoError(t, err)
 
-		actual, err := c.checkIssueStatus(ctx, "FerretDB", "FerretDB", 10)
+		actual, err := c.checkIssueStatus(t.Context(), "FerretDB", "FerretDB", 10)
 		require.NoError(t, err)
 		assert.Equal(t, IssueOpen, actual)
 
-		actual, err = c.checkIssueStatus(ctx, "FerretDB", "FerretDB", 1)
+		actual, err = c.checkIssueStatus(t.Context(), "FerretDB", "FerretDB", 1)
 		require.NoError(t, err)
 		assert.Equal(t, IssueClosed, actual)
 
-		actual, err = c.checkIssueStatus(ctx, "FerretDB", "FerretDB", 999999)
+		actual, err = c.checkIssueStatus(t.Context(), "FerretDB", "FerretDB", 999999)
 		require.NoError(t, err)
 		assert.Equal(t, IssueNotFound, actual)
 
-		actual, err = c.checkIssueStatus(ctx, "microsoft", "documentdb", 1)
+		actual, err = c.checkIssueStatus(t.Context(), "documentdb", "documentdb", 1)
 		require.NoError(t, err)
 		assert.Equal(t, IssueClosed, actual)
 	})
@@ -75,19 +73,19 @@ func TestClient(t *testing.T) {
 		c, err := NewClient(cacheFilePath, t.Logf, t.Logf, t.Logf)
 		require.NoError(t, err)
 
-		actual, err := c.IssueStatus(ctx, "FerretDB", "FerretDB", 10)
+		actual, err := c.IssueStatus(t.Context(), "FerretDB", "FerretDB", 10)
 		require.NoError(t, err)
 		assert.Equal(t, IssueOpen, actual)
 
-		actual, err = c.IssueStatus(ctx, "FerretDB", "FerretDB", 1)
+		actual, err = c.IssueStatus(t.Context(), "FerretDB", "FerretDB", 1)
 		require.NoError(t, err)
 		assert.Equal(t, IssueClosed, actual)
 
-		actual, err = c.IssueStatus(ctx, "FerretDB", "FerretDB", 999999)
+		actual, err = c.IssueStatus(t.Context(), "FerretDB", "FerretDB", 999999)
 		require.NoError(t, err)
 		assert.Equal(t, IssueNotFound, actual)
 
-		actual, err = c.IssueStatus(ctx, "microsoft", "documentdb", 1)
+		actual, err = c.IssueStatus(t.Context(), "documentdb", "documentdb", 1)
 		require.NoError(t, err)
 		assert.Equal(t, IssueClosed, actual)
 
@@ -100,19 +98,19 @@ func TestClient(t *testing.T) {
 
 		c.c = nil
 
-		actual, err = c.IssueStatus(ctx, "FerretDB", "FerretDB", 10)
+		actual, err = c.IssueStatus(t.Context(), "FerretDB", "FerretDB", 10)
 		require.NoError(t, err)
 		assert.Equal(t, IssueOpen, actual)
 
-		actual, err = c.IssueStatus(ctx, "FerretDB", "FerretDB", 1)
+		actual, err = c.IssueStatus(t.Context(), "FerretDB", "FerretDB", 1)
 		require.NoError(t, err)
 		assert.Equal(t, IssueClosed, actual)
 
-		actual, err = c.IssueStatus(ctx, "FerretDB", "FerretDB", 999999)
+		actual, err = c.IssueStatus(t.Context(), "FerretDB", "FerretDB", 999999)
 		require.NoError(t, err)
 		assert.Equal(t, IssueNotFound, actual)
 
-		actual, err = c.IssueStatus(ctx, "microsoft", "documentdb", 1)
+		actual, err = c.IssueStatus(t.Context(), "documentdb", "documentdb", 1)
 		require.NoError(t, err)
 		assert.Equal(t, IssueClosed, actual)
 	})

@@ -22,25 +22,19 @@ import (
 	"github.com/FerretDB/FerretDB/v2/build/version"
 )
 
-// Parts of Prometheus metric names.
-const (
-	namespace = "ferretdb"
-	subsystem = ""
-)
-
-// metricsCollector exposes provider's state as Prometheus metrics.
+// metricsCollector exposes provider's state as Prometheus metric.
 type metricsCollector struct {
-	p               *Provider
-	addUUIDToMetric bool
+	p       *Provider
+	addUUID bool
 }
 
 // newMetricsCollector creates a new metricsCollector.
 //
-// If addUUIDToMetric is true, then the UUID is added to the Prometheus metric.
-func newMetricsCollector(p *Provider, addUUIDToMetric bool) *metricsCollector {
+// If addUUID is true, then the "uuid" label is added.
+func newMetricsCollector(p *Provider, addUUID bool) *metricsCollector {
 	return &metricsCollector{
-		p:               p,
-		addUUIDToMetric: addUUIDToMetric,
+		p:       p,
+		addUUID: addUUID,
 	}
 }
 
@@ -50,6 +44,7 @@ func (mc *metricsCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 // Collect implements [prometheus.Collector].
+// It exposes a single metric with various labels.
 func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 	info := version.Get()
 	constLabels := prometheus.Labels{
@@ -61,26 +56,38 @@ func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 		"dev":     strconv.FormatBool(info.DevBuild),
 	}
 
+	labels := []string{
+		"postgresql",
+		"documentdb",
+		"telemetry",
+		"update_available",
+	}
+	if mc.addUUID {
+		labels = append(labels, "uuid")
+	}
+
 	s := mc.p.Get()
 
-	constLabels["telemetry"] = s.TelemetryString()
-	constLabels["update_available"] = strconv.FormatBool(s.UpdateAvailable)
-
-	if mc.addUUIDToMetric {
-		constLabels["uuid"] = s.UUID
+	values := []string{
+		s.PostgreSQLVersion,
+		s.DocumentDBVersion,
+		s.TelemetryString(),
+		strconv.FormatBool(s.UpdateAvailable),
+	}
+	if mc.addUUID {
+		values = append(values, s.UUID)
 	}
 
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, subsystem, "up"),
+			"ferretdb_up",
 			"FerretDB instance state.",
-			[]string{"postgresql", "documentdb"},
+			labels,
 			constLabels,
 		),
 		prometheus.GaugeValue,
 		1,
-		s.PostgreSQLVersion,
-		s.DocumentDBVersion,
+		values...,
 	)
 }
 
