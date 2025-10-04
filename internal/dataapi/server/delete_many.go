@@ -54,6 +54,7 @@ func (s *Server) DeleteMany(w http.ResponseWriter, r *http.Request) {
 		"delete", req.Collection,
 		"$db", req.Database,
 		"deletes", wirebson.MustArray(deleteDoc),
+		"lsid", GetLSID(ctx),
 	)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)

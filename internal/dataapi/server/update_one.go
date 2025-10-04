@@ -57,6 +57,7 @@ func (s *Server) UpdateOne(w http.ResponseWriter, r *http.Request) {
 		"update", req.Collection,
 		"$db", req.Database,
 		"updates", wirebson.MustArray(updateDoc),
+		"lsid", GetLSID(ctx),
 	)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)

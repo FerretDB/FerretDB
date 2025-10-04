@@ -321,6 +321,119 @@ func TestSmokeDataAPI(t *testing.T) {
 	})
 }
 
+func TestNoAuth(t *testing.T) {
+	t.Parallel()
+
+	addr, db := setupDataAPI(t, false)
+	coll := testutil.CollectionName(t)
+	ctx := testutil.Ctx(t)
+
+	findURI := "http://" + addr + "/action/find"
+	findReq := bytes.NewBuffer([]byte(
+		`{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {}
+		}`,
+	))
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, findURI, findReq)
+	require.NoError(t, err)
+
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, res.Body.Close())
+	})
+
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	body, err := io.ReadAll(res.Body)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"documents":[]}`, string(body))
+}
+
+func TestBasicAuth(t *testing.T) {
+	t.Parallel()
+
+	addr, db := setupDataAPI(t, true)
+	coll := testutil.CollectionName(t)
+	ctx := testutil.Ctx(t)
+
+	t.Run("BasicAuth", func(t *testing.T) {
+		insertReq := bytes.NewBuffer([]byte(`{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"document": {"_id":1,"v":"foo"}
+		}`))
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://"+addr+"/action/insertOne", insertReq)
+		require.NoError(t, err)
+
+		req.Header.Set("Content-Type", "application/json")
+		req.SetBasicAuth("username", "password")
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, res.Body.Close())
+		})
+
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"n":1}`, string(body))
+	})
+
+	t.Run("BasicAuthDoesNotPersist", func(t *testing.T) {
+		findReq := bytes.NewBuffer([]byte(`{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {}
+		}`))
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://"+addr+"/action/find", findReq)
+		require.NoError(t, err)
+
+		req.Header.Set("Content-Type", "application/json")
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, res.Body.Close())
+		})
+
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+
+		body, err := io.ReadAll(res.Body)
+		require.NoError(t, err)
+		assert.JSONEq(t, `{"error":"no authentication methods were specified", "error_code":"InvalidParameter"}`, string(body))
+	})
+
+	t.Run("InvalidCredentials", func(t *testing.T) {
+		findReq := bytes.NewBuffer([]byte(`{
+			"database": "` + db + `",
+			"collection": "` + coll + `",
+			"filter": {}
+		}`))
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, "http://"+addr+"/action/find", findReq)
+		require.NoError(t, err)
+
+		req.Header.Set("Content-Type", "application/json")
+		req.SetBasicAuth("wrong-user", "wrong-pass")
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, res.Body.Close())
+		})
+
+		assert.Equal(t, http.StatusUnauthorized, res.StatusCode)
+	})
+}
+
 // postJSON sends POST request with provided JSON to data API under provided uri.
 // It handles necessary headers, as well as authentication.
 func postJSON(tb testing.TB, uri, jsonBody string) (*http.Response, error) {

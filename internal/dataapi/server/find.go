@@ -49,6 +49,7 @@ func (s *Server) Find(w http.ResponseWriter, r *http.Request) {
 		"projection", req.Projection,
 		"skip", req.Skip,
 		"sort", req.Sort,
+		"lsid", GetLSID(ctx),
 	)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)

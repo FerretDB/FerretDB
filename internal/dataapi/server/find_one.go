@@ -47,6 +47,7 @@ func (s *Server) FindOne(w http.ResponseWriter, r *http.Request) {
 		"filter", req.Filter,
 		"projection", req.Projection,
 		"limit", float64(1),
+		"lsid", GetLSID(ctx),
 	)
 	if err != nil {
 		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
