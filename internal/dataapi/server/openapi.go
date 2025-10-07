@@ -31,7 +31,7 @@ func (s *Server) OpenAPISpec(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "public, max-age=3600")
 
-	if _, err := w.Write(api.OpenAPISpec()); err != nil {
+	if _, err := w.Write(api.OpenAPISpec); err != nil {
 		s.l.ErrorContext(r.Context(), "Failed to write OpenAPI spec", logging.Error(err))
 	}
 }
