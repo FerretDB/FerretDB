@@ -57,13 +57,13 @@ func Listen(opts *ListenOpts) (*Listener, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	s := server.New(opts.L, opts.Handler)
+	s := server.New(opts.L, opts.M)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /openapi.json", s.OpenAPISpec)
 
 	h := api.HandlerFromMux(s, mux)
-	if opts.Handler.Auth {
+	if opts.Auth {
 		h = s.AuthMiddleware(h)
 	}
 
