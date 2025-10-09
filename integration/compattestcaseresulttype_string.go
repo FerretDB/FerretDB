@@ -17,8 +17,9 @@ const _CompatTestCaseResultType_name = "NonEmptyResultEmptyResult"
 var _CompatTestCaseResultType_index = [...]uint8{0, 14, 25}
 
 func (i CompatTestCaseResultType) String() string {
-	if i < 0 || i >= CompatTestCaseResultType(len(_CompatTestCaseResultType_index)-1) {
+	idx := int(i) - 0
+	if i < 0 || idx >= len(_CompatTestCaseResultType_index)-1 {
 		return "CompatTestCaseResultType(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _CompatTestCaseResultType_name[_CompatTestCaseResultType_index[i]:_CompatTestCaseResultType_index[i+1]]
+	return _CompatTestCaseResultType_name[_CompatTestCaseResultType_index[idx]:_CompatTestCaseResultType_index[idx+1]]
 }
