@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "FerretDB": {
+      "type": "remote",
+      "url": "http://127.0.0.1:8081/mcp",
+      "headers": ["Authorization: Basic dXNlcm5hbWU6cGFzc3dvcmQ="]
+    }
+  }
+}
