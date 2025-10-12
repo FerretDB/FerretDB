@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/FerretDB/wire/wirebson"
+	"github.com/google/uuid"
 	"github.com/xdg-go/scram"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
@@ -161,6 +162,33 @@ func (s *Server) ConnInfoMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// SessionMiddleware returns a handler function that sets `lsid` in context,
+// calls the next handler then calls `endSession`.
+func (s *Server) SessionMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		lsid := wirebson.MustDocument("id", wirebson.Binary{
+			B:       must.NotFail(must.NotFail(uuid.NewRandom()).MarshalBinary()),
+			Subtype: wirebson.BinaryUUID,
+		})
+
+		ctx := CtxWithLSID(r.Context(), lsid)
+
+		defer func() {
+			msg := middleware.RequestDoc(wirebson.MustDocument(
+				"endSessions", wirebson.MustArray(lsid),
+				"lsid", lsid,
+				"$db", "admin",
+			))
+
+			if _, err := s.handler.Handle(ctx, msg); err != nil {
+				s.l.ErrorContext(ctx, "Failed to end session", logging.Error(err))
+			}
+		}()
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
 // writeJSONResponse marshals provided res document into extended JSON and
 // writes it to provided [http.ResponseWriter].
 func (s *Server) writeJSONResponse(ctx context.Context, w http.ResponseWriter, res api.Response) {
@@ -267,7 +295,7 @@ func prepareDocument(pairs ...any) (*wirebson.Document, error) {
 func prepareRequest(pairs ...any) (*middleware.Request, error) {
 	doc, err := prepareDocument(pairs...)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	return middleware.RequestDoc(doc)
