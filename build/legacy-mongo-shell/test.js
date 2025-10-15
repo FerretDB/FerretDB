@@ -17,12 +17,27 @@
 
   coll.insertMany(init);
 
-  const query = { v: { $gt: 42.0 } };
+  const created = coll.createIndexes([{ v: 1 } ]);
+  assert.commandWorked(created);
 
-  const expected = [{ _id: "double", v: 42.13 }];
+  const dropped = db.runCommand({dropIndexes: 'test', index: {v:1}});
+  assert.commandWorked(dropped);
 
-  const actual = coll.find(query).toArray();
-  assert.eq(expected, actual);
+  var failedTests = {};
+
+  try {
+    assert.eq(typeof dropped.ok, typeof 1.0);
+  } catch (e) {
+    failedTests['ok'] = e;
+  };
+
+  try {
+    assert.eq(typeof dropped.nIndexesWas, typeof 1);
+  } catch (e) {
+    failedTests['nIndexesWas'] = e;
+  };
+
+  assert.eq(failedTests, {});
 
   print("test.js passed!");
 })();
