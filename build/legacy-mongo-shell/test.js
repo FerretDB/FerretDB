@@ -3,26 +3,31 @@
 (function () {
   "use strict";
 
-  // Update the following example with your test.
-
   const coll = db.test;
 
   coll.drop();
 
-  const init = [
-    { _id: "double", v: 42.13 },
-    { _id: "double-whole", v: 42.0 },
-    { _id: "double-zero", v: 0.0 },
-  ];
+  const doc = {
+    _id: "id",
+    v: Timestamp(0, 0),
+    d: {
+      dv: Timestamp(0, 0),
+    },
+  };
 
-  coll.insertMany(init);
+  coll.insert(doc);
 
-  const query = { v: { $gt: 42.0 } };
+  const actual = coll.find({}).toArray()[0];
+  assert.eq("id", actual._id);
 
-  const expected = [{ _id: "double", v: 42.13 }];
+  const now = Date.now() / 1000;
 
-  const actual = coll.find(query).toArray();
-  assert.eq(expected, actual);
+  assert.neq(Timestamp(0, 0), actual.v);
+  assert.neq(0, actual.v.i);
+  assert.between(now - 5, actual.v.t, now + 5);
+
+  assert.eq(Timestamp(0, 0), actual.d.dv);
+  assert.eq(0, actual.d.dv.i);
 
   print("test.js passed!");
 })();
