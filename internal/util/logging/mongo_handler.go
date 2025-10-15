@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package logging provides logging helpers.
+//
+//nolint:forbidigo // bson.D needs to be used, as *wirebson.Document is not decodable by bson.Marshaler
 package logging
 
 import (
@@ -39,7 +42,7 @@ import (
 type mongoHandler struct {
 	opts *NewHandlerOpts
 
-	ga        []groupOrAttrs
+	ga        attrsList
 	testAttrs map[string]any
 
 	m   *sync.Mutex
@@ -51,14 +54,14 @@ type mongoHandler struct {
 //
 //nolint:vet // to preserve field ordering
 type MongoLogRecord struct {
-	Timestamp time.Time      `bson:"t"`
-	Severity  string         `bson:"s"`
-	Component string         `bson:"c"` // TODO https://github.com/FerretDB/FerretDB/issues/4431
-	ID        int            `bson:"id,omitempty"`
-	Ctx       string         `bson:"ctx"`
-	Msg       string         `bson:"msg"`
-	Attr      map[string]any `bson:"attr,omitempty"`
-	Tags      []string       `bson:"tags,omitempty"`
+	Timestamp time.Time `bson:"t"`
+	Severity  string    `bson:"s"`
+	Component string    `bson:"c"` // TODO https://github.com/FerretDB/FerretDB/issues/4431
+	ID        int       `bson:"id,omitempty"`
+	Ctx       string    `bson:"ctx"`
+	Msg       string    `bson:"msg"`
+	Attr      bson.D    `bson:"attr,omitempty"`
+	Tags      []string  `bson:"tags,omitempty"`
 }
 
 // Marshal returns the mongo structured JSON encoding of log.
@@ -111,7 +114,7 @@ func mongoLogFromRecord(r slog.Record, ga []groupOrAttrs, opts *NewHandlerOpts) 
 		}
 	}
 
-	log.Attr = attrs(r, ga)
+	log.Attr = attrsList(ga).toBSON(r)
 
 	return &log
 }
@@ -162,7 +165,12 @@ func (h *mongoHandler) Handle(ctx context.Context, r slog.Record) error {
 		}
 
 		if len(record.Attr) > 0 {
-			maps.Copy(h.testAttrs, record.Attr)
+			var attrs map[string]any
+
+			b := must.NotFail(bson.Marshal(record.Attr))
+			must.NoError(bson.Unmarshal(b, &attrs))
+
+			maps.Copy(h.testAttrs, attrs)
 		}
 	}
 
