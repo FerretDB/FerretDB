@@ -3,26 +3,57 @@
 (function () {
   "use strict";
 
-  // Update the following example with your test.
+  const command = {
+    aggregate: 1,
+    pipeline: [{ $currentOp: {} }],
+    cursor: {},
+  };
 
-  const coll = db.test;
+  const actual = db.getSiblingDB("admin").runCommand(command);
+  assert.commandWorked(actual);
 
-  coll.drop();
+  const op = actual.cursor.firstBatch.find((o) => o.command.aggregate != null);
+  assert.eq(false, op == null);
 
-  const init = [
-    { _id: "double", v: 42.13 },
-    { _id: "double-whole", v: 42.0 },
-    { _id: "double-zero", v: 0.0 },
-  ];
+  var failedTests = {};
 
-  coll.insertMany(init);
+  try {
+    assert.eq("string", typeof op.currentOpTime);
+  } catch (e) {
+    failedTests["currentOpTime"] = e;
+  }
 
-  const query = { v: { $gt: 42.0 } };
+  try {
+    assert.eq("number", typeof op.opid);
+  } catch (e) {
+    failedTests["opid"] = e;
+  }
 
-  const expected = [{ _id: "double", v: 42.13 }];
+  try {
+    assert.eq(1, op.command.aggregate);
+  } catch (e) {
+    failedTests["commandAggregate"] = e;
+  }
 
-  const actual = coll.find(query).toArray();
-  assert.eq(expected, actual);
+  try {
+    assert.eq([{ $currentOp: {} }], op.command.pipeline);
+  } catch (e) {
+    failedTests["commandPipeline"] = e;
+  }
+
+  try {
+    assert.eq({}, op.command.cursor);
+  } catch (e) {
+    failedTests["commandCursor"] = e;
+  }
+
+  try {
+    assert.eq("admin", op.command.$db);
+  } catch (e) {
+    failedTests["commandDB"] = e;
+  }
+
+  assert.eq({}, failedTests);
 
   print("test.js passed!");
 })();
