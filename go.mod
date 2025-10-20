@@ -2,7 +2,7 @@ module github.com/FerretDB/FerretDB/v2
 
 go 1.25
 
-toolchain go1.25.2
+toolchain go1.25.3
 
 // replace github.com/FerretDB/wire => ../wire
 
@@ -21,12 +21,12 @@ require (
 	github.com/prometheus/common v0.67.1
 	github.com/stretchr/testify v1.11.1
 	github.com/xdg-go/scram v1.1.2
-	go.mongodb.org/mongo-driver/v2 v2.3.0
+	go.mongodb.org/mongo-driver/v2 v2.3.1
 	go.opentelemetry.io/otel v1.38.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.38.0
 	go.opentelemetry.io/otel/sdk v1.38.0
 	go.opentelemetry.io/otel/trace v1.38.0
-	golang.org/x/crypto/x509roots/fallback v0.0.0-20251008205826-1faea2975ced
+	golang.org/x/crypto/x509roots/fallback v0.0.0-20251009181029-0b7aa0cfb07b
 	golang.org/x/net v0.46.0
 	golang.org/x/sys v0.37.0
 	golang.org/x/term v0.36.0
