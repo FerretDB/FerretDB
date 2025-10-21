@@ -22,12 +22,18 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	"strconv"
 	"sync"
 
 	"github.com/FerretDB/wire"
+	"go.opentelemetry.io/otel"
+	otelcodes "go.opentelemetry.io/otel/codes"
+	otelsemconv "go.opentelemetry.io/otel/semconv/v1.34.0"
+	oteltrace "go.opentelemetry.io/otel/trace"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
 // conn represents a single connection to a wire protocol compatible service.
@@ -44,9 +50,41 @@ type conn struct {
 
 // newConn creates a new connection.
 // Context cancellation stops dialing, but does not affect established connection.
-func newConn(ctx context.Context, opts *NewOpts) (*conn, error) {
+func newConn(ctx context.Context, opts *NewOpts) (res *conn, err error) {
+	host, portS, err := net.SplitHostPort(opts.Addr)
+	if err != nil {
+		err = lazyerrors.Error(err)
+		return
+	}
+
+	port, err := strconv.Atoi(portS)
+	if err != nil {
+		err = lazyerrors.Error(err)
+		return
+	}
+
+	ctx, span := otel.Tracer("").Start(
+		ctx,
+		"proxy.newConn",
+		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
+		oteltrace.WithAttributes(
+			otelsemconv.ServerAddress(host),
+			otelsemconv.ServerPort(port),
+		),
+	)
+
+	defer func() {
+		if err == nil {
+			span.SetStatus(otelcodes.Ok, "")
+		} else {
+			span.SetStatus(otelcodes.Error, "")
+			span.RecordError(err)
+		}
+
+		span.End()
+	}()
+
 	var c net.Conn
-	var err error
 
 	if opts.TLSCertFile == "" && opts.TLSKeyFile == "" && opts.TLSCAFile == "" {
 		c, err = dialTCP(ctx, opts.Addr)
@@ -55,10 +93,11 @@ func newConn(ctx context.Context, opts *NewOpts) (*conn, error) {
 	}
 
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		err = lazyerrors.Error(err)
+		return
 	}
 
-	return &conn{
+	res = &conn{
 		l: opts.L.With(
 			slog.String("local", c.LocalAddr().String()),
 			slog.String("remote", c.RemoteAddr().String()),
@@ -67,7 +106,9 @@ func newConn(ctx context.Context, opts *NewOpts) (*conn, error) {
 		c:    c,
 		bufw: bufio.NewWriter(c),
 		bufr: bufio.NewReader(c),
-	}, nil
+	}
+
+	return
 }
 
 // dialTCP connects to the given address using TCP.
@@ -128,42 +169,64 @@ func dialTLS(ctx context.Context, addr, certFile, keyFile, caFile string) (net.C
 
 // handle sends a single request to the proxy.
 // It can be called concurrently from multiple goroutines.
-func (c *conn) handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
+func (c *conn) handle(ctx context.Context, req *middleware.Request) (resp *middleware.Response, err error) {
+	ctx, span := otel.Tracer("").Start(
+		ctx,
+		"proxy.conn.handle",
+		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
+	)
+
+	defer func() {
+		if err == nil {
+			span.SetStatus(otelcodes.Ok, "")
+		} else {
+			span.SetStatus(otelcodes.Error, "")
+			span.RecordError(err)
+		}
+
+		span.End()
+	}()
+
 	// It is not clear if clients actually send multiple requests in parallel over the same connection.
 	// If they do, we better support that, too.
 	// TODO https://github.com/FerretDB/FerretDB/issues/5049
 	if !c.m.TryLock() {
-		c.l.WarnContext(ctx, "Connection is busy, waiting for lock")
+		c.l.Log(ctx, logging.LevelDPanic, "Connection is busy, waiting for lock")
 		c.m.Lock()
 	}
 	defer c.m.Unlock()
 
 	if ctx.Err() != nil {
-		return nil, lazyerrors.Error(ctx.Err())
+		err = lazyerrors.Error(ctx.Err())
+		return
 	}
 
 	deadline, _ := ctx.Deadline()
 	_ = c.c.SetDeadline(deadline)
 
-	if err := wire.WriteMessage(c.bufw, req.WireHeader(), req.WireBody()); err != nil {
-		return nil, lazyerrors.Error(err)
+	if err = wire.WriteMessage(c.bufw, req.WireHeader(), req.WireBody()); err != nil {
+		err = lazyerrors.Error(err)
+		return
 	}
 
-	if err := c.bufw.Flush(); err != nil {
-		return nil, lazyerrors.Error(err)
+	if err = c.bufw.Flush(); err != nil {
+		err = lazyerrors.Error(err)
+		return
 	}
 
 	header, body, err := wire.ReadMessage(c.bufr)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		err = lazyerrors.Error(err)
+		return
 	}
 
-	resp, err := middleware.ResponseWire(header, body)
+	resp, err = middleware.ResponseWire(header, body)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		err = lazyerrors.Error(err)
+		return
 	}
 
-	return resp, nil
+	return
 }
 
 // close closes the connection.

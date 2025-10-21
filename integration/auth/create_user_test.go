@@ -148,10 +148,10 @@ func TestCreateUserCommand(t *testing.T) {
 		},
 		"MissingPwdOrExternal": {
 			payload: bson.D{
-				{"createUser", "mising_pwd_or_external"},
+				{"createUser", "missing_pwd_or_external"},
 				{"roles", bson.A{}},
 			},
-			user: "mising_pwd_or_external",
+			user: "missing_pwd_or_external",
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",

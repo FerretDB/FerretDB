@@ -147,7 +147,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
 
-	setupCtx, span := otel.Tracer("").Start(ctx, "SetupWithOpts")
+	setupCtx, span := otel.Tracer("").Start(ctx, "setup.SetupWithOpts")
 	defer span.End()
 
 	if opts == nil {
@@ -248,7 +248,7 @@ func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *m
 func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, opts *SetupOpts) *mongo.Collection {
 	tb.Helper()
 
-	ctx, span := otel.Tracer("").Start(ctx, "setupCollection")
+	ctx, span := otel.Tracer("").Start(ctx, "setup.setupCollection")
 	defer span.End()
 
 	var ownDatabase bool
@@ -309,7 +309,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 func InsertProviders(tb testing.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
 	tb.Helper()
 
-	ctx, span := otel.Tracer("").Start(ctx, "InsertProviders")
+	ctx, span := otel.Tracer("").Start(ctx, "setup.InsertProviders")
 	defer span.End()
 
 	for _, provider := range providers {

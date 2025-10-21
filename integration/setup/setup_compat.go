@@ -65,7 +65,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
 
-	setupCtx, span := otel.Tracer("").Start(ctx, "SetupCompatWithOpts")
+	setupCtx, span := otel.Tracer("").Start(ctx, "setup.SetupCompatWithOpts")
 	defer span.End()
 
 	if opts == nil {
@@ -129,7 +129,7 @@ func SetupCompat(tb testing.TB) (context.Context, []*mongo.Collection, []*mongo.
 func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Client, opts *SetupCompatOpts, backend string) []*mongo.Collection {
 	tb.Helper()
 
-	ctx, span := otel.Tracer("").Start(ctx, "setupCompatCollections")
+	ctx, span := otel.Tracer("").Start(ctx, "setup.setupCompatCollections")
 	defer span.End()
 
 	database := client.Database(opts.databaseName)

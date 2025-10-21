@@ -33,7 +33,7 @@ import (
 // GetMore returns the next page of the cursor.
 // It is a part of the implementation of the `getMore` command.
 func (p *Pool) GetMore(ctx context.Context, db string, spec wirebson.RawDocument, cursorID int64) (wirebson.RawDocument, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "pool.GetMore")
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb.Pool.GetMore")
 	defer span.End()
 
 	continuation, conn := p.r.GetCursor(cursorID)
@@ -79,7 +79,7 @@ func (p *Pool) GetMore(ctx context.Context, db string, spec wirebson.RawDocument
 // However, this could block so ctx is available to limit the time to wait (up to 3 seconds).
 // The underlying connection will always be called regardless of any other errors.
 func (p *Pool) KillCursor(ctx context.Context, id int64) bool {
-	ctx, span := otel.Tracer("").Start(ctx, "pool.KillCursor")
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb.Pool.KillCursor")
 	defer span.End()
 
 	return p.r.CloseCursor(ctx, id)
@@ -87,7 +87,7 @@ func (p *Pool) KillCursor(ctx context.Context, id int64) bool {
 
 // ListCollections returns the first page of the `listCollections` cursor and the cursor ID.
 func (p *Pool) ListCollections(ctx context.Context, db string, spec wirebson.RawDocument) (wirebson.RawDocument, int64, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "pool.ListCollections")
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb.Pool.ListCollections")
 	defer span.End()
 
 	poolConn, err := p.Acquire()
@@ -124,7 +124,7 @@ func (p *Pool) ListCollections(ctx context.Context, db string, spec wirebson.Raw
 
 // Find returns the first page of the `find` cursor and the cursor ID.
 func (p *Pool) Find(ctx context.Context, db string, spec wirebson.RawDocument) (wirebson.RawDocument, int64, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "pool.Find")
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb.Pool.Find")
 	defer span.End()
 
 	poolConn, err := p.Acquire()
@@ -161,7 +161,7 @@ func (p *Pool) Find(ctx context.Context, db string, spec wirebson.RawDocument) (
 
 // Aggregate returns the first page of the `aggregate` cursor and the cursor ID.
 func (p *Pool) Aggregate(ctx context.Context, db string, spec wirebson.RawDocument) (wirebson.RawDocument, int64, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "pool.Aggregate")
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb.Pool.Aggregate")
 	defer span.End()
 
 	poolConn, err := p.Acquire()
@@ -198,7 +198,7 @@ func (p *Pool) Aggregate(ctx context.Context, db string, spec wirebson.RawDocume
 
 // ListIndexes returns the first page of the `listIndexes` cursor and the cursor ID.
 func (p *Pool) ListIndexes(ctx context.Context, db string, spec wirebson.RawDocument) (wirebson.RawDocument, int64, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "pool.ListIndexes")
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb.Pool.ListIndexes")
 	defer span.End()
 
 	poolConn, err := p.Acquire()

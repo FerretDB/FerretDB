@@ -95,7 +95,7 @@ func makeClient(ctx context.Context, uri string, disableOtel bool) (*mongo.Clien
 func setupClient(tb testing.TB, ctx context.Context, uri string, disableOtel bool) *mongo.Client {
 	tb.Helper()
 
-	ctx, span := otel.Tracer("").Start(ctx, "setupClient")
+	ctx, span := otel.Tracer("").Start(ctx, "setup.setupClient")
 	defer span.End()
 
 	u, err := url.Parse(uri)
@@ -137,7 +137,7 @@ func setupClient(tb testing.TB, ctx context.Context, uri string, disableOtel boo
 func setupWireConn(tb testing.TB, ctx context.Context, uri string, l *slog.Logger) *wireclient.Conn {
 	tb.Helper()
 
-	ctx, span := otel.Tracer("").Start(ctx, "setupWireConn")
+	ctx, span := otel.Tracer("").Start(ctx, "setup.setupWireConn")
 	defer span.End()
 
 	conn, err := wireclient.Connect(ctx, uri, l)

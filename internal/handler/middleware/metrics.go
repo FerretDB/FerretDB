@@ -23,22 +23,6 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// result represents the result of a command handling.
-// It may be one of:
-//   - [resultOK];
-//   - MongoDB error name;
-//   - [resultError] (for other errors, e.g. network errors);
-//   - [resultPanic];
-//   - [resultUnknown].
-type result string
-
-const (
-	resultOK      = result("ok")
-	resultError   = result("error")
-	resultPanic   = result("panic")
-	resultUnknown = result("unknown")
-)
-
 // Parts of Prometheus metric names.
 // TODO https://github.com/FerretDB/FerretDB/issues/4965
 const (

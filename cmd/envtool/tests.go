@@ -72,7 +72,7 @@ type testResult struct {
 // listTestFuncs returns a sorted slice of all top-level test functions (tests, benchmarks, examples, fuzz functions)
 // matching given regular expression in the specified directory and subdirectories.
 func listTestFuncs(ctx context.Context, dir, re string, logger *slog.Logger) ([]string, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "listTestFuncs")
+	ctx, span := otel.Tracer("").Start(ctx, "envtool.listTestFuncs")
 	defer span.End()
 
 	var buf bytes.Buffer
@@ -158,7 +158,7 @@ func shardTestFuncs(index, total uint, testFuncs []string) ([]string, error) {
 
 // testArgs handles `envtool tests run` arguments and returns a slice of `go test` arguments.
 func testArgs(ctx context.Context, dir string, index, total uint, run, skip string, logger *slog.Logger) ([]string, uint, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "testArgs")
+	ctx, span := otel.Tracer("").Start(ctx, "envtool.testArgs")
 	defer span.End()
 
 	listRE := "."
@@ -309,7 +309,7 @@ func runGoTest(runCtx context.Context, opts *runGoTestOpts) (resErr error) {
 		totalTests = strconv.Itoa(int(opts.total))
 	}
 
-	runCtx, runSpan := otel.Tracer("").Start(runCtx, "run")
+	runCtx, runSpan := otel.Tracer("").Start(runCtx, "envtool.runGoTest")
 	runSpan.SetAttributes(otelattribute.String("db.ferretdb.envtool.total_tests", totalTests))
 	defer runSpan.End()
 
@@ -584,14 +584,14 @@ func testsRun(ctx context.Context, params *TestsRunParams, logger *slog.Logger) 
 
 	ot, err := observability.NewOTelTraceExporter(&observability.OTelTraceExporterOpts{
 		Logger:  logger,
-		Service: "envtool-tests",
 		URL:     "http://127.0.0.1:4318/v1/traces",
+		Service: "envtool-tests",
 	})
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	ctx, span := otel.Tracer("").Start(ctx, "testsRun")
+	ctx, span := otel.Tracer("").Start(ctx, "envtool.testsRun")
 
 	ctx, cancel := context.WithCancel(ctx)
 	done := make(chan struct{})

@@ -87,8 +87,8 @@ func Startup() {
 
 			ot, err := observability.NewOTelTraceExporter(&observability.OTelTraceExporterOpts{
 				Logger:  logging.WithName(l, "otel"),
-				Service: "integration-tests",
 				URL:     *otelTracesURLF,
+				Service: "integration-tests",
 			})
 			if err != nil {
 				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create Otel tracer", logging.Error(err))
