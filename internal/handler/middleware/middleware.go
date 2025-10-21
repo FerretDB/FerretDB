@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -26,8 +27,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel"
 	otelattribute "go.opentelemetry.io/otel/attribute"
+	otelcodes "go.opentelemetry.io/otel/codes"
+	otelsemconv "go.opentelemetry.io/otel/semconv/v1.34.0"
 	oteltrace "go.opentelemetry.io/otel/trace"
 
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/observability"
@@ -159,7 +163,7 @@ func (m *Middleware) dispatch(ctx context.Context, req *Request) (docdb, proxy *
 		wg.Add(1)
 
 		go func() {
-			dCtx, _ := otel.Tracer("").Start(ctx, "")
+			dCtx, _ := otel.Tracer("").Start(ctx, "middleware.Handle/documentdb")
 
 			//exhaustruct:enforce
 			d := &dispatcher{
@@ -177,7 +181,7 @@ func (m *Middleware) dispatch(ctx context.Context, req *Request) (docdb, proxy *
 		wg.Add(1)
 
 		go func() {
-			dCtx, _ := otel.Tracer("").Start(ctx, "")
+			dCtx, _ := otel.Tracer("").Start(ctx, "middleware.Handle/proxy")
 
 			//exhaustruct:enforce
 			d := &dispatcher{
@@ -209,15 +213,28 @@ func (m *Middleware) startSpan(ctx context.Context, req *Request) context.Contex
 		ctx = oteltrace.ContextWithSpanContext(ctx, spanCtx)
 	}
 
-	ctx, span := otel.Tracer("").Start(ctx, req.doc.Command())
+	command := req.Document().Command()
+	database, _ := req.Document().Get("$db").(string)
+
+	var collection string
+	if command != "" {
+		collection, _ = req.Document().Get(command).(string)
+	}
+
+	ctx, _ = otel.Tracer("").Start(
+		ctx,
+		"middleware.Handle",
+		oteltrace.WithAttributes(
+			otelsemconv.DBOperationName(command),
+			otelsemconv.DBNamespace(database),
+			otelsemconv.DBCollectionName(collection),
+			otelattribute.Int("db.ferretdb.request_id", int(req.WireHeader().RequestID)),
+		),
+	)
 
 	// Created span might be invalid, not sampled, and/or not recording,
 	// if OpenTelemetry wasn't set up (for example, by the user of embeddable package).
 	// We can't check span.SpanContext().IsValid(), span.SpanContext().IsSampled(), and span.IsRecording().
-
-	span.SetAttributes(
-		otelattribute.Int("db.ferretdb.request_id", int(req.header.RequestID)),
-	)
 
 	return ctx
 }
@@ -227,8 +244,16 @@ func (m *Middleware) endSpan(ctx context.Context, resp *Response) {
 	span := oteltrace.SpanFromContext(ctx)
 
 	if resp != nil {
+		if c := resp.ErrorCode(); c != mongoerrors.ErrUnset {
+			span.SetStatus(otelcodes.Error, resp.ErrorName())
+
+			span.SetAttributes(
+				otelsemconv.DBResponseStatusCode(strconv.Itoa(int(c))),
+			)
+		}
+
 		span.SetAttributes(
-			otelattribute.Int("db.ferretdb.response_id", int(resp.header.RequestID)),
+			otelattribute.Int("db.ferretdb.response_id", int(resp.WireHeader().RequestID)),
 		)
 	}
 

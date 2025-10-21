@@ -23,26 +23,10 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
-// result represents the result of a command handling.
-// It may be one of:
-//   - [resultOK];
-//   - MongoDB error name;
-//   - [resultError] (for other errors, e.g. network errors);
-//   - [resultPanic];
-//   - [resultUnknown].
-type result string
-
-const (
-	resultOK      = result("ok")
-	resultError   = result("error")
-	resultPanic   = result("panic")
-	resultUnknown = result("unknown")
-)
-
 // Parts of Prometheus metric names.
 // TODO https://github.com/FerretDB/FerretDB/issues/4965
 const (
-	namespace = "ferretdb_unstable"
+	namespace = "ferretdb"
 	subsystem = "client"
 )
 
@@ -70,7 +54,7 @@ func NewMetrics() *Metrics {
 				Namespace: namespace,
 				Subsystem: subsystem,
 				Name:      "requests_total",
-				Help:      "Unstable: Total number of requests.",
+				Help:      "Total number of requests.",
 			},
 			[]string{"opcode", "command"},
 		),
@@ -82,7 +66,7 @@ func NewMetrics() *Metrics {
 				Namespace: namespace,
 				Subsystem: subsystem,
 				Name:      "responses_total",
-				Help:      "Unstable: Total number of responses.",
+				Help:      "Total number of responses.",
 			},
 			[]string{"opcode", "command", "argument", "result"},
 		),
