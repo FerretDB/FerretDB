@@ -25,7 +25,7 @@ We appreciate your feedback.
 ## Contributing to this documentation
 
 If you find anything confusing or missing in the documentation, click the "Edit this page" link at the bottom of almost every page in the documentation.
-More information on contributing to the documentation can be found [here](https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#contributing-documentation).
+See [information on contributing to the documentation](https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#contributing-documentation).
 
 ## Contributing to the FerretDB repository
 
