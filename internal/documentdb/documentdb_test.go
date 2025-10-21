@@ -17,6 +17,7 @@ package documentdb
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"testing"
 
 	"github.com/FerretDB/wire/wirebson"
@@ -31,6 +32,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/v2/internal/util/testutil/teststress"
 )
 
 // testPool tries to create a new pool of PostgreSQL connections and use it.
@@ -234,4 +236,42 @@ func TestSeqNoSeq(t *testing.T) {
 		wirebson.MustDocument("_id", int32(4)),
 	)
 	wiretest.AssertEqual(t, expected, res.Get("cursor").(*wirebson.Document).Get("firstBatch"))
+}
+
+func TestWithConn(t *testing.T) {
+	sp, err := state.NewProvider("")
+	require.NoError(t, err)
+
+	pool, err := NewPool(testutil.PostgreSQLURL(t), testutil.Logger(t), sp)
+	require.NoError(t, err)
+
+	defer pool.Close()
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/5446
+	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+		ready <- struct{}{}
+
+		<-start
+
+		_ = pool.WithConn(func(conn *pgx.Conn) error {
+			must.NotBeZero(conn)
+
+			for range 10 {
+				runtime.GC()
+				runtime.Gosched()
+			}
+
+			return nil
+		})
+
+		for range 10 {
+			runtime.GC()
+			runtime.Gosched()
+		}
+	})
+
+	for range 10 {
+		runtime.GC()
+		runtime.Gosched()
+	}
 }
