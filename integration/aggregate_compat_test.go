@@ -450,7 +450,7 @@ func TestAggregateCompatGroupNonArrayProviders(t *testing.T) {
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"DistinctValue": {
 			pipeline: bson.A{
-				// sort to assure the same type of values (while grouping 2 types with the same value,
+				// sort to assure the same type of values (while grouping two types with the same value,
 				// the first type in collection is chosen)
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$group", bson.D{
@@ -482,7 +482,7 @@ func TestAggregateCompatGroupNonArrayProviders(t *testing.T) {
 		},
 		"CountValue": {
 			pipeline: bson.A{
-				// sort to assure the same type of values (while grouping 2 types with the same value,
+				// sort to assure the same type of values (while grouping two types with the same value,
 				// the first type in collection is chosen)
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$group", bson.D{
@@ -501,7 +501,7 @@ func TestAggregateCompatGroupNonArrayProviders(t *testing.T) {
 
 		"LimitAfter": {
 			pipeline: bson.A{
-				// sort to assure the same type of values (while grouping 2 types with the same value,
+				// sort to assure the same type of values (while grouping two types with the same value,
 				// the first type in collection is chosen)
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$group", bson.D{{"_id", "$v"}}}},
@@ -516,7 +516,7 @@ func TestAggregateCompatGroupNonArrayProviders(t *testing.T) {
 		},
 		"LimitBefore": {
 			pipeline: bson.A{
-				// sort to assure the same type of values (while grouping 2 types with the same value,
+				// sort to assure the same type of values (while grouping two types with the same value,
 				// the first type in collection is chosen)
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", 5}},
@@ -531,7 +531,7 @@ func TestAggregateCompatGroupNonArrayProviders(t *testing.T) {
 		},
 		"SkipAfter": {
 			pipeline: bson.A{
-				// sort to assure the same type of values (while grouping 2 types with the same value,
+				// sort to assure the same type of values (while grouping two types with the same value,
 				// the first type in collection is chosen)
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$group", bson.D{{"_id", "$v"}}}},
@@ -548,7 +548,7 @@ func TestAggregateCompatGroupNonArrayProviders(t *testing.T) {
 		"SkipBefore": {
 			pipeline: bson.A{
 				// the first type in collection is chosen)
-				// sort to assure the same type of values (while grouping 2 types with the same value,
+				// sort to assure the same type of values (while grouping two types with the same value,
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$skip", 2}},
 				bson.D{{"$group", bson.D{{"_id", "$v"}}}},

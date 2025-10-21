@@ -446,7 +446,7 @@ func TestGetMoreCommandBatchSize(t *testing.T) {
 
 			defer cursor.Close(ctx)
 
-			require.Equal(t, 2, cursor.RemainingBatchLength(), "expected 2 documents in first batch")
+			require.Equal(t, 2, cursor.RemainingBatchLength(), "expected two documents in first batch")
 
 			for i := 2; i > 0; i-- {
 				ok := cursor.Next(ctx)
@@ -540,7 +540,7 @@ func TestGetMoreCommandBatchSize(t *testing.T) {
 
 		defer cursor.Close(ctx)
 
-		require.Equal(t, 1, cursor.RemainingBatchLength(), "expected 1 document in first batch")
+		require.Equal(t, 1, cursor.RemainingBatchLength(), "expected one document in first batch")
 
 		ok := cursor.Next(ctx)
 		require.True(t, ok, "expected to have next document")
