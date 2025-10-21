@@ -75,7 +75,7 @@ You have your FerretDB database running.
 
 Now that you're connected to FerretDB, let's explore some basic database operations:
 
-**Inserting data:** Let's try inserting 4 documents into a database collection `demo`:
+**Inserting data:** Let's try inserting four documents into a database collection `demo`:
 
 ```js
 db.demo.insertMany([
