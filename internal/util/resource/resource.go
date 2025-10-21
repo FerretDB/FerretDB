@@ -99,16 +99,16 @@ func Track[T any](obj *T, token *Token) {
 func Untrack[T any](obj *T, token *Token) {
 	checkArgs(obj, token)
 
+	if h := token.h.Swap(nil); h != nil {
+		h.Stop()
+	}
+
 	p := pprof.Lookup(profileName(obj))
 	if p == nil {
 		panic("object is not tracked")
 	}
 
 	p.Remove(token)
-
-	if h := token.h.Swap(nil); h != nil {
-		h.Stop()
-	}
 }
 
 // checkArgs checks Track and Untrack arguments.
