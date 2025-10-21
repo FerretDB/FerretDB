@@ -2,7 +2,7 @@ module github.com/FerretDB/FerretDB/v2/integration
 
 go 1.25
 
-toolchain go1.25.2
+toolchain go1.25.3
 
 replace github.com/FerretDB/FerretDB/v2 => ../
 
@@ -50,7 +50,7 @@ require (
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
-	go.mongodb.org/mongo-driver/v2 v2.3.0 // indirect
+	go.mongodb.org/mongo-driver/v2 v2.3.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.38.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.38.0 // indirect
