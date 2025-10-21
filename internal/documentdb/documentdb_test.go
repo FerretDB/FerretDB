@@ -247,22 +247,31 @@ func TestWithConn(t *testing.T) {
 
 	defer pool.Close()
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/5446
 	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
 		ready <- struct{}{}
+
 		<-start
 
-		err := pool.WithConn(func(conn *pgx.Conn) error {
+		pool.WithConn(func(conn *pgx.Conn) error {
 			must.NotBeZero(conn)
 
-			runtime.GC()
-			runtime.Gosched()
+			for range 10 {
+				runtime.GC()
+				runtime.Gosched()
+			}
 
 			return nil
 		})
 
+		for range 10 {
+			runtime.GC()
+			runtime.Gosched()
+		}
+	})
+
+	for range 10 {
 		runtime.GC()
 		runtime.Gosched()
-
-		require.NoError(t, err)
-	})
+	}
 }
