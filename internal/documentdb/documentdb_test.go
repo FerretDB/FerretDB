@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"runtime"
-	runtimedebug "runtime/debug"
 	"testing"
 
 	"github.com/FerretDB/wire/wirebson"
@@ -33,6 +32,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/v2/internal/util/testutil/teststress"
 )
 
 // testPool tries to create a new pool of PostgreSQL connections and use it.
@@ -241,25 +241,27 @@ func TestWithConn(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	l := testutil.Logger(t)
-
-	pool, err := NewPool(testutil.PostgreSQLURL(t), l, sp)
+	pool, err := NewPool(testutil.PostgreSQLURL(t), testutil.Logger(t), sp)
 	require.NoError(t, err)
 
 	defer pool.Close()
 
-	err = pool.WithConn(func(conn *pgx.Conn) error {
-		// TODO
-		if conn == nil {
-			t.Fatalf("nil")
-		}
+	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+		ready <- struct{}{}
+		<-start
+
+		err := pool.WithConn(func(conn *pgx.Conn) error {
+			must.NotBeZero(conn)
+
+			runtime.GC()
+			runtime.Gosched()
+
+			return nil
+		})
 
 		runtime.GC()
-		runtimedebug.FreeOSMemory()
+		runtime.Gosched()
 
-		return nil
+		require.NoError(t, err)
 	})
-
-	require.NoError(t, err)
-
 }
