@@ -253,7 +253,7 @@ func TestWithConn(t *testing.T) {
 
 		<-start
 
-		pool.WithConn(func(conn *pgx.Conn) error {
+		_ = pool.WithConn(func(conn *pgx.Conn) error {
 			must.NotBeZero(conn)
 
 			for range 10 {
