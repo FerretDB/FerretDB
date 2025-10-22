@@ -16,22 +16,18 @@ package server
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
 // OpenAPISpec serves the OpenAPI specification.
-func (s *Server) OpenAPISpec(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
+func (s *Server) OpenAPISpec(rw http.ResponseWriter, r *http.Request) {
+	rw.Header().Set("Content-Type", "application/json")
+	rw.Header().Set("Content-Length", strconv.Itoa(len(api.OpenAPISpec)))
 
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Cache-Control", "public, max-age=3600")
-
-	if _, err := w.Write(api.OpenAPISpec); err != nil {
-		s.l.ErrorContext(r.Context(), "Failed to write OpenAPI spec", logging.Error(err))
+	if _, err := rw.Write(api.OpenAPISpec); err != nil {
+		s.l.WarnContext(r.Context(), "Failed to write OpenAPI spec", logging.Error(err))
 	}
 }
