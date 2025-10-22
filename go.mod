@@ -7,6 +7,7 @@ toolchain go1.25.3
 // replace github.com/FerretDB/wire => ../wire
 
 require (
+	github.com/AlekSi/lazyerrors v0.0.0-20251017093659-ee6d7b411eca
 	github.com/AlekSi/pointer v1.2.0
 	github.com/FerretDB/wire v0.1.7
 	github.com/alecthomas/kong v1.12.1
