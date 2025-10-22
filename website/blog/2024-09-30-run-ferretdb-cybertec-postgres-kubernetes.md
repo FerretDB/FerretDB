@@ -349,7 +349,7 @@ Using open-source solutions like FerretDB and CyberTec Postgres, you can migrate
 This gives you complete control over your infrastructure, while taking advantage of Postgres advanced features, scalability, and reliability.
 Be sure to follow the [CyberTec Postgres documentation](https://cybertec-postgresql.github.io/CYBERTEC-pg-operator/documentation/how-to-use/installation/) for further optimizations and advanced configurations.
 
-This is one of a series of a series of Postgres operator solutions you can use to setup a Postgres cluster on Kubernetes for your FerretDB instance.
+This is one of a series of a series of Postgres operator solutions you can use to set up a Postgres cluster on Kubernetes for your FerretDB instance.
 Check out some of the others:
 
 - [Run FerretDB and Postgres cluster using CloudNativePG on Kubernetes](https://blog.ferretdb.io/run-ferretdb-cloudnativepg-kubernetes/)

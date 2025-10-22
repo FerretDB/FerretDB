@@ -187,9 +187,9 @@ While it's relatively new to the scene with its first GA release in 2023, Ferret
 With MongoDB compatibility built-in, FerretDB converts MongoDB wire protocols to SQL in PostgreSQL, allowing you to run MongoDB workloads on PostgreSQL.
 It translates documents using MongoDB's BSON format to JSONB in PostgreSQL (preserving the order and data types of the document field) through its own mapping system called PJSON (Learn more about this [in this blog post](https://blog.ferretdb.io/pjson-how-to-store-bson-in-jsonb/)).
 
-Users are able to leverage similar syntax and query language as MongoDB, so a insert statement and query in FerretDB looks like this:
+Users are able to leverage similar syntax and query language as MongoDB, so an insert statement and query in FerretDB looks like this:
 
-<!-- write an insert statemnt for that document below -->
+<!-- write an insert statement for that document below -->
 
 ```js
 db.users.insert({

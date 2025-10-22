@@ -275,7 +275,7 @@ PASSWORD=$(kubectl -n postgres-operator get secret ferretdb-secret -o=jsonpath='
 kubectl -n postgres-operator exec -it hippo-instance1-mrpt-0 -- psql -U postgres -c "CREATE USER ferretuser WITH PASSWORD '$PASSWORD';"
 ```
 
-Here, we are getting the password stored in `Secret` and then connect to our postgres instance before creating the user and assiging the password to the user using SQL command.
+Here, we are getting the password stored in `Secret` and then connect to our postgres instance before creating the user and assigning the password to the user using SQL command.
 Note that the `hippo-instance1-mrpt-0` is the name of the pod that is running the postgres instance.
 You should update this with your own postgres instance name which you can get by running `kubectl -n postgres-operator get pods`.
 
@@ -372,7 +372,7 @@ hippo-repo-host-0          2/2     Running     0          7h
 pgo-6f664c9f44-mmptx       1/1     Running     0          7h
 ```
 
-Next you need to connect using your FerretDB URI, where username and password should correspond with the PosgreSQL credentials set earlier, and you can get the FERRETDB SVC (`10.254.17.193:27017`) by running `kubectl get svc -n postgres-operator`.
+Next you need to connect using your FerretDB URI, where username and password should correspond with the PostgreSQL credentials set earlier, and you can get the FERRETDB SVC (`10.254.17.193:27017`) by running `kubectl get svc -n postgres-operator`.
 
 ```text
 kubectl get svc -n postgres-operator

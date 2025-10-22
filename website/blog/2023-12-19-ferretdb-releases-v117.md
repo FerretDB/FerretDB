@@ -34,7 +34,7 @@ This way, you can build FerretDB without any backend.
 We've also added support for sorting by `$natural`; you can now set `{$natural: 1}` and `{$natural: -1}` by RecordID for capped collections.
 In addition to this change, we've also enabled collection UUID generation, and this is now visible in the `listCollections` output.
 
-## Bug fixes and enhacements
+## Bug fixes and enhancements
 
 This release fixes `listDatabases` filtering error when `nameOnly` parameter is passed.
 We've also improved `validate` diagnostic command, and added more fields to `listCollections.cursor` response (`options.capped`, `options.size`, `options.max`, `info.readOnly`, and `idIndex`).

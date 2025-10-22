@@ -35,7 +35,7 @@ And since there's a MongoDB plugin for Grafana, you can also set up Grafana to w
 
 ## What is FerretDB and How is it Different from MongoDB?
 
-FerretDB is a open source document database alternative to MongoDB that converts MongoDB wire protocol queries to SQL, with PostgreSQL and SQLite (Beta version) as the backend.
+FerretDB is an open source document database alternative to MongoDB that converts MongoDB wire protocol queries to SQL, with PostgreSQL and SQLite (Beta version) as the backend.
 
 By using FerretDB instead of MongoDB, you get the following benefits:
 
