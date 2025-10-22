@@ -21,7 +21,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/AlekSi/lazyerrors"
 )
 
 // message represents a parsed SCRAM message.

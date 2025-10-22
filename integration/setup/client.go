@@ -29,7 +29,8 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
 	"go.opentelemetry.io/otel"
 
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/AlekSi/lazyerrors"
+
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
 

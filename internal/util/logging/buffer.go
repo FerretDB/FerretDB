@@ -19,9 +19,8 @@ import (
 	"log/slog"
 	"sync"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
-
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // circularBuffer is a storage of log records in memory.

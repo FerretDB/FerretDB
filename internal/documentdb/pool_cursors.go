@@ -19,13 +19,13 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
 	"go.opentelemetry.io/otel"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )

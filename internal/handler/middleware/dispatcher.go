@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/prometheus/client_golang/prometheus"
 	otelattribute "go.opentelemetry.io/otel/attribute"
 	otelcodes "go.opentelemetry.io/otel/codes"
@@ -29,7 +30,6 @@ import (
 	oteltrace "go.opentelemetry.io/otel/trace"
 
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 

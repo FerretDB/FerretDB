@@ -20,13 +20,13 @@ import (
 	"regexp"
 	"unicode/utf8"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // collectionNameRe validates collection names.

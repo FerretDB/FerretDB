@@ -20,7 +20,7 @@ import (
 	"encoding/hex"
 	"strings"
 
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/AlekSi/lazyerrors"
 )
 
 // Dump makes a hex dump of byte array.

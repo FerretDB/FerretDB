@@ -20,11 +20,11 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/AlekSi/pointer"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
