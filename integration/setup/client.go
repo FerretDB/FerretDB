@@ -22,14 +22,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wireclient"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
 	"go.opentelemetry.io/otel"
-
-	"github.com/AlekSi/lazyerrors"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
