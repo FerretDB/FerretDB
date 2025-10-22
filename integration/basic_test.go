@@ -580,7 +580,7 @@ func TestDebugCommandErrors(t *testing.T) {
 		}
 		AssertMatchesCommandError(t, expected, res.Err())
 
-		msg := `(InternalError) [msg_ferretdebugerror.go:59 handler.(*Handler).msgFerretDebugError] lazy error`
+		msg := `(InternalError) msg_ferretdebugerror.go:59 (handler.(*Handler).msgFerretDebugError): lazy error`
 		assert.EqualError(t, res.Err(), msg)
 
 		var doc bson.D

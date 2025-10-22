@@ -28,7 +28,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/AlekSi/lazyerrors"
 )
 
 // copyFile copies a file from src to dst, overwriting dst if it exists.

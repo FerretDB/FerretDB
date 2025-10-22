@@ -18,13 +18,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/google/uuid"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/session"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // msgKillAllSessionsByPattern implements `killAllSessionsByPattern` command.

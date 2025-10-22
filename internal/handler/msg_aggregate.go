@@ -17,8 +17,9 @@ package handler
 import (
 	"context"
 
+	"github.com/AlekSi/lazyerrors"
+
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // msgAggregate implements `aggregate` command.
