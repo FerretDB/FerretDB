@@ -29,7 +29,7 @@ import (
 )
 
 // InsertOne implements [ServerInterface].
-func (s *Server) InsertOne(w http.ResponseWriter, r *http.Request) {
+func (s *Server) InsertOne(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	if s.l.Enabled(ctx, slog.LevelDebug) {
@@ -38,19 +38,19 @@ func (s *Server) InsertOne(w http.ResponseWriter, r *http.Request) {
 
 	var req api.InsertOneRequestBody
 	if err := decodeJSONRequest(r, &req); err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
 	insert, err := unmarshalSingleJSON(&req.Document)
 	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
 	insertDoc, ok := insert.(wirebson.AnyDocument)
 	if !ok {
-		http.Error(w, lazyerrors.New("document must be a BSON document").Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.New("document must be a BSON document").Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -58,7 +58,7 @@ func (s *Server) InsertOne(w http.ResponseWriter, r *http.Request) {
 
 	doc, err = ensureID(insertDoc)
 	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -70,24 +70,24 @@ func (s *Server) InsertOne(w http.ResponseWriter, r *http.Request) {
 		"documents", documents,
 	)
 	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
 	resp := s.m.Handle(ctx, msg)
 	if resp == nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		http.Error(rw, "internal error", http.StatusInternalServerError)
 		return
 	}
 
 	if !resp.OK() {
-		s.writeJSONError(ctx, w, resp)
+		s.writeJSONError(ctx, rw, resp)
 		return
 	}
 
 	insertedId, err := wirebson.ToDriver(doc.Get("_id"))
 	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -95,7 +95,7 @@ func (s *Server) InsertOne(w http.ResponseWriter, r *http.Request) {
 		InsertedId: &insertedId,
 	}
 
-	s.writeJSONResponse(ctx, w, &res)
+	s.writeJSONResponse(ctx, rw, &res)
 }
 
 // ensureID ensures that inserted document has an "_id" field.

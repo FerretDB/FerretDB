@@ -76,7 +76,7 @@ func Startup() {
 			l.LogAttrs(ctx, logging.LevelFatal, "Failed to create debug handler", logging.Error(err))
 		}
 
-		h.Serve(ctx)
+		h.Run(ctx)
 	}()
 
 	if *otelTracesURLF != "" {

@@ -58,7 +58,7 @@ func TestDebug(t *testing.T) {
 	done := make(chan struct{})
 
 	go func() {
-		h.Serve(ctx)
+		h.Run(ctx)
 		close(done)
 	}()
 

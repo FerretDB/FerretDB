@@ -17,6 +17,7 @@ package dataapi_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/url"
@@ -318,6 +319,48 @@ func TestSmokeDataAPI(t *testing.T) {
 			`{"upsertedId":"<ObjectID>"}`,
 			string(body),
 		)
+	})
+}
+
+func TestOpenAPI(t *testing.T) {
+	t.Parallel()
+
+	addr, _ := setupDataAPI(t, false)
+
+	t.Run("Spec", func(t *testing.T) {
+		resp, err := http.Get("http://" + addr + "/openapi.json")
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			assert.NoError(t, resp.Body.Close())
+		})
+
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
+		assert.Equal(t, "53813", resp.Header.Get("Content-Length"))
+
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+
+		var spec map[string]any
+		err = json.Unmarshal(body, &spec)
+		require.NoError(t, err)
+
+		assert.Equal(t, "3.0.0", spec["openapi"])
+		assert.Contains(t, spec, "info")
+		assert.Contains(t, spec, "paths")
+
+		info := spec["info"].(map[string]any)
+		assert.Equal(t, "FerretDB Data API", info["title"])
+	})
+
+	t.Run("MethodNotAllowed", func(t *testing.T) {
+		resp, err := http.Post("http://"+addr+"/openapi.json", "", nil)
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			assert.NoError(t, resp.Body.Close())
+		})
+
+		assert.Equal(t, http.StatusMethodNotAllowed, resp.StatusCode)
 	})
 }
 

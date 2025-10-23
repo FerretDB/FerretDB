@@ -161,7 +161,7 @@ func setup(ctx context.Context, logger *slog.Logger) error {
 		return lazyerrors.Error(err)
 	}
 
-	go h.Serve(ctx)
+	go h.Run(ctx)
 
 	if err = setupMongoDB(ctx, logger, "mongodb://username:password@127.0.0.1:47017/", "mongodb-secure"); err != nil {
 		return lazyerrors.Error(err)

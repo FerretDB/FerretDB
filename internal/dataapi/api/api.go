@@ -14,6 +14,13 @@
 
 package api
 
+import _ "embed"
+
+// Spec is the embedded OpenAPI specification.
+//
+//go:embed openapi.json
+var Spec []byte
+
 //go:generate ../../../bin/oapi-codegen --config=./oapi-config.yml ./openapi.json
 
 // Response types are used to represent the responses from the API.
