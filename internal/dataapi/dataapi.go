@@ -34,7 +34,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
-// Listener represents dataapi listener.
+// Listener represents Data API TCP listener and HTTP handler.
 type Listener struct {
 	opts *ListenOpts
 	lis  net.Listener
@@ -49,7 +49,7 @@ type ListenOpts struct {
 	Auth    bool
 }
 
-// Listen creates a new dataapi handler and starts listener on the given TCP address.
+// Listen creates a new Data API handler and starts listener on the given TCP address.
 // [Listener.Run] must be called on the returned value.
 func Listen(opts *ListenOpts) (*Listener, error) {
 	lis, err := net.Listen("tcp", opts.TCPAddr)
@@ -76,7 +76,7 @@ func Listen(opts *ListenOpts) (*Listener, error) {
 	}, nil
 }
 
-// Run runs dataapi handler until ctx is canceled.
+// Run runs Data API handler until ctx is canceled.
 //
 // It exits when handler is stopped and listener closed.
 func (lis *Listener) Run(ctx context.Context) {
