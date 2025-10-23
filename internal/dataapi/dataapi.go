@@ -80,7 +80,7 @@ func Listen(opts *ListenOpts) (*Listener, error) {
 //
 // It exits when handler is stopped and listener closed.
 func (lis *Listener) Run(ctx context.Context) {
-	srv := &http.Server{
+	s := &http.Server{
 		Handler:  lis.h,
 		ErrorLog: slog.NewLogLogger(lis.opts.L.Handler(), slog.LevelError),
 		BaseContext: func(net.Listener) context.Context {
@@ -88,11 +88,13 @@ func (lis *Listener) Run(ctx context.Context) {
 		},
 	}
 
-	lis.opts.L.InfoContext(ctx, fmt.Sprintf("Starting DataAPI server on http://%s/", lis.lis.Addr()))
+	l := lis.opts.L
+
+	l.InfoContext(ctx, fmt.Sprintf("Starting Data API server on http://%s/", lis.Addr()))
 
 	go func() {
-		if err := srv.Serve(lis.lis); !errors.Is(err, http.ErrServerClosed) {
-			lis.opts.L.LogAttrs(ctx, logging.LevelDPanic, "Serve exited with unexpected error", logging.Error(err))
+		if err := s.Serve(lis.lis); !errors.Is(err, http.ErrServerClosed) {
+			l.LogAttrs(ctx, logging.LevelDPanic, "Serve exited with unexpected error", logging.Error(err))
 		}
 	}()
 
@@ -102,15 +104,15 @@ func (lis *Listener) Run(ctx context.Context) {
 	shutdownCtx, shutdownCancel := ctxutil.WithDelay(ctx)
 	defer shutdownCancel(nil)
 
-	if err := srv.Shutdown(shutdownCtx); err != nil {
-		lis.opts.L.LogAttrs(ctx, logging.LevelDPanic, "Shutdown exited with unexpected error", logging.Error(err))
+	if err := s.Shutdown(shutdownCtx); err != nil {
+		l.LogAttrs(ctx, logging.LevelDPanic, "Shutdown exited with unexpected error", logging.Error(err))
 	}
 
-	if err := srv.Close(); err != nil {
-		lis.opts.L.LogAttrs(ctx, logging.LevelDPanic, "Close exited with unexpected error", logging.Error(err))
+	if err := s.Close(); err != nil {
+		l.LogAttrs(ctx, logging.LevelDPanic, "Close exited with unexpected error", logging.Error(err))
 	}
 
-	lis.opts.L.InfoContext(ctx, "DataAPI server stopped")
+	l.InfoContext(ctx, "Data API server stopped")
 }
 
 // Addr returns TCP listener's address.
