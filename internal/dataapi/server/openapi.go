@@ -25,9 +25,9 @@ import (
 // OpenAPISpec serves the OpenAPI specification.
 func (s *Server) OpenAPISpec(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Content-Type", "application/json")
-	rw.Header().Set("Content-Length", strconv.Itoa(len(api.OpenAPISpec)))
+	rw.Header().Set("Content-Length", strconv.Itoa(len(api.Spec)))
 
-	if _, err := rw.Write(api.OpenAPISpec); err != nil {
+	if _, err := rw.Write(api.Spec); err != nil {
 		s.l.WarnContext(r.Context(), "Failed to write OpenAPI spec", logging.Error(err))
 	}
 }

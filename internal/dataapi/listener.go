@@ -36,9 +36,9 @@ import (
 
 // Listener represents dataapi listener.
 type Listener struct {
-	opts    *ListenOpts
-	lis     net.Listener
-	handler http.Handler
+	opts *ListenOpts
+	lis  net.Listener
+	h    http.Handler
 }
 
 // ListenOpts represents [Listen] options.
@@ -70,9 +70,9 @@ func Listen(opts *ListenOpts) (*Listener, error) {
 	h = s.ConnInfoMiddleware(h)
 
 	return &Listener{
-		opts:    opts,
-		lis:     lis,
-		handler: h,
+		opts: opts,
+		lis:  lis,
+		h:    h,
 	}, nil
 }
 
@@ -81,7 +81,7 @@ func Listen(opts *ListenOpts) (*Listener, error) {
 // It exits when handler is stopped and listener closed.
 func (lis *Listener) Run(ctx context.Context) {
 	srv := &http.Server{
-		Handler:  lis.handler,
+		Handler:  lis.h,
 		ErrorLog: slog.NewLogLogger(lis.opts.L.Handler(), slog.LevelError),
 		BaseContext: func(net.Listener) context.Context {
 			return ctx

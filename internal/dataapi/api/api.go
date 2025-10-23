@@ -16,10 +16,10 @@ package api
 
 import _ "embed"
 
-// OpenAPISpec returns the embedded OpenAPI specification.
+// Spec is the embedded OpenAPI specification.
 //
 //go:embed openapi.json
-var OpenAPISpec []byte
+var Spec []byte
 
 //go:generate ../../../bin/oapi-codegen --config=./oapi-config.yml ./openapi.json
 
