@@ -336,7 +336,7 @@ func TestOpenAPI(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 		assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
-		assert.Equal(t, "public, max-age=3600", resp.Header.Get("Cache-Control"))
+		assert.Equal(t, "53813", resp.Header.Get("Content-Length"))
 
 		body, err := io.ReadAll(resp.Body)
 		require.NoError(t, err)
