@@ -30,14 +30,15 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/server"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
+	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
-// Listener represents dataapi listener.
+// Listener represents Data API TCP listener and HTTP handler.
 type Listener struct {
 	opts *ListenOpts
 	lis  net.Listener
-	srv  *server.Server
+	h    http.Handler
 }
 
 // ListenOpts represents [Listen] options.
@@ -48,7 +49,7 @@ type ListenOpts struct {
 	Auth    bool
 }
 
-// Listen creates a new dataapi handler and starts listener on the given TCP address.
+// Listen creates a new Data API handler and starts listener on the given TCP address.
 // [Listener.Run] must be called on the returned value.
 func Listen(opts *ListenOpts) (*Listener, error) {
 	lis, err := net.Listen("tcp", opts.TCPAddr)
@@ -56,41 +57,63 @@ func Listen(opts *ListenOpts) (*Listener, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
+	s := server.New(opts.L, opts.M)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /openapi.json", s.OpenAPISpec)
+
+	h := api.HandlerFromMux(s, mux)
+	if opts.Auth {
+		h = s.AuthMiddleware(h)
+	}
+
+	h = s.ConnInfoMiddleware(h)
+
 	return &Listener{
 		opts: opts,
 		lis:  lis,
-		srv:  server.New(opts.L, opts.M),
+		h:    h,
 	}, nil
 }
 
-// Run runs dataapi handler until ctx is canceled.
+// Run runs Data API handler until ctx is canceled.
 //
 // It exits when handler is stopped and listener closed.
 func (lis *Listener) Run(ctx context.Context) {
-	srvHandler := api.HandlerFromMux(lis.srv, http.NewServeMux())
-
-	if lis.opts.Auth {
-		srvHandler = lis.srv.AuthMiddleware(srvHandler)
-	}
-
-	srv := &http.Server{
-		Handler:  lis.srv.ConnInfoMiddleware(srvHandler),
+	s := &http.Server{
+		Handler:  lis.h,
 		ErrorLog: slog.NewLogLogger(lis.opts.L.Handler(), slog.LevelError),
 		BaseContext: func(net.Listener) context.Context {
 			return ctx
 		},
 	}
 
-	lis.opts.L.InfoContext(ctx, fmt.Sprintf("Starting DataAPI server on http://%s/", lis.lis.Addr()))
+	l := lis.opts.L
+
+	l.InfoContext(ctx, fmt.Sprintf("Starting Data API server on http://%s/", lis.Addr()))
+	l.InfoContext(ctx, fmt.Sprintf("http://%s/openapi.json - OpenAPI spec", lis.Addr()))
 
 	go func() {
-		if err := srv.Serve(lis.lis); !errors.Is(err, http.ErrServerClosed) {
-			lis.opts.L.LogAttrs(ctx, logging.LevelDPanic, "Serve exited with unexpected error", logging.Error(err))
+		if err := s.Serve(lis.lis); !errors.Is(err, http.ErrServerClosed) {
+			l.LogAttrs(ctx, logging.LevelDPanic, "Serve exited with unexpected error", logging.Error(err))
 		}
 	}()
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/4848
 	<-ctx.Done()
+
+	// ctx is already canceled, but we want to inherit its values
+	shutdownCtx, shutdownCancel := ctxutil.WithDelay(ctx)
+	defer shutdownCancel(nil)
+
+	if err := s.Shutdown(shutdownCtx); err != nil {
+		l.LogAttrs(ctx, logging.LevelDPanic, "Shutdown exited with unexpected error", logging.Error(err))
+	}
+
+	if err := s.Close(); err != nil {
+		l.LogAttrs(ctx, logging.LevelDPanic, "Close exited with unexpected error", logging.Error(err))
+	}
+
+	l.InfoContext(ctx, "Data API server stopped")
 }
 
 // Addr returns TCP listener's address.

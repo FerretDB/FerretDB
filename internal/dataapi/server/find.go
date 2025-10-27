@@ -28,7 +28,7 @@ import (
 )
 
 // Find implements [ServerInterface].
-func (s *Server) Find(w http.ResponseWriter, r *http.Request) {
+func (s *Server) Find(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	if s.l.Enabled(ctx, slog.LevelDebug) {
@@ -37,7 +37,7 @@ func (s *Server) Find(w http.ResponseWriter, r *http.Request) {
 
 	var req api.FindManyRequestBody
 	if err := decodeJSONRequest(r, &req); err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -51,18 +51,18 @@ func (s *Server) Find(w http.ResponseWriter, r *http.Request) {
 		"sort", req.Sort,
 	)
 	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
 	resp := s.m.Handle(ctx, msg)
 	if resp == nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		http.Error(rw, "internal error", http.StatusInternalServerError)
 		return
 	}
 
 	if !resp.OK() {
-		s.writeJSONError(ctx, w, resp)
+		s.writeJSONError(ctx, rw, resp)
 		return
 	}
 
@@ -71,7 +71,7 @@ func (s *Server) Find(w http.ResponseWriter, r *http.Request) {
 
 	b, err := marshalSingleJSON(firstBatch)
 	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -79,5 +79,5 @@ func (s *Server) Find(w http.ResponseWriter, r *http.Request) {
 		Documents: &b,
 	}
 
-	s.writeJSONResponse(ctx, w, &res)
+	s.writeJSONResponse(ctx, rw, &res)
 }
