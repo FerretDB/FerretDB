@@ -74,6 +74,7 @@ var cli struct {
 		TLSKeyFile  string `default:""                help:"TLS key file path."`
 		TLSCaFile   string `default:""                help:"TLS CA file path."`
 		DataAPIAddr string `default:""                help:"Listen TCP address for HTTP Data API."`
+		MCPAddr     string `default:""                help:"Listen TCP address for MCP server."                   hidden:""`
 	} `embed:"" prefix:"listen-" group:"Interfaces"`
 
 	Proxy struct {
@@ -489,12 +490,12 @@ func run() {
 		TestRecordsDir: cli.Dev.RecordsDir,
 
 		DataAPIAddr: cli.Listen.DataAPIAddr,
+
+		MCPAddr: cli.Listen.MCPAddr,
 	})
 	if res == nil {
 		os.Exit(1)
 	}
-
-	listener.Store(res.WireListener)
 
 	metricsRegisterer.MustRegister(res)
 

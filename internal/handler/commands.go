@@ -247,7 +247,7 @@ func (h *Handler) initCommands() {
 		},
 		"listDatabases": {
 			handler: h.msgListDatabases,
-			Help:    "Returns a summary of all the databases.",
+			Help:    "Returns a summary of all databases.",
 		},
 		"listIndexes": {
 			handler: h.msgListIndexes,
