@@ -39,10 +39,10 @@ var (
 // writeError encodes [api.Error] into JSON and writes it to w
 // with provided HTTP status code.
 // TODO https://github.com/FerretDB/FerretDB/issues/4965
-func writeError(w http.ResponseWriter, err api.Error, code int) {
-	w.WriteHeader(code)
-	w.Header().Set("Content-Type", "application/json")
+func writeError(rw http.ResponseWriter, err api.Error, code int) {
+	rw.Header().Set("Content-Type", "application/json")
 
-	// ignore error, as writing to connection may fail if the client disconnects
-	_ = json.NewEncoder(w).Encode(err)
+	rw.WriteHeader(code)
+
+	_ = json.NewEncoder(rw).Encode(err)
 }

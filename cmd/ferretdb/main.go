@@ -409,7 +409,7 @@ func run() {
 				l.LogAttrs(ctx, logging.LevelFatal, "Failed to create debug handler", logging.Error(e))
 			}
 
-			h.Serve(ctx)
+			h.Run(ctx)
 		}()
 	}
 

@@ -20,15 +20,15 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // FindOne implements [ServerInterface].
-func (s *Server) FindOne(w http.ResponseWriter, r *http.Request) {
+func (s *Server) FindOne(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	if s.l.Enabled(ctx, slog.LevelDebug) {
@@ -37,7 +37,7 @@ func (s *Server) FindOne(w http.ResponseWriter, r *http.Request) {
 
 	var req api.FindOneRequestBody
 	if err := decodeJSONRequest(r, &req); err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -49,18 +49,18 @@ func (s *Server) FindOne(w http.ResponseWriter, r *http.Request) {
 		"limit", float64(1),
 	)
 	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
 	resp := s.m.Handle(ctx, msg)
 	if resp == nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		http.Error(rw, "internal error", http.StatusInternalServerError)
 		return
 	}
 
 	if !resp.OK() {
-		s.writeJSONError(ctx, w, resp)
+		s.writeJSONError(ctx, rw, resp)
 		return
 	}
 
@@ -71,7 +71,7 @@ func (s *Server) FindOne(w http.ResponseWriter, r *http.Request) {
 
 	docs := must.NotFail(firstBatch.Decode())
 	if docs.Len() == 0 {
-		s.writeJSONResponse(ctx, w, &res)
+		s.writeJSONResponse(ctx, rw, &res)
 		return
 	}
 
@@ -79,11 +79,11 @@ func (s *Server) FindOne(w http.ResponseWriter, r *http.Request) {
 
 	b, err := marshalSingleJSON(doc)
 	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
 	res.Document = &b
 
-	s.writeJSONResponse(ctx, w, &res)
+	s.writeJSONResponse(ctx, rw, &res)
 }
