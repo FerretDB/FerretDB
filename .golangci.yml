@@ -53,6 +53,7 @@ linters-settings:
           - "!**/internal/documentdb/**.go"
           - "!**/internal/driver/*.go"
           - "!**/internal/handler/**.go"
+          - "!**/internal/mcp/*.go"
           - "!**/internal/mongoerrors/*.go"
           - "!**/internal/util/logging/*.go"
           - "!**/internal/util/scram/*.go"

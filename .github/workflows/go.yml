@@ -123,6 +123,20 @@ jobs:
         run: go generate -x
         working-directory: tools
 
+      # install.sh starts ollama service, stop it since we want to run with `bin/task ollama` with environment variables
+      - name: Setup Ollama
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sudo -E sh
+          sudo systemctl stop ollama
+
+      - name: Start Ollama in the background
+        run: |
+          bin/task ollama &
+
+      - name: Fetch model for Ollama
+        run: |
+          bin/task ollama-model
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:

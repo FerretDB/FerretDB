@@ -416,6 +416,8 @@ func setupDataAPI(tb testing.TB, auth bool) (addr string, dbName string) {
 		TestRecordsDir: "",
 
 		DataAPIAddr: "127.0.0.1:0",
+
+		MCPAddr: "",
 	})
 	require.NotNil(tb, res)
 
