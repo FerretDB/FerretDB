@@ -20,15 +20,15 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // Aggregate implements [ServerInterface].
-func (s *Server) Aggregate(w http.ResponseWriter, r *http.Request) {
+func (s *Server) Aggregate(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	if s.l.Enabled(ctx, slog.LevelDebug) {
@@ -37,7 +37,7 @@ func (s *Server) Aggregate(w http.ResponseWriter, r *http.Request) {
 
 	var req api.AggregateRequestBody
 	if err := decodeJSONRequest(r, &req); err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -48,18 +48,18 @@ func (s *Server) Aggregate(w http.ResponseWriter, r *http.Request) {
 		"cursor", wirebson.MustDocument(),
 	)
 	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
 	resp := s.m.Handle(ctx, msg)
 	if resp == nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		http.Error(rw, "internal error", http.StatusInternalServerError)
 		return
 	}
 
 	if !resp.OK() {
-		s.writeJSONError(ctx, w, resp)
+		s.writeJSONError(ctx, rw, resp)
 		return
 	}
 
@@ -68,7 +68,7 @@ func (s *Server) Aggregate(w http.ResponseWriter, r *http.Request) {
 
 	b, err := marshalSingleJSON(firstBatch)
 	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -76,5 +76,5 @@ func (s *Server) Aggregate(w http.ResponseWriter, r *http.Request) {
 		Documents: b,
 	}
 
-	s.writeJSONResponse(ctx, w, &res)
+	s.writeJSONResponse(ctx, rw, &res)
 }

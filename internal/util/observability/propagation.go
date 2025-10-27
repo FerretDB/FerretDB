@@ -17,9 +17,8 @@ package observability
 import (
 	"encoding/json"
 
+	"github.com/AlekSi/lazyerrors"
 	oteltrace "go.opentelemetry.io/otel/trace"
-
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // commentData represents an operation comment formatted to contain tracing data.

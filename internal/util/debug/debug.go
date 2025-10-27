@@ -32,13 +32,13 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/arl/statsviz"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	_ "golang.org/x/net/trace"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
@@ -59,10 +59,10 @@ var setup atomic.Bool
 // It must be thread-safe.
 type Probe func(ctx context.Context) bool
 
-// Handler represents debug handler.
+// Listener represents TCP listener with debug HTTP handler.
 //
 //nolint:vet // for readability
-type Handler struct {
+type Listener struct {
 	opts     *ListenOpts
 	lis      net.Listener
 	handlers map[string]string
@@ -83,7 +83,7 @@ type ListenOpts struct {
 // Listen creates a new debug handler and starts listener on the given TCP address.
 //
 // This function can be called only once because it affects [http.DefaultServeMux].
-func Listen(opts *ListenOpts) (*Handler, error) {
+func Listen(opts *ListenOpts) (*Listener, error) {
 	if setup.Swap(true) {
 		panic("debug handler is already set up")
 	}
@@ -209,7 +209,7 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &Handler{
+	return &Listener{
 		opts:     opts,
 		lis:      lis,
 		handlers: handlers,
@@ -217,32 +217,32 @@ func Listen(opts *ListenOpts) (*Handler, error) {
 	}, nil
 }
 
-// Serve runs debug handler until ctx is canceled.
+// Run runs debug handler until ctx is canceled.
 //
 // It exits when handler is stopped and listener closed.
-func (h *Handler) Serve(ctx context.Context) {
+func (lis *Listener) Run(ctx context.Context) {
 	s := http.Server{
 		Handler:  http.DefaultServeMux,
-		ErrorLog: h.stdL,
+		ErrorLog: lis.stdL,
 		BaseContext: func(net.Listener) context.Context {
 			return ctx
 		},
 	}
 
-	l := h.opts.L
+	l := lis.opts.L
 
-	root := fmt.Sprintf("http://%s", h.lis.Addr())
+	root := fmt.Sprintf("http://%s", lis.lis.Addr())
 
 	l.InfoContext(ctx, fmt.Sprintf("Starting debug server on %s/debug", root))
 
-	paths := slices.Sorted(maps.Keys(h.handlers))
+	paths := slices.Sorted(maps.Keys(lis.handlers))
 
 	for _, path := range paths {
-		l.InfoContext(ctx, fmt.Sprintf("%s%s - %s", root, path, h.handlers[path]))
+		l.InfoContext(ctx, fmt.Sprintf("%s%s - %s", root, path, lis.handlers[path]))
 	}
 
 	go func() {
-		if err := s.Serve(h.lis); !errors.Is(err, http.ErrServerClosed) {
+		if err := s.Serve(lis.lis); !errors.Is(err, http.ErrServerClosed) {
 			l.LogAttrs(ctx, logging.LevelDPanic, "Serve exited with unexpected error", logging.Error(err))
 		}
 	}()

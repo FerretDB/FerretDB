@@ -25,6 +25,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire"
 	"go.opentelemetry.io/otel"
 	otelcodes "go.opentelemetry.io/otel/codes"
@@ -32,7 +33,6 @@ import (
 	oteltrace "go.opentelemetry.io/otel/trace"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
