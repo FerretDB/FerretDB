@@ -186,14 +186,16 @@ func (s *Server) writeJSONResponse(ctx context.Context, rw http.ResponseWriter, 
 }
 
 // TODO https://github.com/FerretDB/FerretDB/issues/4965
-func (s *Server) writeJSONError(ctx context.Context, w http.ResponseWriter, resp *middleware.Response) {
+func (s *Server) writeJSONError(ctx context.Context, rw http.ResponseWriter, resp *middleware.Response) {
 	doc := resp.Document()
 	errmsg := doc.Get("errmsg").(string)
 	codeName := doc.Get("codeName").(string)
 
-	w.WriteHeader(http.StatusInternalServerError)
+	rw.Header().Set("Content-Type", "application/json")
 
-	s.writeJSONResponse(ctx, w, &api.Error{
+	rw.WriteHeader(http.StatusInternalServerError)
+
+	s.writeJSONResponse(ctx, rw, &api.Error{
 		Error:     errmsg,
 		ErrorCode: codeName,
 	})

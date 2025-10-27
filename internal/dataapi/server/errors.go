@@ -40,8 +40,9 @@ var (
 // with provided HTTP status code.
 // TODO https://github.com/FerretDB/FerretDB/issues/4965
 func writeError(rw http.ResponseWriter, err api.Error, code int) {
-	rw.WriteHeader(code)
 	rw.Header().Set("Content-Type", "application/json")
+
+	rw.WriteHeader(code)
 
 	_ = json.NewEncoder(rw).Encode(err)
 }
