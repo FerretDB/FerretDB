@@ -163,7 +163,7 @@ kubectl apply -f 02-sgpoolingconfig.yaml
 ```
 
 FerretDB uses one or more Postgres databases, and requires them to be created and owned by a given user.
-In this guide, we will create one database, with one user and a unique password, but we will not be using a Potgres superuser for this.
+In this guide, we will create one database, with one user and a unique password, but we will not be using a PostgreSQL superuser for this.
 
 We plan to use the StackGres' [SGScript](https://stackgres.io/doc/latest/reference/crd/sgscript/) facility to create, manage and apply SQL scripts in the database automatically.
 

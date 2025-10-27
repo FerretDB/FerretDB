@@ -15,7 +15,7 @@ Securing your database is more critical than ever.
 
 <!--truncate-->
 
-[OpenZiti](https://openziti.io/) is an open-source networking solution that offers zero-trust networking priciples directly to your application.
+[OpenZiti](https://openziti.io/) is an open-source networking solution that offers zero-trust networking principles directly to your application.
 
 With OpenZiti, you can secure your FerretDB instances and connections, providing a zero-trust networking layer on top of it.
 

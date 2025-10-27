@@ -72,7 +72,7 @@ Once the user is created, you may connect to FerretDB using the new user credent
 mongodb://newuser:newpassword@127.0.0.1:27017/
 ```
 
-(See [PostgreSQL documentation for more informartion on creating users](https://www.postgresql.org/docs/current/sql-createuser.html)).
+(See [PostgreSQL documentation for more information on creating users](https://www.postgresql.org/docs/current/sql-createuser.html)).
 
 ### Create users with FerretDB
 

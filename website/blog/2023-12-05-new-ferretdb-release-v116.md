@@ -27,7 +27,7 @@ Similarly, we're removing unsafe pushdowns to help improve compatibility; this w
 As part of our ongoing work to support capped collections, we've enabled support for `DeleteAll`.
 This release also includes TLS support for proxy mode which means you can now observe the communication between TSL- and authentication-enabled client and server.
 
-We also made a few changes to our documentation and blog pages to be compatible with [Docusaurus v3](https://docusaurus.io/blog/preparing-your-site-for-docusaurus-v3), and now we've succesfully upgraded to the new version.
+We also made a few changes to our documentation and blog pages to be compatible with [Docusaurus v3](https://docusaurus.io/blog/preparing-your-site-for-docusaurus-v3), and now we've successfully upgraded to the new version.
 
 Check out the [release notes for other changes in this release.](https://github.com/FerretDB/FerretDB/releases/tag/v1.16.0)
 

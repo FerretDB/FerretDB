@@ -17,7 +17,7 @@ We're happy to announce the release of FerretDB v1.14.0 which includes the imple
 As we mentioned in our [previous release (v1.13.0)](https://blog.ferretdb.io/ferretdb-v1130-new-postgresql-backend/), we've migrated to the new PostgreSQL backend, and the old PostgreSQL backend code is now completely removed in this release.
 If you're unfamiliar with the new PostgreSQL backend, [here's an overview that should help](https://blog.ferretdb.io/ferretdb-v1-10-production-ready-sqlite/#the-new-architecture).
 
-It's been an exciting time at FerretDB and the open source community as we rounded up the last of the Hactoberfest PRs.
+It's been an exciting time at FerretDB and the open source community as we rounded up the last of the Hacktoberfest PRs.
 We celebrate all the new contributors to FerretDB and their support for a truly open source alternative to MongoDB.
 In this latest release, we had 3 new contributors to FerretDB: [@ShatilKhan](https://github.com/ShatilKhan), [@rubiagatra](https://github.com/rubiagatra), and [@gen1us2k](https://github.com/gen1us2k).
 

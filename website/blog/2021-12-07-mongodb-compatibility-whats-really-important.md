@@ -19,7 +19,7 @@ This looks damning, until you remember the 80/20 rule, which applies here as "80
 And if one thing you can count on from AWS is that they are listening to their customers and [choosing functionality](https://docs.aws.amazon.com/documentdb/latest/developerguide/release-notes.html) to implement wisely.
 
 What MongoDB did really well is - they nailed the developer experience with "native" experience for a variety of programming languages and frameworks, allowing you to seamlessly get persistence for your documents with MongoDB.
-This interface and underlying protocol is so good that it is likely to become a standard, similar to how SQL became decades ago or as PostgreSQL wire protocol (used by Yugabyte, CochroachDB, ClickHouse, Spanner, to name a few) became more recently.
+This interface and underlying protocol is so good that it is likely to become a standard, similar to how SQL became decades ago or as PostgreSQL wire protocol (used by Yugabyte, CockroachDB, ClickHouse, Spanner, to name a few) became more recently.
 
 As we can see with SQL, few databases have 100% compatibility with most recent standard versions, and databases such as MySQL or Clickhouse reached great adoption despite their early versions having very poor SQL compatibility.
 They just provided the right features to be a great fit for certain applications.
