@@ -5,4 +5,4 @@ module ferretdb.com/website
 
 go 1.25
 
-toolchain go1.25.1
+toolchain go1.25.3

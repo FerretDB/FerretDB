@@ -66,7 +66,7 @@ This is important because the `main` branch may change frequently, and links to 
 For example, if you want to link to the FerretDB Data API OpenAPI 3.0 specification, use the following link:
 
 ```text
-[FerretDB Data API OpenAPI 3.0 specification](https://raw.githubusercontent.com/FerretDB/FerretDB/refs/tags/v2.6.0/internal/dataapi/api/openapi.json)
+[FerretDB Data API OpenAPI 3.0 specification](https://raw.githubusercontent.com/FerretDB/FerretDB/refs/tags/v2.7.0/internal/dataapi/api/openapi.json)
 ```
 
 ## Images

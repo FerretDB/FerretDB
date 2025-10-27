@@ -19,10 +19,9 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
 	"go.mongodb.org/mongo-driver/v2/bson"
-
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // marshalSingleJSON converts wirebson value to the standard JSON representation.

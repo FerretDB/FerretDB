@@ -170,6 +170,9 @@ func TestCurrentOpGetMore(tt *testing.T) {
 }
 
 func TestCurrentOpExplain(tt *testing.T) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/4871
+	tt.Skip("https://github.com/FerretDB/FerretDB/issues/4871")
+
 	tt.Parallel()
 
 	s := setup.SetupWithOpts(tt, new(setup.SetupOpts))

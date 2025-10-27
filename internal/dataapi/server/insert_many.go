@@ -20,15 +20,15 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // InsertMany implements [ServerInterface].
-func (s *Server) InsertMany(w http.ResponseWriter, r *http.Request) {
+func (s *Server) InsertMany(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	if s.l.Enabled(ctx, slog.LevelDebug) {
@@ -37,19 +37,19 @@ func (s *Server) InsertMany(w http.ResponseWriter, r *http.Request) {
 
 	var req api.InsertManyRequestBody
 	if err := decodeJSONRequest(r, &req); err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
 	docsArr, err := unmarshalSingleJSON(&req.Documents)
 	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
 	documents, err := docsArr.(wirebson.RawArray).Decode()
 	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -58,7 +58,7 @@ func (s *Server) InsertMany(w http.ResponseWriter, r *http.Request) {
 	for i, v := range documents.All() {
 		v, ok := v.(wirebson.AnyDocument)
 		if !ok {
-			http.Error(w, fmt.Sprintf("document %d is not a valid BSON document", i), http.StatusBadRequest)
+			http.Error(rw, fmt.Sprintf("document %d is not a valid BSON document", i), http.StatusBadRequest)
 			return
 		}
 
@@ -66,7 +66,7 @@ func (s *Server) InsertMany(w http.ResponseWriter, r *http.Request) {
 
 		doc, err = ensureID(v)
 		if err != nil {
-			http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+			http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -74,12 +74,12 @@ func (s *Server) InsertMany(w http.ResponseWriter, r *http.Request) {
 
 		insertedId, err = wirebson.ToDriver(doc.Get("_id"))
 		if err != nil {
-			http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+			http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 			return
 		}
 
 		if err = documents.Replace(i, doc); err != nil {
-			http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+			http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -92,18 +92,18 @@ func (s *Server) InsertMany(w http.ResponseWriter, r *http.Request) {
 		"documents", documents,
 	)
 	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
 	resp := s.m.Handle(ctx, msg)
 	if resp == nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		http.Error(rw, "internal error", http.StatusInternalServerError)
 		return
 	}
 
 	if !resp.OK() {
-		s.writeJSONError(ctx, w, resp)
+		s.writeJSONError(ctx, rw, resp)
 		return
 	}
 
@@ -111,5 +111,5 @@ func (s *Server) InsertMany(w http.ResponseWriter, r *http.Request) {
 		InsertedIds: &insertedIds,
 	}
 
-	s.writeJSONResponse(ctx, w, &res)
+	s.writeJSONResponse(ctx, rw, &res)
 }
