@@ -91,6 +91,7 @@ func (lis *Listener) Run(ctx context.Context) {
 	l := lis.opts.L
 
 	l.InfoContext(ctx, fmt.Sprintf("Starting Data API server on http://%s/", lis.Addr()))
+	l.InfoContext(ctx, fmt.Sprintf("http://%s/openapi.json - OpenAPI spec", lis.Addr()))
 
 	go func() {
 		if err := s.Serve(lis.lis); !errors.Is(err, http.ErrServerClosed) {
