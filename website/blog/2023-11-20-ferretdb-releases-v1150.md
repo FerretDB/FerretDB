@@ -55,7 +55,7 @@ Please see [our release notes](https://github.com/FerretDB/FerretDB/releases/tag
 
 We continue to be overwhelmed by the massive support from the open source community, as we deliver the truly open-source document database alternative to MongoDB.
 Nowhere is this more evident than in our ever-increasing number of contributors.
-In this release, we had 4 new contributors to FerretDB: [@mrusme](https://github.com/mrusme), [@cosmastech](https://github.com/cosmastech), [@chumaumenze](https://github.com/chumaumenze), and [@ksankeerth](https://github.com/ksankeerth).
+In this release, we had four new contributors to FerretDB: [@mrusme](https://github.com/mrusme), [@cosmastech](https://github.com/cosmastech), [@chumaumenze](https://github.com/chumaumenze), and [@ksankeerth](https://github.com/ksankeerth).
 Over the past three months, we've had 24 different community contributors, which is incredible!
 
 Aside from this, FerretDB now has:

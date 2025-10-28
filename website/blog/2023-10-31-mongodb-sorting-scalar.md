@@ -81,7 +81,7 @@ db.outfits.insertMany([
 The `outfits` collection includes a `size` field that represents various BSON types.
 For instance, the document for `flip flops` contains a String value in this field, while `sandals` and `boots` have Integer values.
 The `sneakers` document has the `size` field as a Double value, and the `slippers` document lacks the `size` field altogether.
-To sort these documents in ascending order based on the `size` field, you would use a sorting order of 1 and execute the following query.
+To sort these documents in ascending order based on the `size` field, you would use a sorting order of `1` and execute the following query:
 
 ```js
 db.outfits.find().sort({ size: 1 })
