@@ -78,7 +78,7 @@ our fully managed database-as-a-service offering.
 With FerretDB Cloud, you can effortlessly deploy and scale FerretDB on **AWS** and **GCP**, with support for Microsoft **Azure** and additional cloud providers coming soon.
 It doesn't matter if you are running production workloads or testing new applications, FerretDB Cloud will take care of the operational overhead, so you can focus on building your apps.
 
-We invite you to join the **waitlist** for early access to FerretDB Cloud by signing up [here](https://cloud.ferretdb.com/signup).
+We invite you to join the [**waitlist** for early access to FerretDB Cloud](https://cloud.ferretdb.com/signup).
 Stay tuned as we expand availability across more platforms in the near future!
 
 Managed FerretDB will also be available on other providers as well, including Percona Ivee and Civo.

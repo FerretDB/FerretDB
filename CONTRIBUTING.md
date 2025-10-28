@@ -104,7 +104,7 @@ export GITHUB_TOKEN=github_pat_XXX
 We appreciate reporting a bug to us.
 To help us accurately identify the cause, we encourage you to include a pull request with test script.
 Please write the test script in [build/legacy-mongo-shell/test.js](build/legacy-mongo-shell/test.js).
-You can find an overview of the available assertions [here](build/legacy-mongo-shell/README.md).
+For more information, there is an [overview of the available assertions](build/legacy-mongo-shell/README.md).
 Use these assertions to validate your test's assumptions and invariants.
 
 With `task` installed (see above), you may test your script using following steps:
