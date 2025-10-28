@@ -178,7 +178,7 @@ func TestRefreshSessionsErrors(t *testing.T) {
 }
 
 // refreshSessions sends a request with given sessions.
-// If expectedErr is not nil, the error is checked, otherwise it checks the response.
+// If expectedErr is not nil, the error is checked; otherwise, it checks the response.
 func refreshSessions(t testing.TB, ctx context.Context, conn *wireclient.Conn, db string, lsid, sessions any, expectedErr *wirebson.Document) {
 	msg := wire.MustOpMsg(
 		"refreshSessions", sessions,

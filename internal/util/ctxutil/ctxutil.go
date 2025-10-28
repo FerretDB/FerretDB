@@ -29,7 +29,7 @@ var errDelayed = errors.New("context canceled after delay")
 
 // WithDelay returns a copy of the parent context (with its values), which is canceled
 // when returned [context.CancelCauseFunc] is called (without any delay),
-// or when the parent is canceled and 3 seconds have passed.
+// or when the parent is canceled and three seconds have passed.
 func WithDelay(parent context.Context) (context.Context, context.CancelCauseFunc) {
 	ctx, cancel := context.WithCancelCause(context.WithoutCancel(parent))
 

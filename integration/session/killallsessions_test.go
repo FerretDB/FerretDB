@@ -361,7 +361,7 @@ func TestKillAllSessionsAllUsers(t *testing.T) {
 }
 
 // killAllSessions sends a request to kill all sessions.
-// If expectedErr is not nil, the error is checked, otherwise it checks the response.
+// If expectedErr is not nil, the error is checked; otherwise, it checks the response.
 func killAllSessions(t testing.TB, ctx context.Context, conn *wireclient.Conn, dbName string, users any, expectedErr *wirebson.Document) {
 	msg := wire.MustOpMsg(
 		"killAllSessions", users,
