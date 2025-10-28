@@ -19,6 +19,8 @@ vars:
   SERVICES: jaeger mongodb mongodb-secure postgres yugabytedb
   LLM: qwen3:0.6b
   LLM_CONTEXT: 40960 # https://ollama.com/library/qwen3:0.6b
+  MCPHOST_CONFIG: build/mcphost.json
+  MCPHOST_ARGS: ""
 
 tasks:
   # invoked when `task` is run without arguments
@@ -423,12 +425,12 @@ tasks:
   ollama-model:
     desc: "Pull Ollama model"
     cmds:
-      - ollama pull qwen3:0.6b
+      - ollama pull {{.LLM}}
 
   mcphost:
     desc: "Run MCPHost for local Ollama server"
     cmds:
-      - bin/mcphost --config build/mcphost.json --model ollama:{{.LLM}}
+      - bin/mcphost --config={{.MCPHOST_CONFIG}} --model=ollama:{{.LLM}} --temperature=0.0 {{.MCPHOST_ARGS}}
 
   psql:
     desc: "Run psql"

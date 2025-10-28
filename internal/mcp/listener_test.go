@@ -57,16 +57,13 @@ func TestListener(t *testing.T) {
 func askMCPHost(tb testing.TB, ctx context.Context, configF, prompt string) string {
 	tb.Helper()
 
-	cmd := exec.CommandContext(ctx,
-		filepath.Join(testutil.BinDir, "mcphost"),
-		"--config", configF,
-		"--model", "ollama:qwen3:0.6b",
-		"--prompt", prompt,
-		"--stream=false",
-		"--compact",
-	)
+	// we probably should do something better with quoting
+	config := `MCPHOST_CONFIG=` + configF
+	args := fmt.Sprintf(`MCPHOST_ARGS=--stream=false --compact --prompt=%q`, prompt)
+	cmd := exec.CommandContext(ctx, filepath.Join(testutil.BinDir, "task"), "mcphost", config, args)
+
 	res, err := cmd.CombinedOutput()
-	require.NoError(tb, err)
+	require.NoError(tb, err, string(res))
 
 	return string(res)
 }
