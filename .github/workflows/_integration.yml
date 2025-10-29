@@ -112,7 +112,7 @@ jobs:
 
       - name: Upload logs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: logs-${{ inputs.task }}-${{ inputs.shard_index }}-${{ inputs.shard_total }}
           path: logs.zip
