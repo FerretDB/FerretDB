@@ -38,7 +38,7 @@ jobs:
     steps:
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           lfs: true
 
@@ -86,7 +86,7 @@ jobs:
 
       # it has to be exactly "docs.tar" for actions/deploy-pages below
       - name: Upload archive artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: docs
           path: tmp/docs.tar
