@@ -9,6 +9,16 @@ You can always see the complete list by using `--help` flag.
 To make user experience cloud native, every flag has its environment variable equivalent.
 There is no configuration file.
 
+However, you can use a bash script to configure and run FerretDB. Here's an example:
+
+```bash
+#!/bin/sh
+export FERRETDB_POSTGRESQL_URL='postgres://postgres:mysecretpassword@localhost:5432/ferretdb'
+exec ferretdb
+```
+This approach avoids long command lines and improves clarity.
+The use of `exec` allows the FerretDB process to correctly receive and handle termination signals (like SIGTERM). This is particularly important when running FerretDB as PID 1 in containers, ensuring a clean and graceful shutdown.
+
 :::info
 Some default values are overridden in [our Docker image](../installation/ferretdb/docker.md).
 :::
