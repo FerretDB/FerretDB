@@ -17,11 +17,31 @@
 
   coll.insertMany(init);
 
-  const query = { v: { $gt: 42.0 } };
+  const expected = init;
 
-  const expected = [{ _id: "double", v: 42.13 }];
+  const res = db.test.runCommand({
+    find: "test",
+    filter: {
+      $jsonSchema: {
+		required: ["v"],
+        bsonType: "object",
+        properties: {
+          v: {
+            bsonType: "double",
+          },
+        },
+      },
+    },
+    sort: {
+      _id: 1,
+    },
+  });
 
-  const actual = coll.find(query).toArray();
+  assert.isnull(res.errmsg);
+  assert.eq(1,res.ok);
+
+  const actual = res.cursor.firstBatch;
+
   assert.eq(expected, actual);
 
   print("test.js passed!");
