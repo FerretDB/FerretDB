@@ -190,6 +190,7 @@ func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 	}
 
 	if opts.DataAPIAddr != "" {
+		//exhaustruct:enforce
 		res.DataAPIListener, err = dataapi.Listen(&dataapi.ListenOpts{
 			L:       logging.WithName(opts.Logger, "dataapi"),
 			M:       res.m,
@@ -205,6 +206,7 @@ func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 	}
 
 	if opts.MCPAddr != "" {
+		//exhaustruct:enforce
 		res.MCPListener, err = mcp.Listen(&mcp.ListenOpts{
 			L:       logging.WithName(opts.Logger, "mcp"),
 			M:       res.m,
