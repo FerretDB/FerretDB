@@ -74,7 +74,7 @@ var cli struct {
 		TLSKeyFile  string `default:""                help:"TLS key file path."`
 		TLSCaFile   string `default:""                help:"TLS CA file path."`
 		DataAPIAddr string `default:""                help:"Listen TCP address for HTTP Data API."`
-		MCPAddr     string `default:""                help:"Listen TCP address for MCP server. Unauthenticated."`
+		MCPAddr     string `default:""                help:"Listen TCP address for HTTP MCP server."`
 	} `embed:"" prefix:"listen-" group:"Interfaces"`
 
 	Proxy struct {
@@ -278,7 +278,10 @@ func checkFlags(logger *slog.Logger) {
 	}
 
 	if cli.Auth && cli.Listen.MCPAddr != "" {
-		logger.WarnContext(ctx, "MCP server is enabled; MCP server does not support authentication; it will accept any request")
+		logger.Log(
+			ctx, logging.LevelFatal,
+			"MCP server does not support authentication; please disable authentication or MCP server",
+		)
 	}
 }
 

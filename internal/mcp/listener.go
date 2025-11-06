@@ -22,6 +22,7 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -29,7 +30,6 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
 
@@ -45,8 +45,9 @@ type ListenOpts struct { //nolint:vet // for readability
 	L       *slog.Logger
 	M       *middleware.Middleware
 	TCPAddr string
+
 	// TODO https://github.com/FerretDB/FerretDB/issues/5309
-	// Auth    bool
+	// Auth bool
 }
 
 // Listen creates a new MCP handler and starts listener on the given TCP address.
