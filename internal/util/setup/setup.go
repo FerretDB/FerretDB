@@ -28,6 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/handler"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/handlers/proxy"
+	"github.com/FerretDB/FerretDB/v2/internal/mcp"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
@@ -65,6 +66,9 @@ type SetupOpts struct {
 
 	// DataAPI listener
 	DataAPIAddr string // empty value disables Data API listener
+
+	// MCPAddr listener
+	MCPAddr string // empty value disables MCP listener
 }
 
 // SetupResult represents [Setup] result.
@@ -74,6 +78,7 @@ type SetupResult struct {
 	m               *middleware.Middleware
 	WireListener    *clientconn.Listener
 	DataAPIListener *dataapi.Listener
+	MCPListener     *mcp.Listener
 }
 
 // Setup creates and sets up:
@@ -82,6 +87,7 @@ type SetupResult struct {
 //   - middleware ([*middleware.Middleware]);
 //   - wire protocol listener ([*clientconn.Listener]);
 //   - Data API listener ([*dataapi.Listener]);
+//   - MCP listener ([*mcp.Listener]);
 //   - unregistered Prometheus collector for the above components.
 //
 // It does not change the global state or creates components that are different in tests.
@@ -184,6 +190,7 @@ func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 	}
 
 	if opts.DataAPIAddr != "" {
+		//exhaustruct:enforce
 		res.DataAPIListener, err = dataapi.Listen(&dataapi.ListenOpts{
 			L:       logging.WithName(opts.Logger, "dataapi"),
 			M:       res.m,
@@ -192,6 +199,21 @@ func Setup(ctx context.Context, opts *SetupOpts) *SetupResult {
 		})
 		if err != nil {
 			opts.Logger.LogAttrs(ctx, logging.LevelDPanic, "Failed to construct DataAPI listener", logging.Error(err))
+			res.Run(exitCtx)
+
+			return nil
+		}
+	}
+
+	if opts.MCPAddr != "" {
+		//exhaustruct:enforce
+		res.MCPListener, err = mcp.Listen(&mcp.ListenOpts{
+			L:       logging.WithName(opts.Logger, "mcp"),
+			M:       res.m,
+			TCPAddr: opts.MCPAddr,
+		})
+		if err != nil {
+			opts.Logger.LogAttrs(ctx, logging.LevelDPanic, "Failed to construct MCP listener", logging.Error(err))
 			res.Run(exitCtx)
 
 			return nil
@@ -259,6 +281,15 @@ func (sr *SetupResult) runListeners(ctx context.Context) {
 		}()
 	}
 
+	if sr.MCPListener != nil {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+			sr.MCPListener.Run(ctx)
+		}()
+	}
+
 	wg.Wait()
 }
 
@@ -315,6 +346,10 @@ func (sr *SetupResult) Describe(ch chan<- *prometheus.Desc) {
 	if sr.DataAPIListener != nil {
 		sr.DataAPIListener.Describe(ch)
 	}
+
+	if sr.MCPListener != nil {
+		sr.MCPListener.Describe(ch)
+	}
 }
 
 // Collect implements [prometheus.Collector].
@@ -335,6 +370,10 @@ func (sr *SetupResult) Collect(ch chan<- prometheus.Metric) {
 
 	if sr.DataAPIListener != nil {
 		sr.DataAPIListener.Collect(ch)
+	}
+
+	if sr.MCPListener != nil {
+		sr.MCPListener.Collect(ch)
 	}
 }
 

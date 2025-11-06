@@ -148,6 +148,8 @@ func New(config *Config) (*FerretDB, error) {
 		TestRecordsDir: "",
 
 		DataAPIAddr: "",
+
+		MCPAddr: "",
 	})
 	if res == nil {
 		return nil, fmt.Errorf("failed to create FerretDB")

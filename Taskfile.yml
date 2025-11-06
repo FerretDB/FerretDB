@@ -19,6 +19,8 @@ vars:
   SERVICES: jaeger mongodb mongodb-secure postgres yugabytedb
   LLM: qwen3:0.6b
   LLM_CONTEXT: 40960 # https://ollama.com/library/qwen3:0.6b
+  MCPHOST_CONFIG: build/mcphost.json
+  MCPHOST_ARGS: ""
 
 tasks:
   # invoked when `task` is run without arguments
@@ -322,6 +324,7 @@ tasks:
         --no-auth
         --listen-addr=:27017
         --listen-data-api-addr=127.0.0.1:8899
+        --listen-mcp-addr=127.0.0.1:8081
         --proxy-addr=127.0.0.1:37017
         --postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
@@ -336,6 +339,7 @@ tasks:
         --mode={{.MODE}}
         --listen-addr=:27017
         --listen-data-api-addr=127.0.0.1:8899
+        --listen-mcp-addr=127.0.0.1:8081
         --proxy-addr=127.0.0.1:47017
         --postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
@@ -352,6 +356,7 @@ tasks:
         --no-auth
         --listen-addr=:27017
         --listen-data-api-addr=127.0.0.1:8899
+        --listen-mcp-addr=127.0.0.1:8081
         --proxy-addr=127.0.0.1:37017
         --postgresql-url='postgres://username:password@127.0.0.1:5433/yugabyte'
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
@@ -366,6 +371,7 @@ tasks:
         --mode={{.MODE}}
         --listen-addr=:27017
         --listen-data-api-addr=127.0.0.1:8899
+        --listen-mcp-addr=127.0.0.1:8081
         --proxy-addr=127.0.0.1:47017
         --postgresql-url='postgres://username:password@127.0.0.1:5433/yugabyte'
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
@@ -409,18 +415,22 @@ tasks:
       - bin/pkgsite{{exeExt}} -http=127.0.0.1:6060 -open
 
   ollama:
-    desc: "Run Ollama server"
+    desc: "Run local Ollama server"
     cmds:
       - ollama serve
     env:
       OLLAMA_CONTEXT_LENGTH: "{{.LLM_CONTEXT}}"
       OLLAMA_DEBUG: 2
 
+  ollama-model:
+    desc: "Pull Ollama model"
+    cmds:
+      - ollama pull {{.LLM}}
+
   mcphost:
     desc: "Run MCPHost for local Ollama server"
     cmds:
-      # TODO https://github.com/FerretDB/FerretDB/issues/5277
-      # - bin/mcphost --config build/mcphost.json --model ollama:{{.LLM}}
+      - bin/mcphost --config={{.MCPHOST_CONFIG}} --model=ollama:{{.LLM}} --temperature=0.0 {{.MCPHOST_ARGS}}
 
   psql:
     desc: "Run psql"
