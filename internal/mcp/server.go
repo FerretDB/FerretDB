@@ -47,32 +47,16 @@ func (s *server) addTools(srv *mcp.Server) {
 	mcp.AddTool(
 		srv,
 		&mcp.Tool{
-			Name:        "dropDatabase",
-			Description: "Deletes the database.",
-		},
-		s.dropDatabase,
-	)
-	mcp.AddTool(
-		srv,
-		&mcp.Tool{
 			Name:        "find",
-			Description: "Search documents from a collection.",
+			Description: "Returns documents matched by the query.",
 		},
 		s.find,
 	)
 	mcp.AddTool(
 		srv,
 		&mcp.Tool{
-			Name:        "insert",
-			Description: "Inserts multiple documents into a collection.",
-		},
-		s.insert,
-	)
-	mcp.AddTool(
-		srv,
-		&mcp.Tool{
 			Name:        "listCollections",
-			Description: "Returns a summary of all collections in a database.",
+			Description: "Returns the information of the collections and views in the database.",
 		},
 		s.listCollections,
 	)

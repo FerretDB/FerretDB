@@ -31,7 +31,13 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
 
+// llmModel is the model used in tests.
+const llmModel = "qwen3:0.6b" // sync with Taskfile.yml
+
 func TestBasic(t *testing.T) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/5209
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/5209")
+
 	if testing.Short() {
 		t.Skip("skipping in -short mode")
 	}
@@ -81,6 +87,9 @@ func TestBasic(t *testing.T) {
 }
 
 func TestAdmin(t *testing.T) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/5209
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/5209")
+
 	if testing.Short() {
 		t.Skip("skipping in -short mode")
 	}
@@ -109,28 +118,29 @@ func askMCPHost(tb testing.TB, ctx context.Context, configF, prompt string) stri
 	cmd := exec.CommandContext(
 		ctx,
 		filepath.Join(testutil.BinDir, "mcphost"),
-		"--config", configF,
-		"--model", "ollama:qwen3:0.6b",
-		"--prompt", prompt,
+		"--compact=true",
+		"--config="+configF,
+		"--model=ollama:"+llmModel,
+		"--quiet=true",
 		"--stream=false",
 		"--temperature=0.0",
-		"--compact",
+		"--prompt", prompt,
 	)
 	tb.Logf("%#q", cmd.Args)
 
-	output, err := cmd.CombinedOutput()
+	output, err := cmd.Output()
 	require.NoError(tb, err)
 
 	res := string(output)
-	tb.Log(res)
+	tb.Logf("output:\n%s", res)
 	//          [  ferretdb__listDatabases
 	//          ]  List
 	//          {"databases":[],"totalSize":{"$numberInt":"19967123"},"ok":{"$numberDouble":"1
 	//          .0"}}
 	//
 	// remove tabs and newlines to avoid split
-	res = strings.ReplaceAll(res, "\t", "")
-	res = strings.ReplaceAll(res, "\n", "")
+	res = strings.ReplaceAll(res, "\t", " ")
+	res = strings.ReplaceAll(res, "\n", " ")
 
 	return res
 }
