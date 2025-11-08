@@ -106,7 +106,8 @@ func TestAdmin(t *testing.T) {
 func askMCPHost(tb testing.TB, ctx context.Context, configF, prompt string) string {
 	tb.Helper()
 
-	cmd := exec.CommandContext(ctx,
+	cmd := exec.CommandContext(
+		ctx,
 		filepath.Join(testutil.BinDir, "mcphost"),
 		"--config", configF,
 		"--model", "ollama:qwen3:0.6b",
@@ -115,6 +116,7 @@ func askMCPHost(tb testing.TB, ctx context.Context, configF, prompt string) stri
 		"--temperature=0.0",
 		"--compact",
 	)
+	tb.Logf("%#q", cmd.Args)
 
 	output, err := cmd.CombinedOutput()
 	require.NoError(tb, err)
