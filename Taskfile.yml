@@ -423,9 +423,10 @@ tasks:
       OLLAMA_DEBUG: 2
 
   ollama-model:
-    desc: "Pull Ollama model"
+    desc: "Pull and load Ollama model"
     cmds:
       - ollama pull {{.LLM}}
+      - ollama run --think=false {{.LLM}} 'Hi!'
 
   mcphost:
     desc: "Run MCPHost for local Ollama server"
