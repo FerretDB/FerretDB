@@ -61,7 +61,7 @@ func Listen(opts *ListenOpts) (*Listener, error) {
 	return &Listener{
 		opts: opts,
 		lis:  lis,
-		srv:  newServer(opts.M),
+		srv:  newServer(opts.L, opts.M),
 	}, nil
 }
 

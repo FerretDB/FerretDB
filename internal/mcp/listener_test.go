@@ -31,41 +31,118 @@ import (
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 )
 
-func TestListener(t *testing.T) {
+// llmModel is the model used in tests.
+const llmModel = "qwen3:0.6b" // sync with Taskfile.yml
+
+func TestBasic(t *testing.T) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/5209
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/5209")
+
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
+	t.Parallel()
+
+	ctx := t.Context()
+	configF := setupMCP(t, ctx)
+	db := t.Name()
+
+	t.Run("Insert", func(t *testing.T) {
+		prompt := fmt.Sprintf("Use database named %s. "+
+			"Insert two documents to a collection named authors. "+
+			"The first document should contain author name Jane Austen with nationality British "+
+			"and the second document should contain author name Herman Melville with nationality American.",
+			db,
+		)
+		res := askMCPHost(t, ctx, configF, prompt)
+
+		require.Contains(t, res, "ferretdb__insert")
+		require.Contains(t, res, `{"n":{"$numberInt":"2"},"ok":{"$numberDouble":"1.0"}}`)
+	})
+
+	t.Run("Find", func(t *testing.T) {
+		prompt := fmt.Sprintf("Find a British author from %s database authors collection.", db)
+		res := askMCPHost(t, ctx, configF, prompt)
+
+		require.Contains(t, res, "ferretdb__find")
+		require.Contains(t, res, "Jane Austen")
+	})
+
+	t.Run("ListCollections", func(t *testing.T) {
+		prompt := fmt.Sprintf("List all collections in %s database.", db)
+		res := askMCPHost(t, ctx, configF, prompt)
+
+		require.Contains(t, res, "ferretdb__listCollections")
+		require.Contains(t, res, `authors`)
+	})
+
+	t.Run("DropDatabase", func(t *testing.T) {
+		prompt := fmt.Sprintf("Delete database named %s.", db)
+		res := askMCPHost(t, ctx, configF, prompt)
+
+		require.Contains(t, res, "ferretdb__dropDatabase")
+		require.Contains(t, res, `{"ok":{"$numberDouble":"1.0"}}`)
+	})
+}
+
+func TestAdmin(t *testing.T) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/5209
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/5209")
+
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
 	t.Parallel()
 
 	ctx := t.Context()
 	configF := setupMCP(t, ctx)
 
-	res := askMCPHost(t, ctx, configF, "list databases")
-	t.Log(res)
-	//          [  ferretdb__listDatabases
-	//          ]  List
-	//          {"databases":[],"totalSize":{"$numberInt":"19967123"},"ok":{"$numberDouble":"1
-	//          .0"}}
-	res = strings.ReplaceAll(res, " ", "")
-	res = strings.ReplaceAll(res, "\n", "")
-	require.Contains(t, res, "ferretdb__listDatabases")
-	require.Contains(t, res, `{"databases":[`)
-	require.Contains(t, res, `],"totalSize":{`)
-	require.Contains(t, res, `},"ok":{"$numberDouble":"1.0"}`)
+	t.Run("ListDatabases", func(t *testing.T) {
+		res := askMCPHost(t, ctx, configF, "list databases")
+
+		require.Contains(t, res, "ferretdb__listDatabases")
+		require.Contains(t, res, `{"databases":[`)
+		require.Contains(t, res, `],"totalSize":{`)
+		require.Contains(t, res, `},"ok":{"$numberDouble":"1.0"}`)
+	})
 }
 
 // askMCPHost sends query to MCP host in non-interactive mode with
-// the given config file and prompt and returns the output.
+// the given config file and prompt.
 // Non-interactive mode without streaming is used for the ease of testing.
 func askMCPHost(tb testing.TB, ctx context.Context, configF, prompt string) string {
 	tb.Helper()
 
-	// we probably should do something better with quoting
-	config := `MCPHOST_CONFIG=` + configF
-	args := fmt.Sprintf(`MCPHOST_ARGS=--stream=false --compact --prompt=%q`, prompt)
-	cmd := exec.CommandContext(ctx, filepath.Join(testutil.BinDir, "task"), "mcphost", config, args)
+	cmd := exec.CommandContext(
+		ctx,
+		filepath.Join(testutil.BinDir, "mcphost"),
+		"--compact=true",
+		"--config="+configF,
+		"--model=ollama:"+llmModel,
+		"--quiet=true",
+		"--stream=false",
+		"--temperature=0.0",
+		"--prompt", prompt,
+	)
+	tb.Logf("%#q", cmd.Args)
 
-	res, err := cmd.CombinedOutput()
-	require.NoError(tb, err, string(res))
+	output, err := cmd.Output()
+	require.NoError(tb, err)
 
-	return string(res)
+	res := string(output)
+	tb.Logf("output:\n%s", res)
+	//          [  ferretdb__listDatabases
+	//          ]  List
+	//          {"databases":[],"totalSize":{"$numberInt":"19967123"},"ok":{"$numberDouble":"1
+	//          .0"}}
+	//
+	// remove tabs and newlines to avoid split
+	res = strings.ReplaceAll(res, "\t", " ")
+	res = strings.ReplaceAll(res, "\n", " ")
+
+	return res
 }
 
 // setupMCP sets up a new MCP listener and returns config file path

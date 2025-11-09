@@ -133,10 +133,6 @@ jobs:
         run: |
           bin/task ollama &
 
-      - name: Fetch model for Ollama
-        run: |
-          bin/task ollama-model
-
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -146,6 +142,10 @@ jobs:
 
       - name: Start environment
         run: bin/task env-up-detach
+
+      - name: Pull and load Ollama model
+        run: |
+          bin/task ollama-model
 
       - name: Run init
         run: bin/task init

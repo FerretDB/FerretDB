@@ -22,15 +22,20 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// listDatabases returns a list of databases.
-func (s *server) listDatabases(ctx context.Context, _ *mcp.ServerSession, params *mcp.CallToolParamsFor[any]) (*mcp.CallToolResult, error) { //nolint:lll // for readability
+// listCollectionsArgs represents the arguments for the listCollections tool.
+type listCollectionsArgs struct {
+	Database string `json:"database"`
+}
+
+// find returns documents from the collection.
+func (s *server) listCollections(ctx context.Context, _ *mcp.ServerSession, params *mcp.CallToolParamsFor[listCollectionsArgs]) (*mcp.CallToolResult, error) { //nolint:lll // for readability
 	if s.l.Enabled(ctx, slog.LevelDebug) {
 		s.l.DebugContext(ctx, "MCP tool params", slog.Any("params", params))
 	}
 
 	req := wirebson.MustDocument(
-		"listDatabases", int32(1),
-		"$db", "admin",
+		"listCollections", int64(1),
+		"$db", params.Arguments.Database,
 	)
 
 	return s.handle(ctx, req)

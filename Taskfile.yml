@@ -17,10 +17,8 @@ vars:
   BUILD_TAGS: ferretdb_dev
   MODE: diff-normal
   SERVICES: jaeger mongodb mongodb-secure postgres yugabytedb
-  LLM: qwen3:0.6b
+  LLM: qwen3:0.6b # sync with code
   LLM_CONTEXT: 40960 # https://ollama.com/library/qwen3:0.6b
-  MCPHOST_CONFIG: build/mcphost.json
-  MCPHOST_ARGS: ""
 
 tasks:
   # invoked when `task` is run without arguments
@@ -423,14 +421,15 @@ tasks:
       OLLAMA_DEBUG: 2
 
   ollama-model:
-    desc: "Pull Ollama model"
+    desc: "Pull and load Ollama model"
     cmds:
       - ollama pull {{.LLM}}
+      - ollama run --think=false {{.LLM}} 'Hi!'
 
   mcphost:
     desc: "Run MCPHost for local Ollama server"
     cmds:
-      - bin/mcphost --config={{.MCPHOST_CONFIG}} --model=ollama:{{.LLM}} --temperature=0.0 {{.MCPHOST_ARGS}}
+      - bin/mcphost --config=build/mcphost.json --model=ollama:{{.LLM}}
 
   psql:
     desc: "Run psql"
