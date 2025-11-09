@@ -105,6 +105,8 @@ func (s *server) handle(ctx context.Context, reqDoc *wirebson.Document) (*mcp.Ca
 }
 
 // fromExtendedJSON converts raw encoded extended JSON v2 to a wirebson.RawDocument or wirebson.RawArray.
+//
+//nolint:unused // for now
 func fromExtendedJSON(b json.RawMessage) (any, error) {
 	var raw any
 
