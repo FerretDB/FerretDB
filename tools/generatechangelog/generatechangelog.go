@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"context"
 	_ "embed"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -82,6 +83,8 @@ func getMilestone(ctx context.Context, client *github.Client, title string) (*gi
 		if resp.NextPage == 0 {
 			return nil, fmt.Errorf("no milestone found with the title %q", title)
 		}
+
+		opts.ListOptions.Page = resp.NextPage
 	}
 }
 
@@ -115,6 +118,8 @@ func getPRs(ctx context.Context, client *github.Client, milestone *github.Milest
 		if resp.NextPage == 0 {
 			return prs, nil
 		}
+
+		opts.ListOptions.Page = resp.NextPage
 	}
 }
 
@@ -136,6 +141,7 @@ func makeData(milestone *github.Milestone, prev string, prs []*github.Issue, l *
 
 	d.Date = milestone.DueOn.Format("2006-01-02")
 
+	var errs []error
 	for _, pr := range prs {
 		if pr.ClosedAt == nil {
 			l.Warn(fmt.Sprintf("PR is not closed: %s", *pr.HTMLURL))
@@ -165,19 +171,22 @@ func makeData(milestone *github.Milestone, prev string, prs []*github.Issue, l *
 				continue
 			}
 
-			if found {
-				return nil, fmt.Errorf("multiple possible categories for %s", prData.URL)
+			if !found {
+				found = true
+				continue
 			}
 
-			found = true
+			errs = append(errs, fmt.Errorf("multiple possible categories for %s", prData.URL))
+
+			break
 		}
 
 		if !found {
-			return nil, fmt.Errorf("no category found for %s", prData.URL)
+			errs = append(errs, fmt.Errorf("no category found for %s", prData.URL))
 		}
 	}
 
-	return d, nil
+	return d, errors.Join(errs...)
 }
 
 // run generates the changelog.
@@ -199,10 +208,14 @@ func run(w io.Writer, l *slog.Logger, prev, next string) error {
 		return err
 	}
 
+	l.Info("Received milestones", slog.Int("next", *milestone.Number))
+
 	prs, err := getPRs(ctx, client, milestone)
 	if err != nil {
 		return err
 	}
+
+	l.Info("Received PRs", slog.Int("count", len(prs)))
 
 	d, err := makeData(milestone, prev, prs, l)
 	if err != nil {

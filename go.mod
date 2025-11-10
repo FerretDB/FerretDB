@@ -7,7 +7,7 @@ toolchain go1.25.4
 // replace github.com/FerretDB/wire => ../wire
 
 require (
-	github.com/AlekSi/lazyerrors v0.0.0-20251017093659-ee6d7b411eca
+	github.com/AlekSi/lazyerrors v0.0.0-20251102120325-67e66cc79778
 	github.com/AlekSi/pointer v1.2.0
 	github.com/FerretDB/wire v0.1.7
 	github.com/alecthomas/kong v1.12.1
@@ -20,17 +20,17 @@ require (
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/client_model v0.6.2
-	github.com/prometheus/common v0.67.1
+	github.com/prometheus/common v0.67.2
 	github.com/stretchr/testify v1.11.1
 	github.com/xdg-go/scram v1.1.2
-	go.mongodb.org/mongo-driver/v2 v2.3.1
+	go.mongodb.org/mongo-driver/v2 v2.4.0
 	go.opentelemetry.io/otel v1.38.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.38.0
 	go.opentelemetry.io/otel/sdk v1.38.0
 	go.opentelemetry.io/otel/trace v1.38.0
-	golang.org/x/crypto/x509roots/fallback v0.0.0-20251009181029-0b7aa0cfb07b
+	golang.org/x/crypto/x509roots/fallback v0.0.0-20251028130051-c0531f9c3451
 	golang.org/x/net v0.46.0
-	golang.org/x/sys v0.37.0
+	golang.org/x/sys v0.38.0
 	golang.org/x/term v0.36.0
 )
 

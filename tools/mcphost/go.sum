@@ -222,8 +222,8 @@ github.com/mark3labs/mcp-filesystem-server v0.11.1 h1:7uKIZRMaKWfgvtDj/uLAvo0+7M
 github.com/mark3labs/mcp-filesystem-server v0.11.1/go.mod h1:xDqJizVYWZ5a31Mt4xuYbVku2AR/kT56H3O0SbpANoQ=
 github.com/mark3labs/mcp-go v0.41.1 h1:w78eWfiQam2i8ICL7AL0WFiq7KHNJQ6UB53ZVtH4KGA=
 github.com/mark3labs/mcp-go v0.41.1/go.mod h1:T7tUa2jO6MavG+3P25Oy/jR7iCeJPHImCZHRymCn39g=
-github.com/mark3labs/mcphost v0.31.1 h1:D09PcW2vd3fVgo2vGlULoGzHlr2mAsuGM8PiySKGcRQ=
-github.com/mark3labs/mcphost v0.31.1/go.mod h1:rJ5SEO4eo+Vs3XfUAJdxgioB+CVXt02sl+37r0Erato=
+github.com/mark3labs/mcphost v0.31.3 h1:v8kWozQXPXHTBKT2GMo1CCtjz5yZWKMJdXSl9awH3pM=
+github.com/mark3labs/mcphost v0.31.3/go.mod h1:rJ5SEO4eo+Vs3XfUAJdxgioB+CVXt02sl+37r0Erato=
 github.com/mattn/go-colorable v0.1.2 h1:/bC9yWikZXAL9uJdulbSfyVNIR3n3trXl+v8+1sx8mU=
 github.com/mattn/go-colorable v0.1.2/go.mod h1:U0ppj6V5qS13XJ6of8GYAs25YV2eR4EVcfRqFIhoBtE=
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=

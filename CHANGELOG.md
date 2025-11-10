@@ -2,6 +2,89 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v2.7.0](https://github.com/FerretDB/FerretDB/releases/tag/v2.7.0) (2025-11-10)
+
+(We skipped v2.6.0 to align DocumentDB and FerretDB version numbers.)
+
+This version works best with
+[DocumentDB v0.107.0-ferretdb-2.7.0](https://github.com/FerretDB/documentdb/releases/tag/v0.107.0-ferretdb-2.7.0).
+
+### Breaking changes
+
+There are some changes in our Prometheus metrics and OpenTelemetry traces.
+Please note that they are
+[not stable yet](https://docs.ferretdb.io/v2.7/configuration/observability/).
+
+### What's Changed
+
+### New Features 🎉
+
+- Improve proxy mode observability by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5440
+- Add MCP tools by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5452
+- Add tracing of SQL queries by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5514
+
+### Enhancements 🛠
+
+- Rename OpenTelemetry spans by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5512
+
+### Documentation 📄
+
+- Add blog post on Formio by @Fashander in https://github.com/FerretDB/FerretDB/pull/5395
+- Document cloud instance deployment and setup by @Fashander in https://github.com/FerretDB/FerretDB/pull/5424
+- Update content guide by @Fashander in https://github.com/FerretDB/FerretDB/pull/5441
+- Update compatible apps by @Fashander in https://github.com/FerretDB/FerretDB/pull/5442
+- Add documentation page stub for MCP server by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5451
+- Add FerretDB Cloud blog post by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5461
+- Update cloud installation docs by @Fashander in https://github.com/FerretDB/FerretDB/pull/5466
+
+### Other Changes 🤖
+
+- Add basic MCP server by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5279
+- Refactor DataAPI with graceful shutdown and add OpenAPI specification endpoint by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5357
+- Use middleware by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5377
+- Use generated structs in Data API by @noisersup in https://github.com/FerretDB/FerretDB/pull/5382
+- Upload YugabyteDB log files by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5401
+- Update documentation to point to the next release by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5423
+- Add `PostgreSQL` metrics by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5427
+- Bump YugabyteDB to stable version by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5428
+- Use QEMU on arm64 for Yugabyte for now by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5429
+- Add comments to supervisord config by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5430
+- Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5431
+- Make `Run` wait for all `Handle` calls to finish by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5434
+- Tweak `conninfo` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5435
+- Add middleware by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5437
+- Update expected PostgreSQL version by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5438
+- Avoid hijacking connections from the pool and immediately closing them by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5443
+- Remove flaky test by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5444
+- Add TODO comment about Debian 13 Trixie by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5450
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5455
+- Update `wire` dependency by @noisersup in https://github.com/FerretDB/FerretDB/pull/5465
+- Add helpers for lazy logging by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5467
+- Move to `documentdb/documentdb` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5468
+- Update dependencies by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5479
+- Add a test for `*documentdb.Conn` finalizing by @noisersup in https://github.com/FerretDB/FerretDB/pull/5484
+- Finalize PostgreSQL metrics by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5485
+- Fix spelling in `.go` files by @jsoref in https://github.com/FerretDB/FerretDB/pull/5492
+- Fix `CODEOWNERS` grammar by @jsoref in https://github.com/FerretDB/FerretDB/pull/5495
+- Use Go 1.25.1 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5508
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5509
+- Minor observability cleanup by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5511
+- Bump dependencies by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5519
+- Use Go 1.25.3 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5525
+- Skip flaky test for now by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5526
+- Use forked lazyerrors by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5527
+- Update DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5528
+- Use Go 1.25.4 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5534
+- Bump DocumentDB by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5536
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5537
+
+### New Contributors
+
+TODO
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/80?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v2.5.0...v2.7.0).
+
 ## [v2.5.0](https://github.com/FerretDB/FerretDB/releases/tag/v2.5.0) (2025-08-12)
 
 This version works best with
