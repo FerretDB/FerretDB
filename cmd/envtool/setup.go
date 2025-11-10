@@ -25,14 +25,13 @@ import (
 
 	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/v2/internal/util/debug"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
-	"github.com/FerretDB/FerretDB/v2/internal/util/state"
 )
 
 // setupMongoDB configures MongoDB containers.
@@ -75,12 +74,7 @@ func setupMongoDB(ctx context.Context, logger *slog.Logger, uri, name string) er
 // setupUser waits for the given PostgreSQL URI to become available, and creates
 // an admin user with fixed credentials `username:password` using DocumentDB API.
 func setupUser(ctx context.Context, uri string, l *slog.Logger) error {
-	sp, err := state.NewProvider("")
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	pool, err := documentdb.NewPool(uri, l, sp)
+	pool, err := pgxpool.New(ctx, uri)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -107,10 +101,21 @@ func setupUser(ctx context.Context, uri string, l *slog.Logger) error {
 	var res wirebson.RawDocument
 
 	for ctx.Err() == nil {
-		err = pool.WithConn(func(conn *pgx.Conn) error {
-			res, err = documentdb.CreateUser(ctx, conn, l, createUser)
-			return err
-		})
+		err = func() error {
+			var conn *pgxpool.Conn
+
+			if conn, err = pool.Acquire(ctx); err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			defer conn.Release()
+
+			if res, err = documentdb.CreateUser(ctx, conn.Conn(), l, createUser); err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			return nil
+		}()
 
 		if err == nil {
 			break
