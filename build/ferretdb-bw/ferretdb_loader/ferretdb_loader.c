@@ -25,7 +25,7 @@ void background_main(Datum main_arg)
 
     path = (char *)palloc(strlen(pkglib_path) + 1 + strlen(ferretdb_so) + 1);
     join_path_components(path, pkglib_path, ferretdb_so);
-    elog(LOG, "ferretdb_loader: loading '%s'", path);
+    ereport(LOG, errmsg_internal("ferretdb_loader: loading '%s'", path));
 
     h = dlopen(path, RTLD_NOW | RTLD_GLOBAL);
     pfree(path);
@@ -39,6 +39,8 @@ void background_main(Datum main_arg)
 
 void _PG_init(void)
 {
+    MarkGUCPrefixReserved("ferretdb");
+
     BackgroundWorker worker;
     MemSet(&worker, 0, sizeof(BackgroundWorker));
 
@@ -50,4 +52,6 @@ void _PG_init(void)
     snprintf(worker.bgw_function_name, BGW_MAXLEN, "background_main");
 
     RegisterBackgroundWorker(&worker);
+
+    ereport(LOG, (errmsg("Initialized ferretdb extension")));
 }
