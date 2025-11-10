@@ -27,14 +27,12 @@ type findArgs struct {
 	Collection string `json:"collection"`
 	Database   string `json:"database"`
 	Limit      int64  `json:"limit"`
-	// filter is hard, the tool does not know how to construct a bson filter,
-	// also missing projection, skip and sort
 }
 
 // find returns documents from the collection.
 func (s *server) find(ctx context.Context, _ *mcp.ServerSession, params *mcp.CallToolParamsFor[findArgs]) (*mcp.CallToolResult, error) { //nolint:lll // for readability
 	if s.l.Enabled(ctx, slog.LevelDebug) {
-		s.l.DebugContext(ctx, "MCP tool params", slog.Any("params", params))
+		s.l.DebugContext(ctx, "find", slog.Any("params", params))
 	}
 
 	req := wirebson.MustDocument(

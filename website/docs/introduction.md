@@ -63,7 +63,5 @@ Please check out our [compatible applications](./compatible-applications/index.m
 - [Slack chat](https://slack.ferretdb.io/) for quick questions.
 - [GitHub Discussions](https://github.com/FerretDB/FerretDB/discussions) for longer topics.
 - [GitHub Issues](https://github.com/FerretDB/FerretDB/issues) for bugs and missing features.
-- [Open Office Hours meeting](https://calendar.google.com/calendar/event?action=TEMPLATE&tmeid=NGhrZTA5dXZ0MzQzN2gyaGVtZmx2aWxmN2pfMjAyNDA0MDhUMTcwMDAwWiBjX24zN3RxdW9yZWlsOWIwMm0wNzQwMDA3MjQ0QGc&tmsrc=c_n37tquoreil9b02m0740007244%40group.calendar.google.com&scp=ALL)
-  every Monday at 17:00 UTC at [Google Meet](https://meet.google.com/mcb-arhw-qbq).
 
 If you want to contact FerretDB Inc., please use [this form](https://www.ferretdb.com/contact/).

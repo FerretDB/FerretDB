@@ -25,7 +25,7 @@ import (
 // listDatabases returns a list of databases.
 func (s *server) listDatabases(ctx context.Context, _ *mcp.ServerSession, params *mcp.CallToolParamsFor[any]) (*mcp.CallToolResult, error) { //nolint:lll // for readability
 	if s.l.Enabled(ctx, slog.LevelDebug) {
-		s.l.DebugContext(ctx, "MCP tool params", slog.Any("params", params))
+		s.l.DebugContext(ctx, "listDatabases", slog.Any("params", params))
 	}
 
 	req := wirebson.MustDocument(

@@ -30,7 +30,7 @@ type listCollectionsArgs struct {
 // find returns documents from the collection.
 func (s *server) listCollections(ctx context.Context, _ *mcp.ServerSession, params *mcp.CallToolParamsFor[listCollectionsArgs]) (*mcp.CallToolResult, error) { //nolint:lll // for readability
 	if s.l.Enabled(ctx, slog.LevelDebug) {
-		s.l.DebugContext(ctx, "MCP tool params", slog.Any("params", params))
+		s.l.DebugContext(ctx, "listCollections", slog.Any("params", params))
 	}
 
 	req := wirebson.MustDocument(
