@@ -4,7 +4,7 @@ sidebar_position: 3
 
 # DEB package
 
-FerretDB uses PostgreSQL with [DocumentDB extension](https://github.com/microsoft/documentdb) as a database engine.
+FerretDB uses PostgreSQL with [DocumentDB extension](https://github.com/documentdb/documentdb) as a database engine.
 
 We provide different DocumentDB `.deb` packages for various deployments on our [release page](https://github.com/FerretDB/documentdb/releases/).
 

@@ -86,6 +86,16 @@ export const categorizedApps = {
       name: 'NodeBB',
       logo: '/img/compatible-applications/nodebb-logo.png',
       link: 'https://blog.ferretdb.io/building-scalable-community-forums-nodebb-and-ferretdb/'
+    },
+    {
+      name: 'Form.io',
+      logo: '/img/compatible-applications/formio-logo.jpeg',
+      link: 'https://blog.ferretdb.io/building-dynamic-forms-with-formio-ferretdb/'
+    },
+    {
+      name: 'HeyForm',
+      logo: '/img/compatible-applications/heyform-logo.png',
+      link: 'https://blog.ferretdb.io/streamlining-form-management-heyform-ferretdb/'
     }
   ],
 
@@ -104,11 +114,6 @@ export const categorizedApps = {
       name: 'GrowthBook',
       logo: '/img/compatible-applications/growthbook-logo.png',
       link: 'https://blog.ferretdb.io/enabling-feature-flags-ab-testing-growthbook-ferretdb/'
-    },
-    {
-      name: 'HeyForm',
-      logo: '/img/compatible-applications/heyform-logo.png',
-      link: 'https://blog.ferretdb.io/streamlining-form-management-heyform-ferretdb/'
     },
     {
       name: 'HashiCorp Vault',

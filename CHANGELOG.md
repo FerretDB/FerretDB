@@ -17,14 +17,25 @@ Please note that they are
 
 ### What's Changed
 
+#### Basic MCP server
+
+This release adds basic MCP server support.
+Future release will bring additional functionality.
+
+#### Connectivity improvements
+
+PostgreSQL connections are now reused, often yielding modest performance gains.
+
 ### New Features 🎉
 
+- Add basic MCP server by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5279
+- Implement DataAPI graceful shutdown and add OpenAPI spec endpoint by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5357
 - Improve proxy mode observability by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5440
-- Add MCP tools by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5452
 - Add tracing of SQL queries by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5514
 
 ### Enhancements 🛠
 
+- Add `PostgreSQL` metrics by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5427
 - Rename OpenTelemetry spans by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5512
 
 ### Documentation 📄
@@ -39,13 +50,10 @@ Please note that they are
 
 ### Other Changes 🤖
 
-- Add basic MCP server by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5279
-- Refactor DataAPI with graceful shutdown and add OpenAPI specification endpoint by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5357
 - Use middleware by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5377
 - Use generated structs in Data API by @noisersup in https://github.com/FerretDB/FerretDB/pull/5382
 - Upload YugabyteDB log files by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5401
 - Update documentation to point to the next release by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5423
-- Add `PostgreSQL` metrics by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5427
 - Bump YugabyteDB to stable version by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5428
 - Use QEMU on arm64 for Yugabyte for now by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5429
 - Add comments to supervisord config by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5430
@@ -57,6 +65,7 @@ Please note that they are
 - Avoid hijacking connections from the pool and immediately closing them by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5443
 - Remove flaky test by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5444
 - Add TODO comment about Debian 13 Trixie by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5450
+- Add MCP tools by @chilagrow in https://github.com/FerretDB/FerretDB/pull/5452
 - Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5455
 - Update `wire` dependency by @noisersup in https://github.com/FerretDB/FerretDB/pull/5465
 - Add helpers for lazy logging by @AlekSi in https://github.com/FerretDB/FerretDB/pull/5467
@@ -80,7 +89,7 @@ Please note that they are
 
 ### New Contributors
 
-TODO
+- @jsoref made their first contribution in https://github.com/FerretDB/FerretDB/pull/5486
 
 [All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/80?closed=1).
 [All commits](https://github.com/FerretDB/FerretDB/compare/v2.5.0...v2.7.0).

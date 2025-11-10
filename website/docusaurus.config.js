@@ -47,8 +47,8 @@ const config = {
           let res = [];
 
           if (!(to.startsWith("/v1") || to.startsWith("/v2"))) {
-            // /v2.5/installation/ -> /installation/
-            res.push("/v2.5" + to);
+            // /v2.7/installation/ -> /installation/
+            res.push("/v2.7" + to);
           }
 
           if (to.startsWith("/installation/ferretdb")) {
@@ -89,8 +89,8 @@ const config = {
           // https://docusaurus.io/docs/api/plugins/@docusaurus/plugin-content-docs#configuration
           versions: {
             current: {
-              label: "v2.7",
-              path: "v2.7",
+              label: "v2.8",
+              path: "v2.8",
             },
           },
         },
