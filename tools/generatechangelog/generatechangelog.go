@@ -177,6 +177,7 @@ func makeData(milestone *github.Milestone, prev string, prs []*github.Issue, l *
 			}
 
 			errs = append(errs, fmt.Errorf("multiple possible categories for %s", prData.URL))
+
 			break
 		}
 
