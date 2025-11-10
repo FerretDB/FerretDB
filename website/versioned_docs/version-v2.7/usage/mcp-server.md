@@ -1,9 +1,9 @@
 ---
-sidebar_position: 7
+sidebar_position: 9
 ---
 
-# macOS
+# MCP server
 
 _This section is not currently available.
 You can help FerretDB by contributing to this section.
-Click the **Edit this page** link below to get started_.
+Click the **Edit this page** link below to get started._

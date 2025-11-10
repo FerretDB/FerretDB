@@ -4,7 +4,8 @@ sidebar_position: 8
 
 # Data API
 
-The FerretDB Data API is an open-source alternative to the MongoDB Atlas Data API.
+The FerretDB Data API is an open-source alternative to
+the [deprecated MongoDB Atlas Data API](https://www.mongodb.com/docs/atlas/app-services/data-api/).
 It lets you perform MongoDB-compatible operations via HTTP requests, without needing a MongoDB driver.
 The Data API is integrated directly into FerretDB – it's not a standalone service.
 
@@ -20,7 +21,7 @@ Make sure to provide your authentication credential in the request headers or as
 ## Using the Data API
 
 The Data API supports standard MongoDB operations like `insert`, `find`, `update`, and `delete`.
-It follows the [Data API OpenAPI 3.0 specification defined here](https://github.com/FerretDB/FerretDB/blob/refs/tags/v2.4.0/internal/dataapi/api/openapi.json).
+It follows the [Data API OpenAPI 3.0 specification defined here](https://github.com/FerretDB/FerretDB/blob/refs/tags/v2.7.0/internal/dataapi/api/openapi.json).
 
 ### Insert a document
 
@@ -99,7 +100,7 @@ Below is an example using Postman.
 Import the FerretDB Data API specification into Postman using the following URL:
 
 ```text
-https://raw.githubusercontent.com/FerretDB/FerretDB/refs/tags/v2.4.0/internal/dataapi/api/openapi.json
+https://raw.githubusercontent.com/FerretDB/FerretDB/refs/tags/v2.7.0/internal/dataapi/api/openapi.json
 ```
 
 This will load available endpoints into Postman, as shown below:

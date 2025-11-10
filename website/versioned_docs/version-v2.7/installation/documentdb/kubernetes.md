@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Kubernetes
 
-FerretDB uses PostgreSQL with [DocumentDB extension](https://github.com/microsoft/documentdb) as the database engine.
+FerretDB uses PostgreSQL with [DocumentDB extension](https://github.com/documentdb/documentdb) as the database engine.
 
 Ensure to have a running Kubernetes cluster before proceeding with the installation.
 
@@ -12,7 +12,7 @@ You can deploy PostgreSQL with DocumentDB extension using any of our provided im
 Please see the [Docker installation docs](../documentdb/docker.md) to learn more about the available images.
 
 :::tip
-We strongly recommend specifying the full image tag (e.g., `17-0.105.0-ferretdb-2.4.0`)
+We strongly recommend specifying the full image tag (e.g., `17-0.107.0-ferretdb-2.7.0`)
 to ensure consistency across deployments.
 For more information on the best FerretDB image to use, see the [DocumentDB release notes](https://github.com/FerretDB/documentdb/releases/).
 :::
@@ -37,7 +37,7 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: ghcr.io/ferretdb/postgres-documentdb:17-0.105.0-ferretdb-2.4.0
+          image: ghcr.io/ferretdb/postgres-documentdb:17-0.107.0-ferretdb-2.7.0
           ports:
             - containerPort: 5432
           env:

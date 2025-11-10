@@ -26,10 +26,10 @@ The following data is collected:
 - Build configuration (Go version, build flags and tags)
 - Uptime
 - Command statistics:
-  - protocol operation codes (e.g. `OP_MSG`, `OP_QUERY`);
+  - protocol operation names (e.g. `OP_MSG`, `OP_QUERY`);
   - command names (e.g., `find`, `aggregate`);
   - arguments (e.g., `sort`, `$count`);
-  - error codes (e.g., `NotImplemented`, `InternalError`; or `ok`).
+  - error names (e.g., `NotImplemented`, `InternalError`; or `ok`).
 
 :::info
 Argument values, data field names, successful responses, or error messages are never collected.
