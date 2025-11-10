@@ -93,7 +93,7 @@ require (
 	github.com/mailru/easyjson v0.9.0 // indirect
 	github.com/mark3labs/mcp-filesystem-server v0.11.1 // indirect
 	github.com/mark3labs/mcp-go v0.41.1 // indirect
-	github.com/mark3labs/mcphost v0.31.1 // indirect
+	github.com/mark3labs/mcphost v0.31.3 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
