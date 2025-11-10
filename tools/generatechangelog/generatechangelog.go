@@ -82,6 +82,8 @@ func getMilestone(ctx context.Context, client *github.Client, title string) (*gi
 		if resp.NextPage == 0 {
 			return nil, fmt.Errorf("no milestone found with the title %q", title)
 		}
+
+		opts.ListOptions.Page = resp.NextPage
 	}
 }
 
@@ -115,6 +117,8 @@ func getPRs(ctx context.Context, client *github.Client, milestone *github.Milest
 		if resp.NextPage == 0 {
 			return prs, nil
 		}
+
+		opts.ListOptions.Page = resp.NextPage
 	}
 }
 
@@ -199,10 +203,14 @@ func run(w io.Writer, l *slog.Logger, prev, next string) error {
 		return err
 	}
 
+	l.Info("Received milestones", slog.Int("next", *milestone.Number))
+
 	prs, err := getPRs(ctx, client, milestone)
 	if err != nil {
 		return err
 	}
+
+	l.Info("Received PRs", slog.Int("count", len(prs)))
 
 	d, err := makeData(milestone, prev, prs, l)
 	if err != nil {
