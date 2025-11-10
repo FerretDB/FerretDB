@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"context"
 	_ "embed"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -140,6 +141,7 @@ func makeData(milestone *github.Milestone, prev string, prs []*github.Issue, l *
 
 	d.Date = milestone.DueOn.Format("2006-01-02")
 
+	var errs []error
 	for _, pr := range prs {
 		if pr.ClosedAt == nil {
 			l.Warn(fmt.Sprintf("PR is not closed: %s", *pr.HTMLURL))
@@ -169,19 +171,21 @@ func makeData(milestone *github.Milestone, prev string, prs []*github.Issue, l *
 				continue
 			}
 
-			if found {
-				return nil, fmt.Errorf("multiple possible categories for %s", prData.URL)
+			if !found {
+				found = true
+				continue
 			}
 
-			found = true
+			errs = append(errs, fmt.Errorf("multiple possible categories for %s", prData.URL))
+			break
 		}
 
 		if !found {
-			return nil, fmt.Errorf("no category found for %s", prData.URL)
+			errs = append(errs, fmt.Errorf("no category found for %s", prData.URL))
 		}
 	}
 
-	return d, nil
+	return d, errors.Join(errs...)
 }
 
 // run generates the changelog.

@@ -89,8 +89,8 @@ const config = {
           // https://docusaurus.io/docs/api/plugins/@docusaurus/plugin-content-docs#configuration
           versions: {
             current: {
-              label: "v2.6",
-              path: "v2.6",
+              label: "v2.7",
+              path: "v2.7",
             },
           },
         },
