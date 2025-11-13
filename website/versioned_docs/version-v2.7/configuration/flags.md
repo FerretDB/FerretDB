@@ -45,11 +45,12 @@ Additionally:
 
 ## Interfaces
 
+<<<<<<< HEAD:website/versioned_docs/version-v2.7/configuration/flags.md
 | Flag                     | Description                                                                                                                      | Environment Variable            | Default Value                                |
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | -------------------------------------------- |
 | `--listen-addr`          | Listen TCP address for MongoDB protocol<br />(set to empty value or `-` to disable)                                              | `FERRETDB_LISTEN_ADDR`          | `127.0.0.1:27017`<br />(`:27017` for Docker) |
 | `--listen-unix`          | Listen Unix domain socket path for MongoDB protocol<br />(set to empty value or `-` to disable)                                  | `FERRETDB_LISTEN_UNIX`          |                                              |
-| `--listen-tls`           | Listen TLS address for MongoDB protocol (see [here](../security/tls-connections.md))<br />(set to empty value or `-` to disable) | `FERRETDB_LISTEN_TLS`           |                                              |
+| `--listen-tls`           | Listen [TLS address for MongoDB protocol](../security/tls-connections.md)<br />(set to empty value or `-` to disable)            | `FERRETDB_LISTEN_TLS`           |                                              |
 | `--listen-tls-cert-file` | TLS cert file path                                                                                                               | `FERRETDB_LISTEN_TLS_CERT_FILE` |                                              |
 | `--listen-tls-key-file`  | TLS key file path                                                                                                                | `FERRETDB_LISTEN_TLS_KEY_FILE`  |                                              |
 | `--listen-tls-ca-file`   | TLS CA file path                                                                                                                 | `FERRETDB_LISTEN_TLS_CA_FILE`   |                                              |
