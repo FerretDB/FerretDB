@@ -1,1 +1,1 @@
-FROM davidanson/markdownlint-cli2:v0.18.1
+FROM davidanson/markdownlint-cli2:v0.19.0
