@@ -9,7 +9,7 @@ replace github.com/FerretDB/FerretDB/v2 => ../
 // replace github.com/FerretDB/wire => ../../wire
 
 require (
-	github.com/AlekSi/lazyerrors v0.0.0-20251102120325-67e66cc79778
+	github.com/AlekSi/lazyerrors v0.5.0
 	github.com/AlekSi/pointer v1.2.0
 	github.com/FerretDB/FerretDB/v2 v2.0.0-00010101000000-000000000000
 	github.com/FerretDB/wire v0.1.7

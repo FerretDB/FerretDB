@@ -1,5 +1,5 @@
-github.com/AlekSi/lazyerrors v0.0.0-20251102120325-67e66cc79778 h1:Hv1Z0ZnUWI1NYHXKUE16SWUcv+VyFARJHQ6dGkd2TIM=
-github.com/AlekSi/lazyerrors v0.0.0-20251102120325-67e66cc79778/go.mod h1:S8uLHjY/2pJvG9qkWwDX1AVYYknPI92r2qh/f0uysr0=
+github.com/AlekSi/lazyerrors v0.5.0 h1:c4zM7P9S2seDJJ5UcEh9hayVVKGck/i7XE+JE6XXayI=
+github.com/AlekSi/lazyerrors v0.5.0/go.mod h1:uipmPehsHYFEViLPI0rSdXu7WvPcbQ2jfhkdik4kKb4=
 github.com/AlekSi/pointer v1.2.0 h1:glcy/gc4h8HnG2Z3ZECSzZ1IX1x2JxRVuDzaJwQE0+w=
 github.com/AlekSi/pointer v1.2.0/go.mod h1:gZGfd3dpW4vEc/UlyfKKi1roIqcCgwOIvb0tSNSBle0=
 github.com/FerretDB/wire v0.1.7 h1:yh6tL0rU8ub+KuKqiqTlFJGpdfL4V7kg/8PBPDX0sBE=
