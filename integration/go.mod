@@ -9,7 +9,7 @@ replace github.com/FerretDB/FerretDB/v2 => ../
 // replace github.com/FerretDB/wire => ../../wire
 
 require (
-	github.com/AlekSi/lazyerrors v0.0.0-20251102120325-67e66cc79778
+	github.com/AlekSi/lazyerrors v0.5.0
 	github.com/AlekSi/pointer v1.2.0
 	github.com/FerretDB/FerretDB/v2 v2.0.0-00010101000000-000000000000
 	github.com/FerretDB/wire v0.1.7
@@ -17,7 +17,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/stretchr/testify v1.11.1
-	github.com/xdg-go/scram v1.1.2
+	github.com/xdg-go/scram v1.2.0
 	go.mongodb.org/mongo-driver v1.17.6
 	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.63.0
 	go.opentelemetry.io/otel v1.38.0
