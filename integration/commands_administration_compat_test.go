@@ -19,6 +19,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,6 +27,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
+	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
 )
 
 func TestListCollectionsCompat(t *testing.T) {
@@ -131,4 +133,85 @@ func TestListCollectionsCompat(t *testing.T) {
 	}
 
 	AssertEqualDocumentsSlice(t, comparable(compatRes), comparable(targetRes))
+}
+
+type sleepCompatTestCase struct {
+	request bson.D
+}
+
+func TestSleepCompat(t *testing.T) {
+	testCases := map[string]sleepCompatTestCase{
+		"Millis": {
+			request: bson.D{
+				{"sleep", int32(1)},
+				{"millis", int32(500)},
+				{"lock", "w"},
+			},
+		},
+		"Zero": {
+			request: bson.D{
+				{"sleep", int32(1)},
+				{"millis", int32(0)},
+				{"lock", "w"},
+			},
+		},
+		"Default": {
+			request: bson.D{
+				{"sleep", int32(1)},
+				{"lock", "w"},
+			},
+		},
+	}
+
+	testSleepCompat(t, testCases)
+}
+
+func testSleepCompat(t *testing.T, testCases map[string]sleepCompatTestCase) {
+	t.Helper()
+
+	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+		Providers: shareddata.Providers{shareddata.Bools},
+	})
+
+	ctx := s.Ctx
+	targetDB := s.TargetCollections[0].Database().Client().Database("admin")
+	compatDB := s.CompatCollections[0].Database().Client().Database("admin")
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			t.Helper()
+
+			var targetRes, compatRes bson.D
+
+			timeBefore := time.Now()
+			targetErr := targetDB.RunCommand(ctx, tc.request).Decode(&targetRes)
+
+			targetDuration := time.Since(timeBefore)
+
+			timeBefore = time.Now()
+			compatErr := compatDB.RunCommand(ctx, tc.request).Decode(&compatRes)
+
+			compatDuration := time.Since(timeBefore)
+
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
+
+				targetErr = UnsetRaw(t, targetErr)
+				compatErr = UnsetRaw(t, compatErr)
+				assert.Equal(t, compatErr, targetErr)
+
+				return
+			}
+
+			require.NoError(t, compatErr, "compat error; target returned no error")
+
+			t.Logf("Compat (expected) result: %v", compatRes)
+			t.Logf("Target (actual)   result: %v", targetRes)
+
+			AssertEqualDocuments(t, compatRes, targetRes)
+
+			assert.InDelta(t, compatDuration.Milliseconds(), targetDuration.Milliseconds(), 100, "Compat and target sleep durations should be approximately equal")
+		})
+	}
 }
