@@ -87,12 +87,12 @@ func TestRefreshSessionsErrors(t *testing.T) {
 
 	t.Run("NotArray", func(t *testing.T) {
 		sessions := "invalid"
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "BSON field 'refreshSessions.refreshSessions' is the wrong type 'string', expected type 'array'",
 			"code", int32(14),
 			"codeName", "TypeMismatch",
-		))
+		)
 
 		refreshSessions(t, ctx, conn, dbName, nil, sessions, expectedErr)
 	})
@@ -100,12 +100,12 @@ func TestRefreshSessionsErrors(t *testing.T) {
 	t.Run("NotSessionDocument", func(t *testing.T) {
 		sessions := wirebson.MustArray("invalid")
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "BSON field 'refreshSessions.refreshSessionsFromClient.0' is the wrong type 'string', expected type 'object'",
 			"code", int32(14),
 			"codeName", "TypeMismatch",
-		))
+		)
 
 		refreshSessions(t, ctx, conn, dbName, nil, sessions, expectedErr)
 	})
@@ -113,12 +113,12 @@ func TestRefreshSessionsErrors(t *testing.T) {
 	t.Run("MissingID", func(t *testing.T) {
 		sessions := wirebson.MustArray(wirebson.MustDocument())
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "BSON field 'refreshSessions.refreshSessionsFromClient.id' is missing but a required field",
 			"code", int32(40414),
 			"codeName", "Location40414",
-		))
+		)
 
 		refreshSessions(t, ctx, conn, dbName, nil, sessions, expectedErr)
 	})
@@ -126,12 +126,12 @@ func TestRefreshSessionsErrors(t *testing.T) {
 	t.Run("WrongIDType", func(t *testing.T) {
 		sessions := wirebson.MustArray(wirebson.MustDocument("id", "invalid"))
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "BSON field 'refreshSessions.refreshSessionsFromClient.id' is the wrong type 'string', expected type 'binData'",
 			"code", int32(14),
 			"codeName", "TypeMismatch",
-		))
+		)
 
 		refreshSessions(t, ctx, conn, dbName, nil, sessions, expectedErr)
 	})
@@ -139,12 +139,12 @@ func TestRefreshSessionsErrors(t *testing.T) {
 	t.Run("WrongIDSubtype", func(t *testing.T) {
 		sessions := wirebson.MustArray(wirebson.MustDocument("id", wirebson.Binary{Subtype: wirebson.BinaryFunction}))
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "BSON field 'refreshSessions.refreshSessionsFromClient.id' is the wrong binData type 'function', expected type 'UUID'",
 			"code", int32(14),
 			"codeName", "TypeMismatch",
-		))
+		)
 
 		refreshSessions(t, ctx, conn, dbName, nil, sessions, expectedErr)
 	})
@@ -152,12 +152,12 @@ func TestRefreshSessionsErrors(t *testing.T) {
 	t.Run("NotUUID", func(t *testing.T) {
 		sessions := wirebson.MustArray(wirebson.MustDocument("id", wirebson.Binary{Subtype: wirebson.BinaryUUID}))
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "uuid must be a 16-byte binary field with UUID (4) subtype",
 			"code", int32(207),
 			"codeName", "InvalidUUID",
-		))
+		)
 
 		refreshSessions(t, ctx, conn, dbName, nil, sessions, expectedErr)
 	})
@@ -166,12 +166,12 @@ func TestRefreshSessionsErrors(t *testing.T) {
 		lsid := wirebson.Binary{Subtype: wirebson.BinaryUUID}
 		sessions := wirebson.MustArray(wirebson.MustDocument("id", wirebson.Binary{Subtype: wirebson.BinaryUUID}))
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "uuid must be a 16-byte binary field with UUID (4) subtype",
 			"code", int32(207),
 			"codeName", "InvalidUUID",
-		))
+		)
 
 		refreshSessions(t, ctx, conn, dbName, lsid, sessions, expectedErr)
 	})
@@ -196,7 +196,7 @@ func refreshSessions(t testing.TB, ctx context.Context, conn *wireclient.Conn, d
 	_, resBody, err := conn.Request(ctx, msg)
 	require.NoError(t, err)
 
-	res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+	res, err := must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).DecodeDeep()
 	require.NoError(t, err)
 
 	integration.FixCluster(t, res)
@@ -207,9 +207,9 @@ func refreshSessions(t testing.TB, ctx context.Context, conn *wireclient.Conn, d
 		return
 	}
 
-	expected := must.NotFail(wirebson.NewDocument(
+	expected := wirebson.MustDocument(
 		"ok", float64(1),
-	))
+	)
 
 	testutil.AssertEqual(t, expected, res)
 }

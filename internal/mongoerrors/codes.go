@@ -77,6 +77,7 @@ const (
 	ErrLocation13026                               = Code(13026)   // Location13026
 	ErrLocation13027                               = Code(13027)   // Location13027
 	ErrLocation13068                               = Code(13068)   // Location13068
+	ErrLocation13103                               = Code(13103)   // Location13103
 	ErrLocation13111                               = Code(13111)   // Location13111
 	ErrMergeStageNoMatchingDocument                = Code(13113)   // MergeStageNoMatchingDocument
 	ErrDbAlreadyExists                             = Code(13297)   // DbAlreadyExists
@@ -146,6 +147,7 @@ const (
 	ErrLocation17276                               = Code(17276)   // Location17276
 	ErrLocation17308                               = Code(17308)   // Location17308
 	ErrLocation17310                               = Code(17310)   // Location17310
+	ErrLocation17385                               = Code(17385)   // Location17385
 	ErrDocumentAfterUpdateLargerThanMaxSize        = Code(17419)   // DocumentAfterUpdateLargerThanMaxSize
 	ErrDocumentToUpsertLargerThanMaxSize           = Code(17420)   // DocumentToUpsertLargerThanMaxSize
 	ErrLocation18533                               = Code(18533)   // Location18533
@@ -220,6 +222,9 @@ const (
 	ErrLocation31271                               = Code(31271)   // Location31271
 	ErrLocation31276                               = Code(31276)   // Location31276
 	ErrLocation31308                               = Code(31308)   // Location31308
+	ErrLocation31319                               = Code(31319)   // Location31319
+	ErrLocation31320                               = Code(31320)   // Location31320
+	ErrLocation31321                               = Code(31321)   // Location31321
 	ErrLocation31325                               = Code(31325)   // Location31325
 	ErrLocation31393                               = Code(31393)   // Location31393
 	ErrLocation31395                               = Code(31395)   // Location31395
@@ -613,6 +618,7 @@ var pgCodes = map[string]Code{
 	"M001E": ErrLocation13026,                               // 13026
 	"M001F": ErrLocation13027,                               // 13027
 	"M001G": ErrLocation13068,                               // 13068
+	"M00EM": ErrLocation13103,                               // 13103
 	"M00CS": ErrLocation13111,                               // 13111
 	"M001H": ErrMergeStageNoMatchingDocument,                // 13113
 	"M001I": ErrDbAlreadyExists,                             // 13297
@@ -681,6 +687,7 @@ var pgCodes = map[string]Code{
 	"M0037": ErrLocation17276,                               // 17276
 	"M0038": ErrLocation17308,                               // 17308
 	"M0039": ErrLocation17310,                               // 17310
+	"M00EN": ErrLocation17385,                               // 17385
 	"M003A": ErrDocumentAfterUpdateLargerThanMaxSize,        // 17419
 	"M003B": ErrDocumentToUpsertLargerThanMaxSize,           // 17420
 	"M003E": ErrLocation18533,                               // 18533
@@ -755,6 +762,9 @@ var pgCodes = map[string]Code{
 	"M005B": ErrLocation31271,                               // 31271
 	"M005C": ErrLocation31276,                               // 31276
 	"M005D": ErrLocation31308,                               // 31308
+	"M00EO": ErrLocation31319,                               // 31319
+	"M00EP": ErrLocation31320,                               // 31320
+	"M00EQ": ErrLocation31321,                               // 31321
 	"M005E": ErrLocation31325,                               // 31325
 	"M005F": ErrLocation31393,                               // 31393
 	"M005G": ErrLocation31395,                               // 31395

@@ -17,24 +17,21 @@ package handler
 import (
 	"context"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // msgCollMod implements `collMod` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgCollMod(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	doc, err := req.OpMsg.Document()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	doc := req.Document()
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
@@ -48,20 +45,15 @@ func (h *Handler) msgCollMod(connCtx context.Context, req *middleware.Request) (
 		return nil, err
 	}
 
-	spec, err := req.OpMsg.DocumentRaw()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
 	var res wirebson.RawDocument
 
-	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
-		res, err = documentdb_api.CollMod(connCtx, conn, h.L, dbName, collName, spec)
+	err = h.p.WithConn(func(conn *pgx.Conn) error {
+		res, err = documentdb_api.CollMod(connCtx, conn, h.L, dbName, collName, req.DocumentRaw())
 		return err
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }

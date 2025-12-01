@@ -20,12 +20,13 @@ import (
 	"regexp"
 	"unicode/utf8"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // collectionNameRe validates collection names.
@@ -36,26 +37,20 @@ var collectionNameRe = regexp.MustCompile("^[^\\.$\x00][^$\x00]{0,234}$")
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgCreate(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	doc := req.Document()
 
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
+
+	command := doc.Command()
 
 	dbName, err := getRequiredParam[string](doc, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	collectionName, err := getRequiredParam[string](doc, "create")
+	collectionName, err := getRequiredParam[string](doc, command)
 	if err != nil {
 		return nil, err
 	}
@@ -63,22 +58,18 @@ func (h *Handler) msgCreate(connCtx context.Context, req *middleware.Request) (*
 	if !collectionNameRe.MatchString(collectionName) ||
 		!utf8.ValidString(collectionName) {
 		msg := fmt.Sprintf("Invalid collection name: %s", collectionName)
-		return nil, mongoerrors.NewWithArgument(mongoerrors.ErrInvalidNamespace, msg, "create")
+		return nil, mongoerrors.NewWithArgument(mongoerrors.ErrInvalidNamespace, msg, command)
 	}
 
-	conn, err := h.Pool.Acquire()
+	err = h.p.WithConn(func(conn *pgx.Conn) error {
+		_, err = documentdb_api.CreateCollection(connCtx, conn, h.L, dbName, collectionName)
+		return err
+	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	defer conn.Release()
-
-	_, err = documentdb_api.CreateCollection(connCtx, conn.Conn(), h.L, dbName, collectionName)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return middleware.ResponseMsg(wirebson.MustDocument(
+	return middleware.ResponseDoc(req, wirebson.MustDocument(
 		"ok", float64(1),
 	))
 }

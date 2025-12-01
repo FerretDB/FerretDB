@@ -20,15 +20,15 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // DeleteMany implements [ServerInterface].
-func (s *Server) DeleteMany(w http.ResponseWriter, r *http.Request) {
+func (s *Server) DeleteMany(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	if s.l.Enabled(ctx, slog.LevelDebug) {
@@ -37,7 +37,7 @@ func (s *Server) DeleteMany(w http.ResponseWriter, r *http.Request) {
 
 	var req api.DeleteRequestBody
 	if err := decodeJSONRequest(r, &req); err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -46,7 +46,7 @@ func (s *Server) DeleteMany(w http.ResponseWriter, r *http.Request) {
 		"limit", float64(0),
 	)
 	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -56,21 +56,24 @@ func (s *Server) DeleteMany(w http.ResponseWriter, r *http.Request) {
 		"deletes", wirebson.MustArray(deleteDoc),
 	)
 	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
-	resMsg, err := s.handler.Handle(ctx, msg)
-	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+	resp := s.m.Handle(ctx, msg)
+	if resp == nil {
+		http.Error(rw, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	resDoc := must.NotFail(must.NotFail(resMsg.OpMsg.RawDocument()).Decode())
+	if !resp.OK() {
+		s.writeJSONError(ctx, rw, resp)
+		return
+	}
 
-	res := must.NotFail(wirebson.NewDocument(
-		"deletedCount", resDoc.Get("n"),
-	))
+	res := api.DeleteResponseBody{
+		DeletedCount: resp.Document().Get("n"),
+	}
 
-	s.writeJSONResponse(ctx, w, res)
+	s.writeJSONResponse(ctx, rw, &res)
 }

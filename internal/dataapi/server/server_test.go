@@ -50,7 +50,7 @@ func TestPrepareRequest(t *testing.T) {
 		},
 		"EmptyRawMessage": {
 			pairs: []any{"foo", pointer.To(json.RawMessage{})},
-			err:   fmt.Errorf("Invalid object: []"),
+			err:   fmt.Errorf("server.go:272 (server.prepareRequest): Invalid object: []"),
 		},
 	} {
 		t.Run(name, func(t *testing.T) {

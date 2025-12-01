@@ -24,6 +24,7 @@ import (
 )
 
 // ConnInfo represents client connection information.
+// It must be one-to-one mapped to a client connection.
 type ConnInfo struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
@@ -33,7 +34,8 @@ type ConnInfo struct {
 	metadataRecv bool           // protected by rw
 	steps        int            // protected by rw
 
-	token *resource.Token
+	token   *resource.Token
+	onClose func(*ConnInfo)
 }
 
 // New creates a new ConnInfo.
@@ -49,7 +51,16 @@ func New() *ConnInfo {
 
 // Close untracks ConnInfo.
 func (ci *ConnInfo) Close() {
+	if ci.onClose != nil {
+		ci.onClose(ci)
+	}
+
 	resource.Untrack(ci, ci.token)
+}
+
+// OnClose sets a callback to be called when ConnInfo is [Close]'d.
+func (ci *ConnInfo) OnClose(f func(*ConnInfo)) {
+	ci.onClose = f
 }
 
 // Conv returns SCRAM conversation.

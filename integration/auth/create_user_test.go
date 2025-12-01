@@ -148,10 +148,10 @@ func TestCreateUserCommand(t *testing.T) {
 		},
 		"MissingPwdOrExternal": {
 			payload: bson.D{
-				{"createUser", "mising_pwd_or_external"},
+				{"createUser", "missing_pwd_or_external"},
 				{"roles", bson.A{}},
 			},
-			user: "mising_pwd_or_external",
+			user: "missing_pwd_or_external",
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
@@ -178,7 +178,7 @@ func TestCreateUserCommand(t *testing.T) {
 					{Key: "serverKey"},
 				}},
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/939",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5313",
 		},
 		"SuccessWithSCRAMSHA256": {
 			payload: bson.D{
@@ -200,7 +200,7 @@ func TestCreateUserCommand(t *testing.T) {
 					{Key: "serverKey"},
 				}},
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/939",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5313",
 		},
 		"WithComment": {
 			payload: bson.D{
@@ -222,7 +222,7 @@ func TestCreateUserCommand(t *testing.T) {
 					{Key: "serverKey"},
 				}},
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/939",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5313",
 		},
 		"MissingRoles": {
 			payload: bson.D{

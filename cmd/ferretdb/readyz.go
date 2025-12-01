@@ -15,7 +15,6 @@
 package main
 
 import (
-	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
@@ -39,7 +38,7 @@ type ReadyZ struct {
 func (r *ReadyZ) Probe(ctx context.Context) bool {
 	var urls []string
 
-	if cmp.Or(cli.Listen.Addr, "-") != "-" {
+	if cli.Listen.Addr != "" {
 		host, port, err := net.SplitHostPort(cli.Listen.Addr)
 		if err != nil {
 			r.l.ErrorContext(ctx, "Getting host and port failed", logging.Error(err))
@@ -59,12 +58,12 @@ func (r *ReadyZ) Probe(ctx context.Context) bool {
 		urls = append(urls, u.String())
 	}
 
-	if cmp.Or(cli.Listen.TLS, "-") != "-" {
+	if cli.Listen.TLS != "" {
 		// TODO https://github.com/FerretDB/FerretDB/issues/4427
 		r.l.WarnContext(ctx, "TLS ping is not implemented yet")
 	}
 
-	if cmp.Or(cli.Listen.Unix, "-") != "-" {
+	if cli.Listen.Unix != "" {
 		urls = append(urls, "mongodb://"+url.PathEscape(cli.Listen.Unix))
 	}
 
@@ -76,7 +75,13 @@ func (r *ReadyZ) Probe(ctx context.Context) bool {
 	for _, u := range urls {
 		r.l.DebugContext(ctx, fmt.Sprintf("Pinging %s", u))
 
-		conn, err := wireclient.Connect(ctx, u, r.l)
+		cleanUri, _, _, _, err := wireclient.Credentials(u)
+		if err != nil {
+			r.l.ErrorContext(ctx, "Getting credentials failed", logging.Error(err))
+			return false
+		}
+
+		conn, err := wireclient.Connect(ctx, cleanUri, r.l)
 		if err != nil {
 			r.l.ErrorContext(ctx, "Connection failed", logging.Error(err))
 			return false

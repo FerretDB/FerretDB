@@ -16,14 +16,17 @@ package handler
 
 import (
 	"context"
-	"fmt"
-	"log/slog"
 
-	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
-	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
+
+// commandHandler represents a function/method that processes a single request.
+//
+// The passed context is canceled when the client disconnects.
+//
+// Response is a normal response or an error.
+// TODO https://github.com/FerretDB/FerretDB/issues/4965
+type commandHandler func(context.Context, *middleware.Request) (*middleware.Response, error)
 
 // command represents a handler for single command.
 type command struct {
@@ -33,9 +36,7 @@ type command struct {
 	// handler processes this command.
 	//
 	// The passed context is canceled when the client disconnects.
-	//
-	// Currently, it is the same as [middleware.HandleFunc], but it does not have to be.
-	handler func(context.Context, *middleware.Request) (*middleware.Response, error)
+	handler commandHandler
 
 	// Help is shown in the `listCommands` command output.
 	// If empty, that command is hidden, but still can be used.
@@ -44,7 +45,7 @@ type command struct {
 
 // initCommands initializes the commands map for that handler instance.
 func (h *Handler) initCommands() {
-	commands := map[string]*command{
+	h.commands = map[string]*command{
 		// sorted alphabetically
 		"aggregate": {
 			handler: h.msgAggregate,
@@ -66,7 +67,7 @@ func (h *Handler) initCommands() {
 			Help:      "", // hidden
 		},
 		"bulkWrite": {
-			// TODO https://github.com/microsoft/documentdb/issues/108
+			// TODO https://github.com/documentdb/documentdb/issues/108
 			// TODO https://github.com/FerretDB/FerretDB/issues/4910
 			Help: "", // hidden while not implemented
 		},
@@ -246,7 +247,7 @@ func (h *Handler) initCommands() {
 		},
 		"listDatabases": {
 			handler: h.msgListDatabases,
-			Help:    "Returns a summary of all the databases.",
+			Help:    "Returns a summary of all databases.",
 		},
 		"listIndexes": {
 			handler: h.msgListIndexes,
@@ -318,68 +319,5 @@ func (h *Handler) initCommands() {
 			Help:      "Returns peer information.",
 		},
 		// please keep sorted alphabetically
-	}
-
-	h.commands = make(map[string]*command, len(commands))
-
-	for name, cmd := range commands {
-		if cmd.handler == nil {
-			cmd.handler = notImplemented(name)
-		}
-
-		if h.Auth && !cmd.anonymous {
-			cmd.handler = auth(cmd.handler, logging.WithName(h.L, "auth"), name)
-		}
-
-		h.commands[name] = cmd
-	}
-}
-
-// auth is a middleware that wraps the command handler with authentication check.
-//
-// Context must contain [*conninfo.ConnInfo].
-func auth(next middleware.HandleFunc, l *slog.Logger, command string) middleware.HandleFunc {
-	return func(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
-		conv := conninfo.Get(ctx).Conv()
-		succeed := conv.Succeed()
-		username := conv.Username()
-
-		switch {
-		case conv == nil:
-			l.WarnContext(ctx, "No existing conversation")
-
-		case !succeed:
-			l.WarnContext(ctx, "Conversation did not succeed", slog.String("username", username))
-
-		default:
-			l.DebugContext(ctx, "Authentication passed", slog.String("username", username))
-
-			return next(ctx, req)
-		}
-
-		return nil, mongoerrors.New(
-			mongoerrors.ErrUnauthorized,
-			fmt.Sprintf("Command %s requires authentication", command),
-		)
-	}
-}
-
-// notImplemented returns a handler that returns an error indicating that the command is not implemented.
-func notImplemented(command string) middleware.HandleFunc {
-	return func(context.Context, *middleware.Request) (*middleware.Response, error) {
-		return nil, mongoerrors.New(
-			mongoerrors.ErrNotImplemented,
-			fmt.Sprintf("Command %s is not implemented", command),
-		)
-	}
-}
-
-// notFound returns a handler that returns not found error.
-func notFound(command string) middleware.HandleFunc {
-	return func(context.Context, *middleware.Request) (*middleware.Response, error) {
-		return nil, mongoerrors.New(
-			mongoerrors.ErrCommandNotFound,
-			fmt.Sprintf("no such command: '%s'", command),
-		)
 	}
 }

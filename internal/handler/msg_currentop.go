@@ -17,12 +17,12 @@ package handler
 import (
 	"context"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // msgCurrentOp implements `currentOp` command.
@@ -31,24 +31,22 @@ import (
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/3974
 func (h *Handler) msgCurrentOp(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	doc := req.Document()
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
 	var res wirebson.RawDocument
 
-	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
-		res, err = documentdb_api.CurrentOpCommand(connCtx, conn, h.L, spec)
+	var err error
+	err = h.p.WithConn(func(conn *pgx.Conn) error {
+		res, err = documentdb_api.CurrentOpCommand(connCtx, conn, h.L, req.DocumentRaw())
 		return err
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }

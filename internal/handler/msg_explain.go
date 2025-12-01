@@ -24,12 +24,12 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
@@ -37,26 +37,20 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgExplain(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	doc := req.Document()
 
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
+
+	command := doc.Command()
 
 	dbName, err := getRequiredParam[string](doc, "$db")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	explainV, err := getRequiredParamAny(doc, "explain")
+	explainV, err := getRequiredParamAny(doc, command)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -64,7 +58,7 @@ func (h *Handler) msgExplain(connCtx context.Context, req *middleware.Request) (
 	explainSpec, ok := explainV.(wirebson.RawDocument)
 	if !ok {
 		msg := fmt.Sprintf(`required parameter "explain" has type %T (expected document)`, explainV)
-		return nil, lazyerrors.Error(mongoerrors.NewWithArgument(mongoerrors.ErrBadValue, msg, "explain"))
+		return nil, lazyerrors.Error(mongoerrors.NewWithArgument(mongoerrors.ErrBadValue, msg, command))
 	}
 
 	explainDoc, err := explainSpec.Decode()
@@ -83,7 +77,7 @@ func (h *Handler) msgExplain(connCtx context.Context, req *middleware.Request) (
 		return nil, mongoerrors.NewWithArgument(
 			mongoerrors.ErrInvalidNamespace,
 			"Failed to parse namespace element",
-			"explain",
+			command,
 		)
 	}
 
@@ -99,7 +93,7 @@ func (h *Handler) msgExplain(connCtx context.Context, req *middleware.Request) (
 		return nil, mongoerrors.NewWithArgument(
 			mongoerrors.ErrNotImplemented,
 			fmt.Sprintf("explain for %s command is not supported", cmd),
-			"explain",
+			command,
 		)
 	}
 
@@ -110,7 +104,7 @@ func (h *Handler) msgExplain(connCtx context.Context, req *middleware.Request) (
 		f,
 	)
 
-	conn, err := h.Pool.Acquire()
+	conn, err := h.p.Acquire()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -142,17 +136,17 @@ func (h *Handler) msgExplain(connCtx context.Context, req *middleware.Request) (
 		}
 	}
 
-	serverInfo := must.NotFail(wirebson.NewDocument(
+	serverInfo := wirebson.MustDocument(
 		"host", hostname,
 		"port", int32(port),
 		"version", version.Get().MongoDBVersion,
 		"gitVersion", version.Get().Commit,
 
 		// our extensions
-		"ferretdb", must.NotFail(wirebson.NewDocument(
+		"ferretdb", wirebson.MustDocument(
 			"version", version.Get().Version,
-		)),
-	))
+		),
+	)
 
 	res, err := wirebson.NewDocument(
 		"queryPlanner", queryPlan,
@@ -165,7 +159,7 @@ func (h *Handler) msgExplain(connCtx context.Context, req *middleware.Request) (
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }
 
 // unmarshalExplain unmarshalls the plan from EXPLAIN postgreSQL command.

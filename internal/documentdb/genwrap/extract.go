@@ -20,9 +20,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/jackc/pgx/v5"
-
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // Extract returns rows of routines and parameters for given schemas.

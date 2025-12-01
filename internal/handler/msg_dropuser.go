@@ -17,12 +17,12 @@ package handler
 import (
 	"context"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
@@ -30,17 +30,9 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgDropUser(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	doc := req.Document()
 
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
@@ -54,21 +46,21 @@ func (h *Handler) msgDropUser(connCtx context.Context, req *middleware.Request) 
 		return nil, err
 	}
 
-	dropSpec := must.NotFail(must.NotFail(wirebson.NewDocument(
+	dropUserSpec := must.NotFail(wirebson.MustDocument(
 		"dropUser", user,
 		"$db", dbName,
-	)).Encode())
+	).Encode())
 
 	var res wirebson.RawDocument
 
-	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
+	err = h.p.WithConn(func(conn *pgx.Conn) error {
 		// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/859
-		res, err = documentdb_api.DropUser(connCtx, conn, h.L, dropSpec)
+		res, err = documentdb_api.DropUser(connCtx, conn, h.L, dropUserSpec)
 		return err
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }

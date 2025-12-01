@@ -21,7 +21,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
@@ -29,28 +28,25 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgConnectionStatus(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	doc := req.Document()
 
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, spec); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
 	users := wirebson.MakeArray(1)
 
 	if u := conninfo.Get(connCtx).Conv().Username(); u != "" {
-		must.NoError(users.Add(must.NotFail(wirebson.NewDocument(
+		must.NoError(users.Add(wirebson.MustDocument(
 			"user", u,
-		))))
+		)))
 	}
 
-	return middleware.ResponseMsg(wirebson.MustDocument(
-		"authInfo", must.NotFail(wirebson.NewDocument(
+	return middleware.ResponseDoc(req, wirebson.MustDocument(
+		"authInfo", wirebson.MustDocument(
 			"authenticatedUsers", users,
-			"authenticatedUserRoles", must.NotFail(wirebson.NewArray()),
-		)),
+			"authenticatedUserRoles", wirebson.MustArray(),
+		),
 		"ok", float64(1),
 	))
 }

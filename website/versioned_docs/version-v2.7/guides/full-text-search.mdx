@@ -1,0 +1,96 @@
+---
+sidebar_position: 3
+description: Learn about full-text search parameters and capabilities in FerretDB.
+---
+
+# Full-text search
+
+import CodeBlock from '@theme/CodeBlock'
+import InsertData from '!!raw-loader!./full-text-search/2-insert-data.request.js'
+import CreateTextIndexRequest from '!!raw-loader!./full-text-search/3-create-text-index.request.js'
+import BasicTextSearchRequest from '!!raw-loader!./full-text-search/4-basic-text-search.request.js'
+import BasicTextSearchResponse from '!!raw-loader!./full-text-search/4-basic-text-search.response.js'
+import DropTextIndexRequest from '!!raw-loader!./full-text-search/5-drop-text-index.request.js'
+import CompoundTextIndexRequest from '!!raw-loader!./full-text-search/6-compound-text-index.request.js'
+import RelevanceScoreRequest from '!!raw-loader!./full-text-search/7-relevance-score.request.js'
+import RelevanceScoreResponse from '!!raw-loader!./full-text-search/7-relevance-score.response.js'
+
+Full-text search is a technique for searching words or phrases across a large set of textual data.
+Unlike traditional queries that require exact matches, full-text search tries to understand what you’re searching for and bring up the best results.
+It is widely used in applications like search engines, e-commerce platforms, documentation searches, and content management systems.
+
+## Understanding text indexes
+
+A full-text index is fundamentally different from a regular database index.
+Instead of simply mapping fields to values, it:
+
+- Tokenizes text (splits them into words or phrases).
+- Removes stop words (such as "is", "the", "and").
+- Applies stemming (so "running" and "run" are treated as the same).
+- Assigns weights based on frequency, importance, or custom ranking logic.
+
+FerretDB supports full-text search capabilities.
+
+A full-text search index creation takes the following parameters:
+
+| Field            | Description                                                                                |
+| ---------------- | ------------------------------------------------------------------------------------------ |
+| name             | A custom name for the index, useful for reference.                                         |
+| weights          | Assigns weighting to fields (higher values mean more relevance in search). Default is `1`. |
+| default_language | Specifies the language used for stemming (default: "english").                             |
+| caseSensitive    | Enables case-sensitive search.                                                             |
+
+:::note
+FerretDB only supports one text index per collection.
+:::
+
+## Single full-text index
+
+Single full-text index is created on a single field in a collection.
+
+### Creating a text index
+
+To create a text index, use the `createIndex` command with the field you want to index and the type set to `'text'`.
+
+<CodeBlock language="js">{CreateTextIndexRequest}</CodeBlock>
+
+This command creates a full-text index on the `summary` field in a `books` collection.
+
+Insert the following documents into a `books` collection:
+
+<CodeBlock language="js">{InsertData}</CodeBlock>
+
+### Performing a full-text search
+
+Let's run a basic full-text search query to find all documents that contain the word "romance" in the `summary` field.
+
+<CodeBlock language="js">{BasicTextSearchRequest}</CodeBlock>
+
+This query returns all documents where the `summary` field contains the word "romance".
+
+<CodeBlock language="js">{BasicTextSearchResponse}</CodeBlock>
+
+## Compound text index
+
+Compound text index creates an index on multiple fields.
+Ensure to drop the existing index before creating a new one.
+
+<CodeBlock language="js">{DropTextIndexRequest}</CodeBlock>
+
+Let's create a compound text index on the `title` and `summary` fields.
+
+<CodeBlock language="js">{CompoundTextIndexRequest}</CodeBlock>
+
+## Relevance score
+
+When you perform a full-text search, a relevance score is assigned to each document based on how well it matches the search query.
+Relevance scores are calculated based on factors like word frequency, proximity, and custom weights.
+Higher scores indicate better relevance.
+
+Let's search for books that contain the words "hunt whales" in the `summary` field and return the relevance score.
+
+<CodeBlock language="js">{RelevanceScoreRequest}</CodeBlock>
+
+Even though the query does not have exact matches, the search returns documents that contain similar words.
+
+<CodeBlock language="js">{RelevanceScoreResponse}</CodeBlock>

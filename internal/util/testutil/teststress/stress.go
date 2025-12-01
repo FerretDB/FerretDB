@@ -50,7 +50,7 @@ func StressN(tb testing.TB, n int, f func(ready chan<- struct{}, start <-chan st
 	readyCh := make(chan struct{}, n)
 	startCh := make(chan struct{})
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(tb.Context())
 	tb.Cleanup(cancel)
 
 	for i := 0; i < n; i++ {

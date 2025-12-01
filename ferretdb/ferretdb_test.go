@@ -89,7 +89,7 @@ func TestFerretDB(t *testing.T) {
 		ListenAddr:    "127.0.0.1:0",
 		StateDir:      t.TempDir(),
 		LogLevel:      slog.LevelDebug,
-		LogOutput:     testutil.NewLogWriter(t),
+		LogOutput:     t.Output(),
 	})
 	require.NoError(t, err)
 

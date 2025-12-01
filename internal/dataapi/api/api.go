@@ -14,4 +14,38 @@
 
 package api
 
+import _ "embed"
+
+// Spec is the embedded OpenAPI specification.
+//
+//go:embed openapi.json
+var Spec []byte
+
 //go:generate ../../../bin/oapi-codegen --config=./oapi-config.yml ./openapi.json
+
+// Response types are used to represent the responses from the API.
+//
+//sumtype:decl
+type Response interface {
+	sealed()
+}
+
+func (r *AggregateResponseBody) sealed()  {}
+func (r *DeleteResponseBody) sealed()     {}
+func (r *Error) sealed()                  {}
+func (r *FindOneResponseBody) sealed()    {}
+func (r *FindManyResponseBody) sealed()   {}
+func (r *InsertOneResponseBody) sealed()  {}
+func (r *InsertManyResponseBody) sealed() {}
+func (r *UpdateResponseBody) sealed()     {}
+
+var (
+	_ Response = (*AggregateResponseBody)(nil)
+	_ Response = (*DeleteResponseBody)(nil)
+	_ Response = (*Error)(nil)
+	_ Response = (*FindOneResponseBody)(nil)
+	_ Response = (*FindManyResponseBody)(nil)
+	_ Response = (*InsertManyResponseBody)(nil)
+	_ Response = (*InsertOneResponseBody)(nil)
+	_ Response = (*UpdateResponseBody)(nil)
+)

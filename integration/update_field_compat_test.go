@@ -1446,7 +1446,7 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 	doublesProvider := []shareddata.Provider{shareddata.Doubles}
 
 	testCases := map[string]updateCompatTestCase{
-		"SetNullInExisingField": {
+		"SetNullInExistingField": {
 			update: bson.D{{"$set", bson.D{{"v", nil}}}},
 		},
 		"DuplicateKeys": {

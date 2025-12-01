@@ -108,7 +108,7 @@ func TestInsertFind(t *testing.T) {
 func TestFindOtelComment(t *testing.T) {
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
-	ctx, span := otel.Tracer("").Start(ctx, "TestOtelComment")
+	ctx, span := otel.Tracer("").Start(ctx, "TestFindOtelComment")
 	defer span.End()
 
 	comment, err := observability.CommentFromSpanContext(span.SpanContext())
@@ -580,7 +580,7 @@ func TestDebugCommandErrors(t *testing.T) {
 		}
 		AssertMatchesCommandError(t, expected, res.Err())
 
-		msg := `(InternalError) [msg_ferretdebugerror.go:67 handler.(*Handler).msgFerretDebugError] lazy error`
+		msg := `(InternalError) msg_ferretdebugerror.go:59 (handler.(*Handler).msgFerretDebugError): lazy error`
 		assert.EqualError(t, res.Err(), msg)
 
 		var doc bson.D

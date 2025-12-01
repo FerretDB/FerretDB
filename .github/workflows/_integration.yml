@@ -20,6 +20,10 @@ on:
         required: false
         type: boolean
         default: false
+      skip_flaky_check:
+        required: false
+        type: boolean
+        default: false
 
 env:
   GOPATH: /home/runner/go
@@ -39,7 +43,7 @@ jobs:
     steps:
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
@@ -73,6 +77,14 @@ jobs:
       - name: Run init
         run: bin/task init
 
+      - name: Setup Ollama and MCPHost
+        run: |
+          mkdir -p tmp/logs
+          curl -fsSL https://ollama.com/install.sh | sh
+          sudo systemctl stop ollama
+          bin/task ollama  > tmp/logs/ollama.log  2>&1 &
+          bin/task mcphost > tmp/logs/mcphost.log 2>&1 &
+
       - name: Wait for and setup environment
         run: bin/task env-setup
 
@@ -91,17 +103,16 @@ jobs:
       - name: Collect logs
         if: failure()
         run: |
-          mkdir -p /tmp/logs
-          bin/task env-logs-collect > /tmp/logs/compose-logs.txt
-          cp -v integration/*.json.tmp integration/*.txt.tmp /tmp/logs/
+          bin/task env-logs-collect
+          cp -v integration/*.json.tmp integration/*.txt.tmp tmp/logs/
 
       - name: Compress logs before upload
         if: failure()
-        run: zip -r -q -9 logs.zip /tmp/logs
+        run: zip -r -q -9 logs.zip tmp/logs
 
       - name: Upload logs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: logs-${{ inputs.task }}-${{ inputs.shard_index }}-${{ inputs.shard_total }}
           path: logs.zip
@@ -112,7 +123,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           files: ./integration/integration-${{ inputs.task }}.txt
-          flags: integration,${{ inputs.task }}-${{ inputs.shard_index }}
+          flags: integration,${{ inputs.task }},${{ inputs.task }}-${{ inputs.shard_index }}
           disable_file_fixes: true
           fail_ci_if_error: true
           verbose: true
@@ -124,6 +135,20 @@ jobs:
           file: ./integration/integration-${{ inputs.task }}.txt
           flag-name: integration-${{ inputs.task }}-${{ inputs.shard_index }}
           parallel: true
+
+      - name: Convert test results to JUnit XML format
+        if: always() && !inputs.skip_flaky_check
+        run: >
+          ./bin/go-junit-report -parser=gojson
+          -in ./integration/*.json.tmp
+          -out ./integration/${{ inputs.task }}.xml
+
+      - name: Upload test results to Codecov
+        if: always()
+        uses: codecov/test-results-action@v1
+        with:
+          flags: integration,${{ inputs.task }},${{ inputs.task }}-${{ inputs.shard_index }}
+          file: ./integration/${{ inputs.task }}.xml
 
       # we don't want them on CI
       - name: Clean test and fuzz caches

@@ -41,7 +41,7 @@ import (
 // Flags.
 var (
 	targetURLF     = flag.String("target-url", "", "target system's URL; if empty, in-process FerretDB is used")
-	targetBackendF = flag.String("target-backend", "", "target system's backend: '%s'"+strings.Join(allBackends, "', '"))
+	targetBackendF = flag.String("target-backend", "", "target system's backend: "+strings.Join(allBackends, ", "))
 
 	postgreSQLURLF    = flag.String("postgresql-url", "", "in-process FerretDB: PostgreSQL URL")
 	targetUnixSocketF = flag.Bool("target-unix-socket", false, "in-process FerretDB: use Unix domain socket")
@@ -62,7 +62,7 @@ var (
 
 // Other globals.
 var (
-	allBackends = []string{"ferretdb", "mongodb"}
+	allBackends = []string{"ferretdb", "ferretdb-yugabytedb", "mongodb"}
 )
 
 // WireConn defines if and how wire client connection is established.
@@ -147,7 +147,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
 
-	setupCtx, span := otel.Tracer("").Start(ctx, "SetupWithOpts")
+	setupCtx, span := otel.Tracer("").Start(ctx, "setup.SetupWithOpts")
 	defer span.End()
 
 	if opts == nil {
@@ -204,7 +204,10 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	var conn *wireclient.Conn
 
 	if opts.WireConn != WireConnNoConn {
-		conn = setupWireConn(tb, setupCtx, uri, testutil.Logger(tb))
+		clearUri, creds, _, authMechanism, err := wireclient.Credentials(uri)
+		require.NoError(tb, err)
+
+		conn = setupWireConn(tb, setupCtx, clearUri, testutil.Logger(tb))
 
 		if opts.WireConn == WireConnAuth {
 			u, err := url.Parse(uri)
@@ -216,7 +219,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 			pass, _ := u.User.Password()
 			require.NotEmpty(tb, pass)
 
-			require.NoError(tb, conn.Login(ctx, user, pass, "admin"))
+			require.NoError(tb, conn.Login(ctx, creds, "admin", authMechanism))
 		}
 	}
 
@@ -245,7 +248,7 @@ func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *m
 func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, opts *SetupOpts) *mongo.Collection {
 	tb.Helper()
 
-	ctx, span := otel.Tracer("").Start(ctx, "setupCollection")
+	ctx, span := otel.Tracer("").Start(ctx, "setup.setupCollection")
 	defer span.End()
 
 	var ownDatabase bool
@@ -261,10 +264,10 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 	collection := database.Collection(collectionName)
 
 	// drop remnants of the previous failed run
-	_ = collection.Drop(ctx)
 	if ownDatabase {
-		_ = database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}})
-		_ = database.Drop(ctx)
+		cleanupDatabase(tb, ctx, database)
+	} else {
+		cleanupCollection(tb, ctx, collection)
 	}
 
 	// drop collection and (possibly) database unless test failed
@@ -274,16 +277,13 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 			return
 		}
 
-		err := collection.Drop(ctx)
-		require.NoError(tb, err)
-
 		if ownDatabase {
-			err = database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
-			require.NoError(tb, err)
+			cleanupDatabase(tb, ctx, database)
 
-			err = database.Drop(ctx)
-			require.NoError(tb, err)
+			return
 		}
+
+		cleanupCollection(tb, ctx, collection)
 	})
 
 	var inserted bool
@@ -309,7 +309,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 func InsertProviders(tb testing.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
 	tb.Helper()
 
-	ctx, span := otel.Tracer("").Start(ctx, "InsertProviders")
+	ctx, span := otel.Tracer("").Start(ctx, "setup.InsertProviders")
 	defer span.End()
 
 	for _, provider := range providers {
@@ -341,4 +341,48 @@ func insertBenchmarkProvider(tb testing.TB, ctx context.Context, collection *mon
 	}
 
 	return
+}
+
+// cleanupCollection deletes all documents in the collection for ferretdb-yugabytedb backend
+// or drops the collection for other backends.
+func cleanupCollection(tb testing.TB, ctx context.Context, collection *mongo.Collection) {
+	tb.Helper()
+
+	if IsYugabyteDB(tb) {
+		// dropping collection or database fails for ferretdb-yugabytedb
+		// TODO https://github.com/yugabyte/yugabyte-db/issues/27698
+		_, err := collection.DeleteMany(ctx, bson.D{})
+		require.NoError(tb, err)
+
+		return
+	}
+
+	err := collection.Drop(ctx)
+	require.NoError(tb, err)
+}
+
+// cleanupDatabase drops all users, then deletes all collections in the database
+// for ferretdb-yugabytedb backend or drops the database for other backends.
+func cleanupDatabase(tb testing.TB, ctx context.Context, database *mongo.Database) {
+	tb.Helper()
+
+	err := database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
+	require.NoError(tb, err)
+
+	if IsYugabyteDB(tb) {
+		// dropping collection or database fails for ferretdb-yugabytedb
+		// TODO https://github.com/yugabyte/yugabyte-db/issues/27698
+		var collections []string
+		collections, err = database.ListCollectionNames(ctx, bson.D{})
+		require.NoError(tb, err)
+
+		for _, collection := range collections {
+			cleanupCollection(tb, ctx, database.Collection(collection))
+		}
+
+		return
+	}
+
+	err = database.Drop(ctx)
+	require.NoError(tb, err)
 }

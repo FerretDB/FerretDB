@@ -20,15 +20,16 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	"github.com/AlekSi/lazyerrors"
+	"github.com/AlekSi/pointer"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // UpdateOne implements [ServerInterface].
-func (s *Server) UpdateOne(w http.ResponseWriter, r *http.Request) {
+func (s *Server) UpdateOne(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	if s.l.Enabled(ctx, slog.LevelDebug) {
@@ -37,7 +38,7 @@ func (s *Server) UpdateOne(w http.ResponseWriter, r *http.Request) {
 
 	var req api.UpdateRequestBody
 	if err := decodeJSONRequest(r, &req); err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -48,7 +49,7 @@ func (s *Server) UpdateOne(w http.ResponseWriter, r *http.Request) {
 		"multi", false,
 	)
 	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -58,32 +59,43 @@ func (s *Server) UpdateOne(w http.ResponseWriter, r *http.Request) {
 		"updates", wirebson.MustArray(updateDoc),
 	)
 	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
-	resMsg, err := s.handler.Handle(ctx, msg)
-	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+	resp := s.m.Handle(ctx, msg)
+	if resp == nil {
+		http.Error(rw, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	resDoc := must.NotFail(must.NotFail(resMsg.OpMsg.RawDocument()).Decode())
+	if !resp.OK() {
+		s.writeJSONError(ctx, rw, resp)
+		return
+	}
 
-	res := must.NotFail(wirebson.NewDocument(
-		"matchedCount", resDoc.Get("n"),
-		"modifiedCount", resDoc.Get("nModified"),
-	))
+	res := api.UpdateResponseBody{
+		MatchedCount:  resp.Document().Get("n").(int32),
+		ModifiedCount: resp.Document().Get("nModified").(int32),
+	}
 
-	if upsertedRaw := resDoc.Get("upserted"); upsertedRaw != nil {
+	if upsertedRaw := resp.Document().Get("upserted"); upsertedRaw != nil {
 		upserted := must.NotFail(upsertedRaw.(wirebson.AnyArray).Decode())
 
 		if upserted.Len() > 0 {
 			item := must.NotFail(upserted.Get(0).(wirebson.AnyDocument).Decode())
 
-			must.NoError(res.Add("upsertedId", item.Get("_id")))
+			var upsertedId any
+
+			upsertedId, err = wirebson.ToDriver(item.Get("_id"))
+			if err != nil {
+				http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+				return
+			}
+
+			res.UpsertedId = pointer.To(fmt.Sprint(upsertedId))
 		}
 	}
 
-	s.writeJSONResponse(ctx, w, res)
+	s.writeJSONResponse(ctx, rw, &res)
 }

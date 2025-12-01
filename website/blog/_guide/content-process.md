@@ -12,7 +12,7 @@ This guide will walk you through the process of creating and publishing content 
 ## Suggesting a blog post
 
 Everybody is welcome to contribute and write a blog post for FerretDB.
-The first step to creating a blog post, pitching a draft, or idea is to [create an issue here](https://github.com/FerretDB/engineering/issues/new/choose).
+The first step to creating a blog post, pitching a draft, or idea is to [create a discussion to suggest/outline the blog post topic here](https://github.com/FerretDB/FerretDB/discussions/new?category=general).
 Please note that the FerretDB blog represents the official voice of the company and product, and as such, all published content will be carefully vetted and reviewed.
 
 ## Creating a New Blog Post

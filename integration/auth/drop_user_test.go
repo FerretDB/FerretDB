@@ -57,14 +57,14 @@ func TestDropUserCommand(t *testing.T) {
 				Name:    "UserNotFound",
 				Message: fmt.Sprintf("User 'not_found_user@%s' not found", db.Name()),
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/942",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5323",
 		},
 		"Success": {
 			username: "a_user",
 			expected: bson.D{
 				{"ok", float64(1)},
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/939",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5313",
 		},
 	}
 

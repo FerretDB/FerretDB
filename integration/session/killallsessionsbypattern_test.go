@@ -17,6 +17,7 @@ package session
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"testing"
 
 	"github.com/FerretDB/wire"
@@ -84,12 +85,12 @@ func TestKillAllSessionsByPattern(t *testing.T) {
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, nil)
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", fmt.Sprintf("cursor id %d not found", cursorID),
 			"code", int32(43),
 			"codeName", "CursorNotFound",
-		))
+		)
 
 		getMore(t, ctx, user1Conn, dbName, cName, sessionID, cursorID, expectedErr)
 	})
@@ -110,12 +111,12 @@ func TestKillAllSessionsByPattern(t *testing.T) {
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, nil)
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", fmt.Sprintf("cursor id %d not found", cursorID),
 			"code", int32(43),
 			"codeName", "CursorNotFound",
-		))
+		)
 
 		getMore(t, ctx, user2Conn, dbName, cName, sessionID, cursorID, expectedErr)
 	})
@@ -163,20 +164,20 @@ func TestKillAllSessionsByPattern(t *testing.T) {
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, nil)
 
-		expectedErr1 := must.NotFail(wirebson.NewDocument(
+		expectedErr1 := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", fmt.Sprintf("cursor id %d not found", cursorID1),
 			"code", int32(43),
 			"codeName", "CursorNotFound",
-		))
+		)
 		getMore(t, ctx, user1Conn, dbName, cName, session1ID, cursorID1, expectedErr1)
 
-		expectedErr2 := must.NotFail(wirebson.NewDocument(
+		expectedErr2 := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", fmt.Sprintf("cursor id %d not found", cursorID2),
 			"code", int32(43),
 			"codeName", "CursorNotFound",
-		))
+		)
 		getMore(t, ctx, user1Conn, dbName, cName, session2ID, cursorID2, expectedErr2)
 	})
 
@@ -197,12 +198,12 @@ func TestKillAllSessionsByPattern(t *testing.T) {
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, nil)
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", fmt.Sprintf("cursor id %d not found", user1CursorID),
 			"code", int32(43),
 			"codeName", "CursorNotFound",
-		))
+		)
 		getMore(t, ctx, user1Conn, dbName, cName, sessionID, user1CursorID, expectedErr)
 
 		getMore(t, ctx, user2Conn, dbName, cName, sessionID, user2CursorID, nil)
@@ -223,20 +224,20 @@ func TestKillAllSessionsByPattern(t *testing.T) {
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, nil)
 
-		expectedErr1 := must.NotFail(wirebson.NewDocument(
+		expectedErr1 := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", fmt.Sprintf("cursor id %d not found", cursorID1),
 			"code", int32(43),
 			"codeName", "CursorNotFound",
-		))
+		)
 		getMore(t, ctx, user1Conn, dbName, cName, sessionID, cursorID1, expectedErr1)
 
-		expectedErr2 := must.NotFail(wirebson.NewDocument(
+		expectedErr2 := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", fmt.Sprintf("cursor id %d not found", cursorID2),
 			"code", int32(43),
 			"codeName", "CursorNotFound",
-		))
+		)
 		getMore(t, ctx, user1Conn, dbName, cName, sessionID, cursorID2, expectedErr2)
 	})
 
@@ -251,12 +252,12 @@ func TestKillAllSessionsByPattern(t *testing.T) {
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, nil)
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", fmt.Sprintf("cursor id %d not found", cursorID),
 			"code", int32(43),
 			"codeName", "CursorNotFound",
-		))
+		)
 
 		getMore(t, ctx, user1Conn, dbName, cName, sessionID, cursorID, expectedErr)
 	})
@@ -272,12 +273,12 @@ func TestKillAllSessionsByPattern(t *testing.T) {
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, nil)
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", fmt.Sprintf("cursor id %d not found", cursorID),
 			"code", int32(43),
 			"codeName", "CursorNotFound",
-		))
+		)
 
 		getMore(t, ctx, user2Conn, dbName, cName, sessionID, cursorID, expectedErr)
 	})
@@ -329,20 +330,20 @@ func TestKillAllSessionsByPattern(t *testing.T) {
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, nil)
 
-		expectedErr1 := must.NotFail(wirebson.NewDocument(
+		expectedErr1 := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", fmt.Sprintf("cursor id %d not found", user1CursorID),
 			"code", int32(43),
 			"codeName", "CursorNotFound",
-		))
+		)
 		getMore(t, ctx, user1Conn, dbName, cName, user1SessionID, user1CursorID, expectedErr1)
 
-		expectedErr2 := must.NotFail(wirebson.NewDocument(
+		expectedErr2 := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", fmt.Sprintf("cursor id %d not found", user2CursorID),
 			"code", int32(43),
 			"codeName", "CursorNotFound",
-		))
+		)
 		getMore(t, ctx, user1Conn, dbName, cName, user2SessionID, user2CursorID, expectedErr2)
 
 		getMore(t, ctx, user1Conn, dbName, cName, user1NotKillSessionID, user1NotKillCursorID, nil)
@@ -387,12 +388,12 @@ func TestKillAllSessionsByPatternAllUsers(t *testing.T) {
 
 		killAllSessionsByPattern(t, ctx, user2Conn, dbName, pattern, nil)
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", fmt.Sprintf("cursor id %d not found", cursorID),
 			"code", int32(43),
 			"codeName", "CursorNotFound",
-		))
+		)
 
 		getMore(t, ctx, user1Conn, dbName, cName, sessionID, cursorID, expectedErr)
 	})
@@ -407,12 +408,12 @@ func TestKillAllSessionsByPatternAllUsers(t *testing.T) {
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, emptyUsersPattern, nil)
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", fmt.Sprintf("cursor id %d not found", cursorID),
 			"code", int32(43),
 			"codeName", "CursorNotFound",
-		))
+		)
 		getMore(t, ctx, user1Conn, dbName, cName, sessionID, cursorID, expectedErr)
 	})
 
@@ -430,12 +431,12 @@ func TestKillAllSessionsByPatternAllUsers(t *testing.T) {
 
 		// user1 does not match the pattern, but the cursor of user1 is deleted unexpectedly
 		// and FerretDB exhibits the same behavior for the compatibility
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", fmt.Sprintf("cursor id %d not found", user1CursorID),
 			"code", int32(43),
 			"codeName", "CursorNotFound",
-		))
+		)
 		getMore(t, ctx, user1Conn, dbName, cName, user1SessionID, user1CursorID, expectedErr)
 	})
 
@@ -451,12 +452,12 @@ func TestKillAllSessionsByPatternAllUsers(t *testing.T) {
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, user1Pattern, nil)
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", fmt.Sprintf("cursor id %d not found", cursorID),
 			"code", int32(43),
 			"codeName", "CursorNotFound",
-		))
+		)
 		getMore(t, ctx, user1Conn, dbName, cName, sessionID, cursorID, expectedErr)
 	})
 
@@ -474,12 +475,12 @@ func TestKillAllSessionsByPatternAllUsers(t *testing.T) {
 
 		// sessions of user2 was killed, not user1, but the cursor of user1 is deleted unexpectedly
 		// and FerretDB exhibits the same behavior for the compatibility
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", fmt.Sprintf("cursor id %d not found", user1CursorID),
 			"code", int32(43),
 			"codeName", "CursorNotFound",
-		))
+		)
 		getMore(t, ctx, user1Conn, dbName, cName, user1SessionID, user1CursorID, expectedErr)
 	})
 }
@@ -504,12 +505,12 @@ func TestKillAllSessionsByPatternErrors(t *testing.T) {
 	t.Run("NonArrayPatterns", func(t *testing.T) {
 		pattern := "invalid"
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "BSON field 'KillAllSessionsByPatternCmd.killAllSessionsByPattern' is the wrong type 'string', expected type 'array'",
 			"code", int32(14),
 			"codeName", "TypeMismatch",
-		))
+		)
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, expectedErr)
 	})
@@ -517,12 +518,12 @@ func TestKillAllSessionsByPatternErrors(t *testing.T) {
 	t.Run("StringPattern", func(t *testing.T) {
 		pattern := wirebson.MustArray("invalid")
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "BSON field 'KillAllSessionsByPatternCmd.killAllSessionsByPattern.0' is the wrong type 'string', expected type 'object'",
 			"code", int32(14),
 			"codeName", "TypeMismatch",
-		))
+		)
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, expectedErr)
 	})
@@ -532,12 +533,12 @@ func TestKillAllSessionsByPatternErrors(t *testing.T) {
 
 		pattern := wirebson.MustArray(wirebson.MustDocument("invalid", "foo"))
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "BSON field 'KillAllSessionsByPatternCmd.killAllSessionsByPattern.invalid' is an unknown field.",
 			"code", int32(40415),
 			"codeName", "Location40415",
-		))
+		)
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, expectedErr)
 	})
@@ -545,12 +546,12 @@ func TestKillAllSessionsByPatternErrors(t *testing.T) {
 	t.Run("LsidString", func(t *testing.T) {
 		pattern := wirebson.MustArray(wirebson.MustDocument("lsid", "invalid"))
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "BSON field 'KillAllSessionsByPatternCmd.killAllSessionsByPattern.lsid' is the wrong type 'string', expected type 'object'",
 			"code", int32(14),
 			"codeName", "TypeMismatch",
-		))
+		)
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, expectedErr)
 	})
@@ -558,12 +559,12 @@ func TestKillAllSessionsByPatternErrors(t *testing.T) {
 	t.Run("LsidMissingID", func(t *testing.T) {
 		pattern := wirebson.MustArray(wirebson.MustDocument("lsid", wirebson.MustDocument()))
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "BSON field 'KillAllSessionsByPatternCmd.killAllSessionsByPattern.lsid.id' is missing but a required field",
 			"code", int32(40414),
 			"codeName", "Location40414",
-		))
+		)
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, expectedErr)
 	})
@@ -571,12 +572,12 @@ func TestKillAllSessionsByPatternErrors(t *testing.T) {
 	t.Run("LsidStringID", func(t *testing.T) {
 		pattern := wirebson.MustArray(wirebson.MustDocument("lsid", wirebson.MustDocument("id", "invalid")))
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "BSON field 'KillAllSessionsByPatternCmd.killAllSessionsByPattern.lsid.id' is the wrong type 'string', expected type 'binData'",
 			"code", int32(14),
 			"codeName", "TypeMismatch",
-		))
+		)
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, expectedErr)
 	})
@@ -586,12 +587,12 @@ func TestKillAllSessionsByPatternErrors(t *testing.T) {
 			"id", wirebson.Binary{Subtype: wirebson.BinaryFunction},
 		)))
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "BSON field 'KillAllSessionsByPatternCmd.killAllSessionsByPattern.lsid.id' is the wrong binData type 'function', expected type 'UUID'",
 			"code", int32(14),
 			"codeName", "TypeMismatch",
-		))
+		)
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, expectedErr)
 	})
@@ -601,12 +602,12 @@ func TestKillAllSessionsByPatternErrors(t *testing.T) {
 			"id", wirebson.Binary{Subtype: wirebson.BinaryUUID},
 		)))
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "uuid must be a 16-byte binary field with UUID (4) subtype",
 			"code", int32(207),
 			"codeName", "InvalidUUID",
-		))
+		)
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, expectedErr)
 	})
@@ -618,12 +619,12 @@ func TestKillAllSessionsByPatternErrors(t *testing.T) {
 			"id", wirebson.Binary{B: randomUUID[:], Subtype: wirebson.BinaryUUID},
 		)))
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "BSON field 'KillAllSessionsByPatternCmd.killAllSessionsByPattern.lsid.uid' is missing but a required field",
 			"code", int32(40414),
 			"codeName", "Location40414",
-		))
+		)
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, expectedErr)
 	})
@@ -636,12 +637,12 @@ func TestKillAllSessionsByPatternErrors(t *testing.T) {
 			"uid", "invalid",
 		)))
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "BSON field 'KillAllSessionsByPatternCmd.killAllSessionsByPattern.lsid.uid' is the wrong type 'string', expected type 'binData'",
 			"code", int32(14),
 			"codeName", "TypeMismatch",
-		))
+		)
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, expectedErr)
 	})
@@ -654,12 +655,12 @@ func TestKillAllSessionsByPatternErrors(t *testing.T) {
 			"uid", wirebson.Binary{},
 		)))
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "Unsupported SHA256Block hash length: 0",
 			"code", int32(12),
 			"codeName", "UnsupportedFormat",
-		))
+		)
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, expectedErr)
 	})
@@ -672,12 +673,12 @@ func TestKillAllSessionsByPatternErrors(t *testing.T) {
 			"uid", wirebson.Binary{Subtype: wirebson.BinaryFunction},
 		)))
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "BSON field 'KillAllSessionsByPatternCmd.killAllSessionsByPattern.lsid.uid' is the wrong binData type 'function', expected type 'general'",
 			"code", int32(14),
 			"codeName", "TypeMismatch",
-		))
+		)
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, expectedErr)
 	})
@@ -705,12 +706,12 @@ func TestKillAllSessionsByPatternUIDErrors(t *testing.T) {
 			wirebson.MustDocument("uid", "invalid"),
 		)
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "BSON field 'KillAllSessionsByPatternCmd.killAllSessionsByPattern.uid' is the wrong type 'string', expected type 'binData'",
 			"code", int32(14),
 			"codeName", "TypeMismatch",
-		))
+		)
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, expectedErr)
 	})
@@ -720,12 +721,12 @@ func TestKillAllSessionsByPatternUIDErrors(t *testing.T) {
 			wirebson.MustDocument("uid", wirebson.Binary{}),
 		)
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "Unsupported SHA256Block hash length: 0",
 			"code", int32(12),
 			"codeName", "UnsupportedFormat",
-		))
+		)
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, expectedErr)
 	})
@@ -735,12 +736,12 @@ func TestKillAllSessionsByPatternUIDErrors(t *testing.T) {
 			wirebson.MustDocument("uid", wirebson.Binary{Subtype: wirebson.BinaryFunction}),
 		)
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "BSON field 'KillAllSessionsByPatternCmd.killAllSessionsByPattern.uid' is the wrong binData type 'function', expected type 'general'",
 			"code", int32(14),
 			"codeName", "TypeMismatch",
-		))
+		)
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, expectedErr)
 	})
@@ -766,12 +767,12 @@ func TestKillAllSessionsByPatternUsersErrors(t *testing.T) {
 	t.Run("NotArrayUsers", func(t *testing.T) {
 		pattern := wirebson.MustArray(wirebson.MustDocument("users", "invalid"))
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "BSON field 'KillAllSessionsByPatternCmd.killAllSessionsByPattern.users' is the wrong type 'string', expected type 'array'",
 			"code", int32(14),
 			"codeName", "TypeMismatch",
-		))
+		)
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, expectedErr)
 	})
@@ -781,12 +782,12 @@ func TestKillAllSessionsByPatternUsersErrors(t *testing.T) {
 			"users", wirebson.MustArray("invalid"),
 		))
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "BSON field 'KillAllSessionsByPatternCmd.killAllSessionsByPattern.users.0' is the wrong type 'string', expected type 'object'",
 			"code", int32(14),
 			"codeName", "TypeMismatch",
-		))
+		)
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, expectedErr)
 	})
@@ -796,12 +797,12 @@ func TestKillAllSessionsByPatternUsersErrors(t *testing.T) {
 			"users", wirebson.MustArray(wirebson.MustDocument("user", "foo")),
 		))
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "BSON field 'KillAllSessionsByPatternCmd.killAllSessionsByPattern.users.db' is missing but a required field",
 			"code", int32(40414),
 			"codeName", "Location40414",
-		))
+		)
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, expectedErr)
 	})
@@ -811,12 +812,12 @@ func TestKillAllSessionsByPatternUsersErrors(t *testing.T) {
 			"users", wirebson.MustArray(wirebson.MustDocument("db", true, "user", "foo")),
 		))
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "BSON field 'KillAllSessionsByPatternCmd.killAllSessionsByPattern.users.db' is the wrong type 'bool', expected type 'string'",
 			"code", int32(14),
 			"codeName", "TypeMismatch",
-		))
+		)
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, expectedErr)
 	})
@@ -826,12 +827,12 @@ func TestKillAllSessionsByPatternUsersErrors(t *testing.T) {
 			"users", wirebson.MustArray(wirebson.MustDocument("db", "bar")),
 		))
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "BSON field 'KillAllSessionsByPatternCmd.killAllSessionsByPattern.users.user' is missing but a required field",
 			"code", int32(40414),
 			"codeName", "Location40414",
-		))
+		)
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, expectedErr)
 	})
@@ -841,12 +842,12 @@ func TestKillAllSessionsByPatternUsersErrors(t *testing.T) {
 			"users", wirebson.MustArray(wirebson.MustDocument("db", "bar", "user", false)),
 		))
 
-		expectedErr := must.NotFail(wirebson.NewDocument(
+		expectedErr := wirebson.MustDocument(
 			"ok", float64(0),
 			"errmsg", "BSON field 'KillAllSessionsByPatternCmd.killAllSessionsByPattern.users.user' is the wrong type 'bool', expected type 'string'",
 			"code", int32(14),
 			"codeName", "TypeMismatch",
-		))
+		)
 
 		killAllSessionsByPattern(t, ctx, user1Conn, dbName, pattern, expectedErr)
 	})
@@ -890,14 +891,17 @@ func createKillSessionUser(t *testing.T, ctx context.Context, db *mongo.Database
 	}).Err()
 	require.NoError(t, err)
 
-	conn, err := wireclient.Connect(ctx, mongoDBURI, testutil.Logger(t))
+	clearUri, _, _, authMechanism, err := wireclient.Credentials(mongoDBURI)
+	require.NoError(t, err)
+
+	conn, err := wireclient.Connect(ctx, clearUri, testutil.Logger(t))
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		require.NoError(t, conn.Close())
 	})
 
-	err = conn.Login(ctx, username, password, db.Name())
+	err = conn.Login(ctx, url.UserPassword(username, password), db.Name(), authMechanism)
 	require.NoError(t, err)
 
 	return conn
@@ -914,7 +918,7 @@ func killAllSessionsByPattern(t testing.TB, ctx context.Context, conn *wireclien
 	_, resBody, err := conn.Request(ctx, msg)
 	require.NoError(t, err)
 
-	res, err := must.NotFail(resBody.(*wire.OpMsg).RawDocument()).DecodeDeep()
+	res, err := must.NotFail(resBody.(*wire.OpMsg).DocumentRaw()).DecodeDeep()
 	require.NoError(t, err)
 
 	integration.FixCluster(t, res)
@@ -925,9 +929,9 @@ func killAllSessionsByPattern(t testing.TB, ctx context.Context, conn *wireclien
 		return
 	}
 
-	expected := must.NotFail(wirebson.NewDocument(
+	expected := wirebson.MustDocument(
 		"ok", float64(1),
-	))
+	)
 
 	testutil.AssertEqual(t, expected, res)
 }

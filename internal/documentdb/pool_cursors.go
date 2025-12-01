@@ -19,26 +19,28 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
 	"go.opentelemetry.io/otel"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
+	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // GetMore returns the next page of the cursor.
 // It is a part of the implementation of the `getMore` command.
 func (p *Pool) GetMore(ctx context.Context, db string, spec wirebson.RawDocument, cursorID int64) (wirebson.RawDocument, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "pool.GetMore")
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb.Pool.GetMore")
 	defer span.End()
 
 	continuation, conn := p.r.GetCursor(cursorID)
 	if continuation == nil {
-		return nil, mongoerrors.NewWithArgument(
+		return nil, mongoerrors.New(
 			mongoerrors.ErrCursorNotFound,
 			fmt.Sprintf("cursor id %d not found", cursorID),
-			"getMore",
 		)
 	}
 
@@ -60,11 +62,11 @@ func (p *Pool) GetMore(ctx context.Context, db string, spec wirebson.RawDocument
 	}
 
 	p.l.DebugContext(
-		ctx, "GetMore result", slog.Int64("cursor", cursorID),
-		slog.Any("page", page), slog.Any("continuation", continuation),
+		ctx, "GetMore result", slog.Int64("id", cursorID),
+		slog.Any("page", logging.LazyDecoder(page)), slog.Any("continuation", logging.LazyDeepDecoder(continuation)),
 	)
 
-	p.r.UpdateCursor(cursorID, continuation)
+	p.r.UpdateCursor(ctx, cursorID, continuation)
 
 	return page, nil
 }
@@ -77,7 +79,7 @@ func (p *Pool) GetMore(ctx context.Context, db string, spec wirebson.RawDocument
 // However, this could block so ctx is available to limit the time to wait (up to 3 seconds).
 // The underlying connection will always be called regardless of any other errors.
 func (p *Pool) KillCursor(ctx context.Context, id int64) bool {
-	ctx, span := otel.Tracer("").Start(ctx, "pool.KillCursor")
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb.Pool.KillCursor")
 	defer span.End()
 
 	return p.r.CloseCursor(ctx, id)
@@ -85,7 +87,7 @@ func (p *Pool) KillCursor(ctx context.Context, id int64) bool {
 
 // ListCollections returns the first page of the `listCollections` cursor and the cursor ID.
 func (p *Pool) ListCollections(ctx context.Context, db string, spec wirebson.RawDocument) (wirebson.RawDocument, int64, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "pool.ListCollections")
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb.Pool.ListCollections")
 	defer span.End()
 
 	poolConn, err := p.Acquire()
@@ -103,24 +105,26 @@ func (p *Pool) ListCollections(ctx context.Context, db string, spec wirebson.Raw
 
 	p.l.DebugContext(
 		ctx, "ListCollections result",
-		slog.Any("page", page), slog.Any("continuation", continuation),
-		slog.Bool("persist", persist), slog.Int64("cursor", cursorID),
+		slog.Any("page", logging.LazyDecoder(page)), slog.Any("continuation", logging.LazyDeepDecoder(continuation)),
+		slog.Bool("persist", persist), slog.Int64("id", cursorID),
 	)
 
-	if persist {
-		conn = poolConn.hijack()
-	} else {
-		conn = nil
-	}
+	if p.shouldStore(ctx, page, continuation, cursorID) {
+		if persist {
+			conn = poolConn.hijack()
+		} else {
+			conn = nil
+		}
 
-	p.r.NewCursor(cursorID, continuation, conn)
+		p.r.NewCursor(ctx, cursorID, continuation, conn)
+	}
 
 	return page, cursorID, nil
 }
 
 // Find returns the first page of the `find` cursor and the cursor ID.
 func (p *Pool) Find(ctx context.Context, db string, spec wirebson.RawDocument) (wirebson.RawDocument, int64, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "pool.Find")
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb.Pool.Find")
 	defer span.End()
 
 	poolConn, err := p.Acquire()
@@ -138,24 +142,26 @@ func (p *Pool) Find(ctx context.Context, db string, spec wirebson.RawDocument) (
 
 	p.l.DebugContext(
 		ctx, "Find result",
-		slog.Any("page", page), slog.Any("continuation", continuation),
-		slog.Bool("persist", persist), slog.Int64("cursor", cursorID),
+		slog.Any("page", logging.LazyDecoder(page)), slog.Any("continuation", logging.LazyDeepDecoder(continuation)),
+		slog.Bool("persist", persist), slog.Int64("id", cursorID),
 	)
 
-	if persist {
-		conn = poolConn.hijack()
-	} else {
-		conn = nil
-	}
+	if p.shouldStore(ctx, page, continuation, cursorID) {
+		if persist {
+			conn = poolConn.hijack()
+		} else {
+			conn = nil
+		}
 
-	p.r.NewCursor(cursorID, continuation, conn)
+		p.r.NewCursor(ctx, cursorID, continuation, conn)
+	}
 
 	return page, cursorID, nil
 }
 
 // Aggregate returns the first page of the `aggregate` cursor and the cursor ID.
 func (p *Pool) Aggregate(ctx context.Context, db string, spec wirebson.RawDocument) (wirebson.RawDocument, int64, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "pool.Aggregate")
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb.Pool.Aggregate")
 	defer span.End()
 
 	poolConn, err := p.Acquire()
@@ -173,24 +179,26 @@ func (p *Pool) Aggregate(ctx context.Context, db string, spec wirebson.RawDocume
 
 	p.l.DebugContext(
 		ctx, "Aggregate result",
-		slog.Any("page", page), slog.Any("continuation", continuation),
-		slog.Bool("persist", persist), slog.Int64("cursor", cursorID),
+		slog.Any("page", logging.LazyDecoder(page)), slog.Any("continuation", logging.LazyDeepDecoder(continuation)),
+		slog.Bool("persist", persist), slog.Int64("id", cursorID),
 	)
 
-	if persist {
-		conn = poolConn.hijack()
-	} else {
-		conn = nil
-	}
+	if p.shouldStore(ctx, page, continuation, cursorID) {
+		if persist {
+			conn = poolConn.hijack()
+		} else {
+			conn = nil
+		}
 
-	p.r.NewCursor(cursorID, continuation, conn)
+		p.r.NewCursor(ctx, cursorID, continuation, conn)
+	}
 
 	return page, cursorID, nil
 }
 
 // ListIndexes returns the first page of the `listIndexes` cursor and the cursor ID.
 func (p *Pool) ListIndexes(ctx context.Context, db string, spec wirebson.RawDocument) (wirebson.RawDocument, int64, error) {
-	ctx, span := otel.Tracer("").Start(ctx, "pool.ListIndexes")
+	ctx, span := otel.Tracer("").Start(ctx, "documentdb.Pool.ListIndexes")
 	defer span.End()
 
 	poolConn, err := p.Acquire()
@@ -209,17 +217,76 @@ func (p *Pool) ListIndexes(ctx context.Context, db string, spec wirebson.RawDocu
 
 	p.l.DebugContext(
 		ctx, "ListIndexes result",
-		slog.Any("page", page), slog.Any("continuation", continuation),
-		slog.Bool("persist", persist), slog.Int64("cursor", cursorID),
+		slog.Any("page", logging.LazyDecoder(page)), slog.Any("continuation", logging.LazyDeepDecoder(continuation)),
+		slog.Bool("persist", persist), slog.Int64("id", cursorID),
 	)
 
-	if persist {
-		conn = poolConn.hijack()
-	} else {
-		conn = nil
+	if p.shouldStore(ctx, page, continuation, cursorID) {
+		if persist {
+			conn = poolConn.hijack()
+		} else {
+			conn = nil
+		}
+
+		p.r.NewCursor(ctx, cursorID, continuation, conn)
 	}
 
-	p.r.NewCursor(cursorID, continuation, conn)
-
 	return page, cursorID, nil
+}
+
+// shouldStore returns true if cursor should be stored.
+//
+// It logs when persist is true but cursorID is zero or continuation is empty.
+// In debug builds, it also checks that cursorID matches the one in the page.
+// Both checks are workarounds for
+// TODO https://github.com/FerretDB/FerretDB/issues/5445
+func (p *Pool) shouldStore(ctx context.Context, page, cont wirebson.RawDocument, cursorID int64) bool {
+	if devbuild.Enabled {
+		pageDoc := must.NotFail(page.Decode())
+
+		cursor, ok := pageDoc.Get("cursor").(wirebson.AnyDocument)
+		if !ok {
+			if cursorID != 0 {
+				p.l.LogAttrs(
+					ctx, logging.LevelDPanic, "cursorID is not zero but cursor is missing",
+					slog.Int64("id", cursorID), slog.Any("page", pageDoc),
+				)
+			}
+		}
+
+		cursorDoc := must.NotFail(cursor.Decode())
+		p.l.DebugContext(
+			ctx, "Decoded cursor",
+			slog.Int64("id", cursorID), slog.Any("cursor", cursorDoc),
+		)
+
+		id, ok := cursorDoc.Get("id").(int64)
+		if !ok {
+			if cursorID != 0 {
+				p.l.LogAttrs(
+					ctx, logging.LevelDPanic, "cursorID is not zero but cursor.id is missing",
+					slog.Int64("id", cursorID), slog.Any("cursor", cursorDoc),
+				)
+			}
+		}
+
+		if id != cursorID {
+			p.l.LogAttrs(
+				ctx, logging.LevelDPanic, "cursorID does not match cursor.id",
+				slog.Int64("id", cursorID), slog.Any("cursor", cursorDoc),
+			)
+		}
+	}
+
+	if cursorID == 0 {
+		p.l.DebugContext(ctx, "Not storing cursor with zero ID")
+		return false
+	}
+
+	if len(cont) == 0 {
+		p.l.DebugContext(ctx, "Not storing cursor with empty continuation")
+		return false
+	}
+
+	return true
 }

@@ -16,7 +16,9 @@ vars:
   RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
   BUILD_TAGS: ferretdb_dev
   MODE: diff-normal
-  SERVICES: postgres mongodb mongodb-secure jaeger
+  SERVICES: jaeger mongodb mongodb-secure postgres yugabytedb
+  LLM: qwen3:0.6b # sync with code
+  LLM_CONTEXT: 40960 # https://ollama.com/library/qwen3:0.6b
 
 tasks:
   # invoked when `task` is run without arguments
@@ -113,9 +115,13 @@ tasks:
       - docker compose logs --follow
 
   env-logs-collect:
+    desc: "Collect logs from Docker and save them to tmp/logs"
     cmds:
-      - docker compose ps --all
-      - docker compose logs
+      - bin/envtool{{exeExt}} shell mkdir tmp/logs
+      - docker compose ps --all > tmp/logs/compose-ps.txt
+      - docker compose logs > tmp/logs/compose-logs.txt
+      - docker compose exec yugabytedb sh -c "bin/yugabyted collect_logs --stdout | gunzip | tar -xf - --one-top-level=/tmp/logs"
+      - docker compose cp yugabytedb:/tmp/logs tmp/logs/yugabytedb
 
   env-up:
     desc: "Start development environment"
@@ -194,7 +200,7 @@ tasks:
     desc: "Run all unit tests"
     cmds:
       - go test -c -o /dev/null ./...
-      - go test -count=1 -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverprofile=cover.txt ./...
+      - go test -v -count=1 -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverprofile=cover.txt ./... | tee unit.txt
       - go test -count=1 -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -bench=. -benchtime=1x ./...
       - bin/task{{exeExt}} -d tools tools-test
 
@@ -258,6 +264,47 @@ tasks:
         -target-backend=mongodb
         -no-xfail={{.NO_XFAIL}}
 
+  test-integration-yugabytedb:
+    desc: "Run integration tests for FerretDB with YugabyteDB sequentially"
+    vars:
+      # DPanic on InternalError stops execution of remaining tests,
+      # ensure to complete all tests by not setting development build tag and without race detector.
+      # TODO https://github.com/FerretDB/FerretDB/issues/5397
+      BUILD_TAGS: ""
+      RACE_FLAG: -race=false
+    deps:
+      - task: gen-version
+        vars:
+          BUILD_TAGS:
+            ref: .BUILD_TAGS
+          RACE_FLAG:
+            ref: .RACE_FLAG
+      - task: test-integration-build
+    dir: integration
+    cmds:
+      - >
+        ../bin/envtool{{exeExt}} tests run
+        --shard-index={{.SHARD_INDEX}}
+        --shard-total={{.SHARD_TOTAL}}
+        --run='{{.TEST_RUN}}'
+        --skip='{{.TEST_SKIP}}'
+        --raw-prefix=yugabytedb-{{.SHARD_INDEX}}-{{.SHARD_TOTAL}}
+        --
+        -count=1
+        -parallel=1
+        -p=1
+        -timeout={{.TEST_TIMEOUT}}
+        {{.RACE_FLAG}}
+        -tags={{.BUILD_TAGS}}
+        -shuffle=on
+        -coverpkg=../...
+        -coverprofile=integration-yugabytedb.txt
+        ./...
+        -target-backend=ferretdb-yugabytedb
+        -postgresql-url='postgres://pg-user:pg-pass@127.0.0.1:5433/yugabyte'
+        -compat-url='mongodb://username:password@127.0.0.1:47017/?replicaSet=rs0'
+        -no-xfail={{.NO_XFAIL}}
+
   bench-unit:
     desc: "Run unit benchmarks"
     cmds:
@@ -275,6 +322,7 @@ tasks:
         --no-auth
         --listen-addr=:27017
         --listen-data-api-addr=127.0.0.1:8899
+        --listen-mcp-addr=127.0.0.1:8081
         --proxy-addr=127.0.0.1:37017
         --postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
@@ -289,8 +337,41 @@ tasks:
         --mode={{.MODE}}
         --listen-addr=:27017
         --listen-data-api-addr=127.0.0.1:8899
+        --listen-mcp-addr=127.0.0.1:8081
         --proxy-addr=127.0.0.1:47017
         --postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
+        --otel-traces-url=http://127.0.0.1:4318/v1/traces
+        --dev-repl-set-name=rs0
+        --dev-records-dir=tmp/records
+
+  run-yugabytedb:
+    desc: "Run FerretDB with YugabyteDB without auth"
+    deps: [build-host]
+    cmds:
+      - >
+        bin/ferretdb{{exeExt}}
+        --mode={{.MODE}}
+        --no-auth
+        --listen-addr=:27017
+        --listen-data-api-addr=127.0.0.1:8899
+        --listen-mcp-addr=127.0.0.1:8081
+        --proxy-addr=127.0.0.1:37017
+        --postgresql-url='postgres://username:password@127.0.0.1:5433/yugabyte'
+        --otel-traces-url=http://127.0.0.1:4318/v1/traces
+        --dev-records-dir=tmp/records
+
+  run-yugabytedb-secure:
+    desc: "Run FerretDB with YugabyteDB with auth"
+    deps: [build-host]
+    cmds:
+      - >
+        bin/ferretdb{{exeExt}}
+        --mode={{.MODE}}
+        --listen-addr=:27017
+        --listen-data-api-addr=127.0.0.1:8899
+        --listen-mcp-addr=127.0.0.1:8081
+        --proxy-addr=127.0.0.1:47017
+        --postgresql-url='postgres://username:password@127.0.0.1:5433/yugabyte'
         --otel-traces-url=http://127.0.0.1:4318/v1/traces
         --dev-repl-set-name=rs0
         --dev-records-dir=tmp/records
@@ -332,17 +413,33 @@ tasks:
       - bin/pkgsite{{exeExt}} -http=127.0.0.1:6060 -open
 
   ollama:
-    desc: "Run Ollama server"
+    desc: "Run local Ollama server"
     cmds:
       - ollama serve
     env:
-      # for https://ollama.com/library/phi4-mini
-      OLLAMA_CONTEXT_LENGTH: 131072
+      OLLAMA_CONTEXT_LENGTH: "{{.LLM_CONTEXT}}"
+      OLLAMA_DEBUG: 2
+
+  ollama-model:
+    desc: "Pull and load Ollama model"
+    cmds:
+      - ollama pull {{.LLM}}
+      - ollama run --think=false {{.LLM}} 'Hi!'
+
+  mcphost:
+    desc: "Run MCPHost for local Ollama server"
+    cmds:
+      - bin/mcphost --config=build/mcphost.json --model=ollama:{{.LLM}}
 
   psql:
     desc: "Run psql"
     cmds:
       - docker compose exec postgres psql -p 5432 -U username -d postgres
+
+  ysqlsh:
+    desc: "Run YugabyteDB SQL shell"
+    cmds:
+      - docker compose exec yugabytedb ./bin/ysqlsh postgres://username:password@host.docker.internal:5433/yugabyte
 
   mongosh:
     desc: "Run MongoDB shell (`mongosh`)"

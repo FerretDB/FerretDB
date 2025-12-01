@@ -17,11 +17,11 @@ package handler
 import (
 	"context"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
@@ -29,17 +29,9 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgDropAllUsersFromDatabase(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) { //nolint:lll // for readability
-	spec, err := req.OpMsg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	doc := req.Document()
 
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
@@ -48,7 +40,7 @@ func (h *Handler) msgDropAllUsersFromDatabase(connCtx context.Context, req *midd
 		return nil, err
 	}
 
-	conn, err := h.Pool.Acquire()
+	conn, err := h.p.Acquire()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -72,7 +64,7 @@ func (h *Handler) msgDropAllUsersFromDatabase(connCtx context.Context, req *midd
 
 	usersV, ok := usersInfoDoc.Get("users").(wirebson.AnyArray)
 	if !ok {
-		return middleware.ResponseMsg(wirebson.MustDocument(
+		return middleware.ResponseDoc(req, wirebson.MustDocument(
 			"n", int32(0),
 			"ok", float64(1),
 		))
@@ -109,7 +101,7 @@ func (h *Handler) msgDropAllUsersFromDatabase(connCtx context.Context, req *midd
 		n++
 	}
 
-	return middleware.ResponseMsg(wirebson.MustDocument(
+	return middleware.ResponseDoc(req, wirebson.MustDocument(
 		"n", n,
 		"ok", float64(1),
 	))

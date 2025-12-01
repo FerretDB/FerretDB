@@ -138,8 +138,8 @@ func TestCheckSupportedCommands(t *testing.T) {
 			ExpectedOutput: "incorrect issue number: https://github.com/FerretDB/FerretDB/issues/0 in example.md\n",
 		},
 		"DocumentDBIssue": {
-			Payload:        "An example issue is https://github.com/microsoft/documentdb/issues/1.",
-			ExpectedOutput: "linked issue https://github.com/microsoft/documentdb/issues/1 is closed in example.md\n",
+			Payload:        "An example issue is https://github.com/documentdb/documentdb/issues/1.",
+			ExpectedOutput: "linked issue https://github.com/documentdb/documentdb/issues/1 is closed in example.md\n",
 		},
 	} {
 		t.Run(name, func(t *testing.T) {

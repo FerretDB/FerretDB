@@ -17,23 +17,16 @@ package handler
 import (
 	"context"
 
+	"github.com/AlekSi/lazyerrors"
+
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // msgListIndexes implements `listIndexes` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgListIndexes(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	doc := req.Document()
 
 	dbName, err := getRequiredParam[string](doc, "$db")
 	if err != nil {
@@ -45,12 +38,12 @@ func (h *Handler) msgListIndexes(connCtx context.Context, req *middleware.Reques
 		return nil, err
 	}
 
-	page, cursorID, err := h.Pool.ListIndexes(connCtx, dbName, spec)
+	page, cursorID, err := h.p.ListIndexes(connCtx, dbName, req.DocumentRaw())
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	h.s.AddCursor(connCtx, userID, sessionID, cursorID)
 
-	return middleware.ResponseMsg(page)
+	return middleware.ResponseDoc(req, page)
 }

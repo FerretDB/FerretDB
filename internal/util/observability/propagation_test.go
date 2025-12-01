@@ -40,6 +40,9 @@ func TestCommentFromSpanContext(t *testing.T) {
 	parsed, err := SpanContextFromComment(comment)
 	require.NoError(t, err)
 
+	assert.True(t, parsed.IsValid())
+	assert.True(t, parsed.IsRemote())
+	assert.True(t, parsed.IsSampled())
 	assert.Equal(t, sc.TraceID(), parsed.TraceID())
 	assert.Equal(t, sc.SpanID(), parsed.SpanID())
 }

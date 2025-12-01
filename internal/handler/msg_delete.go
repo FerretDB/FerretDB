@@ -17,20 +17,21 @@ package handler
 import (
 	"context"
 
+	"github.com/AlekSi/lazyerrors"
+	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // msgDelete implements `delete` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgDelete(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	doc, spec, seq, err := req.OpMsg.Sections()
+	doc, spec, seq, err := req.WireBody().(*wire.OpMsg).Sections()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -46,7 +47,7 @@ func (h *Handler) msgDelete(connCtx context.Context, req *middleware.Request) (*
 
 	var res wirebson.RawDocument
 
-	err = h.Pool.WithConn(func(conn *pgx.Conn) error {
+	err = h.p.WithConn(func(conn *pgx.Conn) error {
 		res, _, err = documentdb_api.Delete(connCtx, conn, h.L, dbName, spec, seq)
 		return err
 	})
@@ -54,5 +55,5 @@ func (h *Handler) msgDelete(connCtx context.Context, req *middleware.Request) (*
 		return nil, lazyerrors.Error(err)
 	}
 
-	return middleware.ResponseMsg(mongoerrors.MapWriteErrors(connCtx, res))
+	return middleware.ResponseDoc(req, mongoerrors.MapWriteErrors(connCtx, res))
 }

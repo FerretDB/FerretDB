@@ -1,0 +1,34 @@
+/* Grid.module.css */
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.card {
+  max-width: 160px;
+  max-height: 160px;
+  padding: 1rem;
+  text-align: center;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+}
+
+.logo {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 1rem;
+  pointer-events: none;
+  user-select: none;
+}

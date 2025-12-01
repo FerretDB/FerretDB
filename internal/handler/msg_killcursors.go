@@ -18,12 +18,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
@@ -31,15 +31,7 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgKillCursors(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	doc := req.Document()
 
 	command := doc.Command()
 
@@ -77,10 +69,10 @@ func (h *Handler) msgKillCursors(connCtx context.Context, req *middleware.Reques
 	}
 
 	var ids []int64
-	cursorsKilled := wirebson.MakeArray(0)
-	cursorsNotFound := wirebson.MakeArray(0)
-	cursorsAlive := wirebson.MakeArray(0)
-	cursorsUnknown := wirebson.MakeArray(0)
+	cursorsKilled := wirebson.MustArray()
+	cursorsNotFound := wirebson.MustArray()
+	cursorsAlive := wirebson.MustArray()
+	cursorsUnknown := wirebson.MustArray()
 
 	for i := range cursors.Len() {
 		v := cursors.Get(i)
@@ -110,7 +102,7 @@ func (h *Handler) msgKillCursors(connCtx context.Context, req *middleware.Reques
 			return nil, err
 		}
 
-		if deleted := h.Pool.KillCursor(connCtx, id); !deleted {
+		if deleted := h.p.KillCursor(connCtx, id); !deleted {
 			must.NoError(cursorsNotFound.Add(id))
 			continue
 		}
@@ -118,7 +110,7 @@ func (h *Handler) msgKillCursors(connCtx context.Context, req *middleware.Reques
 		must.NoError(cursorsKilled.Add(id))
 	}
 
-	return middleware.ResponseMsg(wirebson.MustDocument(
+	return middleware.ResponseDoc(req, wirebson.MustDocument(
 		"cursorsKilled", cursorsKilled,
 		"cursorsNotFound", cursorsNotFound,
 		"cursorsAlive", cursorsAlive,

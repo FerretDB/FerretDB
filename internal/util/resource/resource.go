@@ -22,27 +22,29 @@ import (
 	runtimedebug "runtime/debug"
 	"runtime/pprof"
 	"sync"
+	"sync/atomic"
 	"unsafe"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/devbuild"
 )
 
-// cleanup is passed as the second argument to [runtime.AddCleanup].
-// It is a variable so the tests can replace it.
-var cleanup = func(msg string) {
-	panic(msg)
+// Token is a field of a tracked object, holding the cleanup handle and a cleanup function with message.
+type Token struct {
+	h       atomic.Pointer[runtime.Cleanup]
+	cleanup func(*Token)
+	msg     string
 }
 
-// Token is a field of a tracked object, holding the cleanup.
-//
-// The cleanup is used to stop scheduled cleanups when Untrack is called.
-type Token struct {
-	cleanup *runtime.Cleanup
+// cleanup panics with the token's message.
+func cleanup(t *Token) {
+	panic(t.msg)
 }
 
 // NewToken returns a new Token.
 func NewToken() *Token {
-	return new(Token)
+	return &Token{
+		cleanup: cleanup,
+	}
 }
 
 // profilesM protects access to profiles.
@@ -82,21 +84,24 @@ func Track[T any](obj *T, token *Token) {
 	// because otherwise profile will hold a reference to obj and cleanup will never run
 	p.Add(token, 1)
 
-	errMsg := fmt.Sprintf("%T has not been finalized", obj)
+	token.msg = fmt.Sprintf("%T has not been finalized", obj)
 	if devbuild.Enabled {
-		errMsg += "\nObject created by " + string(runtimedebug.Stack())
+		token.msg += "\nObject created by " + string(runtimedebug.Stack())
 	}
 
-	c := runtime.AddCleanup(obj, cleanup, errMsg)
-
-	token.cleanup = &c
+	h := runtime.AddCleanup(obj, token.cleanup, token)
+	token.h.Store(&h)
 }
 
 // Untrack stops tracking the lifetime of an object.
 //
-// It is safe to call this function multiple times.
+// It is safe to call this function multiple times concurrently.
 func Untrack[T any](obj *T, token *Token) {
 	checkArgs(obj, token)
+
+	if h := token.h.Swap(nil); h != nil {
+		h.Stop()
+	}
 
 	p := pprof.Lookup(profileName(obj))
 	if p == nil {
@@ -104,12 +109,6 @@ func Untrack[T any](obj *T, token *Token) {
 	}
 
 	p.Remove(token)
-
-	// Look up the cleanup by token and Stop() it to cancel the scheduled cleanup.
-	if h := token.cleanup; h != nil {
-		h.Stop()
-		token.cleanup = nil
-	}
 }
 
 // checkArgs checks Track and Untrack arguments.

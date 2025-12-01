@@ -20,11 +20,12 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/AlekSi/lazyerrors"
+	"github.com/FerretDB/wire"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
@@ -32,28 +33,26 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) CmdQuery(connCtx context.Context, query *middleware.Request) (*middleware.Response, error) {
-	q, err := query.OpQuery.Query()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
+	q := query.Document()
 	cmd := q.Command()
-	collection := query.OpQuery.FullCollectionName
+	queryBody := query.WireBody().(*wire.OpQuery)
+	collection := queryBody.FullCollectionName
+	toReturn := queryBody.NumberToReturn
 
 	suffix := ".$cmd"
 	if !strings.HasSuffix(collection, suffix) {
-		// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/527
-		return middleware.ResponseReply(wirebson.MustDocument(
+		// special case for legacy reply: $err instead of errmsg, no codeName
+		return middleware.ResponseDoc(query, wirebson.MustDocument(
 			"$err", "OP_QUERY is no longer supported. The client driver may require an update.",
 			"code", int32(mongoerrors.ErrLocation5739101),
 			"ok", float64(0),
 		))
 	}
 
-	if query.OpQuery.NumberToReturn != 1 && query.OpQuery.NumberToReturn != -1 {
+	if toReturn != 1 && toReturn != -1 {
 		return nil, mongoerrors.NewWithArgument(
 			mongoerrors.ErrLocation16979,
-			fmt.Sprintf("Bad numberToReturn (%d) for $cmd type ns - can only be 1 or -1", query.OpQuery.NumberToReturn),
+			fmt.Sprintf("Bad numberToReturn (%d) for $cmd type ns - can only be 1 or -1", toReturn),
 			"OpQuery: "+cmd,
 		)
 	}
@@ -65,7 +64,7 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *middleware.Request) (
 			return nil, lazyerrors.Error(err)
 		}
 
-		return middleware.ResponseReply(reply)
+		return middleware.ResponseDoc(query, reply)
 
 	case "saslStart":
 		if slices.Contains(q.FieldNames(), "$db") {
@@ -83,7 +82,7 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *middleware.Request) (
 
 		must.NoError(reply.Add("ok", float64(1)))
 
-		return middleware.ResponseReply(reply)
+		return middleware.ResponseDoc(query, reply)
 
 	case "saslContinue":
 		if q.Get("$db") != nil {
@@ -99,7 +98,7 @@ func (h *Handler) CmdQuery(connCtx context.Context, query *middleware.Request) (
 			return nil, err
 		}
 
-		return middleware.ResponseReply(reply)
+		return middleware.ResponseDoc(query, reply)
 	}
 
 	return nil, mongoerrors.NewWithArgument(

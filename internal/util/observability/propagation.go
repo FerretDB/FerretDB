@@ -17,9 +17,8 @@ package observability
 import (
 	"encoding/json"
 
+	"github.com/AlekSi/lazyerrors"
 	oteltrace "go.opentelemetry.io/otel/trace"
-
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // commentData represents an operation comment formatted to contain tracing data.
@@ -31,9 +30,9 @@ type commentData struct {
 }
 
 // SpanContextFromComment extracts OpenTelemetry tracing information from an operation comment.
-// The comment is expected to be a json string (see commentData).
+// The comment is expected to be a JSON string (see [commentData]).
 //
-// If the comment is empty, it returns an empty span context and no error.
+// If the comment is empty, it returns an invalid span context and no error.
 func SpanContextFromComment(comment string) (oteltrace.SpanContext, error) {
 	var sc oteltrace.SpanContext
 
@@ -59,8 +58,10 @@ func SpanContextFromComment(comment string) (oteltrace.SpanContext, error) {
 	}
 
 	sc = oteltrace.NewSpanContext(oteltrace.SpanContextConfig{
-		TraceID: traceID,
-		SpanID:  spanID,
+		TraceID:    traceID,
+		SpanID:     spanID,
+		TraceFlags: oteltrace.FlagsSampled, // we would not have received it if it hadn't been sampled
+		Remote:     true,
 	})
 
 	return sc, nil

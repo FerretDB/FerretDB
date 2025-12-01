@@ -1,3 +1,7 @@
 # https://github.com/cloudwego/eino#dependencies
 # TODO https://github.com/cloudwego/eino/issues/291
 CVE-2025-30153
+
+# https://nvd.nist.gov/vuln/detail/CVE-2025-51471
+# https://github.com/ollama/ollama/pull/10750
+CVE-2025-51471

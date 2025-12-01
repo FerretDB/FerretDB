@@ -15,25 +15,47 @@
 package server
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
 	"go.mongodb.org/mongo-driver/v2/bson"
-
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
-// marshalJSON encodes wirebson.RawDocument into extended JSON.
-func marshalJSON(raw wirebson.RawDocument, jsonDst io.Writer) error {
-	encoder := bson.NewEncoder(bson.NewExtJSONValueWriter(jsonDst, false, false))
+// marshalSingleJSON converts wirebson value to the standard JSON representation.
+func marshalSingleJSON(v any) (json.RawMessage, error) {
+	var err error
 
-	if err := encoder.Encode(bson.Raw(raw)); err != nil {
-		return lazyerrors.Error(err)
+	switch vt := v.(type) {
+	case wirebson.RawDocument:
+		v, err = vt.DecodeDeep()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	case wirebson.RawArray:
+		v, err = vt.DecodeDeep()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	default:
+		// no need to decode other types
 	}
 
-	return nil
+	bv, err := wirebson.ToDriver(v)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var buf bytes.Buffer
+
+	err = json.NewEncoder(&buf).Encode(bv)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return json.RawMessage(buf.Bytes()), nil
 }
 
 // unmarshalSingleJSON takes extended JSON object and unmarshals it into the wirebson composite.

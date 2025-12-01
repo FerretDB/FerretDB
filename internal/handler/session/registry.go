@@ -35,6 +35,7 @@ import (
 
 // Parts of Prometheus metric names.
 const (
+	// TODO https://github.com/FerretDB/FerretDB/issues/3420
 	namespace = "ferretdb"
 	subsystem = "sessions"
 )

@@ -12,7 +12,8 @@ ARG LABEL_COMMIT
 
 # prepare stage
 
-FROM --platform=$BUILDPLATFORM golang:1.24.4 AS development-prepare
+# TODO https://github.com/FerretDB/FerretDB/issues/5449
+FROM --platform=$BUILDPLATFORM golang:1.25.4-bookworm AS development-prepare
 
 # use a single directory for all Go caches to simplify RUN --mount commands below
 ENV GOPATH=/cache/gopath
@@ -36,7 +37,8 @@ EOF
 
 # build stage
 
-FROM golang:1.24.4 AS development-build
+# TODO https://github.com/FerretDB/FerretDB/issues/5449
+FROM golang:1.25.4-bookworm AS development-build
 
 ARG TARGETARCH
 
@@ -103,7 +105,8 @@ COPY --from=development-build /src/bin/ferretdb /ferretdb
 
 # final stage
 
-FROM golang:1.24.4 AS development
+# TODO https://github.com/FerretDB/FerretDB/issues/5449
+FROM golang:1.25.4-bookworm AS development
 
 ENV GOCOVERDIR=/tmp/cover
 ENV GORACE=halt_on_error=1,history_size=2

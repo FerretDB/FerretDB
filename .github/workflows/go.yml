@@ -42,7 +42,7 @@ jobs:
     steps:
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
@@ -102,7 +102,7 @@ jobs:
     steps:
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
@@ -123,6 +123,16 @@ jobs:
         run: go generate -x
         working-directory: tools
 
+      # install.sh starts ollama service, stop it since we want to run with `bin/task ollama` with environment variables
+      - name: Setup Ollama
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sudo -E sh
+          sudo systemctl stop ollama
+
+      - name: Start Ollama in the background
+        run: |
+          bin/task ollama &
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -133,6 +143,10 @@ jobs:
       - name: Start environment
         run: bin/task env-up-detach
 
+      - name: Pull and load Ollama model
+        run: |
+          bin/task ollama-model
+
       - name: Run init
         run: bin/task init
 
@@ -142,6 +156,7 @@ jobs:
       - name: Regenerate and reformat
         run: bin/task gen
         env:
+          # must be a SUPERUSER to ensure parameter_default is set
           DOCUMENTDB_GEN_URL: postgres://username:password@127.0.0.1:5432/postgres
 
       - name: Build bin/ferretdb
@@ -171,6 +186,20 @@ jobs:
           flag-name: unit
           parallel: true
 
+      - name: Convert test results to JUnit XML format
+        if: always()
+        run: >
+          ./bin/go-junit-report
+          -in ./unit.txt
+          -out ./unit.xml
+
+      - name: Upload test results to Codecov
+        if: always()
+        uses: codecov/test-results-action@v1
+        with:
+          flags: unit
+          file: ./unit.xml
+
       # we don't want them on CI
       - name: Clean test and fuzz caches
         if: always()
@@ -198,17 +227,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task: [postgresql]
+        task: [postgresql, yugabytedb]
         shard_index: [1, 2, 3, 4, 5]
         shard_total: [5]
         include:
           - { task: "mongodb", shard_index: 1, shard_total: 1 }
+          - { task: "yugabytedb", skip_flaky_check: true } # Too many failures for now
 
     uses: ./.github/workflows/_integration.yml
     with:
       task: ${{ matrix.task }}
       shard_index: ${{ matrix.shard_index }}
       shard_total: ${{ matrix.shard_total }}
+      skip_flaky_check: ${{ matrix.skip_flaky_check || false }}
 
   integration-no-xfail:
     name: postgresql no-xfail
@@ -264,7 +295,7 @@ jobs:
     steps:
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
@@ -324,7 +355,7 @@ jobs:
     steps:
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0 # for `golangci-lint run --new` to work
           lfs: false # LFS is used only by website

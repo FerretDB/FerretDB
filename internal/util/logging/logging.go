@@ -40,6 +40,8 @@ const nameKey = "name"
 // WithName returns a logger with a given period-separated name.
 //
 // How this name is used depends on the handler.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/4431
 func WithName(l *slog.Logger, name string) *slog.Logger {
 	must.NotBeZero(l)
 	return l.With(slog.String(nameKey, name))
@@ -53,12 +55,6 @@ func Error(err error) slog.Attr {
 
 	return slog.String("error", err.Error())
 }
-
-// LazyString is a lazily evaluated [slog.LogValuer].
-type LazyString func() string
-
-// LogValue implements [slog.LogValuer].
-func (ls LazyString) LogValue() slog.Value { return slog.StringValue(ls()) }
 
 // Logger creates a new slog handler and logger with the given output, options and UUID.
 func Logger(out io.Writer, opts *NewHandlerOpts, uuid string) *slog.Logger {
@@ -81,8 +77,3 @@ func SetupDefault(opts *NewHandlerOpts, uuid string) {
 	slog.SetDefault(l)
 	slog.SetLogLoggerLevel(slog.LevelInfo + 2)
 }
-
-// check interfaces
-var (
-	_ slog.LogValuer = (LazyString)(nil)
-)

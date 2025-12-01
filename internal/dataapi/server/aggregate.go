@@ -20,15 +20,15 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
 
 	"github.com/FerretDB/FerretDB/v2/internal/dataapi/api"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
 // Aggregate implements [ServerInterface].
-func (s *Server) Aggregate(w http.ResponseWriter, r *http.Request) {
+func (s *Server) Aggregate(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	if s.l.Enabled(ctx, slog.LevelDebug) {
@@ -37,7 +37,7 @@ func (s *Server) Aggregate(w http.ResponseWriter, r *http.Request) {
 
 	var req api.AggregateRequestBody
 	if err := decodeJSONRequest(r, &req); err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -45,26 +45,36 @@ func (s *Server) Aggregate(w http.ResponseWriter, r *http.Request) {
 		"aggregate", req.Collection,
 		"$db", req.Database,
 		"pipeline", req.Pipeline,
-		"cursor", wirebson.MakeDocument(0),
+		"cursor", wirebson.MustDocument(),
 	)
 	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
 		return
 	}
 
-	resMsg, err := s.handler.Handle(ctx, msg)
-	if err != nil {
-		http.Error(w, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+	resp := s.m.Handle(ctx, msg)
+	if resp == nil {
+		http.Error(rw, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	resRaw := must.NotFail(resMsg.OpMsg.RawDocument())
-	cursor := must.NotFail(resRaw.Decode()).Get("cursor").(wirebson.AnyDocument)
+	if !resp.OK() {
+		s.writeJSONError(ctx, rw, resp)
+		return
+	}
+
+	cursor := resp.Document().Get("cursor").(wirebson.AnyDocument)
 	firstBatch := must.NotFail(cursor.Decode()).Get("firstBatch").(wirebson.AnyArray)
 
-	res := must.NotFail(wirebson.NewDocument(
-		"documents", firstBatch,
-	))
+	b, err := marshalSingleJSON(firstBatch)
+	if err != nil {
+		http.Error(rw, lazyerrors.Error(err).Error(), http.StatusInternalServerError)
+		return
+	}
 
-	s.writeJSONResponse(ctx, w, res)
+	res := api.AggregateResponseBody{
+		Documents: b,
+	}
+
+	s.writeJSONResponse(ctx, rw, &res)
 }

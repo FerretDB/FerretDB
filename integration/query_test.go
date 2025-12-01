@@ -680,6 +680,11 @@ func TestQueryShowRecordID(t *testing.T) {
 			cursor, err := tc.collection.Find(ctx, bson.D{}, opts)
 			require.NoError(t, err)
 
+			if setup.IsYugabyteDB(t) {
+				// TODO https://github.com/yugabyte/yugabyte-db/issues/27989
+				t.Skip("https://github.com/yugabyte/yugabyte-db/issues/27989")
+			}
+
 			var res []bson.D
 			err = cursor.All(ctx, &res)
 			require.NoError(t, cursor.Close(ctx))

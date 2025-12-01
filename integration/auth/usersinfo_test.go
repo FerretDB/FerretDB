@@ -205,7 +205,7 @@ func TestUsersInfoCommand(t *testing.T) {
 			// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/864
 			// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/961
 			// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/962
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/939",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5313",
 		},
 		"WithSCRAMSHA256": {
 			dbName: dbNames.E,
@@ -234,7 +234,7 @@ func TestUsersInfoCommand(t *testing.T) {
 				}},
 				{"ok", float64(1)},
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/939",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5313",
 		},
 		"FromSameDatabase": {
 			dbName: dbNames.B,
@@ -467,7 +467,7 @@ func TestUsersInfoCommand(t *testing.T) {
 				}},
 				{"ok", float64(1)},
 			},
-			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/939",
+			failsForFerretDB: "https://github.com/FerretDB/FerretDB/issues/5313",
 		},
 		"SingleDatabaseLong": {
 			dbName: "no_users",

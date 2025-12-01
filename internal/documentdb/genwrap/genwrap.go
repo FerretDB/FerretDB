@@ -48,6 +48,7 @@ func main() {
 		l.Log(ctx, logging.LevelFatal, "-schemas flag is empty")
 	}
 
+	// must be a SUPERUSER to ensure parameter_default is set
 	// DOCUMENTDB_GEN_URL=postgres://username:password@127.0.0.1:5432/postgres
 	uri := os.Getenv("DOCUMENTDB_GEN_URL")
 	if uri == "" {

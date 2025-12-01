@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.opentelemetry.io/otel"
 
@@ -66,7 +65,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
 
-	setupCtx, span := otel.Tracer("").Start(ctx, "SetupCompatWithOpts")
+	setupCtx, span := otel.Tracer("").Start(ctx, "setup.SetupCompatWithOpts")
 	defer span.End()
 
 	if opts == nil {
@@ -130,14 +129,13 @@ func SetupCompat(tb testing.TB) (context.Context, []*mongo.Collection, []*mongo.
 func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Client, opts *SetupCompatOpts, backend string) []*mongo.Collection {
 	tb.Helper()
 
-	ctx, span := otel.Tracer("").Start(ctx, "setupCompatCollections")
+	ctx, span := otel.Tracer("").Start(ctx, "setup.setupCompatCollections")
 	defer span.End()
 
 	database := client.Database(opts.databaseName)
 
 	// drop remnants of the previous failed run
-	_ = database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}})
-	_ = database.Drop(ctx)
+	cleanupDatabase(tb, ctx, database)
 
 	// drop database unless test failed
 	tb.Cleanup(func() {
@@ -145,11 +143,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 			return
 		}
 
-		err := database.RunCommand(ctx, bson.D{{"dropAllUsersFromDatabase", 1}}).Err()
-		require.NoError(tb, err)
-
-		err = database.Drop(ctx)
-		require.NoError(tb, err)
+		cleanupDatabase(tb, ctx, database)
 	})
 
 	providers := slices.Clone(opts.Providers)

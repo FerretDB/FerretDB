@@ -20,11 +20,37 @@ services:
     environment:
       # UTC−03:30/−02:30. Set to catch timezone problems.
       - TZ=America/St_Johns
-      - POSTGRES_USER=username
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=pg-user
+      - POSTGRES_PASSWORD=pg-pass
       - POSTGRES_DB=postgres
     volumes:
       - ./build/testscripts:/testscripts
+
+  yugabytedb:
+    build:
+      context: ./build/deps
+      dockerfile: yugabytedb.Dockerfile
+    container_name: ferretdb_yugabytedb
+    platform: linux/amd64 # TODO https://github.com/FerretDB/FerretDB/issues/5369
+    # postgresql.conf is populated by "ysql_pg_conf_csv" flag
+    # https://docs.yugabyte.com/preview/reference/configuration/yugabyted/#pass-additional-flags-to-yb-master-and-yb-tserver
+    command: >
+      bin/yugabyted start
+      --background=false
+      --initial_scripts_dir=/yugabytedb
+      --ysql_enable_auth=true
+      --master_flags="allowed_preview_flags_csv=ysql_enable_documentdb,ysql_enable_documentdb=true,enable_pg_cron=true,ysql_pg_conf_csv={documentdb.enableUserCrud = true,documentdb.maxUserLimit = 100}"
+      --tserver_flags="allowed_preview_flags_csv=ysql_enable_documentdb,ysql_enable_documentdb=true,enable_pg_cron=true,ysql_pg_conf_csv={documentdb.enableUserCrud = true,documentdb.maxUserLimit = 100}"
+    ports:
+      - 5433:5433
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - YSQL_USER=pg-user # this user cannot authenticate against FerretDB
+      - YSQL_PASSWORD=pg-pass
+      - YSQL_DB=yugabyte # DocumentDB extension is installed in yugabyte database
+    volumes:
+      - ./build/yugabytedb/init.sql:/yugabytedb/init.sql
 
   mongodb:
     build:
@@ -97,12 +123,6 @@ services:
       - 4318:4318 # OTLP over HTTP
       - 6831:6831/udp # Compact Thrift from BuildKit
       - 16686:16686 # UI on http://127.0.0.1:16686/
-
-  librechat:
-    build:
-      context: ./build/deps
-      dockerfile: librechat.Dockerfile
-    container_name: librechat_jaeger
 
   trivy:
     build:

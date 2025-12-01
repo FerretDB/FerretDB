@@ -20,12 +20,11 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jackc/pgx/v5/tracelog"
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/state"
@@ -35,7 +34,7 @@ import (
 // No actual connections are established immediately.
 // State's version fields will be set only after a connection is established
 // by some query or ping.
-func newPgxPool(uri string, l *slog.Logger, sp *state.Provider) (*pgxpool.Pool, error) {
+func newPgxPool(uri string, l *slog.Logger, tracer pgx.QueryTracer, sp *state.Provider) (*pgxpool.Pool, error) {
 	must.NotBeZero(sp)
 
 	u, err := url.Parse(uri)
@@ -65,14 +64,7 @@ func newPgxPool(uri string, l *slog.Logger, sp *state.Provider) (*pgxpool.Pool, 
 		return nil
 	}
 
-	// port tracing, tweak logging
-	// TODO https://github.com/FerretDB/FerretDB/issues/3554
-
-	// try to log everything; logger's configuration will skip extra levels if needed
-	config.ConnConfig.Tracer = &tracelog.TraceLog{
-		Logger:   logging.NewPgxLogger(l),
-		LogLevel: tracelog.LogLevelTrace,
-	}
+	config.ConnConfig.Tracer = tracer
 
 	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeCacheStatement
 
@@ -88,14 +80,15 @@ func newPgxPool(uri string, l *slog.Logger, sp *state.Provider) (*pgxpool.Pool, 
 //
 // Keep it in sync with docs.
 func newPgxPoolSetDefaults(values url.Values) {
-	// the default is too low
-	if !values.Has("pool_max_conns") {
-		values.Set("pool_max_conns", "50")
+	// https://pkg.go.dev/github.com/jackc/pgx/v5@v5.7.5/pgxpool#ParseConfig's
+	// defaults are too low.
+
+	if !values.Has("pool_min_conns") {
+		values.Set("pool_min_conns", "10")
 	}
 
-	// to avoid the need to close unused pools ourselves
-	if !values.Has("pool_max_conn_idle_time") {
-		values.Set("pool_max_conn_idle_time", "1m")
+	if !values.Has("pool_max_conns") {
+		values.Set("pool_max_conns", "50")
 	}
 
 	// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNECT-APPLICATION-NAME

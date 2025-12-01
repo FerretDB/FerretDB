@@ -15,33 +15,11 @@
 package testutil
 
 import (
-	"io"
 	"log/slog"
-	"strings"
 	"testing"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 )
-
-// logWriter provides [io.Writer] for [testing.TB].
-type logWriter struct {
-	tb testing.TB
-}
-
-// NewLogWriter returns a new [io.Writer] for [testing.TB].
-func NewLogWriter(tb testing.TB) io.Writer {
-	return &logWriter{tb: tb}
-}
-
-// Write implements [io.Writer].
-func (lw *logWriter) Write(p []byte) (int, error) {
-	// "logging.go:xx" is added by testing.TB.Log itself; there is nothing we can do about it.
-	// lw.tb.Helper() does not help. See:
-	// https://github.com/golang/go/issues/59928
-	// https://github.com/neilotoole/slogt/tree/v1.1.0?tab=readme-ov-file#deficiency
-	lw.tb.Log(strings.TrimSuffix(string(p), "\n"))
-	return len(p), nil
-}
 
 // Logger returns slog test logger.
 func Logger(tb testing.TB) *slog.Logger {
@@ -50,7 +28,7 @@ func Logger(tb testing.TB) *slog.Logger {
 
 // LevelLogger returns a slog test logger for the given level (which might be dynamic).
 func LevelLogger(tb testing.TB, level slog.Leveler) *slog.Logger {
-	h := logging.NewHandler(&logWriter{tb: tb}, &logging.NewHandlerOpts{
+	h := logging.NewHandler(tb.Output(), &logging.NewHandlerOpts{
 		Base:       "console",
 		Level:      level,
 		RemoveTime: true,
@@ -58,8 +36,3 @@ func LevelLogger(tb testing.TB, level slog.Leveler) *slog.Logger {
 
 	return slog.New(h)
 }
-
-// check interfaces
-var (
-	_ io.Writer = (*logWriter)(nil)
-)

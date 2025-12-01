@@ -6,9 +6,10 @@
 2. Update DocumentDB image tags to point to release in:
    - [eval image](../build/ferretdb/eval.Dockerfile);
    - [eval-dev image](../build/ferretdb/eval-dev.Dockerfile);
-   - [local image](../build/deps/postgres-documentdb.Dockerfile).
+   - [local image](../build/deps/postgres-documentdb.Dockerfile);
+   - [bw image](../build/ferretdb-bw/Dockerfile).
 3. Update constants in [`documentdb.go`](../build/version/documentdb.go).
-4. Check DocumentDB images tags in documentation (where we specify full tags).
+4. Check DocumentDB images/tags in documentation (where we specify full tags).
 5. Re-run tests, linters.
 6. Check issues and pull requests, update milestones and labels.
 7. Check if there are breaking changes or anything that should be reflected in the changelog and/or user documentation.
@@ -63,8 +64,8 @@
 1. Publish and announce blog post.
 2. Add link to blog post to `CHANGELOG.md` and release page.
 3. Bump the latest version on https://beacon.ferretdb.com and https://beacon.ferretdb.io.
-4. Update DocumentDB image tags to point back to development version.
-5. Update DocumentDB images tags in the current documentation (where we specify full tags)
+4. Update DocumentDB images/tags in Dockerfiles to point back to development version.
+5. Update DocumentDB images/tags in the current documentation (where we specify full tags)
    to point to the next (non-existing) version.
 6. Update URLs with `/refs/tags/` in them in the current documentation
    to point to the next (non-existing) version.

@@ -18,41 +18,38 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/AlekSi/lazyerrors"
+	"github.com/FerretDB/wire/wirebson"
+	"github.com/jackc/pgx/v5"
+
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 )
 
 // msgDistinct implements `distinct` command.
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgDistinct(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	doc := req.Document()
 
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
+
+	command := doc.Command()
 
 	dbName, err := getRequiredParam[string](doc, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	collection, ok := doc.Get(doc.Command()).(string)
+	collection, ok := doc.Get(command).(string)
 	if !ok {
 		return nil, mongoerrors.NewWithArgument(
 			mongoerrors.ErrInvalidNamespace,
 			"Failed to parse namespace element",
-			doc.Command(),
+			command,
 		)
 	}
 
@@ -60,20 +57,19 @@ func (h *Handler) msgDistinct(connCtx context.Context, req *middleware.Request) 
 		return nil, mongoerrors.NewWithArgument(
 			mongoerrors.ErrInvalidNamespace,
 			fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collection),
-			doc.Command(),
+			command,
 		)
 	}
 
-	conn, err := h.Pool.Acquire()
+	var res wirebson.RawDocument
+
+	err = h.p.WithConn(func(conn *pgx.Conn) error {
+		res, err = documentdb_api.DistinctQuery(connCtx, conn, h.L, dbName, req.DocumentRaw())
+		return err
+	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	defer conn.Release()
 
-	res, err := documentdb_api.DistinctQuery(connCtx, conn.Conn(), h.L, dbName, spec)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }

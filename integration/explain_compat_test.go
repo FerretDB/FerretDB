@@ -39,9 +39,10 @@ type explainCompatTestCase struct {
 // testExplainCompatError tests explain compatibility test cases.
 // This test does not work for successful aggregate pipeline tests,
 // due to compat requiring cursor option.
-// If you see following error, use `testAggregateStagesCompat` test instead.
+// If you see one of following errors, use `testAggregateStagesCompat` test instead.
 //
-//	`(FailedToParse) The 'cursor' option is required, except for aggregate with the explain argument`
+// `(FailedToParse) The 'cursor' option is required, except for aggregate with the explain argument`.
+// `(FailedToParse) The 'cursor' option is required, except for aggregate with explain`.
 func testExplainCompatError(tt *testing.T, testCases map[string]explainCompatTestCase) {
 	tt.Helper()
 

@@ -18,13 +18,13 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
+	"github.com/jackc/pgx/v5"
 
-	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api_internal"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
 	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
-	"github.com/FerretDB/FerretDB/v2/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
@@ -33,17 +33,9 @@ import (
 //
 // The passed context is canceled when the client connection is closed.
 func (h *Handler) msgCreateIndexes(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
-	spec, err := req.OpMsg.RawDocument()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	doc := req.Document()
 
-	doc, err := spec.Decode()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if _, _, err = h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
+	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
 		return nil, err
 	}
 
@@ -57,30 +49,29 @@ func (h *Handler) msgCreateIndexes(connCtx context.Context, req *middleware.Requ
 		return nil, mongoerrors.NewWithArgument(
 			mongoerrors.ErrLocation40414,
 			"BSON field 'createIndexes.indexes' is missing but a required field",
-			"createIndexes",
+			"indexes",
 		)
 	}
 
-	conn, err := h.Pool.Acquire()
+	var res wirebson.AnyDocument
+
+	err = h.p.WithConn(func(conn *pgx.Conn) error {
+		res, err = h.createIndexes(connCtx, conn, doc.Command(), dbName, req.DocumentRaw())
+		return err
+	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	defer conn.Release()
 
-	res, err := h.createIndexes(connCtx, conn, doc.Command(), dbName, spec)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return middleware.ResponseMsg(res)
+	return middleware.ResponseDoc(req, res)
 }
 
 // createIndexes calls DocumentDB API to create indexes, decodes and maps embedded error to command error if any.
 // It returns a document for createIndexes response.
-func (h *Handler) createIndexes(connCtx context.Context, conn *documentdb.Conn, command, dbName string, spec wirebson.RawDocument) (wirebson.AnyDocument, error) { //nolint:lll // for readability
-	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/1147
+func (h *Handler) createIndexes(connCtx context.Context, conn *pgx.Conn, command, dbName string, spec wirebson.RawDocument) (wirebson.AnyDocument, error) { //nolint:lll // for readability
+	// TODO https://github.com/documentdb/documentdb/issues/25
 	// resRaw, _, _, err := documentdb_api.CreateIndexesBackground(connCtx, conn.Conn(), h.L, dbName, spec)
-	resRaw, err := documentdb_api_internal.CreateIndexesNonConcurrently(connCtx, conn.Conn(), h.L, dbName, spec, true)
+	resRaw, err := documentdb_api_internal.CreateIndexesNonConcurrently(connCtx, conn, h.L, dbName, spec, true)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -114,7 +105,7 @@ func (h *Handler) createIndexes(connCtx context.Context, conn *documentdb.Conn, 
 
 	if code != 0 {
 		errMsg, _ := defaultShard.Get("errmsg").(string)
-		return nil, mongoerrors.NewWithArgument(code, errMsg, command)
+		return nil, mongoerrors.New(code, errMsg)
 	}
 
 	resOk := defaultShard.Get("ok").(int32)

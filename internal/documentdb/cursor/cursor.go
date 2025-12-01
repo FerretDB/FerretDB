@@ -17,11 +17,13 @@ package cursor
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/FerretDB/FerretDB/v2/internal/util/logging"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/resource"
 )
@@ -52,6 +54,23 @@ func newCursor(continuation wirebson.RawDocument, conn *pgx.Conn) *cursor {
 	return res
 }
 
+// Type returns cursor type for logging and Prometheus label value.
+func (c *cursor) Type() string {
+	if c.conn != nil {
+		return "persistent"
+	}
+
+	return "normal"
+}
+
+// LogValue implements [slog.LogValuer] interface.
+func (c *cursor) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("type", c.Type()),
+		slog.Any("continuation", logging.LazyDeepDecoder(c.continuation)),
+	)
+}
+
 // close closes the underlying connection, if any.
 //
 // It attempts a clean close by sending the exit message to PostgreSQL.
@@ -71,3 +90,8 @@ func (c *cursor) close(ctx context.Context) {
 
 	resource.Untrack(c, c.token)
 }
+
+// check interfaces
+var (
+	_ slog.LogValuer = (*cursor)(nil)
+)
