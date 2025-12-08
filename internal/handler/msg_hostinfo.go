@@ -78,7 +78,8 @@ func (h *Handler) msgHostInfo(connCtx context.Context, req *middleware.Request) 
 			"currentTime", now,
 			"hostname", hostname,
 			"cpuAddrSize", int32(strconv.IntSize),
-			"numCores", int32(runtime.GOMAXPROCS(-1)),
+			"numCores", int32(runtime.NumCPU()),
+			"numCoresAvailableToProcess", int32(runtime.GOMAXPROCS(-1)),
 			"cpuArch", runtime.GOARCH,
 		),
 		"os", wirebson.MustDocument(

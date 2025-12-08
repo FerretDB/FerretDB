@@ -146,7 +146,7 @@ func TestDropIndexesCommandErrors(t *testing.T) {
 			},
 			err: &mongo.CommandError{
 				Code:    40414,
-				Name:    "Location40414",
+				Name:    "IDLFailedToParse",
 				Message: "BSON field 'dropIndexes.index' is missing but a required field",
 			},
 		},
@@ -236,7 +236,7 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 			missingIndexes: true,
 			err: &mongo.CommandError{
 				Code:    40414,
-				Name:    "Location40414",
+				Name:    "IDLFailedToParse",
 				Message: "BSON field 'createIndexes.indexes' is missing but a required field",
 			},
 		},

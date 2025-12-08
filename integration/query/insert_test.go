@@ -83,9 +83,6 @@ func TestInsertZeroTimestampBypass(tt *testing.T) {
 
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{WireConn: setup.WireConnAuth})
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/5073
-	t = setup.FailsForMongoDB(t, "https://github.com/FerretDB/FerretDB/issues/5073")
-
 	_, resp, err := s.WireConn.Request(s.Ctx, wire.MustOpMsg(
 		"insert", s.Collection.Name(),
 		"documents", wirebson.MustArray(
