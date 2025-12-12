@@ -92,6 +92,8 @@ and can also be seen on the http://127.0.0.1:8088/debug/ page itself.
 FerretDB serves a zip archive with debugging information on the `/debug/archive` endpoint.
 Information in the archive helps us debug performance and compatibility problems.
 
+XXX how to download, prompt to download during workload
+
 :::caution
 Please do not publish the whole archive in our [public community places](/#community),
 as it contains sensitive information.
