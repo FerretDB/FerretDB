@@ -32,9 +32,9 @@ require (
 	github.com/FerretDB/gh v0.2.0
 	github.com/google/go-github/v70 v70.0.1-0.20250402125210-3a3f51bc7c5d
 	github.com/rogpeppe/go-internal v1.14.1
-	github.com/sethvargo/go-githubactions v1.3.1
+	github.com/sethvargo/go-githubactions v1.3.2
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/tools v0.38.0
+	golang.org/x/tools v0.40.0
 )
 
 require (
@@ -152,17 +152,17 @@ require (
 	gitlab.com/digitalxero/go-conventional-commit v1.0.7 // indirect
 	go.mongodb.org/mongo-driver v1.17.3 // indirect
 	go.mongodb.org/mongo-driver/v2 v2.2.1 // indirect
-	golang.org/x/crypto v0.43.0 // indirect
-	golang.org/x/mod v0.29.0 // indirect
-	golang.org/x/net v0.46.0 // indirect
+	golang.org/x/crypto v0.46.0 // indirect
+	golang.org/x/mod v0.31.0 // indirect
+	golang.org/x/net v0.48.0 // indirect
 	golang.org/x/oauth2 v0.32.0 // indirect
 	golang.org/x/perf v0.0.0-20251023143056-3684bd442cc8 // indirect
 	golang.org/x/pkgsite v0.0.0-20251106022650-0d7e29046a91 // indirect
-	golang.org/x/sync v0.17.0 // indirect
-	golang.org/x/sys v0.37.0 // indirect
-	golang.org/x/telemetry v0.0.0-20251008203120-078029d740a8 // indirect
-	golang.org/x/term v0.36.0 // indirect
-	golang.org/x/text v0.30.0 // indirect
+	golang.org/x/sync v0.19.0 // indirect
+	golang.org/x/sys v0.39.0 // indirect
+	golang.org/x/telemetry v0.0.0-20251203150158-8fff8a5912fc // indirect
+	golang.org/x/term v0.38.0 // indirect
+	golang.org/x/text v0.32.0 // indirect
 	golang.org/x/tools/go/packages/packagestest v0.1.1-deprecated // indirect
 	golang.org/x/vuln v1.1.4 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
