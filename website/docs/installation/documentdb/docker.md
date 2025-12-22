@@ -14,13 +14,13 @@ We provide two Docker images for setting up PostgreSQL with DocumentDB extension
 ## Installation
 
 The production image for PostgreSQL with DocumentDB extension
-[`ghcr.io/ferretdb/postgres-documentdb:17-0.107.0-ferretdb-2.7.0`](https://ghcr.io/ferretdb/postgres-documentdb:17-0.107.0-ferretdb-2.7.0)
+[`ghcr.io/ferretdb/postgres-documentdb:17-0.108.0-ferretdb-2.8.0`](https://ghcr.io/ferretdb/postgres-documentdb:17-0.108.0-ferretdb-2.8.0)
 is recommended for most deployments.
 It does not include FerretDB, so you must run it separately.
 For a complete setup that includes FerretDB, see the [FerretDB installation](../ferretdb/docker.md).
 
 :::tip
-We strongly recommend specifying the full image tag (e.g., `17-0.107.0-ferretdb-2.7.0`)
+We strongly recommend specifying the full image tag (e.g., `17-0.108.0-ferretdb-2.8.0`)
 to ensure consistency across deployments.
 For more information on the best FerretDB image to use, see the [DocumentDB release notes](https://github.com/FerretDB/documentdb/releases/).
 :::
@@ -40,7 +40,7 @@ See [Set up PostgreSQL connection](../../security/authentication.md#set-up-postg
      -e POSTGRES_DB=postgres \
      -v ./data:/var/lib/postgresql/data \
      -p 5432:5432 \
-     ghcr.io/ferretdb/postgres-documentdb:17-0.107.0-ferretdb-2.7.0
+     ghcr.io/ferretdb/postgres-documentdb:17-0.108.0-ferretdb-2.8.0
    ```
 
    Ensure to update `<username>` and `<password>` with your desired values.
@@ -54,7 +54,7 @@ See [Set up PostgreSQL connection](../../security/authentication.md#set-up-postg
    If you don't have `psql`, you can run the following command to run it inside the temporary PostgreSQL container:
 
    ```sh
-   docker run --rm -it ghcr.io/ferretdb/postgres-documentdb:17-0.107.0-ferretdb-2.7.0 \
+   docker run --rm -it ghcr.io/ferretdb/postgres-documentdb:17-0.108.0-ferretdb-2.8.0 \
      psql postgres://<username>:<password>@localhost:5432/postgres
    ```
 
@@ -75,7 +75,7 @@ Before [updating to a new FerretDB release](../ferretdb/docker.md#updating-to-a-
 The following steps are critical to ensuring a successful update.
 
 Edit your Compose file to use the matching DocumentDB image tag.
-You can find the correct tag in the DocumentDB release notes (for example: `17-0.107.0-ferretdb-2.7.0`).
+You can find the correct tag in the DocumentDB release notes (for example: `17-0.108.0-ferretdb-2.8.0`).
 Then run:
 
 ```sh

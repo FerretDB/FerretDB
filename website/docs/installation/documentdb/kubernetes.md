@@ -12,7 +12,7 @@ You can deploy PostgreSQL with DocumentDB extension using any of our provided im
 Please see the [Docker installation docs](../documentdb/docker.md) to learn more about the available images.
 
 :::tip
-We strongly recommend specifying the full image tag (e.g., `17-0.107.0-ferretdb-2.7.0`)
+We strongly recommend specifying the full image tag (e.g., `17-0.108.0-ferretdb-2.8.0`)
 to ensure consistency across deployments.
 For more information on the best FerretDB image to use, see the [DocumentDB release notes](https://github.com/FerretDB/documentdb/releases/).
 :::
@@ -37,7 +37,7 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: ghcr.io/ferretdb/postgres-documentdb:17-0.107.0-ferretdb-2.7.0
+          image: ghcr.io/ferretdb/postgres-documentdb:17-0.108.0-ferretdb-2.8.0
           ports:
             - containerPort: 5432
           env:
