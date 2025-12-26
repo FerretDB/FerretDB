@@ -4,7 +4,7 @@ module github.com/FerretDB/FerretDB/v2/tools/mcphost
 
 go 1.25
 
-toolchain go1.25.4
+toolchain go1.25.5
 
 tool github.com/mark3labs/mcphost
 
@@ -54,7 +54,7 @@ require (
 	github.com/charmbracelet/x/exp/slice v0.0.0-20250902204034-1cdc10c66d5b // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/cloudwego/base64x v0.1.6 // indirect
-	github.com/cloudwego/eino v0.5.0-alpha.11 // indirect
+	github.com/cloudwego/eino v0.5.11 // indirect
 	github.com/cloudwego/eino-ext/components/model/claude v0.1.0 // indirect
 	github.com/cloudwego/eino-ext/components/model/ollama v0.1.2 // indirect
 	github.com/cloudwego/eino-ext/components/model/openai v0.0.0-20250903035842-96774a3ec845 // indirect
@@ -62,7 +62,7 @@ require (
 	github.com/djherbis/times v1.6.0 // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/eino-contrib/jsonschema v1.0.0 // indirect
+	github.com/eino-contrib/jsonschema v1.0.2 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/evanphx/json-patch v0.5.2 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -92,8 +92,8 @@ require (
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mailru/easyjson v0.9.0 // indirect
 	github.com/mark3labs/mcp-filesystem-server v0.11.1 // indirect
-	github.com/mark3labs/mcp-go v0.41.1 // indirect
-	github.com/mark3labs/mcphost v0.31.3 // indirect
+	github.com/mark3labs/mcp-go v0.43.0 // indirect
+	github.com/mark3labs/mcphost v0.32.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
@@ -143,13 +143,13 @@ require (
 	go.opentelemetry.io/otel/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
 	golang.org/x/arch v0.20.0 // indirect
-	golang.org/x/crypto v0.41.0 // indirect
+	golang.org/x/crypto v0.46.0 // indirect
 	golang.org/x/exp v0.0.0-20250819193227-8b4c13bb791b // indirect
-	golang.org/x/net v0.43.0 // indirect
-	golang.org/x/sync v0.16.0 // indirect
-	golang.org/x/sys v0.35.0 // indirect
-	golang.org/x/term v0.34.0 // indirect
-	golang.org/x/text v0.28.0 // indirect
+	golang.org/x/net v0.47.0 // indirect
+	golang.org/x/sync v0.19.0 // indirect
+	golang.org/x/sys v0.39.0 // indirect
+	golang.org/x/term v0.38.0 // indirect
+	golang.org/x/text v0.32.0 // indirect
 	google.golang.org/genai v1.22.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250826171959-ef028d996bc1 // indirect
 	google.golang.org/grpc v1.75.0 // indirect
