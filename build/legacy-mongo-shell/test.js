@@ -9,20 +9,17 @@
 
   coll.drop();
 
+
   const init = [
-    { _id: "double", v: 42.13 },
-    { _id: "double-whole", v: 42.0 },
-    { _id: "double-zero", v: 0.0 },
+    { v: 1 },
   ];
 
   coll.insertMany(init);
 
-  const query = { v: { $gt: 42.0 } };
+  const actual = db.runCommand({dbStats:1});
 
-  const expected = [{ _id: "double", v: 42.13 }];
-
-  const actual = coll.find(query).toArray();
-  assert.eq(expected, actual);
+  assert.eq(NumberLong(1), actual.objects,"objects not equal");
+  assert.eq(33, actual.avgObjSize,"avgObjSize not equal");
 
   print("test.js passed!");
 })();
