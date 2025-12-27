@@ -93,6 +93,6 @@ And just because a proprietary software like MongoDB promises a way out of the l
 Essentially, the possibility of avoiding a vendor lock-in situation doesn't mean it's feasible.
 
 With FerretDB and Tigris, you'll be able to build your application backend and have control of all your data without the fear of getting locked in.
-Click [here](https://www.tigrisdata.com/beta) to sign up for the Tigris beta and get early access.
+You can [sign up for the Tigris beta](https://www.tigrisdata.com/beta) to get early access.
 
 Read this article to learn more on [why you need FerretDB as the ideal replacement for MongoDB](https://blog.ferretdb.io/developers-need-ferretdb-stackoverflow-developer-survey-2022/).
