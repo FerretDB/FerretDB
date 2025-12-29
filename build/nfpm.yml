@@ -16,6 +16,9 @@ license: Apache License 2.0
 suggests:
   - postgresql
 
+scripts:
+  preinstall: build/preinstall.sh
+
 contents:
   - src: tmp/build/linux_${DIR_ARCH}/ferretdb
     dst: /usr/bin/ferretdb
