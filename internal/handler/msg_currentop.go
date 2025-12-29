@@ -40,7 +40,7 @@ func (h *Handler) msgCurrentOp(connCtx context.Context, req *middleware.Request)
 	var res wirebson.RawDocument
 
 	var err error
-	err = h.p.WithConn(func(conn *pgx.Conn) error {
+	err = h.p.WithConn(connCtx, func(conn *pgx.Conn) error {
 		res, err = documentdb_api.CurrentOpCommand(connCtx, conn, h.L, req.DocumentRaw())
 		return err
 	})

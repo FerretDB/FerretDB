@@ -61,7 +61,7 @@ func (h *Handler) msgCreate(connCtx context.Context, req *middleware.Request) (*
 		return nil, mongoerrors.NewWithArgument(mongoerrors.ErrInvalidNamespace, msg, command)
 	}
 
-	err = h.p.WithConn(func(conn *pgx.Conn) error {
+	err = h.p.WithConn(connCtx, func(conn *pgx.Conn) error {
 		_, err = documentdb_api.CreateCollection(connCtx, conn, h.L, dbName, collectionName)
 		return err
 	})

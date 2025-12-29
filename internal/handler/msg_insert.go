@@ -47,7 +47,7 @@ func (h *Handler) msgInsert(connCtx context.Context, req *middleware.Request) (*
 
 	var res wirebson.RawDocument
 
-	err = h.p.WithConn(func(conn *pgx.Conn) error {
+	err = h.p.WithConn(connCtx, func(conn *pgx.Conn) error {
 		res, _, err = documentdb_api.Insert(connCtx, conn, h.L, dbName, spec, seq)
 		return err
 	})
