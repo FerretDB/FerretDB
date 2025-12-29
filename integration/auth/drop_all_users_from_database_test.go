@@ -16,13 +16,14 @@ package auth
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
 
 	"github.com/FerretDB/FerretDB/v2/integration"
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
@@ -40,7 +41,7 @@ func TestDropAllUsersFromDatabaseCommand(tt *testing.T) {
 
 	quantity := 5 // Add some users to the database.
 	for i := 1; i <= quantity; i++ {
-		username := fmt.Sprintf("user_%d", i)
+		username := testutil.UserName(t)
 
 		// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/864
 		_ = db.RunCommand(ctx, bson.D{{"dropUser", username}})
