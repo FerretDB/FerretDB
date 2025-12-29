@@ -293,6 +293,10 @@ func (h *Handler) initCommands() {
 			handler: h.msgSetFreeMonitoring,
 			Help:    "Toggles free monitoring.",
 		},
+		"sleep": {
+			handler: h.msgSleep,
+			Help:    "", // hidden
+		},
 		"startSession": {
 			handler: h.msgStartSession,
 			Help:    "Returns a session.",
