@@ -15,7 +15,10 @@
 package integration
 
 import (
+	"context"
+	"errors"
 	"testing"
+	"time"
 
 	"github.com/FerretDB/wire/wirebson"
 	"github.com/stretchr/testify/assert"
@@ -23,6 +26,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/FerretDB/FerretDB/v2/internal/util/ctxutil"
 
 	"github.com/FerretDB/FerretDB/v2/integration/setup"
 	"github.com/FerretDB/FerretDB/v2/integration/shareddata"
@@ -898,4 +903,46 @@ func TestReIndexErrors(t *testing.T) {
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
+}
+
+func TestCreateIndexesExpireAfterRemovesExpiredDocs(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
+	_, err := collection.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys:    bson.D{{Key: "expireAt", Value: 1}},
+		Options: options.Index().SetExpireAfterSeconds(1),
+	})
+	require.NoError(t, err)
+
+	expired := bson.D{{Key: "_id", Value: "expired"}, {Key: "expireAt", Value: time.Now().Add(10 * time.Second)}}
+	fresh := bson.D{{Key: "_id", Value: "fresh"}, {Key: "expireAt", Value: time.Now().Add(10 * time.Minute)}}
+
+	_, err = collection.InsertMany(ctx, []any{expired, fresh})
+	require.NoError(t, err)
+
+	count, err := collection.CountDocuments(ctx, bson.D{})
+	require.NoError(t, err)
+	require.Equal(t, int64(2), count)
+
+	ctx, cancel := context.WithTimeout(ctx, 90*time.Second)
+	defer cancel()
+
+	for ctx.Err() == nil {
+		err = collection.FindOne(ctx, bson.D{{Key: "_id", Value: "expired"}}).Err()
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			break
+		}
+
+		require.NoError(t, err)
+		ctxutil.Sleep(ctx, 2*time.Second)
+	}
+
+	err = collection.FindOne(ctx, bson.D{{Key: "_id", Value: "expired"}}).Err()
+	require.Error(t, err)
+	require.ErrorIs(t, err, mongo.ErrNoDocuments)
+
+	err = collection.FindOne(ctx, bson.D{{Key: "_id", Value: "fresh"}}).Err()
+	require.NoError(t, err)
 }
