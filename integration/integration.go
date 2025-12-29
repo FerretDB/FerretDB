@@ -100,7 +100,7 @@ func fixOrder(t testing.TB, doc *wirebson.Document) {
 	}
 }
 
-// fixActualUpdateN replaces the int64 `nMatched`, `nModified`, `nUpserted`, `n` fields with a int32 values.
+// fixActualUpdateN replaces the int64 `nMatched`, `nModified`, `nUpserted`, `n` fields with int32 values.
 //
 // It does nothing if the current test is running for MongoDB.
 //
