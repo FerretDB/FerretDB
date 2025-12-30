@@ -163,7 +163,7 @@ Learn more about indexes in FerretDB [here](https://docs.ferretdb.io/usage/index
 A Time-To-Live (TTL) index auto-deletes expired data after a set time.
 That means no manual deletions and no bloated storage.
 
-If a library tracks book reservations for instance, a TTL index can remove records after a year, so outdated holds don't clutter queries or waste space.
+If a library tracks book reservations, for instance, a TTL index can remove records after a year, so outdated holds don't clutter queries or waste space.
 
 It is recommended to create the TTL index before inserting documents.
 So if the document was added before the TTL index, it may not be affected until a new one is inserted.
@@ -350,7 +350,7 @@ If a publisher's location is stored as GeoJSON points, FerretDB lets you query b
 What if you want to search for books published in a specific city?
 Instead of manually stating their locations, you can store and query precise geographic coordinates using `$geoWithin`.
 
-Using London's longitude and latitude (`[-0.1276, 51.5072]`), let's run some queries to find books published within a `1km` radius.
+Using London's latitude and longitude (`[51.5072, -0.1276]`), let's run some queries to find books published within a `1km` radius.
 Note that the distance is in radians, so we need to convert it to the Earth's radius.
 Since the Earth's radius is about 6378.1km, we divide `1km` by the Earth's radius to get the distance in radians.
 
