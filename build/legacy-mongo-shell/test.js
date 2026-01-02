@@ -9,20 +9,39 @@
 
   coll.drop();
 
-  const init = [
-    { _id: "double", v: 42.13 },
-    { _id: "double-whole", v: 42.0 },
-    { _id: "double-zero", v: 0.0 },
-  ];
+  const init = [{ _id: "double", v: 42.13 }];
 
   coll.insertMany(init);
 
-  const query = { v: { $gt: 42.0 } };
+  const res = db.test.runCommand({ collStats: "test" });
+  assert.commandWorked(res);
 
-  const expected = [{ _id: "double", v: 42.13 }];
+  var failedTests = {};
 
-  const actual = coll.find(query).toArray();
-  assert.eq(expected, actual);
+  try {
+    assert.eq(res.numOrphanDocs, NumberInt(0));
+  } catch (e) {
+    failedTests["numOrphanDocs"] = e;
+  }
 
+  try {
+    assert.eq(res.capped, false);
+  } catch (e) {
+    failedTests["capped"] = e;
+  }
+
+  try {
+    assert.eq(Object.keys(res.indexDetails), ["_id_"]);
+  } catch (e) {
+    failedTests["indexDetails"] = e;
+  }
+
+  try {
+    assert.eq(typeof res.indexSizes._id_, "number");
+  } catch (e) {
+    failedTests["indexSizesFields"] = e;
+  }
+
+  assert.eq(failedTests, {});
   print("test.js passed!");
 })();
