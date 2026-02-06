@@ -4,7 +4,7 @@ module github.com/FerretDB/FerretDB/v2/tools/mcphost
 
 go 1.25
 
-toolchain go1.25.5
+toolchain go1.25.7
 
 tool github.com/mark3labs/mcphost
 

@@ -15,9 +15,9 @@ apt update
 apt install -y git-lfs mongodb-mongosh tmux nano
 
 cd /tmp
-curl -OJL https://go.dev/dl/go1.25.5.linux-amd64.tar.gz
-tar -xf go1.25.5.linux-amd64.tar.gz
-rm go1.25.5.linux-amd64.tar.gz
+curl -OJL https://go.dev/dl/go1.25.7.linux-amd64.tar.gz
+tar -xf go1.25.7.linux-amd64.tar.gz
+rm go1.25.7.linux-amd64.tar.gz
 mv go /usr/local/
 ln -s /usr/local/go/bin/* /usr/local/bin/
 go version
