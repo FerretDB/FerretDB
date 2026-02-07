@@ -80,7 +80,7 @@ metadata:
   namespace: cnpg
 spec:
   instances: 3
-  imageName: 'ghcr.io/ferretdb/postgres-documentdb:17-0.102.0-ferretdb-2.1.0'
+  imageName: 'ghcr.io/ferretdb/postgres-documentdb:17-0.106.0-ferretdb-2.5.0'
   postgresUID: 999
   postgresGID: 999
   enableSuperuserAccess: true
@@ -95,6 +95,9 @@ spec:
       - pg_documentdb
     parameters:
       cron.database_name: 'postgres'
+    pg_hba:
+      - host postgres postgres 127.0.0.1/32 trust
+      - host postgres postgres ::1/128 trust
 
   bootstrap:
     initdb:
@@ -163,7 +166,7 @@ spec:
     spec:
       containers:
         - name: ferretdb
-          image: ghcr.io/ferretdb/ferretdb:2.1.0
+          image: ghcr.io/ferretdb/ferretdb:2.5.0
           ports:
             - containerPort: 27017
           env:
