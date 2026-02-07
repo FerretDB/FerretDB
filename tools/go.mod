@@ -1,8 +1,6 @@
 module github.com/FerretDB/FerretDB/v2/tools
 
-go 1.25.5
-
-toolchain go1.25.7
+go 1.25.7
 
 // replace github.com/FerretDB/wire => ../../wire
 
