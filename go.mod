@@ -10,7 +10,7 @@ require (
 	github.com/AlekSi/lazyerrors v0.5.0
 	github.com/AlekSi/pointer v1.2.0
 	github.com/FerretDB/wire v0.1.7
-	github.com/alecthomas/kong v1.13.0
+	github.com/alecthomas/kong v1.14.0
 	github.com/arl/statsviz v0.8.0
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgerrcode v0.0.0-20250907135507-afb5586c32a6
