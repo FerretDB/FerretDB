@@ -27,7 +27,7 @@ With [Mingo](https://mingo.io/), FerretDB users can easily query, visualize, and
 
 ## Prerequisites
 
-- Download and install Mingo from [here](https://mingo.io/download)
+- [Download and install Mingo](https://mingo.io/download)
 - [Docker](https://www.docker.com/)to set up FerretDB docker installation (see documentation)
 - [mongosh](https://www.mongodb.com/docs/mongodb-shell/)
 

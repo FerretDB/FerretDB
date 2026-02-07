@@ -117,7 +117,7 @@ However, this change is not a cause for concern, merely a signal that we will be
 This change will not affect the support for the `$elemMatch` query operator.
 For more information on the supported operators and commands, please check out our [updated documentation](https://docs.ferretdb.io/reference/supported_commands/).
 
-Please find more details about the new features and changes in the beta version [here](https://github.com/FerretDB/FerretDB/releases/tag/v0.8.0).
+Please find more [details about the new features and changes in the beta version](https://github.com/FerretDB/FerretDB/releases/tag/v0.8.0).
 
 ## And to our amazing community and users
 

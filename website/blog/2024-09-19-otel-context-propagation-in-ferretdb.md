@@ -18,8 +18,7 @@ At FerretDB, we're committed to addressing this challenge.
 
 ## OpenTelemetry context propagation for databases
 
-Context propagation, a concept that enables the tracking of requests as they move through different services, is explained by OpenTelemetry
-[here](https://opentelemetry.io/docs/concepts/context-propagation/).
+[OpenTelemetry Context propagation](https://opentelemetry.io/docs/concepts/context-propagation/) is a concept that enables the tracking of requests as they move through different services.
 This context typically includes request-related data,
 such as trace identifiers, which are passed across service boundaries,
 allowing you to link different parts of a distributed request together.

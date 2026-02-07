@@ -79,7 +79,7 @@ a fully managed database-as-a-service offering.
 Deploy and scale FerretDB effortlessly on AWS, Google Cloud, and (soon) Microsoft Azure,
 with operational burdens handled by our experts.
 
-Join the FerretDB Cloud waitlist [here](https://cloud.ferretdb.com/signup) for early access,
+Join the [FerretDB Cloud waitlist](https://cloud.ferretdb.com/signup) for early access,
 and stay tuned for expanded availability!
 
 ## The Beginnings of a New Open Standard for Document Databases

@@ -62,7 +62,7 @@ You can deploy a managed FerretDB instance on Taikun CloudWorks using the Ferret
 FerretDB relies on PostgreSQL as the backend database, and the Percona PostgreSQL Operator provides a robust and scalable PostgreSQL solution.
 So before installing the chart, ensure the [Percona PostgreSQL Operator](https://github.com/percona/percona-postgresql-operator) is installed and running in your Kubernetes cluster.
 
-You can install the Percona PostgreSQL Operator by following their installation guide [here](https://github.com/percona/percona-postgresql-operator#installation) or by running the following command:
+You can [install the Percona PostgreSQL Operator by following their installation guide](https://github.com/percona/percona-postgresql-operator#installation) or by running the following command:
 
 ```sh
 kubectl apply --server-side -f https://raw.githubusercontent.com/percona/percona-postgresql-operator/v2.3.1/deploy/bundle.yaml -n newferret
@@ -306,8 +306,7 @@ Go ahead to explore more complex queries and operations.
 In this guide, you learned how to deploy a managed FerretDB instance on Taikun CloudWorks and run some MongoDB commands on a FerretDB instance.
 Now you can go ahead to test or migrate your MongoDB workloads on a production-ready cluster with ease on Taikun CloudWorks.
 
-We previously covered how to deploy FerretDB on Kubernetes using Taikun CloudWorks.
-You can check out the guide [here](2024-05-27-deploy-ferretdb-kubernetes-taikun-cloudworks.md#set-up-a-kubernetes-cluster-in-taikun-cloud).
+We previously covered [how to deploy FerretDB on Kubernetes using Taikun CloudWorks](2024-05-27-deploy-ferretdb-kubernetes-taikun-cloudworks.md#set-up-a-kubernetes-cluster-in-taikun-cloud).
 
 For a guide on how to migrate your MongoDB workloads to FerretDB, check out the [FerretDB documentation](https://docs.ferretdb.io/migration/).
 And should you have any questions or need help, feel free to reach out on any of our community channels on [GitHub](https://docs.ferretdb.io/#community).

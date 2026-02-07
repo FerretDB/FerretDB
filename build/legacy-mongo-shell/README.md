@@ -2,7 +2,7 @@
 
 See [Assertions 101](https://github.com/mongodb/mongo/wiki/Write-Tests-For-Server-Code#assertions-101) for a very brief overview.
 
-The legacy `mongo` shell uses its own assertions which are defined [here](https://github.com/mongodb/mongo/blob/master/src/mongo/shell/assert.js).
+The legacy `mongo` shell uses its own [assertions](https://github.com/mongodb/mongo/blob/master/src/mongo/shell/assert.js).
 These deviate from `mongosh`, which uses the standard Node.js [assert](https://nodejs.org/api/assert.html) module.
 When you write a small reproducible test and call `task testjs` the legacy `mongo` shell will be invoked.
 

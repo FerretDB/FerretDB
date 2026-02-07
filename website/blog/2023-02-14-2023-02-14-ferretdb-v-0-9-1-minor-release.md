@@ -44,4 +44,4 @@ Please see the [release notes on FerretDB v0.9.1](https://github.com/FerretDB/Fe
 
 We're always here to help you get the most out of FerretDB.
 As a result, we encourage our users to share feedback, ask questions, and leave comments.
-Get in touch with us [here](https://docs.ferretdb.io/#community)!
+Get [in touch with us](https://docs.ferretdb.io/#community)!
