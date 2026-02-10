@@ -111,7 +111,7 @@ require (
 	github.com/muesli/roff v0.1.0 // indirect
 	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/nikolalohinski/gonja v1.5.3 // indirect
-	github.com/ollama/ollama v0.11.8 // indirect
+	github.com/ollama/ollama v0.14.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
