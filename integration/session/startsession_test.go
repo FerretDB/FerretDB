@@ -20,6 +20,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/url"
+	"slices"
 	"testing"
 
 	"github.com/FerretDB/wire"
@@ -28,6 +29,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
@@ -508,6 +510,69 @@ func TestSessionConnectionDifferentUser(t *testing.T) {
 		killCursors(t, ctx, userConn, dbName, cName, cursorID, sessionID, expectedErr)
 
 		getMore(t, ctx, adminConn, dbName, cName, sessionID, cursorID, nil)
+	})
+}
+
+func TestStartSessionWithLSIDCreatesTwoSessions(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{WireConn: setup.WireConnAuth})
+	ctx, db, conn := s.Ctx, s.Collection.Database(), s.WireConn
+
+	var sessionID, lsid wirebson.Binary
+
+	t.Run("StartSession", func(t *testing.T) {
+		lsid = wirebson.Binary{
+			B:       must.NotFail(must.NotFail(uuid.NewRandom()).MarshalBinary()),
+			Subtype: wirebson.BinaryUUID,
+		}
+
+		_, resBody, err := conn.Request(ctx, wire.MustOpMsg(
+			"startSession", int32(1),
+			"$db", db.Name(),
+			"lsid", wirebson.MustDocument("id", lsid),
+		))
+		require.NoError(t, err)
+
+		res, err := resBody.(*wire.OpMsg).DocumentDeep()
+		require.NoError(t, err)
+
+		idDoc := res.Get("id")
+		require.NotNil(t, idDoc, wirebson.LogMessage(res))
+
+		idV := idDoc.(*wirebson.Document).Get("id")
+		require.NotNil(t, idV, wirebson.LogMessage(res))
+
+		sessionID = idV.(wirebson.Binary)
+	})
+
+	t.Run("ListLocalSessions", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/5332")
+
+		pipeline := bson.A{bson.D{{"$listLocalSessions", bson.D{}}}}
+		cursor, err := db.Aggregate(ctx, pipeline, options.Aggregate().SetBatchSize(10000))
+		require.NoError(t, err)
+
+		var sessionIDs []wirebson.Binary
+
+		for _, v := range integration.FetchAll(t, ctx, cursor) {
+			var res any
+			res, err = wirebson.FromDriver(v)
+			require.NoError(t, err)
+
+			idDoc := must.NotFail(res.(wirebson.AnyDocument).Decode()).Get("_id")
+			require.NotNil(t, idDoc, wirebson.LogMessage(res))
+
+			idV := must.NotFail(idDoc.(wirebson.AnyDocument).Decode()).Get("id")
+			require.NotNil(t, idV, wirebson.LogMessage(res))
+			sessionIDs = append(sessionIDs, idV.(wirebson.Binary))
+		}
+
+		containsLsidF := slices.ContainsFunc(sessionIDs, func(id wirebson.Binary) bool { return wirebson.Equal(lsid, id) })
+		require.True(t, containsLsidF, "lsid not created")
+
+		containsSessionIDF := slices.ContainsFunc(sessionIDs, func(id wirebson.Binary) bool { return wirebson.Equal(sessionID, id) })
+		require.True(t, containsSessionIDF, "session ID not created")
 	})
 }
 
