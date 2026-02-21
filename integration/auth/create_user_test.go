@@ -232,7 +232,7 @@ func TestCreateUserCommand(t *testing.T) {
 			user: "missing_roles",
 			err: &mongo.CommandError{
 				Code:    40414,
-				Name:    "Location40414",
+				Name:    "IDLFailedToParse",
 				Message: "BSON field 'createUser.roles' is missing but a required field",
 			},
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/934",

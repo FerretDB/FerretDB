@@ -269,7 +269,7 @@ func TestGetMoreCommand(t *testing.T) {
 			firstBatch:       arr[:1],
 			err: &mongo.CommandError{
 				Code:    40414,
-				Name:    "Location40414",
+				Name:    "IDLFailedToParse",
 				Message: "BSON field 'getMore.collection' is missing but a required field",
 			},
 			failsForFerretDB: "https://github.com/FerretDB/FerretDB-DocumentDB/issues/334",
