@@ -98,8 +98,8 @@ FROM ghcr.io/ferretdb/postgres-documentdb-dev:17-ferretdb AS eval
 
 RUN --mount=type=cache,sharing=locked,target=/var/cache/apt <<EOF
 apt install -y curl supervisor
-curl -L https://pgp.mongodb.com/server-7.0.asc | apt-key add -
-echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/debian bookworm/mongodb-org/7.0 main" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+curl -L https://pgp.mongodb.com/server-7.0.asc | gpg --dearmor --yes --output /usr/share/keyrings/mongodb-bookworm.gpg
+echo "deb [ arch=amd64,arm64,signed-by=/usr/share/keyrings/mongodb-bookworm.gpg ] https://repo.mongodb.org/apt/debian bookworm/mongodb-org/7.0 main" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list
 apt update
 apt install -y mongodb-mongosh
 EOF
