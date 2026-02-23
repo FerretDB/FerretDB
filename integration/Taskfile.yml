@@ -2,6 +2,10 @@
 ---
 version: 3
 
+env:
+  GORACE: halt_on_error=1,history_size=2
+  GOCOVERDIR: tmp/cover
+
 vars:
   RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
   BUILD_TAGS: ferretdb_dev
@@ -74,3 +78,11 @@ tasks:
         -otel-traces-url=''
         | tee new-mongodb.txt
       - ../bin/benchstat{{exeExt}} old-mongodb.txt new-mongodb.txt
+
+  fuzz-wire:
+    desc: "Run wire protocol fuzzer"
+    cmds:
+      - >
+        go test -tags={{.BUILD_TAGS}} {{.RACE_FLAG}} -v -run=XXX -fuzz=FuzzWire -short
+        -target-backend=ferretdb
+        -postgresql-url='postgres://username:password@127.0.0.1:5432/postgres'
