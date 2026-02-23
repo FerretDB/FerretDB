@@ -58,7 +58,7 @@ We also made some updates to provide clearer guidance on managing and interpreti
 For a complete list of changes, please see the [release note for FerretDB v1.24](https://github.com/FerretDB/FerretDB/releases/tag/v1.24.0).
 
 As always, we appreciate all the contributions and support for FerretDB.
-We had 4 new contributors in this release – [@nalgeon](https://github.com/nalgeon), [@Evengard](https://github.com/Evengard), [@dasjoe](https://github.com/dasjoe), and [@kaiwalyakoparkar](https://github.com/kaiwalyakoparkar) made their first contribution.
+We had four new contributors in this release – [@nalgeon](https://github.com/nalgeon), [@Evengard](https://github.com/Evengard), [@dasjoe](https://github.com/dasjoe), and [@kaiwalyakoparkar](https://github.com/kaiwalyakoparkar) made their first contribution.
 
 Ensure to try out the SQLite authentication on the new release and let us know what you think.
 

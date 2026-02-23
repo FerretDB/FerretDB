@@ -102,7 +102,7 @@ Once that's we can display the result in a table with `{{count.data}}`
 
 ![Action for count operation](/img/blog/ferretdb-illacloud/9-count.png)
 
-The combined view of the 3 actions should look like this:
+The combined view of the three actions should look like this:
 
 ![View of all actions](/img/blog/ferretdb-illacloud/10-overall-view.png)
 
