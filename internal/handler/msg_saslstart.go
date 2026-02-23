@@ -35,12 +35,9 @@ import (
 // msgSASLStart implements `saslStart` command.
 //
 // The passed context is canceled when the client connection is closed.
+// The command saslStart does not create or update session.
 func (h *Handler) msgSASLStart(connCtx context.Context, req *middleware.Request) (*middleware.Response, error) {
 	doc := req.Document()
-
-	if _, _, err := h.s.CreateOrUpdateByLSID(connCtx, doc); err != nil {
-		return nil, err
-	}
 
 	res, err := h.saslStart(connCtx, doc)
 	if err != nil {

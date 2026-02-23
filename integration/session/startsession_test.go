@@ -20,6 +20,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/url"
+	"slices"
 	"testing"
 
 	"github.com/FerretDB/wire"
@@ -27,7 +28,10 @@ import (
 	"github.com/FerretDB/wire/wireclient"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	xdgscram "github.com/xdg-go/scram"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 	"github.com/FerretDB/FerretDB/v2/internal/util/testutil"
@@ -357,6 +361,91 @@ func TestFindLsidErrors(t *testing.T) {
 		)
 
 		testutil.AssertEqual(t, expected, res)
+	})
+}
+
+func TestSaslLSID(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{WireConn: setup.WireConnNoAuth})
+	ctx, db, conn := s.Ctx, s.Collection.Database(), s.WireConn
+
+	u, err := url.Parse(s.MongoDBURI)
+	require.NoError(t, err)
+
+	username := u.User.Username()
+	password, _ := u.User.Password()
+	saslStartLsid := wirebson.Binary{
+		B:       must.NotFail(must.NotFail(uuid.NewRandom()).MarshalBinary()),
+		Subtype: wirebson.BinaryUUID,
+	}
+	saslContinueLsid := wirebson.Binary{
+		B:       must.NotFail(must.NotFail(uuid.NewRandom()).MarshalBinary()),
+		Subtype: wirebson.BinaryUUID,
+	}
+
+	t.Run("SaslStart", func(t *testing.T) {
+		conv := must.NotFail(xdgscram.SHA256.NewClient(username, password, "")).NewConversation()
+		payload := must.NotFail(conv.Step(""))
+
+		var resBody wire.MsgBody
+		_, resBody, err = conn.Request(ctx, wire.MustOpMsg(
+			"saslStart", int32(1),
+			"mechanism", "SCRAM-SHA-256",
+			"payload", wirebson.Binary{B: []byte(payload)},
+			"lsid", wirebson.MustDocument("id", saslStartLsid),
+			"$db", db.Name(),
+		))
+		require.NoError(t, err)
+
+		_, err = resBody.(*wire.OpMsg).DocumentDeep()
+		require.NoError(t, err)
+	})
+
+	t.Run("SaslContinue", func(t *testing.T) {
+		var resBody wire.MsgBody
+		_, resBody, err = conn.Request(ctx, wire.MustOpMsg(
+			"saslContinue", int32(1),
+			"conversationId", int32(1),
+			"payload", wirebson.Binary{B: []byte("dummy")},
+			"lsid", wirebson.MustDocument("id", saslContinueLsid),
+			"$db", db.Name(),
+		))
+		require.NoError(t, err)
+
+		_, err = resBody.(*wire.OpMsg).DocumentDeep()
+		require.NoError(t, err)
+	})
+
+	t.Run("ListLocalSessions", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/5332")
+
+		pipeline := bson.A{bson.D{{"$listLocalSessions", bson.D{}}}}
+
+		var cursor *mongo.Cursor
+		cursor, err = db.Aggregate(ctx, pipeline, options.Aggregate().SetBatchSize(10000))
+		require.NoError(t, err)
+
+		var sessionIDs []wirebson.Binary
+
+		for _, v := range integration.FetchAll(t, ctx, cursor) {
+			var res any
+			res, err = wirebson.FromDriver(v)
+			require.NoError(t, err)
+
+			idDoc := must.NotFail(res.(wirebson.AnyDocument).Decode()).Get("_id")
+			require.NotNil(t, idDoc, wirebson.LogMessage(res))
+
+			idV := must.NotFail(idDoc.(wirebson.AnyDocument).Decode()).Get("id")
+			require.NotNil(t, idV, wirebson.LogMessage(res))
+			sessionIDs = append(sessionIDs, idV.(wirebson.Binary))
+		}
+
+		containsLsidF := slices.ContainsFunc(sessionIDs, func(id wirebson.Binary) bool { return wirebson.Equal(id, saslStartLsid) })
+		require.False(t, containsLsidF, "saslStart created session but should not")
+
+		containsSaslContinueLsidF := slices.ContainsFunc(sessionIDs, func(id wirebson.Binary) bool { return wirebson.Equal(id, saslContinueLsid) })
+		require.False(t, containsSaslContinueLsidF, "saslContinue created session but should not")
 	})
 }
 
