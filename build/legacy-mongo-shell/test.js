@@ -3,26 +3,30 @@
 (function () {
   "use strict";
 
-  // Update the following example with your test.
+  const coll = db.illegal_path_in_match;
+  assert.commandWorked(coll.insert({a: 1}));
 
-  const coll = db.test;
+  const pipeline = [
+    // to prevent pushing the match into the query layer
+    {$limit: 10},
+    // legal path in query system, but illegal in aggregation system
+    {$match: {'a.$c': 4}},
+    // This inclusion-projection allows the planner to determine that the only necessary fields
+    // we need to fetch from the document are "_id" (by default), "a.$c" (since we do a match
+    // on it) and "dummy" since we include/rename it as part of this $project.
 
-  coll.drop();
-
-  const init = [
-    { _id: "double", v: 42.13 },
-    { _id: "double-whole", v: 42.0 },
-    { _id: "double-zero", v: 0.0 },
+    // The reason we need to explicitly include a "dummy" field, rather than just including
+    // "a.$c" is that, as mentioned before, a.$c is an illegal path in the aggregation system,
+    // so if we use it as part of the project, the $project will fail to parse (and the
+    // relevant code will not be exercised).
+    {
+      $project: {
+        'newAndUnrelatedField': '$dummy',
+      },
+    },
   ];
 
-  coll.insertMany(init);
+  assert.commandFailedWithCode(db.runCommand({aggregate: 'illegal_path_in_match', pipeline: pipeline, cursor: {}}), 16410);
 
-  const query = { v: { $gt: 42.0 } };
-
-  const expected = [{ _id: "double", v: 42.13 }];
-
-  const actual = coll.find(query).toArray();
-  assert.eq(expected, actual);
-
-  print("test.js passed!");
+  print('test.js passed!');
 })();
