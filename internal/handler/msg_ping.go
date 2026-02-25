@@ -36,7 +36,7 @@ func (h *Handler) msgPing(connCtx context.Context, req *middleware.Request) (*mi
 	}
 
 	var err error
-	err = h.p.WithConn(func(conn *pgx.Conn) error {
+	err = h.p.WithConn(connCtx, func(conn *pgx.Conn) error {
 		_, err = documentdb_api.BinaryExtendedVersion(connCtx, conn, h.L)
 		return err
 	})

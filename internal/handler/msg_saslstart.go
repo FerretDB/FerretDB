@@ -129,7 +129,7 @@ func (h *Handler) saslStart(ctx context.Context, doc *wirebson.Document) (*wireb
 
 	var res wirebson.RawDocument
 
-	err = h.p.WithConn(func(conn *pgx.Conn) error {
+	err = h.p.WithConn(ctx, func(conn *pgx.Conn) error {
 		res, err = documentdb_api_internal.ScramSha256GetSaltAndIterations(ctx, conn, h.L, username)
 		return err
 	})

@@ -40,7 +40,7 @@ func (h *Handler) msgDropAllUsersFromDatabase(connCtx context.Context, req *midd
 		return nil, err
 	}
 
-	conn, err := h.p.Acquire()
+	conn, err := h.p.Acquire(connCtx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

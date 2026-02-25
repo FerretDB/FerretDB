@@ -62,7 +62,7 @@ func (h *Handler) msgDrop(connCtx context.Context, req *middleware.Request) (*mi
 
 	var dropped bool
 
-	err = h.p.WithConn(func(conn *pgx.Conn) error {
+	err = h.p.WithConn(connCtx, func(conn *pgx.Conn) error {
 		dropped, err = documentdb_api.DropCollection(connCtx, conn, h.L, dbName, collectionName, nil, nil, false)
 		return err
 	})

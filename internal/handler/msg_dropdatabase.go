@@ -43,7 +43,7 @@ func (h *Handler) msgDropDatabase(connCtx context.Context, req *middleware.Reque
 	// Should we manually close all cursors for the database?
 	// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/17
 
-	err = h.p.WithConn(func(conn *pgx.Conn) error {
+	err = h.p.WithConn(connCtx, func(conn *pgx.Conn) error {
 		return documentdb_api.DropDatabase(connCtx, conn, h.L, dbName, nil)
 	})
 	if err != nil {

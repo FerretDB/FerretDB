@@ -58,7 +58,7 @@ func (h *Handler) msgDataSize(connCtx context.Context, req *middleware.Request) 
 
 	var pageRaw wirebson.RawDocument
 
-	err = h.p.WithConn(func(conn *pgx.Conn) error {
+	err = h.p.WithConn(connCtx, func(conn *pgx.Conn) error {
 		pageRaw, err = documentdb_api.CollStats(connCtx, conn, h.L, db, collection, float64(1))
 		return err
 	})
