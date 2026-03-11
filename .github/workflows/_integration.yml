@@ -65,7 +65,7 @@ jobs:
         working-directory: tools
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -112,7 +112,7 @@ jobs:
 
       - name: Upload logs
         if: failure()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: logs-${{ inputs.task }}-${{ inputs.shard_index }}-${{ inputs.shard_total }}
           path: logs.zip
