@@ -90,7 +90,7 @@ jobs:
 
       # it has to be exactly "docs.tar" for actions/deploy-pages below
       - name: Upload archive artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: docs
           path: tmp/docs.tar
@@ -122,7 +122,7 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deploy
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
         with:
           artifact_name: docs
           timeout: 300000 # 5*60*1000 milliseconds
