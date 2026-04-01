@@ -39,7 +39,7 @@ jobs:
     steps:
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
@@ -87,7 +87,7 @@ jobs:
     steps:
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
@@ -124,7 +124,7 @@ jobs:
 
       - name: Upload coverage information to codecov
         if: always()
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           files: ./cover.txt
           flags: unit
@@ -206,7 +206,7 @@ jobs:
     steps:
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
@@ -255,7 +255,7 @@ jobs:
     steps:
       # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0 # for `golangci-lint run --new` to work
           lfs: false # LFS is used only by website
