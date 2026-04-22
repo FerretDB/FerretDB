@@ -1,6 +1,6 @@
 module github.com/FerretDB/FerretDB/v2
 
-go 1.25
+go 1.25.0
 
 toolchain go1.25.7
 
@@ -14,7 +14,7 @@ require (
 	github.com/arl/statsviz v0.8.0
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgerrcode v0.0.0-20250907135507-afb5586c32a6
-	github.com/jackc/pgx/v5 v5.8.0
+	github.com/jackc/pgx/v5 v5.9.2
 	github.com/modelcontextprotocol/go-sdk v0.2.0
 	github.com/oapi-codegen/runtime v1.1.2
 	github.com/pmezard/go-difflib v1.0.0
