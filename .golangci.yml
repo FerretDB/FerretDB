@@ -184,7 +184,7 @@ linters-settings:
         alias: otelsemconv
   # ineffassign
   lll:
-    line-length: 130
+    line-length: 120
     tab-width: 4
   misspell:
     ignore-words:
