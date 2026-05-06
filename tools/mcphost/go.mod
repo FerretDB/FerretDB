@@ -40,7 +40,7 @@ require (
 	github.com/bytedance/sonic v1.14.1 // indirect
 	github.com/bytedance/sonic/loader v0.3.0 // indirect
 	github.com/charmbracelet/bubbles v0.21.0 // indirect
-	github.com/charmbracelet/bubbletea v1.3.6 // indirect
+	github.com/charmbracelet/bubbletea v1.3.10 // indirect
 	github.com/charmbracelet/colorprofile v0.3.2 // indirect
 	github.com/charmbracelet/fang v0.4.0 // indirect
 	github.com/charmbracelet/glamour v0.10.0 // indirect
@@ -111,7 +111,7 @@ require (
 	github.com/muesli/roff v0.1.0 // indirect
 	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/nikolalohinski/gonja v1.5.3 // indirect
-	github.com/ollama/ollama v0.11.8 // indirect
+	github.com/ollama/ollama v0.20.3 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -146,7 +146,6 @@ require (
 	golang.org/x/crypto v0.46.0 // indirect
 	golang.org/x/exp v0.0.0-20250819193227-8b4c13bb791b // indirect
 	golang.org/x/net v0.47.0 // indirect
-	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/term v0.38.0 // indirect
 	golang.org/x/text v0.32.0 // indirect
