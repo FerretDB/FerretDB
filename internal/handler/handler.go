@@ -93,7 +93,7 @@ type NewOpts struct {
 func New(opts *NewOpts) (*Handler, error) {
 	sessionTimeout := time.Duration(session.LogicalSessionTimeoutMinutes) * time.Minute
 
-	// we rely on on it in the `getLog` implementation
+	// we rely on it in the `getLog` implementation
 	// TODO https://github.com/FerretDB/FerretDB/issues/4750
 	_ = opts.L.Handler().(*logging.Handler)
 
