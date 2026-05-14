@@ -143,7 +143,7 @@ type converter struct {
 	l *slog.Logger
 }
 
-// camelCase converts snake_case to to camelCase.
+// camelCase converts snake_case to camelCase.
 func (c *converter) camelCase(s string) string {
 	var res []rune
 
