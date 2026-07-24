@@ -31,6 +31,14 @@ import (
 //
 // If sort path is invalid, it returns a possibly wrapped types.PathError.
 func SortDocuments(docs []*types.Document, sortDoc *types.Document) error {
+	return SortDocumentsWithCollation(docs, sortDoc, nil)
+}
+
+// SortDocumentsWithCollation sorts given documents in place according to the given sorting conditions
+// using the given collation for string comparison (nil collation means the default binary comparison).
+//
+// If sort path is invalid, it returns a possibly wrapped types.PathError.
+func SortDocumentsWithCollation(docs []*types.Document, sortDoc *types.Document, collation *Collation) error {
 	if sortDoc.Len() == 0 {
 		return nil
 	}
@@ -71,7 +79,7 @@ func SortDocuments(docs []*types.Document, sortDoc *types.Document) error {
 			return err
 		}
 
-		sortFuncs[i] = lessFunc(sortPath, sortType)
+		sortFuncs[i] = lessFunc(sortPath, sortType, collation)
 	}
 
 	if len(sortFuncs) == 0 {
@@ -141,9 +149,9 @@ func ValidateSortDocument(sortDoc *types.Document) (*types.Document, error) {
 	return res, nil
 }
 
-// lessFunc takes sort key and type and returns sort.Interface's Less function which
+// lessFunc takes sort key, type and collation and returns sort.Interface's Less function which
 // compares selected key of 2 documents.
-func lessFunc(sortPath types.Path, sortType types.SortType) func(a, b *types.Document) bool {
+func lessFunc(sortPath types.Path, sortType types.SortType, collation *Collation) func(a, b *types.Document) bool {
 	return func(a, b *types.Document) bool {
 		aField, err := a.GetByPath(sortPath)
 		if err != nil {
@@ -156,6 +164,20 @@ func lessFunc(sortPath types.Path, sortType types.SortType) func(a, b *types.Doc
 		if err != nil {
 			// same logic as above
 			bField = types.Null
+		}
+
+		if collation != nil {
+			aStr, aOk := aField.(string)
+			bStr, bOk := bField.(string)
+
+			if aOk && bOk {
+				result := collation.Compare(aStr, bStr)
+				if sortType == types.Descending {
+					result = -result
+				}
+
+				return result < 0
+			}
 		}
 
 		result := types.CompareOrderForSort(aField, bField, sortType)

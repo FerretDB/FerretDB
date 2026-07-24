@@ -298,9 +298,15 @@ func (h *Handler) makeFindQueryParams(ctx context.Context, params *common.FindPa
 func (h *Handler) makeFindIter(iter types.DocumentsIterator, closer *iterator.MultiCloser, params *common.FindParams) (types.DocumentsIterator, error) {
 	closer.Add(iter)
 
+	collation, err := common.NewCollation(params.Collation)
+	if err != nil {
+		closer.Close()
+		return nil, err
+	}
+
 	iter = common.FilterIterator(iter, closer, params.Filter)
 
-	iter, err := common.SortIterator(iter, closer, params.Sort)
+	iter, err = common.SortIteratorWithCollation(iter, closer, params.Sort, collation)
 	if err != nil {
 		closer.Close()
 

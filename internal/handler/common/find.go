@@ -40,9 +40,9 @@ type FindParams struct {
 	ShowRecordId bool            `ferretdb:"showRecordId,opt"`
 	Tailable     bool            `ferretdb:"tailable,opt"`
 	AwaitData    bool            `ferretdb:"awaitData,opt"`
+	Collation    *types.Document `ferretdb:"collation,opt"`
 
-	Collation *types.Document `ferretdb:"collation,unimplemented"`
-	Let       *types.Document `ferretdb:"let,unimplemented"`
+	Let *types.Document `ferretdb:"let,unimplemented"`
 
 	AllowDiskUse     bool            `ferretdb:"allowDiskUse,ignored"`
 	ReadConcern      *types.Document `ferretdb:"readConcern,ignored"`

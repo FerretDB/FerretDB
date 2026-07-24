@@ -26,6 +26,16 @@ import (
 // Since sorting iterator is impossible, this function fully consumes and closes the underlying iterator,
 // sorts documents in memory and returns a new iterator over the sorted slice.
 func SortIterator(iter types.DocumentsIterator, closer *iterator.MultiCloser, sort *types.Document) (types.DocumentsIterator, error) { //nolint:lll // for readability
+	return SortIteratorWithCollation(iter, closer, sort, nil)
+}
+
+// SortIteratorWithCollation returns an iterator of documents sorted using the given collation
+// for string comparison (nil collation means the default binary comparison).
+// It will be added to the given closer.
+//
+// Since sorting iterator is impossible, this function fully consumes and closes the underlying iterator,
+// sorts documents in memory and returns a new iterator over the sorted slice.
+func SortIteratorWithCollation(iter types.DocumentsIterator, closer *iterator.MultiCloser, sort *types.Document, collation *Collation) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	// don't consume all documents if there is no sort
 	if sort.Len() == 0 {
 		return iter, nil
@@ -36,7 +46,7 @@ func SortIterator(iter types.DocumentsIterator, closer *iterator.MultiCloser, so
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err = SortDocuments(docs, sort); err != nil {
+	if err = SortDocumentsWithCollation(docs, sort, collation); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
