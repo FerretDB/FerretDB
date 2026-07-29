@@ -408,3 +408,4 @@ Before submitting a pull request, please make sure that:
    of our main branch.
 2. Documentation is formatted, linted, and built with `task docs`.
 3. Documentation is written according to our [writing guide](https://docs.ferretdb.io/contributing/writing-guide/).
+4. Prose and code blocks in documentation use a line length of up to 120 characters.
