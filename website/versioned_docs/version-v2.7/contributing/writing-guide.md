@@ -41,6 +41,12 @@ For example, if there are several pages in the folder "Getting Started", let `si
 
 Use sentence case for headers: `### Some header with URL`, not `### Some Header With URL`.
 
+## Line length
+
+Use a line length of up to 120 characters for both prose and code blocks in documentation.
+Insert line breaks manually at natural boundaries using one sentence per line, as described by
+[Semantic Line Breaks](https://sembr.org), instead of relying on random formatter wrapping.
+
 ## Links
 
 Please use relative `.md` file paths for links.

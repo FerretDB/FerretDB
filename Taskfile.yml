@@ -846,10 +846,9 @@ tasks:
       # Note that embedded code snippets in ``` Markdown blocks are not reformatted if they can't be parsed.
       # Ensure that the code is valid and can be parsed by changing formatting manually
       # and running this task again, checking that formatting changes.
-      #
-      # TODO --print-width 120 (https://github.com/FerretDB/FerretDB/issues/4636)
       - >
         docker compose run --rm prettier --write --single-quote --trailing-comma none --no-semi
+        --print-width 120
         "**/*.md" "**/*.mdx"
 
       - >
