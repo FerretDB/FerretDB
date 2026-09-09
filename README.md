@@ -105,6 +105,7 @@ See [there](https://pkg.go.dev/github.com/FerretDB/FerretDB/v2/build/version) fo
 - [Tembo](https://tembo.io/docs/tembo-stacks/mongo-alternative)
 - [Elestio](https://elest.io/open-source/ferretdb)
 - [Cozystack](https://cozystack.io/docs/components/#managed-ferretdb)
+- [Layerbase](https://layerbase.com/db/ferretdb)
 
 ## Community
 
