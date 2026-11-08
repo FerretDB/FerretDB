@@ -64,7 +64,7 @@ func (h *Handler) msgKillCursors(connCtx context.Context, req *middleware.Reques
 	}
 
 	cursors, err := curArr.Decode()
-	if !ok {
+	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
