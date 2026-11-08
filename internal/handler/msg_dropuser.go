@@ -16,13 +16,18 @@ package handler
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb/documentdb_api"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
+	"github.com/FerretDB/FerretDB/v2/internal/mongoerrors"
 	"github.com/FerretDB/FerretDB/v2/internal/util/must"
 )
 
@@ -59,6 +64,18 @@ func (h *Handler) msgDropUser(connCtx context.Context, req *middleware.Request) 
 		return err
 	})
 	if err != nil {
+		var mErr *mongoerrors.Error
+		var pgErr *pgconn.PgError
+
+		if (errors.As(err, &mErr) && mErr.Code == int32(mongoerrors.ErrUserNotFound)) ||
+			(errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UndefinedObject) {
+			return nil, mongoerrors.NewWithArgument(
+				mongoerrors.ErrUserNotFound,
+				fmt.Sprintf("User '%s@%s' not found", user, dbName),
+				"dropUser",
+			)
+		}
+
 		return nil, lazyerrors.Error(err)
 	}
 

@@ -127,6 +127,11 @@ func Make(ctx context.Context, err error, arg string, l *slog.Logger) *Error {
 		l.ErrorContext(ctx, "Connection failure", slog.String("arg", arg), slog.String("error", goString(err)))
 		code = ErrInternalError
 
+	case pgerrcode.UndefinedObject:
+		if arg == "documentdb_api.drop_user" {
+			code = ErrUserNotFound
+		}
+
 	default:
 		if len(pg.Code) == 5 && pg.Code[0] == 'M' {
 			code = pgCodes[pg.Code]
@@ -147,7 +152,7 @@ func Make(ctx context.Context, err error, arg string, l *slog.Logger) *Error {
 		}
 
 		// TODO https://github.com/FerretDB/FerretDB-DocumentDB/issues/914
-		if arg == "documentdb_api.create_user" || arg == "documentdb_api.update_user" || arg == "documentdb_api.drop_user" {
+		if arg == "documentdb_api.create_user" || arg == "documentdb_api.update_user" {
 			level = slog.LevelError
 		}
 
