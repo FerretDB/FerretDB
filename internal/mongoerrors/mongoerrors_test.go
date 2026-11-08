@@ -16,9 +16,11 @@ package mongoerrors
 
 import (
 	"fmt"
+	"log/slog"
 	"strconv"
 	"testing"
 
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/assert"
@@ -31,6 +33,33 @@ func TestCode(t *testing.T) {
 	// conn.route depends on non-empty strings
 	assert.NotEmpty(t, Code(0).String())
 	assert.NotEmpty(t, Code(1).String())
+}
+
+func TestMakeDropUserUndefinedObject(t *testing.T) {
+	t.Parallel()
+
+	ctx := t.Context()
+	l := slog.Default()
+
+	pg := &pgconn.PgError{
+		Severity: "ERROR",
+		Code:     pgerrcode.UndefinedObject,
+		Message:  `role "non-existent-user" does not exist`,
+	}
+
+	expected := &Error{
+		Argument: "documentdb_api.drop_user",
+		CommandError: mongo.CommandError{
+			Code:    int32(ErrUserNotFound),
+			Message: `role "non-existent-user" does not exist`,
+			Name:    ErrUserNotFound.String(),
+			Wrapped: pg,
+		},
+	}
+
+	err := Make(ctx, pg, "documentdb_api.drop_user", l)
+	assert.Equal(t, expected, err)
+	assert.ErrorIs(t, err, pg)
 }
 
 func TestMake(t *testing.T) {
