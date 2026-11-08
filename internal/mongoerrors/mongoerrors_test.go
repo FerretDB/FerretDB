@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/assert"
@@ -148,4 +149,57 @@ func TestMakeConnectError(t *testing.T) {
 		"Argument: ``, " +
 		"Wrapped: &pgconn.ConnectError(" + strconv.Quote(err.Message) + ")}"
 	assert.Equal(t, expectedS, fmt.Sprintf("%#v", err))
+}
+
+func TestMakeFeatureNotSupported(t *testing.T) {
+	ctx := testutil.Ctx(t)
+	l := testutil.Logger(t)
+
+	t.Run("MetaIndexKey", func(t *testing.T) {
+		t.Parallel()
+
+		pg := &pgconn.PgError{
+			Severity: "ERROR",
+			Code:     pgerrcode.FeatureNotSupported,
+			Message:  "Returning indexKey for $meta not supported",
+		}
+
+		expected := &Error{
+			Argument: "documentdb_api.find_cursor_first_page",
+			CommandError: mongo.CommandError{
+				Code:    int32(ErrLocation31138),
+				Message: "Returning indexKey for $meta not supported",
+				Name:    ErrLocation31138.String(),
+				Wrapped: pg,
+			},
+		}
+
+		err := Make(ctx, pg, "documentdb_api.find_cursor_first_page", l)
+		assert.Equal(t, expected, err)
+		assert.ErrorIs(t, err, pg)
+	})
+
+	t.Run("DefaultCommandNotSupported", func(t *testing.T) {
+		t.Parallel()
+
+		pg := &pgconn.PgError{
+			Severity: "ERROR",
+			Code:     pgerrcode.FeatureNotSupported,
+			Message:  "Some unsupported feature",
+		}
+
+		expected := &Error{
+			Argument: "documentdb_api.find_cursor_first_page",
+			CommandError: mongo.CommandError{
+				Code:    int32(ErrCommandNotSupported),
+				Message: "Some unsupported feature",
+				Name:    ErrCommandNotSupported.String(),
+				Wrapped: pg,
+			},
+		}
+
+		err := Make(ctx, pg, "documentdb_api.find_cursor_first_page", l)
+		assert.Equal(t, expected, err)
+		assert.ErrorIs(t, err, pg)
+	})
 }

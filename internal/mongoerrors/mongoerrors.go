@@ -127,6 +127,14 @@ func Make(ctx context.Context, err error, arg string, l *slog.Logger) *Error {
 		l.ErrorContext(ctx, "Connection failure", slog.String("arg", arg), slog.String("error", goString(err)))
 		code = ErrInternalError
 
+	case pgerrcode.FeatureNotSupported:
+		switch pg.Message {
+		case "Returning indexKey for $meta not supported":
+			code = ErrLocation31138
+		default:
+			code = ErrCommandNotSupported
+		}
+
 	default:
 		if len(pg.Code) == 5 && pg.Code[0] == 'M' {
 			code = pgCodes[pg.Code]
