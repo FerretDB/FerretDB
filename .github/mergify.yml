@@ -12,7 +12,7 @@ pull_request_rules:
       - "-locked"
       - "-merged"
       - "base = main"
-      - "branch-protection-review-decision = APPROVED"
+      - "github-review-decision = APPROVED"
       - "check-success = golangci-lint"
       - "check-success = Test"
       - "label != 'not ready'"
