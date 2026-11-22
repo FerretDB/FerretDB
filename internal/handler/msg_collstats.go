@@ -17,6 +17,7 @@ package handler
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
@@ -73,8 +74,30 @@ func (h *Handler) msgCollStats(connCtx context.Context, req *middleware.Request)
 
 	var res wirebson.RawDocument
 
-	err = h.p.WithConn(func(conn *pgx.Conn) error {
+	err = h.p.WithConnContext(connCtx, func(conn *pgx.Conn) error {
 		res, err = documentdb_api.CollStats(connCtx, conn, h.L, dbName, collection, scale)
+		if err == nil && os.Getenv("FERRETDB_UNIFI_COMPAT") == "true" {
+			metadata, e := h.cappedMetadata(connCtx, conn, dbName)
+			if e != nil {
+				return e
+			}
+			if options, ok := metadata[collection]; ok {
+				result, e := res.Decode()
+				if e != nil {
+					return e
+				}
+				result = result.Copy()
+				result.Remove("capped")
+				result.Remove("maxSize")
+				if e = result.Add("capped", true); e != nil {
+					return e
+				}
+				if e = result.Add("maxSize", cappedScaledSize(options.size, scale)); e != nil {
+					return e
+				}
+				res, err = result.Encode()
+			}
+		}
 		return err
 	})
 	if err != nil {

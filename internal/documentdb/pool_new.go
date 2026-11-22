@@ -18,6 +18,8 @@ import (
 	"context"
 	"log/slog"
 	"net/url"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/AlekSi/lazyerrors"
@@ -80,6 +82,16 @@ func newPgxPool(uri string, l *slog.Logger, tracer pgx.QueryTracer, sp *state.Pr
 //
 // Keep it in sync with docs.
 func newPgxPoolSetDefaults(values url.Values) {
+	// A dead gateway cannot send a PostgreSQL CancelRequest. Detect its closed
+	// socket during query execution instead of leaving an orphaned lock wait.
+	// This is a session setting, not a deadline for connected clients. Respect
+	// explicit URL or startup-option overrides.
+	if os.Getenv("FERRETDB_UNIFI_COMPAT") == "true" &&
+		!values.Has("client_connection_check_interval") &&
+		!strings.Contains(values.Get("options"), "client_connection_check_interval") {
+		values.Set("client_connection_check_interval", "1s")
+	}
+
 	// https://pkg.go.dev/github.com/jackc/pgx/v5@v5.7.5/pgxpool#ParseConfig's
 	// defaults are too low.
 

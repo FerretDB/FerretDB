@@ -1,0 +1,16 @@
+# Local image build for the application compatibility contribution.
+# Apache-2.0; see the repository LICENSE.
+FROM docker.io/library/golang@sha256:406139dc5f8e5d79c709b8e637a0c1fc5907ed1521964b3ae419d4ecb002560e AS build
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download && go mod verify
+COPY build/version ./build/version
+COPY cmd ./cmd
+COPY internal ./internal
+ARG BUILD_VERSION=v2.7.0-unifi.2
+RUN printf '%s\n' "$BUILD_VERSION" > build/version/version.txt \
+    && CGO_ENABLED=0 go build -buildvcs=false -trimpath -o /out/ferretdb ./cmd/ferretdb
+
+FROM ghcr.io/ferretdb/ferretdb@sha256:5706414241eb84f0515512c37b46db0f1b1eac9e5ceb7e4c2523211c184b1985
+COPY --from=build /out/ferretdb /ferretdb
+LABEL org.opencontainers.image.description="FerretDB application compatibility build"

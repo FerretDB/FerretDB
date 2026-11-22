@@ -1,0 +1,11 @@
+--- a/src/pg_cron.c
++++ b/src/pg_cron.c
+@@ -1317,7 +1317,7 @@
+ 			RunningTaskCount++;
+ 
+ 			/* Add new entry to audit table. */
+-			task->runId = NextRunId();
++			task->runId = CronLogRun ? NextRunId() : 0;
+ 			if (CronLogRun)
+ 				InsertJobRunDetail(task->runId, &cronJob->jobId,
+ 										cronJob->database,

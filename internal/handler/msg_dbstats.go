@@ -16,6 +16,9 @@ package handler
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"strings"
 
 	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
@@ -42,9 +45,55 @@ func (h *Handler) msgDBStats(connCtx context.Context, req *middleware.Request) (
 
 	var res wirebson.RawDocument
 
-	err = h.p.WithConn(func(conn *pgx.Conn) error {
+	err = h.p.WithConnContext(connCtx, func(conn *pgx.Conn) error {
 		res, err = documentdb_api.DbStats(connCtx, conn, h.L, dbName, 1, true)
-		return err
+		if err != nil || os.Getenv("FERRETDB_UNIFI_COMPAT") != "true" {
+			return err
+		}
+		// Native relation statistics lag committed writes. Compute logical BSON
+		// totals from one statement snapshot; retain native physical sizes.
+		rows, e := conn.Query(connCtx, "SELECT collection_id FROM documentdb_api_catalog.collections WHERE database_name=$1 AND view_definition IS NULL AND shard_key IS NULL", dbName)
+		if e != nil {
+			return e
+		}
+		var parts []string
+		for rows.Next() {
+			var id int64
+			if e = rows.Scan(&id); e != nil {
+				rows.Close()
+				return e
+			}
+			table := pgx.Identifier{"documentdb_data", fmt.Sprintf("documents_%d", id)}.Sanitize()
+			parts = append(parts, "SELECT count(*)::numeric AS objects, COALESCE(sum(octet_length(documentdb_core.bson_to_bytea(document))),0)::numeric AS bytes FROM "+table)
+		}
+		e = rows.Err()
+		rows.Close()
+		if e != nil {
+			return e
+		}
+		var count, size int64
+		if len(parts) > 0 {
+			e = conn.QueryRow(connCtx, "SELECT sum(objects)::bigint,sum(bytes)::bigint FROM ("+strings.Join(parts, " UNION ALL ")+") AS totals").Scan(&count, &size)
+			if e != nil {
+				return e
+			}
+		}
+		decoded, e := res.Decode()
+		if e != nil {
+			return e
+		}
+		decoded = decoded.Copy()
+		average := float64(0)
+		if count > 0 {
+			average = float64(size) / float64(count)
+		}
+		for key, value := range map[string]any{"objects": count, "dataSize": float64(size), "avgObjSize": average} {
+			if e = decoded.Replace(key, value); e != nil {
+				return e
+			}
+		}
+		res, e = decoded.Encode()
+		return e
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)

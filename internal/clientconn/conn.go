@@ -109,38 +109,88 @@ func (c *conn) run(ctx context.Context) (err error) {
 	}
 
 	bufw := bufio.NewWriter(c.netConn)
+	requests, readerDone := readRequestStream(ctx, bufr, cancel)
+	disconnectDone := watchPeerDisconnect(ctx, c.netConn, cancel)
+	defer func() {
+		cancel(lazyerrors.Errorf("run exits: %w", err))
+		<-readerDone
+		<-disconnectDone
+	}()
 
 	for {
-		if err = c.processRequest(ctx, bufr, bufw); err != nil {
-			return
+		select {
+		case <-ctx.Done():
+			return context.Cause(ctx)
+		case req, ok := <-requests:
+			if !ok {
+				return context.Cause(ctx)
+			}
+			if err = c.processRequest(ctx, req, bufw); err != nil {
+				if cause := context.Cause(ctx); cause != nil {
+					return cause
+				}
+				return
+			}
 		}
 	}
 }
 
-// processRequest reads the request, passes it to the middleware, and writes the response.
+// readRequestStream gives a single reader ownership of the connection. It reads
+// ahead while a handler executes so EOF cancels blocked database work. An
+// unbuffered handoff bounds read-ahead to one additional protocol message.
+func readRequestStream(ctx context.Context, reader io.Reader, cancel context.CancelCauseFunc) (<-chan *middleware.Request, <-chan struct{}) {
+	requests := make(chan *middleware.Request)
+	done := make(chan struct{})
+	buffered := bufio.NewReader(reader)
+	go func() {
+		defer close(done)
+		defer close(requests)
+		defer func() {
+			if recover() != nil {
+				cancel(errors.New("wire request reader panic"))
+			}
+		}()
+		for {
+			header, body, err := wire.ReadMessage(buffered)
+			if err != nil {
+				cancel(lazyerrors.Error(err))
+				return
+			}
+			req, err := middleware.RequestWire(header, body)
+			if err != nil {
+				cancel(lazyerrors.Error(err))
+				return
+			}
+			select {
+			case requests <- req:
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	return requests, done
+}
+
+// processRequest passes a request to the middleware and writes the response.
 //
 // Any error returned indicates the connection should be closed.
-func (c *conn) processRequest(ctx context.Context, bufr *bufio.Reader, bufw *bufio.Writer) error {
-	reqHeader, reqBody, err := wire.ReadMessage(bufr)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	req, err := middleware.RequestWire(reqHeader, reqBody)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
+func (c *conn) processRequest(ctx context.Context, req *middleware.Request, bufw *bufio.Writer) error {
 	resp := c.m.Handle(ctx, req)
 	if resp == nil {
 		return lazyerrors.New("middleware returned nil response")
 	}
+	// OP_MSG moreToCome is used for unacknowledged writes. Execute the
+	// operation normally, including rollback/error handling, but do not put
+	// a reply on the socket that the client is not expecting to read.
+	if msg, ok := req.WireBody().(*wire.OpMsg); ok && msg.Flags.FlagSet(wire.OpMsgMoreToCome) {
+		return nil
+	}
 
-	if err = wire.WriteMessage(bufw, resp.WireHeader(), resp.WireBody()); err != nil {
+	if err := wire.WriteMessage(bufw, resp.WireHeader(), resp.WireBody()); err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	if err = bufw.Flush(); err != nil {
+	if err := bufw.Flush(); err != nil {
 		return lazyerrors.Error(err)
 	}
 

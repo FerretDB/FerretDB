@@ -38,6 +38,12 @@ func (p *Pool) GetMore(ctx context.Context, db string, spec wirebson.RawDocument
 
 	continuation, conn := p.r.GetCursor(cursorID)
 	if continuation == nil {
+		if p.r.ConsumeInvalidation(cursorID) {
+			// QueryPlanKilled is not yet in the upstream generated code list.
+			err := mongoerrors.New(mongoerrors.Code(175), "Collection was renamed")
+			err.Name = "QueryPlanKilled"
+			return nil, err
+		}
 		return nil, mongoerrors.New(
 			mongoerrors.ErrCursorNotFound,
 			fmt.Sprintf("cursor id %d not found", cursorID),
@@ -45,7 +51,7 @@ func (p *Pool) GetMore(ctx context.Context, db string, spec wirebson.RawDocument
 	}
 
 	if conn == nil {
-		poolConn, err := p.Acquire()
+		poolConn, err := p.AcquireContext(ctx)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -55,10 +61,18 @@ func (p *Pool) GetMore(ctx context.Context, db string, spec wirebson.RawDocument
 		conn = poolConn.Conn()
 	}
 
+	if err := p.checkCursorGeneration(ctx, conn, cursorID); err != nil {
+		return nil, err
+	}
 	page, continuation, err := documentdb_api.CursorGetMore(ctx, conn, p.l, db, spec, continuation)
 	if err != nil {
 		p.r.CloseCursor(ctx, cursorID)
 		return nil, lazyerrors.Error(err)
+	}
+	// A rename may commit while the page is being fetched. Check again before
+	// exposing it, including when the cursor has just reached exhaustion.
+	if err := p.checkCursorGeneration(ctx, conn, cursorID); err != nil {
+		return nil, err
 	}
 
 	p.l.DebugContext(
@@ -90,7 +104,7 @@ func (p *Pool) ListCollections(ctx context.Context, db string, spec wirebson.Raw
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb.Pool.ListCollections")
 	defer span.End()
 
-	poolConn, err := p.Acquire()
+	poolConn, err := p.AcquireContext(ctx)
 	if err != nil {
 		return nil, 0, lazyerrors.Error(err)
 	}
@@ -110,13 +124,17 @@ func (p *Pool) ListCollections(ctx context.Context, db string, spec wirebson.Raw
 	)
 
 	if p.shouldStore(ctx, page, continuation, cursorID) {
+		var release func()
 		if persist {
-			conn = poolConn.hijack()
+			conn, release, err = p.persistCursor(ctx, poolConn)
+			if err != nil {
+				return nil, 0, err
+			}
 		} else {
 			conn = nil
 		}
 
-		p.r.NewCursor(ctx, cursorID, continuation, conn)
+		p.r.NewCursor(ctx, cursorID, continuation, conn, db, "", release)
 	}
 
 	return page, cursorID, nil
@@ -127,13 +145,17 @@ func (p *Pool) Find(ctx context.Context, db string, spec wirebson.RawDocument) (
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb.Pool.Find")
 	defer span.End()
 
-	poolConn, err := p.Acquire()
+	poolConn, err := p.AcquireContext(ctx)
 	if err != nil {
 		return nil, 0, lazyerrors.Error(err)
 	}
 	defer poolConn.Release()
 
 	conn := poolConn.Conn()
+	generation, err := p.cursorGeneration(ctx, conn, db, cursorCollection(spec))
+	if err != nil {
+		return nil, 0, err
+	}
 
 	page, continuation, persist, cursorID, err := documentdb_api.FindCursorFirstPage(ctx, conn, p.l, db, spec, 0)
 	if err != nil {
@@ -147,13 +169,20 @@ func (p *Pool) Find(ctx context.Context, db string, spec wirebson.RawDocument) (
 	)
 
 	if p.shouldStore(ctx, page, continuation, cursorID) {
+		var release func()
 		if persist {
-			conn = poolConn.hijack()
+			conn, release, err = p.persistCursor(ctx, poolConn)
+			if err != nil {
+				return nil, 0, err
+			}
 		} else {
 			conn = nil
 		}
 
-		p.r.NewCursor(ctx, cursorID, continuation, conn)
+		p.r.NewCursor(ctx, cursorID, continuation, conn, db, cursorCollection(spec), release)
+		if p.unifiCompat && cursorCollection(spec) != "" {
+			p.r.SetGeneration(cursorID, generation)
+		}
 	}
 
 	return page, cursorID, nil
@@ -164,13 +193,22 @@ func (p *Pool) Aggregate(ctx context.Context, db string, spec wirebson.RawDocume
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb.Pool.Aggregate")
 	defer span.End()
 
-	poolConn, err := p.Acquire()
+	poolConn, err := p.AcquireContext(ctx)
 	if err != nil {
 		return nil, 0, lazyerrors.Error(err)
 	}
 	defer poolConn.Release()
 
 	conn := poolConn.Conn()
+	generation, err := p.cursorGeneration(ctx, conn, db, cursorCollection(spec))
+	if err != nil {
+		return nil, 0, err
+	}
+
+	dependencies, err := p.aggregateDependencies(ctx, conn, db, spec)
+	if err != nil {
+		return nil, 0, err
+	}
 
 	page, continuation, persist, cursorID, err := documentdb_api.AggregateCursorFirstPage(ctx, conn, p.l, db, spec, 0)
 	if err != nil {
@@ -184,13 +222,21 @@ func (p *Pool) Aggregate(ctx context.Context, db string, spec wirebson.RawDocume
 	)
 
 	if p.shouldStore(ctx, page, continuation, cursorID) {
+		var release func()
 		if persist {
-			conn = poolConn.hijack()
+			conn, release, err = p.persistCursor(ctx, poolConn)
+			if err != nil {
+				return nil, 0, err
+			}
 		} else {
 			conn = nil
 		}
 
-		p.r.NewCursor(ctx, cursorID, continuation, conn)
+		p.r.NewCursor(ctx, cursorID, continuation, conn, db, cursorCollection(spec), release)
+		p.r.SetDependencies(cursorID, dependencies)
+		if p.unifiCompat && cursorCollection(spec) != "" {
+			p.r.SetGeneration(cursorID, generation)
+		}
 	}
 
 	return page, cursorID, nil
@@ -201,7 +247,7 @@ func (p *Pool) ListIndexes(ctx context.Context, db string, spec wirebson.RawDocu
 	ctx, span := otel.Tracer("").Start(ctx, "documentdb.Pool.ListIndexes")
 	defer span.End()
 
-	poolConn, err := p.Acquire()
+	poolConn, err := p.AcquireContext(ctx)
 	if err != nil {
 		return nil, 0, lazyerrors.Error(err)
 	}
@@ -222,16 +268,34 @@ func (p *Pool) ListIndexes(ctx context.Context, db string, spec wirebson.RawDocu
 	)
 
 	if p.shouldStore(ctx, page, continuation, cursorID) {
+		var release func()
 		if persist {
-			conn = poolConn.hijack()
+			conn, release, err = p.persistCursor(ctx, poolConn)
+			if err != nil {
+				return nil, 0, err
+			}
 		} else {
 			conn = nil
 		}
 
-		p.r.NewCursor(ctx, cursorID, continuation, conn)
+		p.r.NewCursor(ctx, cursorID, continuation, conn, db, cursorCollection(spec), release)
 	}
 
 	return page, cursorID, nil
+}
+
+func cursorCollection(spec wirebson.RawDocument) string {
+	doc, err := spec.Decode()
+	if err != nil {
+		return ""
+	}
+	name, _ := doc.Get(doc.Command()).(string)
+	return name
+}
+
+// CloseNamespaceCursors invalidates source/target cursors before a rename.
+func (p *Pool) CloseNamespaceCursors(ctx context.Context, database, collection string) {
+	p.r.CloseNamespace(ctx, database, collection)
 }
 
 // shouldStore returns true if cursor should be stored.

@@ -17,6 +17,7 @@ package handler
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"unicode/utf8"
 
@@ -109,6 +110,12 @@ func (h *Handler) msgRenameCollection(connCtx context.Context, req *middleware.R
 	// support cross-database rename
 	// TODO https://github.com/FerretDB/FerretDB/issues/2563
 	if oldDBName != newDBName {
+		if os.Getenv("FERRETDB_UNIFI_COMPAT") == "true" {
+			if err := h.renameAcrossDatabases(connCtx, oldDBName, oldCName, newDBName, newCName, dropTarget); err != nil {
+				return nil, err
+			}
+			return middleware.ResponseDoc(req, wirebson.MustDocument("ok", float64(1)))
+		}
 		return nil, mongoerrors.NewWithArgument(
 			mongoerrors.ErrNotImplemented,
 			"Command renameCollection does not support cross-database rename",
@@ -124,7 +131,7 @@ func (h *Handler) msgRenameCollection(connCtx context.Context, req *middleware.R
 		)
 	}
 
-	conn, err := h.p.Acquire()
+	conn, err := h.p.AcquireContext(connCtx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

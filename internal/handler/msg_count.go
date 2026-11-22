@@ -16,6 +16,7 @@ package handler
 
 import (
 	"context"
+	"os"
 
 	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
@@ -41,9 +42,16 @@ func (h *Handler) msgCount(connCtx context.Context, req *middleware.Request) (*m
 	}
 
 	var res wirebson.RawDocument
+	raw := req.DocumentRaw()
+	if os.Getenv("FERRETDB_UNIFI_COMPAT") == "true" {
+		raw, err = unifiCountCommand(raw)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
 
-	err = h.p.WithConn(func(conn *pgx.Conn) error {
-		res, err = documentdb_api.CountQuery(connCtx, conn, h.L, dbName, req.DocumentRaw())
+	err = h.p.WithConnContext(connCtx, func(conn *pgx.Conn) error {
+		res, err = documentdb_api.CountQuery(connCtx, conn, h.L, dbName, raw)
 		return err
 	})
 	if err != nil {

@@ -1,0 +1,374 @@
+{
+  "unifi-os-statistics-persistence": {
+    "modernNetworkRestart": true,
+    "legacyNetworkRestart": true,
+    "modernFullOsRestart": true,
+    "embeddedMongoDisabledAfterFullOsRestart": true,
+    "passed": true
+  },
+  "unifi-os-statistics-backup": {
+    "passed": true,
+    "nativeTablesRestored": 4,
+    "actualEncryptedUnfRoundTrip": true,
+    "modifiedRowsReverted": true,
+    "deletedRowsRecovered": true,
+    "postBackupRowsRemoved": true,
+    "configurationCanaryRemoved": true,
+    "archivedModernSelectionRestored": true,
+    "microsecondsNullUnicodeKeysAndBytesPreserved": true,
+    "archiveBytes": 21904
+  },
+  "unifi-os-statistics-failure": {
+    "selectionWriteFailureRejectedBeforeMemoryChange": true,
+    "nativeConnectionFailureRejectsIncompleteBackup": true,
+    "nativeRoleLoginRestored": true,
+    "passed": true
+  },
+  "unifi-os-statistics-query": {
+    "passed": true,
+    "schemaCount": 20,
+    "systemSummaryRows": 1,
+    "nativeBucketRows": 5,
+    "source": "MODERN"
+  },
+  "application-labs-final-checks": {
+    "osSource": "MODERN",
+    "osMongoProcesses": 0,
+    "osNativeRoleSynchronousCommit": "on",
+    "osNativePostgres": {
+      "fsync": "on",
+      "full_page_writes": "on",
+      "deadlocks": 0,
+      "idleInTransaction": 0
+    },
+    "osFinalServiceErrors": 0,
+    "librechatFinalServiceErrors": 0,
+    "passed": true
+  },
+  "librechat": {
+    "version": "v0.8.9",
+    "results": [
+      {
+        "test": "configuration-api",
+        "passed": true
+      },
+      {
+        "test": "registration",
+        "passed": true
+      },
+      {
+        "test": "login",
+        "passed": true
+      },
+      {
+        "test": "read:/api/user",
+        "passed": true
+      },
+      {
+        "test": "read:/api/convos",
+        "passed": true
+      },
+      {
+        "test": "read:/api/models",
+        "passed": true
+      },
+      {
+        "test": "read:/api/endpoints",
+        "passed": true
+      },
+      {
+        "test": "read:/api/presets",
+        "passed": true
+      },
+      {
+        "test": "read:/api/tags",
+        "passed": true
+      },
+      {
+        "test": "preset-create-update-read-delete",
+        "passed": true
+      },
+      {
+        "test": "streamed-chat-persisted",
+        "passed": true,
+        "messages": 2
+      },
+      {
+        "test": "follow-up-persisted",
+        "passed": true,
+        "messages": 4
+      },
+      {
+        "test": "message-edit-read",
+        "passed": true
+      },
+      {
+        "test": "conversation-rename",
+        "passed": true
+      },
+      {
+        "test": "conversation-pin-filter",
+        "passed": true
+      },
+      {
+        "test": "conversation-archive-unarchive",
+        "passed": true
+      },
+      {
+        "test": "application-restart-history-persistence",
+        "passed": true
+      },
+      {
+        "test": "conversation-delete",
+        "passed": true
+      },
+      {
+        "test": "conversation-json-import",
+        "passed": true
+      },
+      {
+        "test": "imported-message-read",
+        "passed": true
+      },
+      {
+        "test": "bookmark-create-update-read-delete",
+        "passed": true
+      },
+      {
+        "test": "tagged-conversation-filter",
+        "passed": true
+      }
+    ],
+    "ttl": {
+      "passed": true,
+      "existingApplicationTtlIndexesTested": 3,
+      "expiredRowsDeleted": 3,
+      "futureAndMissingExpiryRowsPreserved": 6,
+      "schedulesChanged": false,
+      "elapsedMs": 16101
+    },
+    "postgres": {
+      "fsync": "on",
+      "full_page_writes": "on",
+      "synchronous_commit": "on",
+      "deadlocks": 0,
+      "idleInTransaction": 0
+    },
+    "metadata": {
+      "collections": 77,
+      "indexes": 491,
+      "ttlIndexes": 26
+    }
+  },
+  "unifi-network": {
+    "feature-workload": {
+      "checks": 55,
+      "passed": 55
+    },
+    "rules-alerts": {
+      "checks": 28,
+      "passed": 28
+    },
+    "populated-report-matrix": {
+      "checks": 15,
+      "passed": 15
+    },
+    "native-statistics-query": {
+      "checks": 66,
+      "passed": 66
+    },
+    "native-statistics-automatic-retention": {
+      "checks": 12,
+      "passed": 12
+    },
+    "native-statistics-selection-persistence": {
+      "passed": true,
+      "syntheticOnly": true,
+      "liveControllerTouched": false,
+      "defaultModern": true,
+      "modernSurvivedJvmRestart": true,
+      "explicitLegacySurvivedRestart": true,
+      "modernSurvivedContainerRecreation": true,
+      "selectionWriteFailureRejectedBeforeMemoryChange": true,
+      "previousSelectionSurvivedWriteFailureAndRestart": true
+    },
+    "native-statistics-unf-restore": {
+      "passed": true,
+      "syntheticOnly": true,
+      "liveControllerTouched": false,
+      "actualEncryptedUnfExportUploadRestore": true,
+      "nativeTablesRestored": 4,
+      "timestampMicrosecondsNullUnicodeKeysAndCborPreserved": true,
+      "deletedRowsRecovered": true,
+      "modifiedRowsReverted": true,
+      "postBackupRowsRemoved": true,
+      "configurationCanaryRemoved": true,
+      "archivedModernSelectionRestored": true,
+      "archiveBytes": 35072
+    },
+    "cpu-regression-lab": {
+      "syntheticOnly": true,
+      "liveAccessed": false,
+      "postgresUnchangedAndNotRestarted": true,
+      "controllerIDPreserved": true,
+      "maintenanceSchedulesUnchanged": true,
+      "ttlPassed": true,
+      "postUpgradeDatabaseErrorLines": 0,
+      "idleTransactions": 0,
+      "lockWaiters": 0,
+      "newDeadlocks": 0,
+      "durabilityEnabled": true,
+      "rollbackImageRetained": true
+    }
+  },
+  "idle-write-fix": {
+    "passed": true,
+    "syntheticOnly": true,
+    "pgCronVersion": "1.6.7",
+    "cause": "Unused persistent run IDs allocated even with cron.log_run=off",
+    "fix": "Allocate NextRunId() only when CronLogRun is true",
+    "baseline": {
+      "seconds": 330,
+      "blockWriteBytes": 192512,
+      "logicalWalBytes": 2408,
+      "checkpointBufferWrites": 1,
+      "files": [
+        {
+          "file": "pg_wal/<segment>",
+          "syscallWriteBytes": 180224,
+          "calls": {
+            "pwrite64": 22,
+            "fdatasync": 22
+          }
+        },
+        {
+          "file": "pg_xact/<segment>",
+          "syscallWriteBytes": 8192,
+          "calls": {
+            "pwrite64": 1,
+            "fsync": 1
+          }
+        },
+        {
+          "file": "cron.runid_seq (sequence relation file)",
+          "syscallWriteBytes": 8192,
+          "calls": {
+            "pwrite64": 1,
+            "fsync": 1
+          }
+        },
+        {
+          "file": "global/pg_control",
+          "syscallWriteBytes": 8192,
+          "calls": {
+            "write": 1,
+            "fsync": 1
+          }
+        },
+        {
+          "file": "pg_logical/replorigin_checkpoint.tmp",
+          "syscallWriteBytes": 8,
+          "calls": {
+            "write": 2,
+            "fsync": 1
+          }
+        }
+      ]
+    },
+    "firstPatchedObservation": {
+      "seconds": 330,
+      "blockWriteBytes": 159744,
+      "databaseFileWriteSyscalls": 0,
+      "logicalWalBytes": 0,
+      "runIdSequenceAdvance": 0,
+      "indexQueueScanIncrease": 656,
+      "note": "Initial block counter burst retained; the subsequent settled confirmation is reported separately."
+    },
+    "settledConfirmation": {
+      "seconds": 90,
+      "blockWriteBytes": 0,
+      "databaseFileWriteSyscalls": 0,
+      "logicalWalBytes": 0,
+      "runIdSequenceAdvance": 0,
+      "indexQueueScanIncrease": 184,
+      "durability": {
+        "fsync": "on",
+        "full_page_writes": "on",
+        "synchronous_commit": "on",
+        "cron.log_run": "off",
+        "cron.log_statement": "off"
+      }
+    },
+    "maintenance": {
+      "scheduledBackgroundIndexBuilt": true,
+      "indexBuildSeconds": 2.816,
+      "committedRowsAndIndexSurvivedRestart": true,
+      "durability": {
+        "fsync": "on",
+        "full_page_writes": "on",
+        "synchronous_commit": "on"
+      },
+      "schedulesUnchanged": true,
+      "passed": true
+    },
+    "ttl": {
+      "passed": true,
+      "existingApplicationTtlIndexesTested": 3,
+      "expiredRowsDeleted": 3,
+      "futureAndMissingExpiryRowsPreserved": 6,
+      "schedulesChanged": false,
+      "elapsedMs": 34245
+    },
+    "enabledHistory": {
+      "successfulRuns": 3,
+      "failedRuns": 3,
+      "positiveDistinctRunIds": true,
+      "canaryRows": 3,
+      "backgroundWorkers": "on",
+      "passed": true,
+      "enabledHistoryPreserved": true,
+      "liveChanged": false
+    },
+    "patchedLibrarySHA256": "62afc2fa3b75b1b03efff47bb19156ce2147db59d87a3ede82c9de36676fe24d",
+    "baseImage": "ghcr.io/ferretdb/postgres-documentdb@sha256:2386795ec2aa7ae559304361979f1dc5708d383ee9020ae63dadc2940dfe58f7"
+  },
+  "pg-cron-deployment-verification": {
+    "passed": true,
+    "modernEnabled": true,
+    "freshWholeClusterBackupVerified": true,
+    "backupLocalCopyVerified": true,
+    "rollbackReady": true,
+    "schedulerObservation": {
+      "seconds": 90,
+      "cronLauncherWriteBytes": 0,
+      "runIdSequenceAdvance": 0,
+      "indexQueueScanIncrease": 180,
+      "liveApplicationTrafficContinued": true
+    },
+    "maintenance": {
+      "passed": true,
+      "scheduledIndexesBuilt": 2,
+      "indexBuildSeconds": 2.271,
+      "scheduledTtlExpiredRowsDeleted": 1,
+      "futureAndMissingExpiryRowsPreserved": 2,
+      "ttlSeconds": 4.37,
+      "cronSchedulesUnchanged": true
+    },
+    "durability": {
+      "fsync": "on",
+      "full_page_writes": "on",
+      "synchronous_commit": "on"
+    },
+    "newDeadlocks": 0,
+    "idleTransactions": 0,
+    "lockWaiters": 0,
+    "nativeStatisticsRecent": true,
+    "existingDevicesInformedSuccessfully": true,
+    "controllerDatabaseErrors": 0,
+    "actionableBackendErrors": 0,
+    "knownOptionalBackupIndexProbeObserved": true,
+    "existingManifestMessagesObserved": true,
+    "verificationNamespaceRemoved": true,
+    "rollbackContainerStoppedAndDisconnected": true
+  }
+}

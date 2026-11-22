@@ -36,6 +36,12 @@ type cursor struct {
 	token        *resource.Token
 	conn         *pgx.Conn // only if persisted/hijacked
 	continuation wirebson.RawDocument
+	database     string
+	collection   string
+	generation   string
+	tracked      bool
+	dependencies []NamespaceGeneration
+	release      func()
 }
 
 // newCursor creates a new cursor for the given continuation and connection (if any).
@@ -86,6 +92,10 @@ func (c *cursor) close(ctx context.Context) {
 
 		_ = c.conn.Close(ctx)
 		c.conn = nil
+	}
+	if c.release != nil {
+		c.release()
+		c.release = nil
 	}
 
 	resource.Untrack(c, c.token)

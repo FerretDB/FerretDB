@@ -91,6 +91,11 @@ func Make(ctx context.Context, err error, arg string, l *slog.Logger) *Error {
 		must.NotBeZero(e)
 		return e
 	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		res := New(ErrMaxTimeMSExpired, "Operation exceeded its time limit")
+		res.Argument, res.Wrapped = arg, err
+		return res
+	}
 
 	var pg *pgconn.PgError
 	if !errors.As(err, &pg) {
@@ -119,6 +124,19 @@ func Make(ctx context.Context, err error, arg string, l *slog.Logger) *Error {
 	var code Code
 
 	switch pg.Code {
+	case pgerrcode.DeadlockDetected, pgerrcode.SerializationFailure:
+		// These abort the PostgreSQL transaction without compromising its
+		// atomicity. Report a retryable operation conflict, not an internal
+		// gateway failure or an unmapped-error panic.
+		res := New(Code(112), "Write conflict; retry the operation")
+		res.Name = "WriteConflict"
+		res.Argument, res.Wrapped = arg, err
+		return res
+	case pgerrcode.LockNotAvailable:
+		res := New(Code(24), "Unable to acquire a required lock before its deadline")
+		res.Name = "LockTimeout"
+		res.Argument, res.Wrapped = arg, err
+		return res
 	case pgerrcode.QueryCanceled:
 		code = ErrMaxTimeMSExpired
 

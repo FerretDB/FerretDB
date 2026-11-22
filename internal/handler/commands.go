@@ -98,6 +98,9 @@ func (h *Handler) initCommands() {
 			handler: h.msgCount,
 			Help:    "Returns the count of documents that's matched by the query.",
 		},
+		"convertToCapped": {
+			handler: h.msgConvertToCapped,
+		},
 		"create": {
 			handler: h.msgCreate,
 			Help:    "Creates the collection.",
@@ -198,6 +201,9 @@ func (h *Handler) initCommands() {
 			handler: h.msgGetParameter,
 			Help:    "Returns the value of the parameter.",
 		},
+		"fsync":                          {handler: h.msgUniFiFsync},
+		"setParameter":                   {handler: h.msgUniFiSetParameter},
+		"setFeatureCompatibilityVersion": {handler: h.msgUniFiSetFCV},
 		"hello": {
 			handler:   h.msgHello,
 			anonymous: true,

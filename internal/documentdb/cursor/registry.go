@@ -17,6 +17,7 @@ package cursor
 import (
 	"context"
 	"log/slog"
+	"slices"
 	"sync"
 	"time"
 
@@ -39,8 +40,9 @@ const (
 //
 //nolint:vet // for readability
 type Registry struct {
-	rw      sync.RWMutex
-	cursors map[int64]*cursor
+	rw          sync.RWMutex
+	cursors     map[int64]*cursor
+	invalidated map[int64]time.Time
 
 	l     *slog.Logger
 	token *resource.Token
@@ -52,9 +54,10 @@ type Registry struct {
 // NewRegistry creates a new cursor registry.
 func NewRegistry(l *slog.Logger) *Registry {
 	res := &Registry{
-		cursors: map[int64]*cursor{},
-		l:       l,
-		token:   resource.NewToken(),
+		cursors:     map[int64]*cursor{},
+		invalidated: map[int64]time.Time{},
+		l:           l,
+		token:       resource.NewToken(),
 
 		created: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
@@ -110,6 +113,7 @@ func (r *Registry) Close(ctx context.Context) {
 	}
 
 	r.cursors = nil
+	r.invalidated = nil
 	resource.Untrack(r, r.token)
 }
 
@@ -117,13 +121,17 @@ func (r *Registry) Close(ctx context.Context) {
 //
 // Passed context is used for logging/tracing, and for closing existing cursor, if any.
 // See [Registry.CloseCursor].
-func (r *Registry) NewCursor(ctx context.Context, id int64, continuation wirebson.RawDocument, conn *pgx.Conn) {
+func (r *Registry) NewCursor(ctx context.Context, id int64, continuation wirebson.RawDocument, conn *pgx.Conn, database, collection string, release ...func()) {
 	must.NotBeZero(id)
 	must.BeTrue(len(continuation) > 0)
 
 	r.rw.Lock()
 
 	c := newCursor(continuation, conn)
+	c.database, c.collection = database, collection
+	if len(release) > 0 {
+		c.release = release[0]
+	}
 
 	existing := r.cursors[id]
 	if existing != nil {
@@ -139,12 +147,90 @@ func (r *Registry) NewCursor(ctx context.Context, id int64, continuation wirebso
 	r.created.With(prometheus.Labels{"type": c.Type()}).Inc()
 
 	r.cursors[id] = c
+	delete(r.invalidated, id)
 
 	r.rw.Unlock()
 
 	if existing != nil {
 		existing.close(ctx)
 	}
+}
+
+// SetGeneration binds a cursor to the catalog identity observed before its query.
+func (r *Registry) SetGeneration(id int64, generation string) {
+	r.rw.Lock()
+	defer r.rw.Unlock()
+	if c := r.cursors[id]; c != nil {
+		c.generation, c.tracked = generation, true
+	}
+}
+
+// Generation returns the cursor namespace and its original catalog identity.
+func (r *Registry) Generation(id int64) (database, collection, generation string, tracked bool) {
+	r.rw.RLock()
+	defer r.rw.RUnlock()
+	if c := r.cursors[id]; c != nil {
+		return c.database, c.collection, c.generation, c.tracked
+	}
+	return "", "", "", false
+}
+
+// NamespaceGeneration identifies an additional collection read by a pipeline.
+type NamespaceGeneration struct {
+	Database   string
+	Collection string
+	UUID       string
+	ErrorCode  int32
+}
+
+// SetDependencies retains an independent snapshot of a cursor's read dependencies.
+func (r *Registry) SetDependencies(id int64, dependencies []NamespaceGeneration) {
+	r.rw.Lock()
+	defer r.rw.Unlock()
+	if c := r.cursors[id]; c != nil {
+		c.dependencies = slices.Clone(dependencies)
+	}
+}
+
+// Dependencies returns an independent snapshot, empty after replacement or removal.
+func (r *Registry) Dependencies(id int64) []NamespaceGeneration {
+	r.rw.RLock()
+	defer r.rw.RUnlock()
+	if c := r.cursors[id]; c != nil {
+		return slices.Clone(c.dependencies)
+	}
+	return nil
+}
+
+// CloseNamespace invalidates cursors for a renamed namespace and its metadata.
+func (r *Registry) CloseNamespace(ctx context.Context, database, collection string) {
+	r.rw.Lock()
+	for id, when := range r.invalidated {
+		if time.Since(when) > 10*time.Minute {
+			delete(r.invalidated, id)
+		}
+	}
+	var closing []*cursor
+	for id, c := range r.cursors {
+		if c.database == database && (c.collection == collection || c.collection == "") {
+			closing = append(closing, r.removeCursor(ctx, id))
+			r.invalidated[id] = time.Now()
+		}
+	}
+	r.rw.Unlock()
+	for _, c := range closing {
+		c.close(ctx)
+	}
+}
+
+// ConsumeInvalidation preserves the reason for the first getMore after rename.
+// Subsequent attempts use CursorNotFound, as on the reference server.
+func (r *Registry) ConsumeInvalidation(id int64) bool {
+	r.rw.Lock()
+	defer r.rw.Unlock()
+	when, ok := r.invalidated[id]
+	delete(r.invalidated, id)
+	return ok && time.Since(when) <= 10*time.Minute
 }
 
 // GetCursor returns the continuation and the connection for the given cursor id.

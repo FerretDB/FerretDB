@@ -56,6 +56,10 @@ and [contributing guidelines](CONTRIBUTING.md).
 
 ## Quickstart
 
+For LibreChat, UniFi Network and UniFi OS Server, see the [Podman setup and migration guide](compat/deployment/README.md).
+It covers local image builds, persistent storage, database connection settings, data migration, verification and rollback.
+An [agent migration guide](compat/deployment/AGENTS.md) is included for users who want an agent to help with their own deployment.
+
 Run this command to start FerretDB with PostgreSQL, make sure to update `<username>` and `<password>`:
 
 ```sh
