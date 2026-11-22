@@ -15,7 +15,10 @@
 package documentdb
 
 import (
+	"context"
 	"log/slog"
+	"os"
+	"strconv"
 
 	"github.com/AlekSi/lazyerrors"
 	"github.com/jackc/pgx/v5"
@@ -37,11 +40,13 @@ const (
 
 // Pool represent a pool of PostgreSQL connections.
 type Pool struct {
-	p      *pgxpool.Pool
-	r      *cursor.Registry
-	l      *slog.Logger
-	tracer *tracer
-	token  *resource.Token
+	p               *pgxpool.Pool
+	r               *cursor.Registry
+	l               *slog.Logger
+	tracer          *tracer
+	token           *resource.Token
+	persistentSlots chan struct{}
+	unifiCompat     bool
 }
 
 // NewPool creates a new pool of PostgreSQL connections.
@@ -50,6 +55,14 @@ func NewPool(uri string, l *slog.Logger, sp *state.Provider) (*Pool, error) {
 	must.NotBeZero(uri)
 	must.NotBeZero(l)
 	must.NotBeZero(sp)
+	var persistentSlots chan struct{}
+	if value := os.Getenv("FERRETDB_MAX_PERSISTENT_CURSORS"); value != "" {
+		limit, err := strconv.Atoi(value)
+		if err != nil || limit < 1 || limit > 16384 {
+			return nil, lazyerrors.New("FERRETDB_MAX_PERSISTENT_CURSORS must be between 1 and 16384")
+		}
+		persistentSlots = make(chan struct{}, limit)
+	}
 
 	tl := logging.WithName(l, "pgx")
 	t := newTracer(tl)
@@ -60,11 +73,13 @@ func NewPool(uri string, l *slog.Logger, sp *state.Provider) (*Pool, error) {
 	}
 
 	res := &Pool{
-		p:      p,
-		r:      cursor.NewRegistry(logging.WithName(l, "cursors")),
-		l:      l,
-		tracer: t,
-		token:  resource.NewToken(),
+		p:               p,
+		r:               cursor.NewRegistry(logging.WithName(l, "cursors")),
+		l:               l,
+		tracer:          t,
+		token:           resource.NewToken(),
+		persistentSlots: persistentSlots,
+		unifiCompat:     os.Getenv("FERRETDB_UNIFI_COMPAT") == "true",
 	}
 	resource.Track(res, res.token)
 
@@ -85,7 +100,12 @@ func (p *Pool) Close() {
 // It is caller's responsibility to call [Conn.Release].
 // Most callers should use [Pool.WithConn] instead.
 func (p *Pool) Acquire() (*Conn, error) {
-	conn, err := p.p.Acquire(todoCtx)
+	return p.AcquireContext(todoCtx)
+}
+
+// AcquireContext permits request cancellation while waiting for a pooled connection.
+func (p *Pool) AcquireContext(ctx context.Context) (*Conn, error) {
+	conn, err := p.p.Acquire(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -96,7 +116,12 @@ func (p *Pool) Acquire() (*Conn, error) {
 // WithConn acquires a connection from the pool and calls the provided function with it.
 // The connection is automatically released after the function returns.
 func (p *Pool) WithConn(f func(*pgx.Conn) error) error {
-	conn, err := p.Acquire()
+	return p.WithConnContext(todoCtx, f)
+}
+
+// WithConnContext uses the request context when acquiring the connection.
+func (p *Pool) WithConnContext(ctx context.Context, f func(*pgx.Conn) error) error {
+	conn, err := p.AcquireContext(ctx)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -109,6 +134,10 @@ func (p *Pool) WithConn(f func(*pgx.Conn) error) error {
 
 	return nil
 }
+
+// ReleaseIdleMemory recycles pooled backends without interrupting acquired
+// connections or the dedicated connections held by persistent cursors.
+func (p *Pool) ReleaseIdleMemory() { p.p.Reset() }
 
 // Describe implements [prometheus.Collector].
 func (p *Pool) Describe(ch chan<- *prometheus.Desc) {

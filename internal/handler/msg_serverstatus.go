@@ -24,6 +24,7 @@ import (
 
 	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/v2/build/version"
 	"github.com/FerretDB/FerretDB/v2/internal/handler/middleware"
@@ -116,6 +117,17 @@ func (h *Handler) msgServerStatus(connCtx context.Context, req *middleware.Reque
 
 		"ok", float64(1),
 	)
+	if os.Getenv("FERRETDB_UNIFI_COMPAT") == "true" {
+		var fsync, fullPageWrites, synchronousCommit string
+		err = h.p.WithConnContext(connCtx, func(conn *pgx.Conn) error {
+			return conn.QueryRow(connCtx, `SELECT current_setting('fsync'), current_setting('full_page_writes'), current_setting('synchronous_commit')`).Scan(
+				&fsync, &fullPageWrites, &synchronousCommit)
+		})
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		must.NoError(res.Add("wiredTiger", unifiDurabilityAlias(fsync, fullPageWrites, synchronousCommit)))
+	}
 
 	return middleware.ResponseDoc(req, res)
 }

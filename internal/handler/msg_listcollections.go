@@ -43,6 +43,11 @@ func (h *Handler) msgListCollections(connCtx context.Context, req *middleware.Re
 		return nil, lazyerrors.Error(err)
 	}
 
+	page, err = h.cappedListPage(connCtx, dbName, page)
+	if err != nil {
+		h.p.KillCursor(connCtx, cursorID)
+		return nil, err
+	}
 	h.s.AddCursor(connCtx, userID, sessionID, cursorID)
 
 	return middleware.ResponseDoc(req, page)

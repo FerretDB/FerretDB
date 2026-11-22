@@ -59,5 +59,10 @@ func (h *Handler) msgGetMore(connCtx context.Context, req *middleware.Request) (
 		return nil, lazyerrors.Error(err)
 	}
 
+	page, err = h.cappedListPage(connCtx, dbName, page)
+	if err != nil {
+		h.p.KillCursor(connCtx, cursorID)
+		return nil, err
+	}
 	return middleware.ResponseDoc(req, page)
 }

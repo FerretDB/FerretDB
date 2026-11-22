@@ -1,0 +1,39 @@
+{
+  "passed": true,
+  "modernEnabled": true,
+  "freshWholeClusterBackupVerified": true,
+  "backupLocalCopyVerified": true,
+  "rollbackReady": true,
+  "schedulerObservation": {
+    "seconds": 90,
+    "cronLauncherWriteBytes": 0,
+    "runIdSequenceAdvance": 0,
+    "indexQueueScanIncrease": 180,
+    "liveApplicationTrafficContinued": true
+  },
+  "maintenance": {
+    "passed": true,
+    "scheduledIndexesBuilt": 2,
+    "indexBuildSeconds": 2.271,
+    "scheduledTtlExpiredRowsDeleted": 1,
+    "futureAndMissingExpiryRowsPreserved": 2,
+    "ttlSeconds": 4.37,
+    "cronSchedulesUnchanged": true
+  },
+  "durability": {
+    "fsync": "on",
+    "full_page_writes": "on",
+    "synchronous_commit": "on"
+  },
+  "newDeadlocks": 0,
+  "idleTransactions": 0,
+  "lockWaiters": 0,
+  "nativeStatisticsRecent": true,
+  "existingDevicesInformedSuccessfully": true,
+  "controllerDatabaseErrors": 0,
+  "actionableBackendErrors": 0,
+  "knownOptionalBackupIndexProbeObserved": true,
+  "existingManifestMessagesObserved": true,
+  "verificationNamespaceRemoved": true,
+  "rollbackContainerStoppedAndDisconnected": true
+}

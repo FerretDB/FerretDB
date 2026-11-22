@@ -16,6 +16,7 @@ package handler
 
 import (
 	"context"
+	"os"
 
 	"github.com/AlekSi/lazyerrors"
 
@@ -38,7 +39,14 @@ func (h *Handler) msgAggregate(connCtx context.Context, req *middleware.Request)
 		return nil, err
 	}
 
-	page, cursorID, err := h.p.Aggregate(connCtx, dbName, req.DocumentRaw())
+	raw := req.DocumentRaw()
+	if os.Getenv("FERRETDB_UNIFI_COMPAT") == "true" {
+		raw, err = unifiAggregateCommand(raw)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+	page, cursorID, err := h.p.Aggregate(connCtx, dbName, raw)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

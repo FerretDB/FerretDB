@@ -17,6 +17,7 @@ package handler
 import (
 	"context"
 	"fmt"
+	"os"
 	"regexp"
 	"unicode/utf8"
 
@@ -61,7 +62,21 @@ func (h *Handler) msgCreate(connCtx context.Context, req *middleware.Request) (*
 		return nil, mongoerrors.NewWithArgument(mongoerrors.ErrInvalidNamespace, msg, command)
 	}
 
-	err = h.p.WithConn(func(conn *pgx.Conn) error {
+	if os.Getenv("FERRETDB_UNIFI_COMPAT") == "true" && doc.Get("capped") == true {
+		size, parseErr := cappedInteger(doc, "size", true)
+		if parseErr != nil {
+			return nil, parseErr
+		}
+		maximum, parseErr := cappedInteger(doc, "max", false)
+		if parseErr != nil {
+			return nil, parseErr
+		}
+		if err = h.createCapped(connCtx, dbName, collectionName, cappedOptions{size: size, maximum: maximum}, false); err != nil {
+			return nil, err
+		}
+		return middleware.ResponseDoc(req, wirebson.MustDocument("ok", float64(1)))
+	}
+	err = h.p.WithConnContext(connCtx, func(conn *pgx.Conn) error {
 		_, err = documentdb_api.CreateCollection(connCtx, conn, h.L, dbName, collectionName)
 		return err
 	})

@@ -1,0 +1,111 @@
+{
+  "passed": true,
+  "syntheticOnly": true,
+  "pgCronVersion": "1.6.7",
+  "cause": "Unused persistent run IDs allocated even with cron.log_run=off",
+  "fix": "Allocate NextRunId() only when CronLogRun is true",
+  "baseline": {
+    "seconds": 330,
+    "blockWriteBytes": 192512,
+    "logicalWalBytes": 2408,
+    "checkpointBufferWrites": 1,
+    "files": [
+      {
+        "file": "pg_wal/<segment>",
+        "syscallWriteBytes": 180224,
+        "calls": {
+          "pwrite64": 22,
+          "fdatasync": 22
+        }
+      },
+      {
+        "file": "pg_xact/<segment>",
+        "syscallWriteBytes": 8192,
+        "calls": {
+          "pwrite64": 1,
+          "fsync": 1
+        }
+      },
+      {
+        "file": "cron.runid_seq (sequence relation file)",
+        "syscallWriteBytes": 8192,
+        "calls": {
+          "pwrite64": 1,
+          "fsync": 1
+        }
+      },
+      {
+        "file": "global/pg_control",
+        "syscallWriteBytes": 8192,
+        "calls": {
+          "write": 1,
+          "fsync": 1
+        }
+      },
+      {
+        "file": "pg_logical/replorigin_checkpoint.tmp",
+        "syscallWriteBytes": 8,
+        "calls": {
+          "write": 2,
+          "fsync": 1
+        }
+      }
+    ]
+  },
+  "firstPatchedObservation": {
+    "seconds": 330,
+    "blockWriteBytes": 159744,
+    "databaseFileWriteSyscalls": 0,
+    "logicalWalBytes": 0,
+    "runIdSequenceAdvance": 0,
+    "indexQueueScanIncrease": 656,
+    "note": "Initial block counter burst retained; the subsequent settled confirmation is reported separately."
+  },
+  "settledConfirmation": {
+    "seconds": 90,
+    "blockWriteBytes": 0,
+    "databaseFileWriteSyscalls": 0,
+    "logicalWalBytes": 0,
+    "runIdSequenceAdvance": 0,
+    "indexQueueScanIncrease": 184,
+    "durability": {
+      "fsync": "on",
+      "full_page_writes": "on",
+      "synchronous_commit": "on",
+      "cron.log_run": "off",
+      "cron.log_statement": "off"
+    }
+  },
+  "maintenance": {
+    "scheduledBackgroundIndexBuilt": true,
+    "indexBuildSeconds": 2.816,
+    "committedRowsAndIndexSurvivedRestart": true,
+    "durability": {
+      "fsync": "on",
+      "full_page_writes": "on",
+      "synchronous_commit": "on"
+    },
+    "schedulesUnchanged": true,
+    "passed": true
+  },
+  "ttl": {
+    "passed": true,
+    "existingApplicationTtlIndexesTested": 3,
+    "expiredRowsDeleted": 3,
+    "futureAndMissingExpiryRowsPreserved": 6,
+    "schedulesChanged": false,
+    "elapsedMs": 34245
+  },
+  "enabledHistory": {
+    "successfulRuns": 3,
+    "failedRuns": 3,
+    "positiveDistinctRunIds": true,
+    "canaryRows": 3,
+    "backgroundWorkers": "on",
+    "passed": true,
+    "enabledHistoryPreserved": true,
+    "liveChanged": false
+  },
+  "patchedLibrarySHA256": "62afc2fa3b75b1b03efff47bb19156ce2147db59d87a3ede82c9de36676fe24d",
+  "baseImage": "ghcr.io/ferretdb/postgres-documentdb@sha256:2386795ec2aa7ae559304361979f1dc5708d383ee9020ae63dadc2940dfe58f7"
+}

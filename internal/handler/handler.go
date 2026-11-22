@@ -17,14 +17,18 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire"
 	"github.com/prometheus/client_golang/prometheus"
+	"golang.org/x/sync/semaphore"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/v2/internal/documentdb"
@@ -63,9 +67,12 @@ const (
 type Handler struct {
 	*NewOpts
 
-	p        *documentdb.Pool
-	commands map[string]*command
-	s        *session.Registry
+	p                 *documentdb.Pool
+	commands          map[string]*command
+	s                 *session.Registry
+	shapes            *shapeRecorder
+	compatGate        *semaphore.Weighted
+	compatReleaseRate atomic.Int64
 
 	runM   sync.Mutex
 	runCtx context.Context
@@ -103,9 +110,15 @@ func New(opts *NewOpts) (*Handler, error) {
 	}
 
 	h := &Handler{
-		NewOpts: opts,
-		p:       p,
-		s:       session.NewRegistry(sessionTimeout, opts.L),
+		NewOpts:    opts,
+		p:          p,
+		s:          session.NewRegistry(sessionTimeout, opts.L),
+		compatGate: semaphore.NewWeighted(compatGateCapacity),
+	}
+	h.shapes, err = newShapeRecorder()
+	if err != nil {
+		p.Close()
+		return nil, err
 	}
 
 	h.initCommands()
@@ -155,7 +168,34 @@ func (h *Handler) Run(ctx context.Context) {
 }
 
 // Handle implements [middleware.Handler].
-func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middleware.Response, error) {
+func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (response *middleware.Response, handleErr error) {
+	defer func() { h.shapes.record(ctx, req, response) }()
+	if os.Getenv("FERRETDB_UNIFI_COMPAT") == "true" {
+		weight := int64(1)
+		command := req.Document().Command()
+		exclusive := command == "renameCollection" || command == "convertToCapped" || command == "fsync" || command == "create" && req.Document().Get("capped") == true
+		if exclusive || command == "dbStats" {
+			limit, err := renameTimeLimit(req.Document())
+			if err != nil {
+				return middleware.ResponseErr(req, mongoerrors.Make(ctx, err, "", h.L)), nil
+			}
+			if limit > 0 {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, limit)
+				defer cancel()
+			}
+			if exclusive {
+				weight = compatGateCapacity
+			}
+		}
+		if err := h.compatGate.Acquire(ctx, weight); err != nil {
+			if errors.Is(err, context.DeadlineExceeded) {
+				return middleware.ResponseErr(req, mongoerrors.New(mongoerrors.ErrMaxTimeMSExpired, "Operation exceeded its time limit")), nil
+			}
+			return nil, err
+		}
+		defer h.compatGate.Release(weight)
+	}
 	if ctx.Err() != nil {
 		return nil, lazyerrors.Error(ctx.Err())
 	}

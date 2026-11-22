@@ -16,6 +16,7 @@ package handler
 
 import (
 	"context"
+	"os"
 
 	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire/wirebson"
@@ -67,6 +68,9 @@ func (h *Handler) msgGetParameter(connCtx context.Context, req *middleware.Reque
 		// parameters are alphabetically ordered
 	)
 
+	if os.Getenv("FERRETDB_UNIFI_COMPAT") == "true" {
+		must.NoError(parameters.Add("tcmallocReleaseRate", wirebson.MustDocument("value", h.compatReleaseRate.Load(), "settableAtRuntime", true, "settableAtStartup", false)))
+	}
 	res, err := selectParameters(doc, parameters, showDetails, allParameters)
 	if err != nil {
 		return nil, lazyerrors.Error(err)

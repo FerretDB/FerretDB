@@ -1,0 +1,10 @@
+FROM ghcr.io/ferretdb/postgres-documentdb@sha256:2386795ec2aa7ae559304361979f1dc5708d383ee9020ae63dadc2940dfe58f7 AS build
+USER root
+RUN apt-get update -qq && apt-get install -y --no-install-recommends gcc make libc6-dev curl ca-certificates patch
+WORKDIR /tmp
+RUN curl -fsSL https://apt.postgresql.org/pub/repos/apt/pool/main/p/pg-cron/pg-cron_1.6.7.orig.tar.gz -o pg-cron.tar.gz && echo "d950bc29155f31017567e23a31d268ff672e98276c0e9d062512fb7870351f03  pg-cron.tar.gz" | sha256sum -c - && mkdir pg-cron && tar -xzf pg-cron.tar.gz --strip-components=1 -C pg-cron
+COPY skip-unused-run-id.patch /tmp/skip-unused-run-id.patch
+WORKDIR /tmp/pg-cron
+RUN patch -p1 < /tmp/skip-unused-run-id.patch && make PG_CONFIG=/usr/lib/postgresql/17/bin/pg_config with_llvm=no -j2
+FROM ghcr.io/ferretdb/postgres-documentdb@sha256:2386795ec2aa7ae559304361979f1dc5708d383ee9020ae63dadc2940dfe58f7
+COPY --from=build /tmp/pg-cron/pg_cron.so /usr/lib/postgresql/17/lib/pg_cron.so
