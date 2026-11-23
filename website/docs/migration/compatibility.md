@@ -143,6 +143,10 @@ All drivers and applications compatible with MongoDB 5.0+ should be compatible w
 | `refreshSessions`          | ✅️ Supported                                                                    |
 | `startSession`             | ✅️ Supported                                                                    |
 
+Multi-document transactions are [not implemented yet](https://github.com/FerretDB/FerretDB/issues/8).
+Commands sent as a part of a transaction (with `startTransaction` or `autocommit` fields)
+are rejected with a `NotImplemented` error, and nothing is written.
+
 ### User management commands
 
 | Command                    | Status                                                                     |

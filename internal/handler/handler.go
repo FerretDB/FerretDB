@@ -24,6 +24,7 @@ import (
 
 	"github.com/AlekSi/lazyerrors"
 	"github.com/FerretDB/wire"
+	"github.com/FerretDB/wire/wirebson"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/FerretDB/FerretDB/v2/internal/clientconn/conninfo"
@@ -213,6 +214,10 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middlew
 			h.L.DebugContext(ctx, "Authentication passed", slog.String("username", username))
 		}
 
+		if err := checkNoTransaction(req.Document()); err != nil {
+			return middleware.ResponseErr(req, err), nil
+		}
+
 		resp, err := cmd.handler(ctx, req)
 		if err != nil {
 			// TODO https://github.com/FerretDB/FerretDB/issues/4965
@@ -233,6 +238,31 @@ func (h *Handler) Handle(ctx context.Context, req *middleware.Request) (*middlew
 	default:
 		panic("unsupported request")
 	}
+}
+
+// checkNoTransaction returns an error if the command is a part of a multi-document transaction.
+//
+// Transactions are not implemented yet, so such a command would be executed and committed on its own,
+// and a following abortTransaction could not undo it.
+// It is safer to refuse the command than to ignore the transaction fields.
+//
+// NotImplemented is used instead of IllegalOperation that MongoDB returns without a replica set
+// because drivers replace IllegalOperation's message with a misleading one about retryable writes.
+// TODO https://github.com/FerretDB/FerretDB/issues/8
+func checkNoTransaction(doc *wirebson.Document) *mongoerrors.Error {
+	for _, f := range []string{"startTransaction", "autocommit"} {
+		if doc.Get(f) == nil {
+			continue
+		}
+
+		return mongoerrors.NewWithArgument(
+			mongoerrors.ErrNotImplemented,
+			"Transactions are not implemented yet",
+			f,
+		)
+	}
+
+	return nil
 }
 
 // Describe implements [prometheus.Collector].
